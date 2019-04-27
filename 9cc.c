@@ -50,7 +50,7 @@ void tokenize(char *p) {
     while (*p) {
         if (isspace(*p)) {
             p++;
-        } else if (*p=='+' || *p=='-' || *p=='*' || *p=='/') {
+        } else if (*p=='+' || *p=='-' || *p=='*' || *p=='/' || *p=='(' || *p==')') {
             tokens[i].type = *p;
             tokens[i].input = p;
             i++;
@@ -98,11 +98,13 @@ Node *new_node_num(int val) {
     add: mul
     add: add "+" mul
     add: add "-" mul
-    mul: mul "*" num
-    mul: mul "/" num
+    mul: mul "*" term
+    mul: mul "/" term
+    term: num
+    term: "(" add ")"
 */
 Node *mul(void); 
-Node *num(void); 
+Node *term(void); 
 
 Node *add(void) {
     Node *node = mul();
@@ -118,20 +120,26 @@ Node *add(void) {
 }
 
 Node *mul(void) {
-    Node *node = num();
+    Node *node = term();
     for (;;) {
         if (consume('*')) {
-            node = new_node('*', node, num());
+            node = new_node('*', node, term());
         } else if (consume('/')) {
-            node = new_node('/', node, num());
+            node = new_node('/', node, term());
         } else {
             return node;
         }
     }
 }
 
-Node *num(void) {
-    if (tokens[token_pos].type == TK_NUM) {
+Node *term(void) {
+    if (consume('(')) {
+        Node *node = add();
+        if (!consume(')')) {
+            error("開きカッコに対応する閉じカッコがありません: %s", tokens[token_pos].input);
+        }
+        return node;
+    } else if (tokens[token_pos].type == TK_NUM) {
         return new_node_num(tokens[token_pos++].val);
     } else {
         error("数値でないトークンです: %s", tokens[token_pos].input);
