@@ -11,28 +11,29 @@ enum {
 };
 
 typedef struct {
-    int type;   //トークンの型
-    int val;    //typeがTK_TOKENの場合の値
-    char*input;    //トークン文字列（エラーメッセージ用）
+    int type;       //トークンの型
+    int val;        //typeがTK_TOKENの場合の値
+    char*input;     //トークン文字列（エラーメッセージ用）
 } Token;
 
 // トークナイズした結果のトークン列はこの配列に保存する
 // 100個以上のトークンは来ないものとする
 #define MAX_TOKENS  100
 Token tokens[MAX_TOKENS];
-int token_pos = 0;    //tokensの現在位置
+int token_pos = 0;  //tokensの現在位置
 
 //抽象構文木 ----------------------------------------
 enum {
     ND_NUM = 256,   //トークンの型
 };
 
-typedef struct _Node {
-    int type;   //演算子かND_NUM
-    struct _Node *lhs;
-    struct _Node *rhs;
-    int val;    //typeがND_NUMの場合の値
-} Node;
+typedef struct _Node Node;
+struct _Node {
+    int type;       //演算子かND_NUM
+    Node *lhs;
+    Node *rhs;
+    int val;        //typeがND_NUMの場合の値
+};
 
 // エラーを報告するための関数
 // printfと同じ引数を取る
