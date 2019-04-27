@@ -51,7 +51,7 @@ void tokenize(char *p) {
     while (*p) {
         if (isspace(*p)) {
             p++;
-        } else if (*p=='+' || *p=='-' || *p=='*' || *p=='/' || *p=='(' || *p==')') {
+        } else if (*p=='+' || *p=='-' || *p=='*' || *p=='/' || *p=='%' || *p=='(' || *p==')') {
             tokens[i].type = *p;
             tokens[i].input = p;
             i++;
@@ -101,6 +101,7 @@ Node *new_node_num(int val) {
     add: add "-" mul
     mul: mul "*" term
     mul: mul "/" term
+    mul: mod "%" term
     term: num
     term: "(" add ")"
 */
@@ -127,6 +128,8 @@ Node *mul(void) {
             node = new_node('*', node, term());
         } else if (consume('/')) {
             node = new_node('/', node, term());
+        } else if (consume('%')) {
+            node = new_node('%', node, term());
         } else {
             return node;
         }
@@ -170,9 +173,14 @@ void gen(Node*node) {
         case '*':   //rax*rdi -> rdx:rax
             printf("  mul rdi\n");
             break;
-        case '/':   //rdx:rax / rdi -> rax
+        case '/':   //rdx:rax / rdi -> rax, rdx
             printf("  mov rdx, 0\n");
             printf("  div rdi\n");
+            break;
+        case '%':   //rdx:rax / rdi -> rax, rdx
+            printf("  mov rdx, 0\n");
+            printf("  div rdi\n");
+            printf("  mov rax, rdx\n");
             break;
         default:
             error("不正なトークンです: '%c'\n", node->type);
@@ -188,7 +196,7 @@ int main(int argc, char**argv)
         fprintf(stderr,"引数の個数が正しくありません\n");
         return 1;
     }
-    
+
     // トークナイズしてパースする
     tokenize(argv[1]);
     Node *node = add();
