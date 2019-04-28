@@ -107,13 +107,18 @@ Node *new_node_num(int val) {
     add: mul
     add: add "+" mul
     add: add "-" mul
-    mul: mul "*" term
-    mul: mul "/" term
-    mul: mod "%" term
+    mul: unary
+    mul: mul "*" unary
+    mul: mul "/" unary
+    mul: mod "%" unary
+    unary: term
+    unary: "+" term
+    unary: "-" term
     term: num
     term: "(" add ")"
 */
 Node *mul(void); 
+Node *unary(void);
 Node *term(void); 
 
 Node *add(void) {
@@ -130,17 +135,27 @@ Node *add(void) {
 }
 
 Node *mul(void) {
-    Node *node = term();
+    Node *node = unary();
     for (;;) {
         if (consume('*')) {
-            node = new_node('*', node, term());
+            node = new_node('*', node, unary());
         } else if (consume('/')) {
-            node = new_node('/', node, term());
+            node = new_node('/', node, unary());
         } else if (consume('%')) {
-            node = new_node('%', node, term());
+            node = new_node('%', node, unary());
         } else {
             return node;
         }
+    }
+}
+
+Node *unary(void) {
+    if (consume('+')) {
+        return term();
+    } else if (consume('-')) {
+        return new_node('-', new_node_num(0), term());
+    } else {
+        return term();
     }
 }
 
