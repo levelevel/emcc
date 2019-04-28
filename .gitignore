@@ -2,4 +2,4 @@
 *.o
 tmp*
 9cc
-
+runtest

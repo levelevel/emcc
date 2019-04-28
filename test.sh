@@ -16,6 +16,8 @@ try() {
   fi
 }
 
+./runtest
+
 try 42 42
 try 55 "100  - 50  + 5 "
 try 14 "10 + 2 * 3 - 4/2"
@@ -23,4 +25,4 @@ try 5 "1*(2+3)"
 try 3 "(((2+4)*1)/2)"
 try 2 "5%3"
 
-echo OK
+echo "test: OK"

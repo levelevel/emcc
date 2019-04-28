@@ -1,6 +1,11 @@
-9cc: 9cc.c
+SRC = util.c 
+HEAD = util.h
 
-test: 9cc
+all: 9cc runtest
+9cc: 9cc.c ${SRC} ${HEAD}
+runtest: runtest.c ${SRC} ${HEAD}
+
+test: 9cc runtest
 	./test.sh
 
 clean:

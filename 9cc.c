@@ -4,6 +4,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "util.h"
+
 //トークン ------------------------------------------
 enum {
     TK_NUM = 256,   //整数トークン
@@ -173,11 +175,11 @@ void gen(Node*node) {
         case '*':   //rax*rdi -> rdx:rax
             printf("  mul rdi\n");
             break;
-        case '/':   //rdx:rax / rdi -> rax, rdx
+        case '/':   //rdx:rax / rdi -> rax（商）, rdx（余り）
             printf("  mov rdx, 0\n");
             printf("  div rdi\n");
             break;
-        case '%':   //rdx:rax / rdi -> rax, rdx
+        case '%':   //rdx:rax / rdi -> rax（商）, rdx（余り）
             printf("  mov rdx, 0\n");
             printf("  div rdi\n");
             printf("  mov rax, rdx\n");
