@@ -18,11 +18,10 @@ typedef struct {
     char*input;     //トークン文字列（エラーメッセージ用）
 } Token;
 
-// トークナイズした結果のトークン列はこの配列に保存する
-// 100個以上のトークンは来ないものとする
-#define MAX_TOKENS  100
-Token tokens[MAX_TOKENS];
-int token_pos = 0;  //tokensの現在位置
+// トークナイズした結果のトークン列はこのVectorに保存する
+Vector *token_vec = NULL;
+Token **tokens;  //token_vec->data;
+int token_pos;  //tokensの現在位置
 
 //抽象構文木 ----------------------------------------
 enum {
@@ -47,35 +46,42 @@ void error(const char*fmt, ...){
     exit(1);
 }
 
+Token *new_token(void) {
+    Token *token = calloc(1, sizeof(Token));
+    vec_push(token_vec, token);
+    return token;
+}
+
 // pが指している文字列をトークンに分割してtokensに保存する
 void tokenize(char *p) {
-    int i = 0;
+    Token *token;
     while (*p) {
         if (isspace(*p)) {
             p++;
         } else if (*p=='+' || *p=='-' || *p=='*' || *p=='/' || *p=='%' || *p=='(' || *p==')') {
-            tokens[i].type = *p;
-            tokens[i].input = p;
-            i++;
+            token = new_token();
+            token->type = *p;
+            token->input = p;
             p++;
         } else if (isdigit(*p)) {
-            tokens[i].type = TK_NUM;
-            tokens[i].input = p;
-            tokens[i].val = strtol(p, &p, 10);
-            i++;
+            token = new_token();
+            token->type = TK_NUM;
+            token->input = p;
+            token->val = strtol(p, &p, 10);
         } else {
             error("トークナイズエラー: '%s'\n", p);
             exit(1);
         }
     }
-    tokens[i].type = TK_EOF;
-    tokens[i].input = p;
+    token = new_token();
+    token->type = TK_EOF;
+    token->input = p;
 }
 
 //次のトークンが期待した型かどうかをチェックし、
 //期待した型の場合だけ入力を1トークン読み進めて真を返す
 int consume(int type) {
-    if (tokens[token_pos].type != type) return 0;
+    if (tokens[token_pos]->type != type) return 0;
     token_pos++;
     return 1;
 }
@@ -142,13 +148,13 @@ Node *term(void) {
     if (consume('(')) {
         Node *node = add();
         if (!consume(')')) {
-            error("開きカッコに対応する閉じカッコがありません: %s", tokens[token_pos].input);
+            error("開きカッコに対応する閉じカッコがありません: %s", tokens[token_pos]->input);
         }
         return node;
-    } else if (tokens[token_pos].type == TK_NUM) {
-        return new_node_num(tokens[token_pos++].val);
+    } else if (tokens[token_pos]->type == TK_NUM) {
+        return new_node_num(tokens[token_pos++]->val);
     } else {
-        error("数値でないトークンです: %s", tokens[token_pos].input);
+        error("数値でないトークンです: %s", tokens[token_pos]->input);
     }
 }
 
@@ -200,7 +206,10 @@ int main(int argc, char**argv)
     }
 
     // トークナイズしてパースする
+    token_vec = new_vector();
     tokenize(argv[1]);
+    tokens = token_vec->data;
+    token_pos = 0;
     Node *node = add();
 
     // アセンブリの前半部分を出力
