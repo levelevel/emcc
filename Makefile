@@ -1,11 +1,14 @@
-SRC = util.c 
-HEAD = util.h
+CFLAGS=-Wall -std=c11
+SRCS=$(wildcard *.c)
+OBJS=$(SRCS:.c=.o)
 
-all: 9cc runtest
-9cc: 9cc.c ${SRC} ${HEAD}
-runtest: runtest.c ${SRC} ${HEAD}
+9cc: $(OBJS)
+	$(CC) -o 9cc $(OBJS) $(LDFLAGS)
 
-test: 9cc runtest
+$(OBJS): 9cc.h
+
+test: 9cc
+	./9cc -test
 	./test.sh
 
 clean:

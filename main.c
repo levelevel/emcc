@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "util.h"
+#include "9cc.h"
 
 //トークン ------------------------------------------
 enum {
@@ -235,6 +235,7 @@ Node *term(void) {
         return new_node_num(tokens[token_pos++]->val);
     } else {
         error("数値でないトークンです: %s", tokens[token_pos]->input);
+        return NULL;
     }
 }
 
@@ -248,8 +249,8 @@ void gen(Node*node) {
         gen(node->rhs);
 
         //それらをPOPして、演算する
-        printf("  pop rdi\n");
-        printf("  pop rax\n");
+        printf("  pop rdi\n");  //rhs
+        printf("  pop rax\n");  //lhs
 
         switch(node->type) {
         case TK_EQ: //"=="
@@ -303,6 +304,11 @@ int main(int argc, char**argv)
     if (argc!=2) {
         fprintf(stderr,"引数の個数が正しくありません\n");
         return 1;
+    }
+
+    if (strcmp(argv[1], "-test")==0) {
+        run_test();
+        return 0;
     }
 
     // トークナイズしてパースする

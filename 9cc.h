@@ -5,5 +5,7 @@ typedef struct {
     int len;
 } Vector;
 
+// util.c
 Vector *new_vector(void);
-Vector vec_push(Vector *vec, void *elem);
+void vec_push(Vector *vec, void *elem);
+void run_test(void);
