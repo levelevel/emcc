@@ -1,3 +1,4 @@
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include "9cc.h"
@@ -19,6 +20,17 @@ void vec_push(Vector *vec, void *elem) {
     vec->data[vec->len++] = elem;
 }
 
+// エラーを報告するための関数 --------------------------
+// printfと同じ引数を取る
+void error(const char*fmt, ...) {
+    va_list ap;
+    va_start(ap, fmt);
+    vfprintf(stderr, fmt, ap);
+    fprintf(stderr, "\n");
+    exit(1);
+}
+
+// テスト
 static void expect(int line, long expected, long actual) {
     if (expected == actual) return;
     fprintf(stderr, "%d: %ld expected, but got actual %ld\n", line, expected, actual);
