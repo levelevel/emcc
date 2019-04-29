@@ -9,6 +9,10 @@
 //トークン ------------------------------------------
 enum {
     TK_NUM = 256,   //整数トークン
+    TK_EQ,          // ==
+    TK_NE,          // !=
+    TK_LE,          // <=
+    TK_GE,          // >=
     TK_EOF,         //入力の終わり
 };
 
@@ -58,7 +62,28 @@ void tokenize(char *p) {
     while (*p) {
         if (isspace(*p)) {
             p++;
-        } else if (*p=='+' || *p=='-' || *p=='*' || *p=='/' || *p=='%' || *p=='(' || *p==')') {
+        } else if (strncmp(p, "==", 2)==0) {
+            token = new_token();
+            token->type = TK_EQ;
+            token->input = p;
+            p += 2;
+        } else if (strncmp(p, "!=", 2)==0) {
+            token = new_token();
+            token->type = TK_NE;
+            token->input = p;
+            p += 2;
+        } else if (strncmp(p, ">=", 2)==0) {
+            token = new_token();
+            token->type = TK_GE;
+            token->input = p;
+            p += 2;
+        } else if (strncmp(p, "<=", 2)==0) {
+            token = new_token();
+            token->type = TK_LE;
+            token->input = p;
+            p += 2;
+        } else if (*p=='+' || *p=='-' || *p=='*' || *p=='/' || *p=='%' || *p=='(' || *p==')' ||
+                   *p=='<' || *p=='>') {
             token = new_token();
             token->type = *p;
             token->input = p;
@@ -104,6 +129,14 @@ Node *new_node_num(int val) {
 }
 
 /*  文法：
+    equality: relational
+    equality: equality "==" relational
+    equality: equality "!=" relational
+    relational: add
+    relational: relational "<"  add
+    relational: relational "<=" add
+    relational: relational ">"  add
+    relational: relational ">=" add
     add: mul
     add: add "+" mul
     add: add "-" mul
@@ -117,9 +150,41 @@ Node *new_node_num(int val) {
     term: num
     term: "(" add ")"
 */
+Node *relational(void);
+Node *add(void);
 Node *mul(void); 
 Node *unary(void);
 Node *term(void); 
+
+Node *equality(void) {
+    Node *node = relational();
+    for (;;) {
+        if (consume(TK_EQ)) {
+            node = new_node(TK_EQ, node, relational());
+        } else if (consume(TK_NE)) {
+            node = new_node(TK_NE, node, relational());
+        } else {
+            return node;
+        }
+    }
+}
+
+Node *relational(void) {
+    Node *node = add();
+    for (;;) {
+        if (consume('<')) {
+            node = new_node('<', node, add());
+        } else if (consume(TK_LE)) {
+            node = new_node(TK_LE, node, add());
+        } else if (consume('>')) {
+            node = new_node('<', add(), node);
+        } else if (consume(TK_GE)) {
+            node = new_node(TK_LE, add(), node);
+        } else {
+            return node;
+        }
+    }
+}
 
 Node *add(void) {
     Node *node = mul();
@@ -187,16 +252,36 @@ void gen(Node*node) {
         printf("  pop rax\n");
 
         switch(node->type) {
+        case TK_EQ: //"=="
+            printf("  cmp rax, rdi\n");
+            printf("  sete al\n");
+            printf("  movzb rax, al\n");
+            break;
+        case TK_NE: //"!="
+            printf("  cmp rax, rdi\n");
+            printf("  setne al\n");
+            printf("  movzb rax, al\n");
+            break;
+        case '<':   //'>'もここで対応（構文木作成時に左右入れ替えてある）
+            printf("  cmp rax, rdi\n");
+            printf("  setl al\n");
+            printf("  movzb rax, al\n");
+            break;
+        case TK_LE: //"<="、">="もここで対応（構文木作成時に左右入れ替えてある）
+            printf("  cmp rax, rdi\n");
+            printf("  setle al\n");
+            printf("  movzb rax, al\n");
+            break;
         case '+':
             printf("  add rax, rdi\n");
             break;
-        case '-':
+        case '-':   //rax(lhs)-rdi(rhs)
             printf("  sub rax, rdi\n");
             break;
         case '*':   //rax*rdi -> rdx:rax
             printf("  mul rdi\n");
             break;
-        case '/':   //rdx:rax / rdi -> rax（商）, rdx（余り）
+        case '/':   //rdx:rax(lhs) / rdi(rhs) -> rax（商）, rdx（余り）
             printf("  mov rdx, 0\n");
             printf("  div rdi\n");
             break;
@@ -225,7 +310,7 @@ int main(int argc, char**argv)
     tokenize(argv[1]);
     tokens = token_vec->data;
     token_pos = 0;
-    Node *node = add();
+    Node *node = equality();
 
     // アセンブリの前半部分を出力
     printf(".intel_syntax noprefix\n");
