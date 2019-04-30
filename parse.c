@@ -5,6 +5,36 @@
 
 #include "9cc.h"
 
+typedef struct {
+    char *name;
+    int len;
+    TKtype type;
+} TokenDef;
+TokenDef TokenLst1[] = {
+    {"==", 2, TK_EQ},
+    {"!=", 2, TK_NE},
+    {">=", 2, TK_GE},
+    {"<=", 2, TK_LE},
+    {">",  1, '>'},
+    {"<",  1, '<'},
+    {"+",  1, '+'},
+    {"-",  1, '-'},
+    {"*",  1, '*'},
+    {"/",  1, '/'},
+    {"%",  1, '%'},
+    {"(",  1, '('},
+    {")",  1, ')'},
+    {";",  1, ';'},
+    {"=",  1, '='},
+    {NULL, 0, 0}
+};
+TokenDef TokenLst2[] = {
+    {"return", 6, TK_RETURN},
+    {"if",     2, TK_IF},
+    {"while",  5, TK_WHILE},
+    {NULL, 0, 0}
+};
+
 static Token *new_token(void) {
     Token *token = calloc(1, sizeof(Token));
     vec_push(token_vec, token);
@@ -16,7 +46,7 @@ static int is_alnum(char c) {
     return ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z') ||
            ('0' <= c && c <= '9') || (c == '_');
 }
-//識別子の先頭にに使用できる文字
+//識別子の先頭に使用できる文字
 static int is_alpha(char c) {
     return ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z') || (c == '_');
 }
@@ -41,54 +71,35 @@ void tokenize(char *p) {
     while (*p) {
         if (isspace(*p)) {
             p++;
-        } else if (strncmp(p, "==", 2)==0) {
-            token = new_token();
-            token->type = TK_EQ;
-            token->input = p;
-            p += 2;
-        } else if (strncmp(p, "!=", 2)==0) {
-            token = new_token();
-            token->type = TK_NE;
-            token->input = p;
-            p += 2;
-        } else if (strncmp(p, ">=", 2)==0) {
-            token = new_token();
-            token->type = TK_GE;
-            token->input = p;
-            p += 2;
-        } else if (strncmp(p, "<=", 2)==0) {
-            token = new_token();
-            token->type = TK_LE;
-            token->input = p;
-            p += 2;
-        } else if (*p=='+' || *p=='-' || *p=='*' || *p=='/' || *p=='%' || *p=='(' || *p==')' ||
-                   *p=='<' || *p=='>' || *p==';' || *p=='=') {
-            token = new_token();
-            token->type = *p;
-            token->input = p;
-            p++;
-        } else if (strncmp(p, "return", 6)==0 && !is_alnum(p[6])) {
-            token = new_token();
-            token->type = TK_RETURN;
-            token->input = p;
-            p += 6;
-        } else if (strncmp(p, "if", 2)==0 && !is_alnum(p[2])) {
-            token = new_token();
-            token->type = TK_IF;
-            token->input = p;
-            p += 2;
-        } else if (strncmp(p, "while", 5)==0 && !is_alnum(p[5])) {
-            token = new_token();
-            token->type = TK_WHILE;
-            token->input = p;
-            p += 5;
-        } else if (is_alpha(*p)) {  //識別子
+            continue;
+        }
+
+        for (TokenDef *tk = TokenLst1; tk->name; tk++) {
+            if (strncmp(p, tk->name, tk->len)==0) {
+                token = new_token();
+                token->type = tk->type;
+                token->input = p;
+                p += tk->len;
+                goto NEXT_LOOP;
+            }
+        }
+        for (TokenDef *tk = TokenLst2; tk->name; tk++) {
+            if (strncmp(p, tk->name, tk->len)==0 && !is_alnum(p[tk->len])) {
+                token = new_token();
+                token->type = tk->type;
+                token->input = p;
+                p += tk->len;
+                goto NEXT_LOOP;
+            }
+        }
+
+        if (is_alpha(*p)) {         //識別子
             token = new_token();
             token->type = TK_IDENT;
             token->name = ident_name(p);
             token->input = p;
             p += strlen(token->name);
-        } else if (isdigit(*p)) {
+        } else if (isdigit(*p)) {   //数値
             token = new_token();
             token->type = TK_NUM;
             token->input = p;
@@ -97,6 +108,7 @@ void tokenize(char *p) {
             error("トークナイズエラー: '%s'\n", p);
             exit(1);
         }
+        NEXT_LOOP:;
     }
     token = new_token();
     token->type = TK_EOF;
@@ -119,7 +131,7 @@ void print_tokens(void) {
 
 //次のトークンが期待した型かどうかをチェックし、
 //期待した型の場合だけ入力を1トークン読み進めて真を返す
-static int consume(int type) {
+static int consume(TKtype type) {
     if (tokens[token_pos]->type != type) return 0;
     token_pos++;
     return 1;

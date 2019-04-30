@@ -12,7 +12,7 @@ typedef struct {
 } Map;
 
 //トークン ------------------------------------------
-enum {
+typedef enum {
     TK_NUM = 256,   //整数トークン
     TK_EQ,          // ==
     TK_NE,          // !=
@@ -23,10 +23,10 @@ enum {
     TK_IF,          //if
     TK_WHILE,       //while
     TK_EOF,         //入力の終わり
-};
+} TKtype;
 
 typedef struct {
-    int type;       //トークンの型
+    TKtype type;    //トークンの型
     int val;        //typeがTK_TOKENの場合、値
     char *name;     //typeがTK_IDENTの場合、その名前
     char *input;    //トークン文字列（エラーメッセージ用）

@@ -55,7 +55,7 @@ void gen(Node*node) {
         comment("  # IF:B\n");
         gen(node->rhs); //B
         printf(".Lend%03d:\n", cnt);
-    } else if (node->type == ND_WHILE) {       //while (A) B
+    } else if (node->type == ND_WHILE) {    //while (A) B
         int cnt = label_cnt++;
         comment("  # WHILE(A)B\n");
         printf(".Lbegin%03d:\n", cnt);
