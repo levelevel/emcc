@@ -1,6 +1,8 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+
 #include "9cc.h"
 
 //可変長ベクタ ---------------------------------------
@@ -20,6 +22,28 @@ void vec_push(Vector *vec, void *elem) {
     vec->data[vec->len++] = elem;
 }
 
+//マップ --------------------------------------------
+Map *new_map(void) {
+    Map *map = malloc(sizeof(Map));
+    map->keys = new_vector();
+    map->vals = new_vector();
+    return map;
+}
+
+void map_put(Map *map, char *key, void *val) {
+    vec_push(map->keys, key);
+    vec_push(map->vals, val);
+}
+
+char* map_get(const Map *map, char *key) {
+    for (int i=map->keys->len-1; i>=0; i--) {
+        if (strcmp(map->keys->data[i], key)==0) {
+            return map->vals->data[i];
+        }
+    }
+    return NULL;
+}
+
 // エラーを報告するための関数 --------------------------
 // printfと同じ引数を取る
 void error(const char*fmt, ...) {
@@ -37,7 +61,7 @@ static void expect(int line, long expected, long actual) {
     exit(1);
 }
 
-void run_test(void) {
+static void test_vector(void) {
     Vector *vec = new_vector();
     expect(__LINE__, 0, vec->len);
 
@@ -48,6 +72,25 @@ void run_test(void) {
     expect(__LINE__, 0, (long)vec->data[0]);
     expect(__LINE__, 50, (long)vec->data[50]);
     expect(__LINE__, 99, (long)vec->data[99]);
-    printf("runtest: OK\n");
+}
+
+static void test_map(void) {
+    Map *map = new_map();
+    expect(__LINE__, 0, (long)map_get(map, "foo"));
+
+    map_put(map, "foo", (void *)2);
+    expect(__LINE__, 2, (long)map_get(map, "foo"));
+
+    map_put(map, "bar", (void *)4);
+    expect(__LINE__, 4, (long)map_get(map, "bar"));
+
+    map_put(map, "foo", (void *)6);
+    expect(__LINE__, 6, (long)map_get(map, "foo"));
+}
+
+void run_test(void) {
+    test_vector();
+    test_map();
+    printf("run_test: OK\n");
 }
 

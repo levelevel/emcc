@@ -5,6 +5,12 @@ typedef struct {
     int len;
 } Vector;
 
+//マップ --------------------------------------------
+typedef struct {
+    Vector *keys;
+    Vector *vals;
+} Map;
+
 //トークン ------------------------------------------
 enum {
     TK_NUM = 256,   //整数トークン
@@ -64,5 +70,10 @@ void gen(Node*node);
 // util.c
 Vector *new_vector(void);
 void vec_push(Vector *vec, void *elem);
+
+Map *new_map(void);
+void map_put(Map *map, char *key, void *val);
+char* map_get(const Map *map, char *key);
+
 void run_test(void);
 void error(const char*fmt, ...);
