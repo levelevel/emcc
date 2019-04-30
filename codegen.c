@@ -25,6 +25,8 @@ static void comment(const char*fmt, ...) {
     vprintf(fmt, ap);
 }
 
+static int label_cnt = 0;   //ラベル識別用カウンタ
+
 //ステートメントを評価
 void gen(Node*node) {
     if (node->type == ND_NUM) {             //数値
@@ -43,6 +45,15 @@ void gen(Node*node) {
         printf("  mov rsp, rbp\n");
         printf("  pop rbp\n");
         printf("  ret\n");
+    } else if (node->type == ND_IF) {       //if (A) B
+        int cnt = label_cnt++;
+        comment("  # IF\n");
+        gen(node->lhs); //A
+        printf("  pop rax\n");
+        printf("  cmp rax, 0\n");
+        printf("  je .Lend%03d\n", cnt);
+        gen(node->rhs); //B
+        printf(".Lend%03d:\n", cnt);
     } else if (node->type == '=') {         //代入
         comment("  # =\n");
         gen_lval(node->lhs);
@@ -109,11 +120,9 @@ void gen(Node*node) {
             printf("  mov rax, rdx\n");
             break;
         default:
-            error("不正なトークンです: '%c'\n", node->type);
+            error("不正なトークンです: '%d'\n", node->type);
         }
 
         printf("  push rax\n");
     }
 }
-
-

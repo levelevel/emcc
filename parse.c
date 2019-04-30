@@ -72,6 +72,11 @@ void tokenize(char *p) {
             token->type = TK_RETURN;
             token->input = p;
             p += 6;
+        } else if (strncmp(p, "if", 2)==0 && !is_alnum(p[2])) {
+            token = new_token();
+            token->type = TK_IF;
+            token->input = p;
+            p += 2;
         } else if (is_alpha(*p)) {
             token = new_token();
             token->type = TK_IDENT;
@@ -148,6 +153,7 @@ static Node *new_node_ident(char *name) {
 /*  文法：
     program: stmt program
     stmt: "return" assign ";"
+    stmt: "if" "(" assign ")" stmt
     stmt: assign ";"
     assign: equality
     assign: equality "=" assign
@@ -194,6 +200,12 @@ static Node *stmt(void) {
     Node *node;
     if (consume(TK_RETURN)) {
         node = new_node(ND_RETURN, assign(), NULL);
+    } else if (consume(TK_IF)) {
+        if (!consume('(')) error("ifの後に開きカッコがありません: %s\n", tokens[token_pos]->input);
+        node = assign();
+        if (!consume(')')) error("ifの開きカッコに対応する閉じカッコがありません: %s\n", tokens[token_pos]->input);
+        node = new_node(ND_IF, node, stmt());
+        return node;
     } else {
         node = assign();
     }
