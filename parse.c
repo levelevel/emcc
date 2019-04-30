@@ -38,10 +38,15 @@ void tokenize(char *p) {
             token->input = p;
             p += 2;
         } else if (*p=='+' || *p=='-' || *p=='*' || *p=='/' || *p=='%' || *p=='(' || *p==')' ||
-                   *p=='<' || *p=='>') {
+                   *p=='<' || *p=='>' || *p==';' || *p=='=') {
             token = new_token();
             token->type = *p;
             token->input = p;
+            p++;
+        } else if (*p>='a' && *p<='z') {
+            token = new_token();
+            token->type = TK_IDENT;
+            token->input = p;   //変数名は*pで取得できる
             p++;
         } else if (isdigit(*p)) {
             token = new_token();
@@ -56,6 +61,20 @@ void tokenize(char *p) {
     token = new_token();
     token->type = TK_EOF;
     token->input = p;
+    //print_tokens();
+}
+
+void print_tokens(void) {
+    Token **tk = (Token**)token_vec->data;
+    Token *tp;
+    for (int i=0; i<token_vec->len; i++) {
+        tp = tk[i];
+        if (tp->type < TK_NUM) {
+            printf("%d: type='%c', input='%s'\n", i, tp->type, tp->input);
+        } else {
+            printf("%d: type='%d', val=%d, input='%s'\n", i, tp->type, tp->val, tp->input);
+        }
+    }
 }
 
 //次のトークンが期待した型かどうかをチェックし、
@@ -83,7 +102,19 @@ static Node *new_node_num(int val) {
     return node;
 }
 
+//抽象構文木の生成（変数）
+static Node *new_node_ident(int name) {
+    Node *node = calloc(1, sizeof(Node));
+    node->type = ND_IDENT;
+    node->name = name;
+    return node;
+}
+
 /*  文法：
+    program: stmt program
+    stmt: assign ";"
+    assign: equality
+    assign: equality "=" assign
     equality: relational
     equality: equality "==" relational
     equality: equality "!=" relational
@@ -103,15 +134,43 @@ static Node *new_node_num(int val) {
     unary: "+" term
     unary: "-" term
     term: num
-    term: "(" add ")"
+    term: ident
+    term: "(" assign ")"
 */
+static Node *stmt(void);
+static Node *assign(void);
+static Node *equality(void);
 static Node *relational(void);
 static Node *add(void);
 static Node *mul(void); 
 static Node *unary(void);
 static Node *term(void); 
 
-Node *equality(void) {
+void program(void) {
+    int i = 0;
+    while (tokens[token_pos]->type != TK_EOF) {
+        code[i++] = stmt();
+    }
+    code[i] = NULL;
+}
+
+static Node *stmt(void) {
+    Node *node = assign();
+    if (!consume(';')) {
+        error(";'でないトークンです: %s", tokens[token_pos]->input);
+    }
+    return node;
+}
+
+static Node *assign(void) {
+    Node *node = equality();
+    while (consume('=')) {
+        node = new_node('=', node, assign());
+    }
+    return node;
+}
+
+static Node *equality(void) {
     Node *node = relational();
     for (;;) {
         if (consume(TK_EQ)) {
@@ -181,13 +240,15 @@ static Node *unary(void) {
 
 static Node *term(void) {
     if (consume('(')) {
-        Node *node = add();
+        Node *node = assign();
         if (!consume(')')) {
             error("開きカッコに対応する閉じカッコがありません: %s", tokens[token_pos]->input);
         }
         return node;
     } else if (tokens[token_pos]->type == TK_NUM) {
         return new_node_num(tokens[token_pos++]->val);
+    } else if (tokens[token_pos]->type == TK_IDENT) {
+        return new_node_ident(*tokens[token_pos++]->input);
     } else {
         error("数値でないトークンです: %s", tokens[token_pos]->input);
         return NULL;

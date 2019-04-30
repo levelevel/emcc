@@ -12,6 +12,7 @@ enum {
     TK_NE,          // !=
     TK_LE,          // <=
     TK_GE,          // >=
+    TK_IDENT,       //識別子
     TK_EOF,         //入力の終わり
 };
 
@@ -23,15 +24,17 @@ typedef struct {
 
 //抽象構文木 ----------------------------------------
 enum {
-    ND_NUM = 256,   //トークンの型
+    ND_NUM = 256,   //整数のノードの型
+    ND_IDENT = TK_IDENT,       //識別子のノードの型
 };
 
 typedef struct _Node Node;
 struct _Node {
-    int type;       //演算子かND_NUM
+    int type;       //演算子、ND_NUM、ND_IDENTのいずれか
     Node *lhs;
     Node *rhs;
     int val;        //typeがND_NUMの場合の値
+    char name;      //typeがND_IDENTの場合の変数名（1文字）
 };
 
 //グローバル変数 ----------------------------------------
@@ -41,11 +44,14 @@ struct _Node {
 // トークナイズした結果のトークン列はこのVectorに保存する
 EXTERN Vector *token_vec;
 EXTERN Token **tokens;  //token_vec->data;
-EXTERN int token_pos;  //tokensの現在位置
+EXTERN int token_pos;   //tokensの現在位置
+
+EXTERN Node *code[100]; //stmt
 
 // parse.c
 void tokenize(char *p);
-Node *equality(void);
+void print_tokens(void);
+void program(void);
 
 // codegen.c
 void gen(Node*node);
