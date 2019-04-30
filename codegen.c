@@ -47,15 +47,28 @@ void gen(Node*node) {
         printf("  ret\n");
     } else if (node->type == ND_IF) {       //if (A) B
         int cnt = label_cnt++;
-        comment("  # IF\n");
+        comment("  # IF(A)B\n");
         gen(node->lhs); //A
         printf("  pop rax\n");
         printf("  cmp rax, 0\n");
         printf("  je .Lend%03d\n", cnt);
+        comment("  # IF:B\n");
         gen(node->rhs); //B
         printf(".Lend%03d:\n", cnt);
+    } else if (node->type == ND_WHILE) {       //while (A) B
+        int cnt = label_cnt++;
+        comment("  # WHILE(A)B\n");
+        printf(".Lbegin%03d:\n", cnt);
+        gen(node->lhs); //A
+        printf("  pop rax\n");
+        printf("  cmp rax, 0\n");
+        printf("  je .Lend%03d\n", cnt);
+        comment("  # WHILE:B\n");
+        gen(node->rhs); //B
+        printf("  jmp .Lbegin%03d\n", cnt);
+        printf(".Lend%03d:\n", cnt);
     } else if (node->type == '=') {         //代入
-        comment("  # =\n");
+        comment("  # '='\n");
         gen_lval(node->lhs);
         gen(node->rhs);
         printf("  pop rdi\n");  //rhsの値
@@ -73,48 +86,48 @@ void gen(Node*node) {
 
         switch(node->type) {
         case ND_EQ: //"=="
-            comment("  # ==\n");
+            comment("  # '=='\n");
             printf("  cmp rax, rdi\n");
             printf("  sete al\n");
             printf("  movzb rax, al\n");
             break;
         case ND_NE: //"!="
-            comment("  # !=\n");
+            comment("  # '!='\n");
             printf("  cmp rax, rdi\n");
             printf("  setne al\n");
             printf("  movzb rax, al\n");
             break;
         case '<':   //'>'もここで対応（構文木作成時に左右入れ替えてある）
-            comment("  # >\n");
+            comment("  # '<' or '>'\n");
             printf("  cmp rax, rdi\n");
             printf("  setl al\n");
             printf("  movzb rax, al\n");
             break;
         case ND_LE: //"<="、">="もここで対応（構文木作成時に左右入れ替えてある）
-            comment("  # <=\n");
+            comment("  # '<=' or '>='\n");
             printf("  cmp rax, rdi\n");
             printf("  setle al\n");
             printf("  movzb rax, al\n");
             break;
         case '+':
-            comment("  # +\n");
+            comment("  # '+'\n");
             printf("  add rax, rdi\n");
             break;
         case '-':   //rax(lhs)-rdi(rhs)
-            comment("  # -\n");
+            comment("  # '-'\n");
             printf("  sub rax, rdi\n");
             break;
         case '*':   //rax*rdi -> rdx:rax
-            comment("  # *\n");
+            comment("  # '*'\n");
             printf("  mul rdi\n");
             break;
         case '/':   //rdx:rax(lhs) / rdi(rhs) -> rax（商）, rdx（余り）
-            comment("  # /\n");
+            comment("  # '/'\n");
             printf("  mov rdx, 0\n");
             printf("  div rdi\n");
             break;
         case '%':   //rdx:rax / rdi -> rax（商）, rdx（余り）
-            comment("  # %%\n");
+            comment("  # '%%'\n");
             printf("  mov rdx, 0\n");
             printf("  div rdi\n");
             printf("  mov rax, rdx\n");

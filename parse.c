@@ -77,7 +77,12 @@ void tokenize(char *p) {
             token->type = TK_IF;
             token->input = p;
             p += 2;
-        } else if (is_alpha(*p)) {
+        } else if (strncmp(p, "while", 5)==0 && !is_alnum(p[5])) {
+            token = new_token();
+            token->type = TK_WHILE;
+            token->input = p;
+            p += 5;
+        } else if (is_alpha(*p)) {  //識別子
             token = new_token();
             token->type = TK_IDENT;
             token->name = ident_name(p);
@@ -154,6 +159,7 @@ static Node *new_node_ident(char *name) {
     program: stmt program
     stmt: "return" assign ";"
     stmt: "if" "(" assign ")" stmt
+    stmt: "while" "(" assign ")" stmt
     stmt: assign ";"
     assign: equality
     assign: equality "=" assign
@@ -205,6 +211,12 @@ static Node *stmt(void) {
         node = assign();
         if (!consume(')')) error("ifの開きカッコに対応する閉じカッコがありません: %s\n", tokens[token_pos]->input);
         node = new_node(ND_IF, node, stmt());
+        return node;
+    } else if (consume(TK_WHILE)) {
+        if (!consume('(')) error("whileの後に開きカッコがありません: %s\n", tokens[token_pos]->input);
+        node = assign();
+        if (!consume(')')) error("whileの開きカッコに対応する閉じカッコがありません: %s\n", tokens[token_pos]->input);
+        node = new_node(ND_WHILE, node, stmt());
         return node;
     } else {
         node = assign();

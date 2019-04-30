@@ -21,6 +21,7 @@ enum {
     TK_IDENT,       //識別子
     TK_RETURN,      //return
     TK_IF,          //if
+    TK_WHILE,       //while
     TK_EOF,         //入力の終わり
 };
 
@@ -40,6 +41,7 @@ enum {
     ND_IDENT,       //識別子のノードの型
     ND_RETURN,
     ND_IF,
+    ND_WHILE,
 };
 
 typedef struct _Node Node;

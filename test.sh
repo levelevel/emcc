@@ -39,6 +39,7 @@ try 6 "(1<2) + (2>1) + (3<=3) + (4>=4) + (5==5) + (6!=6+1);"
 try 0 "(2<1) + (1>2) + (4<=3) + (3>=4) + (5==5-1) + (6!=6);"
 try 7 "a=1; b = 2 ;(c= -3); sum = a+b* -c; return sum;"
 try 3 "a=2;if(1)if(a==2)a=a+1;a;"
+try 0 "a=3;while(a)a=a-1;a;"
 
 rm -f $ASM $ASM.s
 echo "test: OK"
