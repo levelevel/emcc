@@ -22,8 +22,11 @@ int main(int argc, char**argv)
     // トークナイズしてパースする
     token_vec = new_vector();
     tokenize(argv[1]);
+
     tokens = (Token**)token_vec->data;
     token_pos = 0;
+    ident_map = new_map();
+    ident_num = 0;
     program();
 
     // アセンブリの前半部分を出力
@@ -35,7 +38,7 @@ int main(int argc, char**argv)
     // 変数26個分の領域を確保する
     printf("  push rbp\n");
     printf("  mov rbp, rsp\n");
-    printf("  sub rsp, 208\n"); //8*26=208
+    printf("  sub rsp, %d\n", ident_num*8);
 
     // 抽象構文木を下りながらコード生成
     for (int i=0; code[i]; i++) {

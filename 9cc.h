@@ -25,8 +25,9 @@ enum {
 
 typedef struct {
     int type;       //トークンの型
-    int val;        //typeがTK_TOKENの場合の値
-    char*input;     //トークン文字列（エラーメッセージ用）
+    int val;        //typeがTK_TOKENの場合、値
+    char *name;     //typeがTK_IDENTの場合、その名前
+    char *input;    //トークン文字列（エラーメッセージ用）
 } Token;
 
 //抽象構文木 ----------------------------------------
@@ -45,7 +46,7 @@ struct _Node {
     Node *lhs;
     Node *rhs;
     int val;        //typeがND_NUMの場合の値
-    char name;      //typeがND_IDENTの場合の変数名（1文字）
+    char *name;     //typeがND_IDENTの場合の変数名
 };
 
 //グローバル変数 ----------------------------------------
@@ -57,6 +58,11 @@ EXTERN Vector *token_vec;
 EXTERN Token **tokens;  //token_vec->data;
 EXTERN int token_pos;   //tokensの現在位置
 
+//識別子の管理
+EXTERN int ident_num;
+EXTERN Map *ident_map; //key=name, val=ベースポインタからのoffset
+
+//ステートメントの管理
 EXTERN Node *code[100]; //stmt
 
 // parse.c

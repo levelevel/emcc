@@ -11,9 +11,28 @@ static Token *new_token(void) {
     return token;
 }
 
+//識別子に使用できる文字
 static int is_alnum(char c) {
     return ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z') ||
            ('0' <= c && c <= '9') || (c == '_');
+}
+//識別子の先頭にに使用できる文字
+static int is_alpha(char c) {
+    return ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z') || (c == '_');
+}
+
+//識別子の文字列を返す。
+static char*ident_name(char*ptop) {
+    char *p = ptop+1;
+    int len = 1;
+    while (is_alnum(*p)) {
+        p++;
+        len++;
+    }
+    char *name = malloc(len+1);
+    strncpy(name, ptop, len);
+    name[len] = 0;
+    return name;
 }
 
 // pが指している文字列をトークンに分割してtokensに保存する
@@ -53,11 +72,12 @@ void tokenize(char *p) {
             token->type = TK_RETURN;
             token->input = p;
             p += 6;
-        } else if (*p>='a' && *p<='z') {
+        } else if (is_alpha(*p)) {
             token = new_token();
             token->type = TK_IDENT;
-            token->input = p;   //変数名は*pで取得できる
-            p++;
+            token->name = ident_name(p);
+            token->input = p;
+            p += strlen(token->name);
         } else if (isdigit(*p)) {
             token = new_token();
             token->type = TK_NUM;
@@ -112,11 +132,16 @@ static Node *new_node_num(int val) {
     return node;
 }
 
-//抽象構文木の生成（変数）
-static Node *new_node_ident(int name) {
+//抽象構文木の生成（識別子）
+static Node *new_node_ident(char *name) {
     Node *node = calloc(1, sizeof(Node));
     node->type = ND_IDENT;
     node->name = name;
+
+    //未登録の識別子であれば登録する
+    if (map_get(ident_map, name)==NULL) {
+        map_put(ident_map, name, (void*)(8L*ident_num++));
+    }
     return node;
 }
 
@@ -265,7 +290,7 @@ static Node *term(void) {
     } else if (tokens[token_pos]->type == TK_NUM) {
         return new_node_num(tokens[token_pos++]->val);
     } else if (tokens[token_pos]->type == TK_IDENT) {
-        return new_node_ident(*tokens[token_pos++]->input);
+        return new_node_ident(tokens[token_pos++]->name);
     } else {
         error("数値でないトークンです: %s", tokens[token_pos]->input);
         return NULL;
