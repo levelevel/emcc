@@ -11,6 +11,11 @@ static Token *new_token(void) {
     return token;
 }
 
+static int is_alnum(char c) {
+    return ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z') ||
+           ('0' <= c && c <= '9') || (c == '_');
+}
+
 // pが指している文字列をトークンに分割してtokensに保存する
 void tokenize(char *p) {
     Token *token;
@@ -43,6 +48,11 @@ void tokenize(char *p) {
             token->type = *p;
             token->input = p;
             p++;
+        } else if (strncmp(p, "return", 6)==0 && !is_alnum(p[6])) {
+            token = new_token();
+            token->type = TK_RETURN;
+            token->input = p;
+            p += 6;
         } else if (*p>='a' && *p<='z') {
             token = new_token();
             token->type = TK_IDENT;
@@ -112,6 +122,7 @@ static Node *new_node_ident(int name) {
 
 /*  文法：
     program: stmt program
+    stmt: "return" assign ";"
     stmt: assign ";"
     assign: equality
     assign: equality "=" assign
@@ -155,7 +166,13 @@ void program(void) {
 }
 
 static Node *stmt(void) {
-    Node *node = assign();
+    Node *node;
+    if (consume(TK_RETURN)) {
+        node = new_node(ND_RETURN, assign(), NULL);
+    } else {
+        node = assign();
+    }
+
     if (!consume(';')) {
         error(";'でないトークンです: %s", tokens[token_pos]->input);
     }
@@ -174,9 +191,9 @@ static Node *equality(void) {
     Node *node = relational();
     for (;;) {
         if (consume(TK_EQ)) {
-            node = new_node(TK_EQ, node, relational());
+            node = new_node(ND_EQ, node, relational());
         } else if (consume(TK_NE)) {
-            node = new_node(TK_NE, node, relational());
+            node = new_node(ND_NE, node, relational());
         } else {
             return node;
         }
@@ -189,11 +206,11 @@ static Node *relational(void) {
         if (consume('<')) {
             node = new_node('<', node, add());
         } else if (consume(TK_LE)) {
-            node = new_node(TK_LE, node, add());
+            node = new_node(ND_LE, node, add());
         } else if (consume('>')) {
             node = new_node('<', add(), node);
         } else if (consume(TK_GE)) {
-            node = new_node(TK_LE, add(), node);
+            node = new_node(ND_LE, add(), node);
         } else {
             return node;
         }

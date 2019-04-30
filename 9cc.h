@@ -13,6 +13,7 @@ enum {
     TK_LE,          // <=
     TK_GE,          // >=
     TK_IDENT,       //識別子
+    TK_RETURN,      //return
     TK_EOF,         //入力の終わり
 };
 
@@ -25,7 +26,11 @@ typedef struct {
 //抽象構文木 ----------------------------------------
 enum {
     ND_NUM = 256,   //整数のノードの型
-    ND_IDENT = TK_IDENT,       //識別子のノードの型
+    ND_EQ,          // ==
+    ND_NE,          // !=
+    ND_LE,          // <=, >=
+    ND_IDENT,       //識別子のノードの型
+    ND_RETURN,
 };
 
 typedef struct _Node Node;
