@@ -22,6 +22,7 @@ typedef enum {
     TK_RETURN,      //return
     TK_IF,          //if
     TK_WHILE,       //while
+    TK_FOR,         //for
     TK_EOF,         //入力の終わり
 } TKtype;
 
@@ -42,6 +43,7 @@ enum {
     ND_RETURN,
     ND_IF,
     ND_WHILE,
+    ND_FOR,
 };
 
 typedef struct _Node Node;

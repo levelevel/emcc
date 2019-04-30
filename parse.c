@@ -32,6 +32,7 @@ TokenDef TokenLst2[] = {
     {"return", 6, TK_RETURN},
     {"if",     2, TK_IF},
     {"while",  5, TK_WHILE},
+    {"for",    3, TK_FOR},
     {NULL, 0, 0}
 };
 
@@ -172,6 +173,7 @@ static Node *new_node_ident(char *name) {
     stmt: "return" assign ";"
     stmt: "if" "(" assign ")" stmt
     stmt: "while" "(" assign ")" stmt
+    stmt: "for" "(" assign ";" assign ";" assign ")" stmt
     stmt: assign ";"
     assign: equality
     assign: equality "=" assign
@@ -229,6 +231,31 @@ static Node *stmt(void) {
         node = assign();
         if (!consume(')')) error("whileの開きカッコに対応する閉じカッコがありません: %s\n", tokens[token_pos]->input);
         node = new_node(ND_WHILE, node, stmt());
+        return node;
+    } else if (consume(TK_FOR)) {   //for(A;B;C)D
+        Node *node1, *node2;
+        if (!consume('(')) error("forの後に開きカッコがありません: %s\n", tokens[token_pos]->input);
+        if (consume(';')) {
+            node1 = NULL;       //A
+        } else {
+            node1 = assign();   //A
+            if (!consume(';')) error("forの1個目の;がありません: %s\n", tokens[token_pos]->input);
+        }
+        if (consume(';')) {
+            node2 = NULL;       //B
+        } else {
+            node2 = assign();   //B
+            if (!consume(';')) error("forの2個目の;がありません: %s\n", tokens[token_pos]->input);
+        }
+        node = new_node(0, node1, node2);       //A,B
+        if (consume(')')) {
+            node1 = NULL;       //C
+        } else {
+            node1 = assign();   //C
+            if (!consume(')')) error("forの開きカッコに対応する閉じカッコがありません: %s\n", tokens[token_pos]->input);
+        }
+        node2 = new_node(0, node1, stmt());     //C,D
+        node = new_node(ND_FOR, node, node2);   //(A,B),(C,D)
         return node;
     } else {
         node = assign();

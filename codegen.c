@@ -67,6 +67,31 @@ void gen(Node*node) {
         gen(node->rhs); //B
         printf("  jmp .Lbegin%03d\n", cnt);
         printf(".Lend%03d:\n", cnt);
+    } else if (node->type == ND_FOR) {      //for (A;B;C) D
+        int cnt = label_cnt++;
+        comment("  # FOR(A;B;C)D\n");
+        if (node->lhs->lhs) {
+            gen(node->lhs->lhs);//A
+            printf("  pop rax\n");
+        }
+        printf(".Lbegin%03d:\n", cnt);
+        if (node->lhs->rhs) {
+            comment("  # FOR:B\n");
+            gen(node->lhs->rhs);//B
+            printf("  pop rax\n");
+            printf("  cmp rax, 0\n");
+            printf("  je .Lend%03d\n", cnt);
+        }
+        comment("  # FOR:D\n");
+        gen(node->rhs->rhs);    //D
+        printf("  pop rax\n");
+        if (node->rhs->lhs) {
+            comment("  # FOR:C\n");
+            gen(node->rhs->lhs);//C
+            printf("  pop rax\n");
+        }
+        printf("  jmp .Lbegin%03d\n", cnt);
+        printf(".Lend%03d:\n", cnt);
     } else if (node->type == '=') {         //代入
         comment("  # '='\n");
         gen_lval(node->lhs);
