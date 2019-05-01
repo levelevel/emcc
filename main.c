@@ -42,6 +42,7 @@ int main(int argc, char**argv)
 
     // 抽象構文木を下りながらコード生成
     for (int i=0; code[i]; i++) {
+        printf("  # code[%d]\n",i);
         gen(code[i]);
         // 式の評価結果としてスタックに一つの値が残っている
         // はずなので、スタックが溢れないようにポップしておく
@@ -50,6 +51,7 @@ int main(int argc, char**argv)
 
     // エピローグ
     // 最後の式の結果がRAXに残っているのでそれが返り値になる
+    printf("  # Epilogue\n");
     printf("  mov rsp, rbp\n");
     printf("  pop rbp\n");
     printf("  ret\n");
