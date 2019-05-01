@@ -30,7 +30,7 @@ static void gen_lval(Node*node) {
 static int label_cnt = 0;   //ラベル識別用カウンタ
 
 //ステートメントを評価
-void gen(Node*node) {
+static void gen(Node*node) {
     if (node->type == ND_NUM) {             //数値
         printf("  push %d\t# NUM\n", node->val);
     } else if  (node->type == ND_EMPTY) {   //空
@@ -174,4 +174,37 @@ void gen(Node*node) {
 
         printf("  push rax\n");
     }
+}
+
+void print_prologue(void) {
+    // アセンブリの前半部分を出力
+    printf(".intel_syntax noprefix\n");
+    printf(".global main\n");
+    printf("main:\n");
+
+    // プロローグ
+    // 変数26個分の領域を確保する
+    printf("  push rbp\n");
+    printf("  mov rbp, rsp\n");
+    printf("  sub rsp, %d\n", ident_num*8);
+}
+
+void print_code(void) {
+    // 抽象構文木を下りながらコード生成
+    for (int i=0; code[i]; i++) {
+        comment("code[%d]\n",i);
+        gen(code[i]);
+        // 式の評価結果としてスタックに一つの値が残っている
+        // はずなので、スタックが溢れないようにポップしておく
+        printf("  pop rax\n");
+    }
+}
+
+void print_epilogue(void) {
+    // エピローグ
+    // 最後の式の結果がRAXに残っているのでそれが返り値になる
+    printf("  # Epilogue\n");
+    printf("  mov rsp, rbp\n");
+    printf("  pop rbp\n");
+    printf("  ret\n");
 }

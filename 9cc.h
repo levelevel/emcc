@@ -78,7 +78,9 @@ void print_tokens(void);
 void program(void);
 
 // codegen.c
-void gen(Node*node);
+void print_prologue(void);
+void print_code(void);
+void print_epilogue(void);
 
 // util.c
 Vector *new_vector(void);
