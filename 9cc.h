@@ -44,6 +44,7 @@ enum {
     ND_IF,
     ND_WHILE,
     ND_FOR,
+    ND_EMPTY,       //空のノード
 };
 
 typedef struct _Node Node;

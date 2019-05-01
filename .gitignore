@@ -1,5 +1,5 @@
+.vscode/
 *~
 *.o
 tmp*
 9cc
-runtest

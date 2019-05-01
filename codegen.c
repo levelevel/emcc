@@ -33,6 +33,9 @@ static int label_cnt = 0;   //ラベル識別用カウンタ
 void gen(Node*node) {
     if (node->type == ND_NUM) {             //数値
         printf("  push %d\t# NUM\n", node->val);
+    } else if  (node->type == ND_EMPTY) {   //空
+    //  printf("  push 0\t# EMPTY\n");
+        printf("  push rax\t# EMPTY\n");
     } else if (node->type == ND_IDENT) {    //変数
         comment("IDENT:%s\n", node->name);
         gen_lval(node);
@@ -75,12 +78,12 @@ void gen(Node*node) {
     } else if (node->type == ND_FOR) {      //for (A;B;C) D
         int cnt = label_cnt++;
         comment("FOR(A;B;C)D\n");
-        if (node->lhs->lhs) {
+        if (node->lhs->lhs->type != ND_EMPTY) {
             gen(node->lhs->lhs);//A
             printf("  pop rax\n");
         }
         printf(".ForBegin%03d:\n", cnt);
-        if (node->lhs->rhs) {
+        if (node->lhs->rhs->type != ND_EMPTY) {
             comment("FOR:B\n");
             gen(node->lhs->rhs);//B
             printf("  pop rax\n");
@@ -93,7 +96,7 @@ void gen(Node*node) {
         comment("FOR:D\n");
         gen(node->rhs->rhs);    //D
         printf("  pop rax\n");
-        if (node->rhs->lhs) {
+        if (node->rhs->lhs->type != ND_EMPTY) {
             comment("FOR:C\n");
             gen(node->rhs->lhs);//C
             printf("  pop rax\n");

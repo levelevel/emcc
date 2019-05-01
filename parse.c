@@ -168,6 +168,12 @@ static Node *new_node_ident(char *name) {
     return node;
 }
 
+static Node *new_node_empty(void) {
+    Node *node = calloc(1, sizeof(Node));
+    node->type = ND_EMPTY;
+    return node;
+}
+
 /*  文法：
     program: stmt program
     stmt: "return" assign ";"
@@ -218,7 +224,9 @@ void program(void) {
 
 static Node *stmt(void) {
     Node *node;
-    if (consume(TK_RETURN)) {
+    if (consume(';')) {
+        return new_node_empty();
+    } else if (consume(TK_RETURN)) {
         node = new_node(ND_RETURN, assign(), NULL);
     } else if (consume(TK_IF)) {
         if (!consume('(')) error("ifの後に開きカッコがありません: %s\n", tokens[token_pos]->input);
@@ -236,20 +244,20 @@ static Node *stmt(void) {
         Node *node1, *node2;
         if (!consume('(')) error("forの後に開きカッコがありません: %s\n", tokens[token_pos]->input);
         if (consume(';')) {
-            node1 = NULL;       //A
+            node1 = new_node_empty();   //A
         } else {
             node1 = assign();   //A
             if (!consume(';')) error("forの1個目の;がありません: %s\n", tokens[token_pos]->input);
         }
         if (consume(';')) {
-            node2 = NULL;       //B
+            node2 = new_node_empty();   //B
         } else {
             node2 = assign();   //B
             if (!consume(';')) error("forの2個目の;がありません: %s\n", tokens[token_pos]->input);
         }
         node = new_node(0, node1, node2);       //A,B
         if (consume(')')) {
-            node1 = NULL;       //C
+            node1 = new_node_empty();   //C
         } else {
             node1 = assign();   //C
             if (!consume(')')) error("forの開きカッコに対応する閉じカッコがありません: %s\n", tokens[token_pos]->input);

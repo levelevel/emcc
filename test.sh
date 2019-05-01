@@ -41,7 +41,10 @@ try 7 "a=1; b = 2 ;(c= -3); sum = a+b* -c; return sum;"
 try 3 "a=2;if(1)if(a==2)a=a+1;a;"
 try 0 "a=3;while(a)a=a-1;a;"
 try 5 "for(a=0;a<5;a=a+1)a;return a;5;"
+try 0 "if(0);while(0);"
+try 0 "if(0)while(0)if(1)while(0);"
 try 3 "a=3;for(;;)return a;"
+try 5 "5; ;;;;;;;;"
 
 rm -f $ASM $ASM.s
 echo "test: OK"
