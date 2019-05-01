@@ -46,8 +46,8 @@ try 0 "if(0)while(0)if(1)while(0);"
 try 3 "a=3;for(;;)return a;"
 try 5 "5; ;;;;;;;;"
 try 7 "a=1;b=2; if(a+b>0){a=a+1;b=5;a+b;}"
-try 55 "sum=0; for(i=10;i>0;i=i-1) {sum=sum+i;} return sum;"
-try 55 "sum=0; i=10; while(i) {sum=sum+i; i=i-1;} if(!!1)return sum;"
+try 55 "sum=0; for(i=10;i>0;i--) {sum=sum+i;} return sum;"
+try 55 "sum=0; i=0; while(i<=10) {sum=sum+i; i++;} if(!!1)return sum;"
 
 rm -f $ASM $ASM.s
 echo "test: OK"

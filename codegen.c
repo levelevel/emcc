@@ -116,10 +116,26 @@ static void gen(Node*node) {
         comment("'='\n");
         gen_lval(node->lhs);
         gen(node->rhs);
-        printf("  pop rdi\n");  //rhsの値
-        printf("  pop rax\n");  //lhsのアドレス
-        printf("  mov [rax], rdi\n");
-        printf("  push rdi\n");
+        printf("  pop rax\n");  //rhsの値
+        printf("  pop rdi\n");  //lhsのアドレス
+        printf("  mov [rdi], rax\n");
+        printf("  push rax\n");
+    } else if (node->type == ND_INC) {      //a++
+        comment("'A++'\n");
+        gen_lval(node->lhs);
+        printf("  pop rdi\n");  //lhsのアドレス
+        printf("  mov rax, [rdi]\n");
+        printf("  push rax\n"); //戻り値
+        printf("  inc rax\n");  //戻り値を設定した後でINC
+        printf("  mov [rdi], rax\n");
+    } else if (node->type == ND_DEC) {      //a--
+        comment("'A--'\n");
+        gen_lval(node->lhs);
+        printf("  pop rdi\n");  //lhsのアドレス
+        printf("  mov rax, [rdi]\n");
+        printf("  push rax\n"); //戻り値
+        printf("  dec rax\n");  //戻り値を設定した後でDEC
+        printf("  mov [rdi], rax\n");
     } else if (node->type == '!') {         //否定
         comment("'!'\n");
         gen(node->lhs);

@@ -215,10 +215,13 @@ static Node *new_node_block(void) {
     mul: mul "*" unary
     mul: mul "/" unary
     mul: mod "%" unary
-    unary: term
+    unary: r_unary
     unary: "+" unary
     unary: "-" unary
     unary: "!" unary
+    r_unary: term
+    r_unary: term "++"
+    r_unary: term "--"
     term: num
     term: ident
     term: "(" assign ")"
@@ -231,6 +234,7 @@ static Node *relational(void);
 static Node *add(void);
 static Node *mul(void); 
 static Node *unary(void);
+static Node *r_unary(void);
 static Node *term(void); 
 
 void program(void) {
@@ -380,7 +384,18 @@ static Node *unary(void) {
     } else if (consume('!')) {
         return new_node('!', unary(), NULL);
     } else {
-        return term();
+        return r_unary();
+    }
+}
+
+static Node *r_unary(void) {
+    Node *node = term();
+    if (consume(TK_INC)) {
+        return new_node(ND_INC, node, NULL);
+    } else if (consume(TK_DEC)) {
+        return new_node(ND_DEC, node, NULL);
+    } else {
+        return node;
     }
 }
 
