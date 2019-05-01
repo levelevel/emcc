@@ -11,6 +11,8 @@ typedef struct {
     TKtype type;
 } TokenDef;
 TokenDef TokenLst1[] = {
+    {"++", 2, TK_INC},
+    {"--", 2, TK_DEC},
     {"==", 2, TK_EQ},
     {"!=", 2, TK_NE},
     {">=", 2, TK_GE},
@@ -28,6 +30,7 @@ TokenDef TokenLst1[] = {
     {"=",  1, '='},
     {"{",  1, '{'},
     {"}",  1, '}'},
+    {"!",  1, '!'},
     {NULL, 0, 0}
 };
 TokenDef TokenLst2[] = {
@@ -213,8 +216,9 @@ static Node *new_node_block(void) {
     mul: mul "/" unary
     mul: mod "%" unary
     unary: term
-    unary: "+" term
-    unary: "-" term
+    unary: "+" unary
+    unary: "-" unary
+    unary: "!" unary
     term: num
     term: ident
     term: "(" assign ")"
@@ -370,9 +374,11 @@ static Node *mul(void) {
 
 static Node *unary(void) {
     if (consume('+')) {
-        return term();
+        return unary();
     } else if (consume('-')) {
-        return new_node('-', new_node_num(0), term());
+        return new_node('-', new_node_num(0), unary());
+    } else if (consume('!')) {
+        return new_node('!', unary(), NULL);
     } else {
         return term();
     }

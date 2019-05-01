@@ -14,6 +14,8 @@ typedef struct {
 //トークン ------------------------------------------
 typedef enum {
     TK_NUM = 256,   //整数トークン
+    TK_INC,         // ++
+    TK_DEC,         // --
     TK_EQ,          // ==
     TK_NE,          // !=
     TK_LE,          // <=

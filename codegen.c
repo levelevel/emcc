@@ -120,7 +120,16 @@ static void gen(Node*node) {
         printf("  pop rax\n");  //lhsのアドレス
         printf("  mov [rax], rdi\n");
         printf("  push rdi\n");
-    } else {                                //演算子
+    } else if (node->type == '!') {         //否定
+        comment("'!'\n");
+        gen(node->lhs);
+        printf("  pop rax\n");
+        printf("  cmp rax, 0\n");
+        printf("  push rax\n");
+        printf("  sete al\n");
+        printf("  movzb rax, al\n");
+        printf("  push rax\n");
+    } else {                                //2項演算子
         //lhsとrhsを処理して結果をPUSHする
         gen(node->lhs);
         gen(node->rhs);
