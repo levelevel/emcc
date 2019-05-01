@@ -26,6 +26,8 @@ TokenDef TokenLst1[] = {
     {")",  1, ')'},
     {";",  1, ';'},
     {"=",  1, '='},
+    {"{",  1, '{'},
+    {"}",  1, '}'},
     {NULL, 0, 0}
 };
 TokenDef TokenLst2[] = {
@@ -168,9 +170,18 @@ static Node *new_node_ident(char *name) {
     return node;
 }
 
+//抽象構文木の生成（空文）
 static Node *new_node_empty(void) {
     Node *node = calloc(1, sizeof(Node));
     node->type = ND_EMPTY;
+    return node;
+}
+
+//抽象構文木の生成（ブロック）
+static Node *new_node_block(void) {
+    Node *node = calloc(1, sizeof(Node));
+    node->type = ND_BLOCK;
+    node->lst  = new_vector();
     return node;
 }
 
@@ -180,7 +191,10 @@ static Node *new_node_empty(void) {
     stmt: "if" "(" assign ")" stmt
     stmt: "while" "(" assign ")" stmt
     stmt: "for" "(" assign ";" assign ";" assign ")" stmt
+    stmt: "{" block_items "}"
     stmt: assign ";"
+    block_items: stmt
+    block_items: stmt block_items
     assign: equality
     assign: equality "=" assign
     equality: relational
@@ -206,6 +220,7 @@ static Node *new_node_empty(void) {
     term: "(" assign ")"
 */
 static Node *stmt(void);
+static Node *block_items(void);
 static Node *assign(void);
 static Node *equality(void);
 static Node *relational(void);
@@ -265,12 +280,24 @@ static Node *stmt(void) {
         node2 = new_node(0, node1, stmt());     //C,D
         node = new_node(ND_FOR, node, node2);   //(A,B),(C,D)
         return node;
+    } else if (consume('{')) {      //{ ブロック }
+        node = block_items();
+        return node;
     } else {
         node = assign();
     }
 
     if (!consume(';')) {
         error(";'でないトークンです: %s", tokens[token_pos]->input);
+    }
+    return node;
+}
+
+static Node *block_items(void) {
+    Node *node = new_node_block();
+    Vector *blocks = node->lst;
+    while (!consume('}')) {
+        vec_push(blocks, stmt());
     }
     return node;
 }

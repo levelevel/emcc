@@ -103,6 +103,15 @@ static void gen(Node*node) {
         }
         printf("  jmp .ForBegin%03d\n", cnt);
         printf(".ForEnd%03d:\n", cnt);
+    } else if (node->type == ND_BLOCK) {    //{ ブロック }
+        Vector *blocks = node->lst;
+        Node **nodes = (Node**)blocks->data;
+        for (int i=0; i < blocks->len; i++) {
+            comment("BLOCK[%d]\n", i);
+            gen(nodes[i]);
+            printf("  pop rax\n");
+        }
+        printf("  push rax\n");
     } else if (node->type == '=') {         //代入
         comment("'='\n");
         gen_lval(node->lhs);

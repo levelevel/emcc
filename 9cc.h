@@ -44,6 +44,7 @@ enum {
     ND_IF,
     ND_WHILE,
     ND_FOR,
+    ND_BLOCK,
     ND_EMPTY,       //空のノード
 };
 
@@ -52,6 +53,7 @@ struct _Node {
     int type;       //演算子、ND_NUM、ND_IDENTのいずれか
     Node *lhs;
     Node *rhs;
+    Vector *lst;    //typeがND_BLOCKの場合のstmtのリスト
     int val;        //typeがND_NUMの場合の値
     char *name;     //typeがND_IDENTの場合の変数名
 };
