@@ -65,6 +65,7 @@ enum {
     ND_BLOCK,       //{...}
     ND_LIST,        //コンマリスト
     ND_FUNC_CALL,   //関数コール
+    ND_FUNC_DEF,    //関数定義
     ND_EMPTY,       //空のノード
 };
 
@@ -74,7 +75,7 @@ struct _Node {
     Node *lhs;
     Node *rhs;
     Vector *lst;    //typeがND_BLOCKの場合のstmtのリスト
-                    //typeが','の場合のasignのリスト
+                    //typeがND_LISTの場合のasignのリスト
     int val;        //typeがND_NUMの場合の値
     char *name;     //typeがND_IDENTの場合の変数名
 };
@@ -104,9 +105,7 @@ void print_tokens(void);
 void program(void);
 
 // codegen.c
-void print_prologue(void);
-void print_code(void);
-void print_epilogue(void);
+void print_functions(void);
 
 // util.c
 Vector *new_vector(void);

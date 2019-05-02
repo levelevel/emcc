@@ -297,39 +297,33 @@ static int calc_stack_offset() {
     return size;
 }
 
-void print_prologue(void) {
-    // アセンブリの前半部分を出力
+void print_functions(void) {
+    // アセンブリのヘッダ部分を出力
     printf(".intel_syntax noprefix\n");
     int size = func_map->keys->len;
     char **names = (char**)func_map->keys->data;
     for (int i=0; i<size; i++) {
         printf(".global %s\n", names[i]);
     }
-    printf("main:\n");
 
-    // プロローグ
-    // ローカル変数用の領域を確保する
-    printf("  push rbp\n");
-    printf("  mov rbp, rsp\n");
-    printf("  sub rsp, %d\n", calc_stack_offset());
-}
-
-void print_code(void) {
-    // 抽象構文木を下りながらコード生成
+    // 関数ごとに、抽象構文木を下りながらコード生成
     for (int i=0; code[i]; i++) {
-        comment("code[%d]\n",i);
-        gen(code[i]);
-        // 式の評価結果としてスタックに一つの値が残っている
-        // はずなので、スタックが溢れないようにポップしておく
-        printf("  pop rax\n");
-    }
-}
+        printf("%s:\n", code[i]->name);
 
-void print_epilogue(void) {
-    // エピローグ
-    // 最後の式の結果がRAXに残っているのでそれが返り値になる
-    printf("  # Epilogue\n");
-    printf("  mov rsp, rbp\n");
-    printf("  pop rbp\n");
-    printf("  ret\n");
+        // プロローグ
+        // ローカル変数用の領域を確保する
+        printf("  push rbp\n");
+        printf("  mov rbp, rsp\n");
+        printf("  sub rsp, %d\n", calc_stack_offset());
+
+        gen(code[i]->rhs);
+
+        // エピローグ
+        // 最後の式の結果がRAXに残っているのでそれが返り値になる
+        printf("  # Epilogue\n");
+        printf("  mov rsp, rbp\n");
+        printf("  pop rbp\n");
+        printf("  ret\n");
+    }
+
 }

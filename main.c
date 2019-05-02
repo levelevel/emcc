@@ -23,13 +23,10 @@ int main(int argc, char**argv)
     ident_map = new_map();
     ident_num = 0;
     func_map = new_map();
-    map_put(func_map, "main", 0);
     program();
 
     // 抽象構文木を下りながらコード生成
-    print_prologue();
-    print_code();
-    print_epilogue();
+    print_functions();
 
     return 0;
 }

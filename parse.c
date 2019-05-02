@@ -177,6 +177,22 @@ static Node *new_node_func_call(char *name) {
     Node *node = calloc(1, sizeof(Node));
     node->type = ND_FUNC_CALL;
     node->name = name;
+//  node->lhs  = list();    //引数リスト
+
+    //未登録の関数名であれば登録する
+    if (map_get(func_map, name)==NULL) {
+        map_put(func_map, name, 0);
+    }
+    return node;
+}
+
+//抽象構文木の生成（関数定義）
+static Node *new_node_func_def(char *name) {
+    Node *node = calloc(1, sizeof(Node));
+    node->type = ND_FUNC_DEF;
+    node->name = name;
+//  node->lhs  = list();        //引数リスト
+//  node->rhs  = block_items(); //ブロック
 
     //未登録の関数名であれば登録する
     if (map_get(func_map, name)==NULL) {
@@ -210,7 +226,8 @@ static Node *new_node_list(Node *item) {
 }
 
 /*  文法：
-    program: stmt program
+    program: function program
+    function: ident "(" list ")" "{" block_list "}"
     stmt: "return" list ";"
     stmt: "if" "(" list ")" stmt
     stmt: "if" "(" list ")" stmt "else" stmt
@@ -257,6 +274,7 @@ static Node *new_node_list(Node *item) {
     term: ident "(" ")"
     term: "(" assign ")"
 */
+static Node *function(void);
 static Node *stmt(void);
 static Node *block_items(void);
 static Node *list(void);
@@ -274,9 +292,32 @@ static Node *term(void);
 void program(void) {
     int i = 0;
     while (tokens[token_pos]->type != TK_EOF) {
-        code[i++] = stmt();
+        code[i++] = function();
     }
     code[i] = NULL;
+}
+
+static Node *function(void) {
+    Node *node;
+    if (tokens[token_pos]->type == TK_IDENT) {
+        char *name = tokens[token_pos++]->name;
+        if (!consume('(')) error("関数定義の開きカッコがありません: %s\n", tokens[token_pos]->input);
+        node = new_node_func_def(name);
+        if (!consume(')')) {
+            node->lhs = list();
+            if (node->lhs->type != ND_LIST) {
+                node->lhs = new_node_list(node->lhs);
+            }
+            if (!consume(')')) {
+                error("関数定義の開きカッコに対応する閉じカッコがありません: %s", tokens[token_pos]->input);
+            }
+        }
+        if (!consume('{')) error("関数定義の { がありません: %s\n", tokens[token_pos]->input);
+        node->rhs = block_items();
+    } else {
+        error("関数定義がありません: %s", tokens[token_pos]->input);
+    }
+    return node;
 }
 
 static Node *stmt(void) {

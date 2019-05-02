@@ -7,7 +7,7 @@ try() {
   expected="$1"
   input="$2"
 
-  ./9cc "$input" > $ASM.s
+  ./9cc "main(){$input}" > $ASM.s
   gcc -o $ASM $ASM.s func.o
   ./$ASM
   actual="$?"
