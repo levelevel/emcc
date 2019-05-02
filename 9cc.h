@@ -66,6 +66,7 @@ struct _Node {
     Node *lhs;
     Node *rhs;
     Vector *lst;    //typeがND_BLOCKの場合のstmtのリスト
+                    //typeが','の場合のasignのリスト
     int val;        //typeがND_NUMの場合の値
     char *name;     //typeがND_IDENTの場合の変数名
 };

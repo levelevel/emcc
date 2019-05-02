@@ -125,6 +125,15 @@ static void gen(Node*node) {
             printf("  pop rax\n");
         }
         printf("  push rax\n");
+    } else if (node->type == ',') {         //','（コンマリスト）
+        Vector *lists = node->lst;
+        Node **nodes = (Node**)lists->data;
+        for (int i=0; i < lists->len; i++) {
+            comment("LIST[%d]\n", i);
+            gen(nodes[i]);
+            printf("  pop rax\n");
+        }
+        printf("  push rax\n");
     } else if (node->type == '=') {         //代入
         comment("'='\n");
         gen_lval(node->lhs);    //スタックトップにアドレス設定

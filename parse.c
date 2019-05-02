@@ -205,17 +205,28 @@ static Node *new_node_block(void) {
     return node;
 }
 
+//抽象構文木の生成（コンマリスト）
+static Node *new_node_list(Node *item) {
+    Node *node = calloc(1, sizeof(Node));
+    node->type = ',';
+    node->lst  = new_vector();
+    vec_push(node->lst, item);
+    return node;
+}
+
 /*  文法：
     program: stmt program
-    stmt: "return" assign ";"
-    stmt: "if" "(" assign ")" stmt
-    stmt: "if" "(" assign ")" stmt "else" stmt
-    stmt: "while" "(" assign ")" stmt
-    stmt: "for" "(" assign ";" assign ";" assign ")" stmt
+    stmt: "return" list ";"
+    stmt: "if" "(" list ")" stmt
+    stmt: "if" "(" list ")" stmt "else" stmt
+    stmt: "while" "(" list ")" stmt
+    stmt: "for" "(" list ";" list ";" list ")" stmt
     stmt: "{" block_items "}"
-    stmt: assign ";"
+    stmt: list ";"
     block_items: stmt
     block_items: stmt block_items
+    list: assign
+    list: list "," assign
     assign: equality
     assign: equality "=" logical_or
     logical_or: logical_and
@@ -253,6 +264,7 @@ static Node *new_node_block(void) {
 */
 static Node *stmt(void);
 static Node *block_items(void);
+static Node *list(void);
 static Node *assign(void);
 static Node *equality(void);
 static Node *logical_or(void);
@@ -277,11 +289,11 @@ static Node *stmt(void) {
     if (consume(';')) {
         return new_node_empty();
     } else if (consume(TK_RETURN)) {
-        node = new_node(ND_RETURN, assign(), NULL);
+        node = new_node(ND_RETURN, list(), NULL);
     } else if (consume(TK_IF)) {    //if(A)B else C
         Node *node_A, *node_B;
         if (!consume('(')) error("ifの後に開きカッコがありません: %s\n", tokens[token_pos]->input);
-        node_A = assign();
+        node_A = list();
         if (!consume(')')) error("ifの開きカッコに対応する閉じカッコがありません: %s\n", tokens[token_pos]->input);
         node_B = stmt();
         node = new_node(0, node_A, node_B); //lhs
@@ -293,7 +305,7 @@ static Node *stmt(void) {
         return node;
     } else if (consume(TK_WHILE)) {
         if (!consume('(')) error("whileの後に開きカッコがありません: %s\n", tokens[token_pos]->input);
-        node = assign();
+        node = list();
         if (!consume(')')) error("whileの開きカッコに対応する閉じカッコがありません: %s\n", tokens[token_pos]->input);
         node = new_node(ND_WHILE, node, stmt());
         return node;
@@ -303,20 +315,20 @@ static Node *stmt(void) {
         if (consume(';')) {
             node1 = new_node_empty();   //A
         } else {
-            node1 = assign();   //A
+            node1 = list();   //A
             if (!consume(';')) error("forの1個目の;がありません: %s\n", tokens[token_pos]->input);
         }
         if (consume(';')) {
             node2 = new_node_empty();   //B
         } else {
-            node2 = assign();   //B
+            node2 = list();   //B
             if (!consume(';')) error("forの2個目の;がありません: %s\n", tokens[token_pos]->input);
         }
         node = new_node(0, node1, node2);       //A,B
         if (consume(')')) {
             node1 = new_node_empty();   //C
         } else {
-            node1 = assign();   //C
+            node1 = list();   //C
             if (!consume(')')) error("forの開きカッコに対応する閉じカッコがありません: %s\n", tokens[token_pos]->input);
         }
         node2 = new_node(0, node1, stmt());     //C,D
@@ -326,7 +338,7 @@ static Node *stmt(void) {
         node = block_items();
         return node;
     } else {
-        node = assign();
+        node = list();
     }
 
     if (!consume(';')) {
@@ -340,6 +352,19 @@ static Node *block_items(void) {
     Vector *blocks = node->lst;
     while (!consume('}')) {
         vec_push(blocks, stmt());
+    }
+    return node;
+}
+
+static Node *list(void) {
+    Node *node = assign();
+    if (consume(',')) {
+        node = new_node_list(node);
+        Vector *lists = node->lst;
+        vec_push(lists, assign());
+        while (consume(',')) {
+            vec_push(lists, assign());
+        }
     }
     return node;
 }
@@ -479,7 +504,7 @@ static Node *term(void) {
             return new_node_ident(name);
         }
     } else {
-        error("数値でないトークンです: %s", tokens[token_pos]->input);
+        error("終端記号でないトークンです: %s", tokens[token_pos]->input);
         return NULL;
     }
 }
