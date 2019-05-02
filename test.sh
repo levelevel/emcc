@@ -57,6 +57,8 @@ try 1 "true=1&&1&&1;false=0&&1;true==1&&false==0;"
 try 1 "a=1;b=0;true=a||b;false=b||0;true==1&&false==0;"
 try 0 "ret=1;ret=foo(); bar(); ret;"
 try 0 "a=2;ret=1;foo(); ret=bar(); ret;"
+try 1 "1!=2 && 2==2 && 1>0;"
+try 0 "1!=1 || 2==2+1 || 1>=2;"
 
 rm -f $ASM $ASM.s
 echo "test: OK"

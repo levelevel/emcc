@@ -33,6 +33,7 @@ TokenDef TokenLst1[] = {
     {"{",  1, '{'},
     {"}",  1, '}'},
     {"!",  1, '!'},
+    {",",  1, ','},
     {NULL, 0, 0}
 };
 TokenDef TokenLst2[] = {
@@ -216,11 +217,11 @@ static Node *new_node_block(void) {
     block_items: stmt
     block_items: stmt block_items
     assign: equality
-    assign: equality "=" logical_and
-    logical_and: logical_or
-    logical_and: logical_and "&&" logical_or
-    logical_or: equality
-    logical_or: logical_or "&&" equality
+    assign: equality "=" logical_or
+    logical_or: logical_and
+    logical_or: logical_or "&&" logical_and
+    logical_and: equality
+    logical_and: logical_and "&&" equality
     equality: relational
     equality: equality "==" relational
     equality: equality "!=" relational
@@ -254,8 +255,8 @@ static Node *stmt(void);
 static Node *block_items(void);
 static Node *assign(void);
 static Node *equality(void);
-static Node *logical_and(void);
 static Node *logical_or(void);
+static Node *logical_and(void);
 static Node *relational(void);
 static Node *add(void);
 static Node *mul(void); 
@@ -344,20 +345,18 @@ static Node *block_items(void) {
 }
 
 static Node *assign(void) {
-    Node *node = equality();
+    Node *node = logical_or();
     while (consume('=')) {
         node = new_node('=', node, assign());
     }
     return node;
 }
 
-static Node *equality(void) {
+static Node *logical_or(void) {
     Node *node = logical_and();
     for (;;) {
-        if (consume(TK_EQ)) {
-            node = new_node(ND_EQ, node, logical_and());
-        } else if (consume(TK_NE)) {
-            node = new_node(ND_NE, node, logical_and());
+        if (consume(TK_LOR)) {
+            node = new_node(ND_LOR, node, logical_and());
         } else {
             return node;
         }
@@ -365,21 +364,23 @@ static Node *equality(void) {
 }
 
 static Node *logical_and(void) {
-    Node *node = logical_or();
+    Node *node = equality();
     for (;;) {
         if (consume(TK_LAND)) {
-            node = new_node(ND_LAND, node, logical_or());
+            node = new_node(ND_LAND, node, equality());
         } else {
             return node;
         }
     }
 }
 
-static Node *logical_or(void) {
+static Node *equality(void) {
     Node *node = relational();
     for (;;) {
-        if (consume(TK_LOR)) {
-            node = new_node(ND_LOR, node, relational());
+        if (consume(TK_EQ)) {
+            node = new_node(ND_EQ, node, relational());
+        } else if (consume(TK_NE)) {
+            node = new_node(ND_NE, node, relational());
         } else {
             return node;
         }
