@@ -127,9 +127,11 @@ static void gen(Node*node) {
         printf("  push rax\n");
     } else if (node->type == '=') {         //代入
         comment("'='\n");
-        gen_lval(node->lhs);
+        gen_lval(node->lhs);    //スタックトップにアドレス設定
+        printf("  push 0\t#for RSP alignment\n");
         gen(node->rhs);
         printf("  pop rax\n");  //rhsの値
+        printf("  pop rdi\t#for RSP alignment\n");
         printf("  pop rdi\n");  //lhsのアドレス
         printf("  mov [rdi], rax\n");
         printf("  push rax\n");
@@ -268,6 +270,12 @@ static void gen(Node*node) {
     }
 }
 
+//RSPの16バイトアライメントを維持する
+static int calc_stack_offset() {
+    int size = (ident_num+1)/2 *16;
+    return size;
+}
+
 void print_prologue(void) {
     // アセンブリの前半部分を出力
     printf(".intel_syntax noprefix\n");
@@ -279,10 +287,10 @@ void print_prologue(void) {
     printf("main:\n");
 
     // プロローグ
-    // 変数26個分の領域を確保する
+    // ローカル変数用の領域を確保する
     printf("  push rbp\n");
     printf("  mov rbp, rsp\n");
-    printf("  sub rsp, %d\n", ident_num*8);
+    printf("  sub rsp, %d\n", calc_stack_offset());
 }
 
 void print_code(void) {
