@@ -93,11 +93,11 @@ EXTERN int token_pos;   //tokensの現在位置
 EXTERN int ident_num;
 EXTERN Map *ident_map; //key=name, val=ベースポインタからのoffset
 
-//識別子（関数）の管理
-EXTERN Map *func_map; //関数コール
+//識別子（関数コール）の管理
+EXTERN Map *func_map;       //key=name, value=dummy
 
-//ステートメントの管理
-EXTERN Node *code[100]; //stmt
+//プログラム（関数定義）の管理
+EXTERN Map *funcdef_map;    //key=name, value=Node
 
 // parse.c
 void tokenize(char *p);
@@ -113,7 +113,7 @@ void vec_push(Vector *vec, void *elem);
 
 Map *new_map(void);
 void map_put(Map *map, char *key, void *val);
-char* map_get(const Map *map, char *key);
+int map_get(const Map *map, char *key, void**val);
 
 void run_test(void);
 void error(const char*fmt, ...);

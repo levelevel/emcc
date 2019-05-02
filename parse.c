@@ -166,7 +166,7 @@ static Node *new_node_ident(char *name) {
     node->name = name;
 
     //未登録の識別子であれば登録する
-    if (map_get(ident_map, name)==NULL) {
+    if (map_get(ident_map, name, NULL)==0) {
         map_put(ident_map, name, (void*)(8L*ident_num++));
     }
     return node;
@@ -180,7 +180,7 @@ static Node *new_node_func_call(char *name) {
 //  node->lhs  = list();    //引数リスト
 
     //未登録の関数名であれば登録する
-    if (map_get(func_map, name)==NULL) {
+    if (map_get(func_map, name, NULL)==0) {
         map_put(func_map, name, 0);
     }
     return node;
@@ -195,7 +195,7 @@ static Node *new_node_func_def(char *name) {
 //  node->rhs  = block_items(); //ブロック
 
     //未登録の関数名であれば登録する
-    if (map_get(func_map, name)==NULL) {
+    if (map_get(func_map, name, NULL)==0) {
         map_put(func_map, name, 0);
     }
     return node;
@@ -290,11 +290,13 @@ static Node *r_unary(void);
 static Node *term(void); 
 
 void program(void) {
-    int i = 0;
+    Node *node;
     while (tokens[token_pos]->type != TK_EOF) {
-        code[i++] = function();
+        node = function();
+        assert(node->type==ND_FUNC_DEF);
+        map_put(funcdef_map, node->name, node);
     }
-    code[i] = NULL;
+    map_put(funcdef_map, NULL, NULL);
 }
 
 static Node *function(void) {

@@ -19,10 +19,11 @@ static void gen_lval(Node*node) {
     if (node->type != ND_IDENT) {   //変数
         error("代入の左辺値が変数ではありません");
     }
-    int offset = (long)map_get(ident_map, node->name);
+    long offset;
+    map_get(ident_map, node->name, (void**)&offset);
     comment("LVALUE:%s\n", node->name);
     printf("  mov rax, rbp\n");
-    printf("  sub rax, %d\n", offset);
+    printf("  sub rax, %ld\n", offset);
     printf("  push rax\n");
 }
 
@@ -307,8 +308,10 @@ void print_functions(void) {
     }
 
     // 関数ごとに、抽象構文木を下りながらコード生成
-    for (int i=0; code[i]; i++) {
-        printf("%s:\n", code[i]->name);
+    size = funcdef_map->vals->len;
+    Node **node = (Node**)funcdef_map->vals->data;
+    for (int i=0; node[i]; i++) {
+        printf("%s:\n", node[i]->name);
 
         // プロローグ
         // ローカル変数用の領域を確保する
@@ -316,7 +319,7 @@ void print_functions(void) {
         printf("  mov rbp, rsp\n");
         printf("  sub rsp, %d\n", calc_stack_offset());
 
-        gen(code[i]->rhs);
+        gen(node[i]->rhs);
 
         // エピローグ
         // 最後の式の結果がRAXに残っているのでそれが返り値になる

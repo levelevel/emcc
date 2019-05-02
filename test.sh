@@ -6,16 +6,22 @@ ASM=tmp
 try() {
   expected="$1"
   input="$2"
+  org_input="$2"
 
-  ./9cc "main(){$input}" > $ASM.s
+  echo "$input" | grep main > /dev/null
+  if [ $? != 0 ]; then
+    input="main(){$input}"
+  fi
+
+  ./9cc "$input" > $ASM.s
   gcc -o $ASM $ASM.s func.o
   ./$ASM
   actual="$?"
 
   if [ "$actual" = "$expected" ]; then
-    echo "$input => $actual"
+    echo "$org_input => $actual"
   else
-    echo "$input => $expected expected, but got $actual"
+    echo "$org_input => $expected expected, but got $actual"
     exit 1
   fi 
 }
@@ -63,6 +69,8 @@ try 1 "1!=2 && 2==2 && 1>0;"
 try 0 "1!=1 || 2==2+1 || 1>=2;"
 try 2 "ret1=func1(1);"
 try 8 "x=1;r1=func3(x*2,(2+1),3);"
+
+try 1 "func(){return 1;} main(){func();}"
 
 rm -f $ASM $ASM.s
 echo "test: OK"

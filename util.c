@@ -30,13 +30,14 @@ void map_put(Map *map, char *key, void *val) {
     vec_push(map->vals, val);
 }
 
-char* map_get(const Map *map, char *key) {
+int map_get(const Map *map, char *key, void**val) {
     for (int i=map->keys->len-1; i>=0; i--) {
         if (strcmp(map->keys->data[i], key)==0) {
-            return map->vals->data[i];
+            if (val) *val = map->vals->data[i];
+            return 1;
         }
     }
-    return NULL;
+    return 0;
 }
 
 // エラーを報告するための関数 --------------------------
@@ -71,16 +72,20 @@ static void test_vector(void) {
 
 static void test_map(void) {
     Map *map = new_map();
-    expect(__LINE__, 0, (long)map_get(map, "foo"));
+    void *val;
+    expect(__LINE__, 0, map_get(map, "foo", NULL));
 
     map_put(map, "foo", (void *)2);
-    expect(__LINE__, 2, (long)map_get(map, "foo"));
+    expect(__LINE__, 1, map_get(map, "foo", &val));
+    expect(__LINE__, 2, (long)val);
 
     map_put(map, "bar", (void *)4);
-    expect(__LINE__, 4, (long)map_get(map, "bar"));
+    expect(__LINE__, 1, map_get(map, "bar", &val));
+    expect(__LINE__, 4, (long)val);
 
     map_put(map, "foo", (void *)6);
-    expect(__LINE__, 6, (long)map_get(map, "foo"));
+    expect(__LINE__, 1, map_get(map, "foo", &val));
+    expect(__LINE__, 6, (long)val);
 }
 
 void run_test(void) {
