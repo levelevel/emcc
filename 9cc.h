@@ -55,7 +55,8 @@ enum {
     ND_IF,
     ND_WHILE,
     ND_FOR,
-    ND_BLOCK,
+    ND_BLOCK,       //{...}
+    ND_FUNC_CALL,   //関数コール
     ND_EMPTY,       //空のノード
 };
 
@@ -78,9 +79,12 @@ EXTERN Vector *token_vec;
 EXTERN Token **tokens;  //token_vec->data;
 EXTERN int token_pos;   //tokensの現在位置
 
-//識別子の管理
+//識別子（変数）の管理
 EXTERN int ident_num;
 EXTERN Map *ident_map; //key=name, val=ベースポインタからのoffset
+
+//識別子（関数）の管理
+EXTERN Map *func_map; //関数コール
 
 //ステートメントの管理
 EXTERN Node *code[100]; //stmt

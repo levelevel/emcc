@@ -176,6 +176,19 @@ static Node *new_node_ident(char *name) {
     return node;
 }
 
+//抽象構文木の生成（関数コール）
+static Node *new_node_func_call(char *name) {
+    Node *node = calloc(1, sizeof(Node));
+    node->type = ND_FUNC_CALL;
+    node->name = name;
+
+    //未登録の関数名であれば登録する
+    if (map_get(func_map, name)==NULL) {
+        map_put(func_map, name, 0);
+    }
+    return node;
+}
+
 //抽象構文木の生成（空文）
 static Node *new_node_empty(void) {
     Node *node = calloc(1, sizeof(Node));
@@ -234,6 +247,7 @@ static Node *new_node_block(void) {
     r_unary: term "--"
     term: num
     term: ident
+    term: ident "(" ")"
     term: "(" assign ")"
 */
 static Node *stmt(void);
@@ -454,7 +468,15 @@ static Node *term(void) {
     } else if (tokens[token_pos]->type == TK_NUM) {
         return new_node_num(tokens[token_pos++]->val);
     } else if (tokens[token_pos]->type == TK_IDENT) {
-        return new_node_ident(tokens[token_pos++]->name);
+        char *name = tokens[token_pos++]->name;
+        if (consume('(')) {
+            if (!consume(')')) {
+                error("関数コールの開きカッコに対応する閉じカッコがありません: %s", tokens[token_pos]->input);
+            }
+            return new_node_func_call(name);
+        } else {
+            return new_node_ident(name);
+        }
     } else {
         error("数値でないトークンです: %s", tokens[token_pos]->input);
         return NULL;

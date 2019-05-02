@@ -27,6 +27,8 @@ int main(int argc, char**argv)
     token_pos = 0;
     ident_map = new_map();
     ident_num = 0;
+    func_map = new_map();
+    map_put(func_map, "main", 0);
     program();
 
     // 抽象構文木を下りながらコード生成

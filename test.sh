@@ -8,7 +8,7 @@ try() {
   input="$2"
 
   ./9cc "$input" > $ASM.s
-  gcc -o $ASM $ASM.s
+  gcc -o $ASM $ASM.s func.o
   ./$ASM
   actual="$?"
 
@@ -25,7 +25,7 @@ if [ $# -gt 0 ]; then
   ./9cc "$*" > $ASM.s
   if [ $? != 0 ]; then exit 1; fi
   cat -n $ASM.s
-  gcc -o $ASM $ASM.s
+  gcc -o $ASM $ASM.s func.o
   ./$ASM
   echo $?
   exit
@@ -55,6 +55,7 @@ try 2 "a=0; if(0) a=1; else a=2; a;"
 try 2 "a=0; if(0) {a=1;} else if (1) {a=2;} else {a=3;} a;"
 try 1 "true=1&&1&&1;false=0&&1;true==1&&false==0;"
 try 1 "a=1;b=0;true=a||b;false=b||0;true==1&&false==0;"
+try 1 "foo(); bar(); 1;"
 
 rm -f $ASM $ASM.s
 echo "test: OK"

@@ -42,6 +42,10 @@ static void gen(Node*node) {
         printf("  pop rax\n");
         printf("  mov rax, [rax]\t# IDENT:%s\n", node->name);
         printf("  push rax\n");
+    } else if (node->type == ND_FUNC_CALL) {//関数コール
+        comment("CALL:%s\n", node->name);
+        printf("  call %s\n", node->name);
+        printf("  push rax\n");
     } else if (node->type == ND_RETURN) {   //return
         comment("RETURN\n");
         gen(node->lhs);
@@ -267,7 +271,11 @@ static void gen(Node*node) {
 void print_prologue(void) {
     // アセンブリの前半部分を出力
     printf(".intel_syntax noprefix\n");
-    printf(".global main\n");
+    int size = func_map->keys->len;
+    char **names = (char**)func_map->keys->data;
+    for (int i=0; i<size; i++) {
+        printf(".global %s\n", names[i]);
+    }
     printf("main:\n");
 
     // プロローグ
