@@ -1,10 +1,9 @@
-#include <stdarg.h>
-#include <ctype.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
 #include "9cc.h"
+
+//レジスタ ---------------------------------------------
+static char *arg_regs[] = {  //関数の引数で用いるレジスタ
+    "rdi", "rsi", "rdx", "rcx", "r8", "r9", NULL
+};
 
 //抽象構文木を下りながらコード生成（スタックマシン）
 
@@ -44,6 +43,19 @@ static void gen(Node*node) {
         printf("  push rax\n");
     } else if (node->type == ND_FUNC_CALL) {//関数コール
         comment("CALL:%s\n", node->name);
+        if (node->lhs) {
+            int i;
+            assert(node->lhs->type==',');
+            Vector *lists = node->lhs->lst;
+            Node **nodes = (Node**)lists->data;
+            for (i=0; i < lists->len; i++) {
+                comment("ARGLIST[%d]\n", i);
+                gen(nodes[i]);  //スタックトップに引数がセットされる
+            }
+            for (; i; i--) {
+                printf("  pop %s\n", arg_regs[i-1]);
+            }
+        }
         printf("  call %s\n", node->name);
         printf("  push rax\n");
     } else if (node->type == ND_RETURN) {   //return

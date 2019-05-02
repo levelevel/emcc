@@ -1,8 +1,3 @@
-#include <ctype.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
 #include "9cc.h"
 
 typedef struct {
@@ -495,11 +490,17 @@ static Node *term(void) {
         return new_node_num(tokens[token_pos++]->val);
     } else if (tokens[token_pos]->type == TK_IDENT) {
         char *name = tokens[token_pos++]->name;
-        if (consume('(')) {
+        if (consume('(')) { //関数コール
+            Node *node = new_node_func_call(name);
+            if (consume(')')) return node;
+            node->lhs = list();
+            if (node->lhs->type != ',') {
+                node->lhs = new_node_list(node->lhs);
+            }
             if (!consume(')')) {
                 error("関数コールの開きカッコに対応する閉じカッコがありません: %s", tokens[token_pos]->input);
             }
-            return new_node_func_call(name);
+            return node;
         } else {
             return new_node_ident(name);
         }

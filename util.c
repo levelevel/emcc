@@ -1,8 +1,3 @@
-#include <stdarg.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
 #include "9cc.h"
 
 //可変長ベクタ ---------------------------------------

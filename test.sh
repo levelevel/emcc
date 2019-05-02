@@ -61,6 +61,8 @@ try 3 "1,2,3;"
 try 1 "a=1,b=2,c=3; a==1 && b==2 && c==3;"
 try 1 "1!=2 && 2==2 && 1>0;"
 try 0 "1!=1 || 2==2+1 || 1>=2;"
+try 2 "ret1=func1(1);"
+try 8 "x=1;r1=func3(x*2,(2+1),3);"
 
 rm -f $ASM $ASM.s
 echo "test: OK"
