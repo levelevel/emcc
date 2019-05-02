@@ -40,6 +40,8 @@ enum {
     ND_NUM = 256,   //整数のノードの型
     ND_INC,
     ND_DEC,
+    ND_INC_PRE,
+    ND_DEC_PRE,
     ND_EQ,          // ==
     ND_NE,          // !=
     ND_LE,          // <=, >=

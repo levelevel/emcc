@@ -219,6 +219,8 @@ static Node *new_node_block(void) {
     unary: "+" unary
     unary: "-" unary
     unary: "!" unary
+    unary: "++" r_unnary;
+    unary: "--" r_unnary;
     r_unary: term
     r_unary: term "++"
     r_unary: term "--"
@@ -383,6 +385,10 @@ static Node *unary(void) {
         return new_node('-', new_node_num(0), unary());
     } else if (consume('!')) {
         return new_node('!', unary(), NULL);
+    } else if (consume(TK_INC)) {
+        return new_node(ND_INC_PRE, r_unary(), NULL);
+    } else if (consume(TK_DEC)) {
+        return new_node(ND_DEC_PRE, r_unary(), NULL);
     } else {
         return r_unary();
     }

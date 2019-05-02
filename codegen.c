@@ -120,6 +120,22 @@ static void gen(Node*node) {
         printf("  pop rdi\n");  //lhsのアドレス
         printf("  mov [rdi], rax\n");
         printf("  push rax\n");
+    } else if (node->type == ND_INC_PRE) {  //++a
+        comment("'++A'\n");
+        gen_lval(node->lhs);
+        printf("  pop rdi\n");  //lhsのアドレス
+        printf("  mov rax, [rdi]\n");
+        printf("  inc rax\n");  //戻り値を設定する前にINC
+        printf("  mov [rdi], rax\n");
+        printf("  push rax\n"); //戻り値
+    } else if (node->type == ND_INC_PRE) {  //--a
+        comment("'--A'\n");
+        gen_lval(node->lhs);
+        printf("  pop rdi\n");  //lhsのアドレス
+        printf("  mov rax, [rdi]\n");
+        printf("  dec rax\n");  //戻り値を設定する前にDEC
+        printf("  mov [rdi], rax\n");
+        printf("  push rax\n"); //戻り値
     } else if (node->type == ND_INC) {      //a++
         comment("'A++'\n");
         gen_lval(node->lhs);
