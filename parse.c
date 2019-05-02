@@ -36,6 +36,7 @@ TokenDef TokenLst1[] = {
 TokenDef TokenLst2[] = {
     {"return", 6, TK_RETURN},
     {"if",     2, TK_IF},
+    {"else",   4, TK_ELSE},
     {"while",  5, TK_WHILE},
     {"for",    3, TK_FOR},
     {NULL, 0, 0}
@@ -192,6 +193,7 @@ static Node *new_node_block(void) {
     program: stmt program
     stmt: "return" assign ";"
     stmt: "if" "(" assign ")" stmt
+    stmt: "if" "(" assign ")" stmt "else" stmt
     stmt: "while" "(" assign ")" stmt
     stmt: "for" "(" assign ";" assign ";" assign ")" stmt
     stmt: "{" block_items "}"
@@ -253,11 +255,18 @@ static Node *stmt(void) {
         return new_node_empty();
     } else if (consume(TK_RETURN)) {
         node = new_node(ND_RETURN, assign(), NULL);
-    } else if (consume(TK_IF)) {
+    } else if (consume(TK_IF)) {    //if(A)B else C
+        Node *node_A, *node_B;
         if (!consume('(')) error("ifの後に開きカッコがありません: %s\n", tokens[token_pos]->input);
-        node = assign();
+        node_A = assign();
         if (!consume(')')) error("ifの開きカッコに対応する閉じカッコがありません: %s\n", tokens[token_pos]->input);
-        node = new_node(ND_IF, node, stmt());
+        node_B = stmt();
+        node = new_node(0, node_A, node_B); //lhs
+        if (consume(TK_ELSE)) {
+            node = new_node(ND_IF, node, stmt());
+        } else {
+            node = new_node(ND_IF, node, NULL);
+        }
         return node;
     } else if (consume(TK_WHILE)) {
         if (!consume('(')) error("whileの後に開きカッコがありません: %s\n", tokens[token_pos]->input);

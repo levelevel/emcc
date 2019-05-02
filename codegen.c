@@ -49,17 +49,26 @@ static void gen(Node*node) {
         printf("  mov rsp, rbp\n");
         printf("  pop rbp\n");
         printf("  ret\n");
-    } else if (node->type == ND_IF) {       //if (A) B
+    } else if (node->type == ND_IF) {       //if (A) B [else C]
         int cnt = label_cnt++;
-        comment("IF(A)B\n");
-        gen(node->lhs); //A
+        comment("IF(A) B [else C]\n");
+        gen(node->lhs->lhs); //A
         printf("  pop rax\n");
         printf("  cmp rax, 0\n");
         printf("  jne .IfThen%03d\n", cnt);
         printf("  push rax\n");
-        printf("  jmp .IfEnd%03d\n", cnt);
+        if (node->rhs) {    //elseあり
+            printf("  jmp .IfElse%03d\n", cnt);
+        } else {
+            printf("  jmp .IfEnd%03d\n", cnt);
+        }
         printf(".IfThen%03d:\n", cnt);
-        gen(node->rhs); //B
+        gen(node->lhs->rhs); //B
+        if (node->rhs) {    //elseあり
+            printf("  jmp .IfEnd%03d\n", cnt);
+            printf(".IfElse%03d:\n", cnt);
+            gen(node->rhs); //C
+        }
         printf(".IfEnd%03d:\n", cnt);
     } else if (node->type == ND_WHILE) {    //while (A) B
         int cnt = label_cnt++;
