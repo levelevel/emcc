@@ -203,7 +203,7 @@ static Node *new_node_block(void) {
 //抽象構文木の生成（コンマリスト）
 static Node *new_node_list(Node *item) {
     Node *node = calloc(1, sizeof(Node));
-    node->type = ',';
+    node->type = ND_LIST;
     node->lst  = new_vector();
     vec_push(node->lst, item);
     return node;
@@ -494,7 +494,7 @@ static Node *term(void) {
             Node *node = new_node_func_call(name);
             if (consume(')')) return node;
             node->lhs = list();
-            if (node->lhs->type != ',') {
+            if (node->lhs->type != ND_LIST) {
                 node->lhs = new_node_list(node->lhs);
             }
             if (!consume(')')) {

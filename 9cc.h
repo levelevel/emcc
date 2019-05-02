@@ -63,6 +63,7 @@ enum {
     ND_WHILE,
     ND_FOR,
     ND_BLOCK,       //{...}
+    ND_LIST,        //コンマリスト
     ND_FUNC_CALL,   //関数コール
     ND_EMPTY,       //空のノード
 };

@@ -45,7 +45,7 @@ static void gen(Node*node) {
         comment("CALL:%s\n", node->name);
         if (node->lhs) {
             int i;
-            assert(node->lhs->type==',');
+            assert(node->lhs->type==ND_LIST);
             Vector *lists = node->lhs->lst;
             Node **nodes = (Node**)lists->data;
             for (i=0; i < lists->len; i++) {
@@ -137,7 +137,7 @@ static void gen(Node*node) {
             printf("  pop rax\n");
         }
         printf("  push rax\n");
-    } else if (node->type == ',') {         //','（コンマリスト）
+    } else if (node->type == ND_LIST) {         //コンマリスト
         Vector *lists = node->lst;
         Node **nodes = (Node**)lists->data;
         for (int i=0; i < lists->len; i++) {
