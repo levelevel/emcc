@@ -128,7 +128,7 @@ static void gen(Node*node) {
         printf("  inc rax\n");  //戻り値を設定する前にINC
         printf("  mov [rdi], rax\n");
         printf("  push rax\n"); //戻り値
-    } else if (node->type == ND_INC_PRE) {  //--a
+    } else if (node->type == ND_DEC_PRE) {  //--a
         comment("'--A'\n");
         gen_lval(node->lhs);
         printf("  pop rdi\n");  //lhsのアドレス
