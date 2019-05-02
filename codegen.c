@@ -166,7 +166,6 @@ static void gen(Node*node) {
         gen(node->lhs);
         printf("  pop rax\n");
         printf("  cmp rax, 0\n");
-        printf("  push rax\n");
         printf("  sete al\n");
         printf("  movzb rax, al\n");
         printf("  push rax\n");
@@ -180,6 +179,36 @@ static void gen(Node*node) {
         printf("  pop rax\n");  //lhs
 
         switch(node->type) {
+        case ND_LAND: //"&&"
+        {
+            int cnt = label_cnt++;
+            comment("'&&'\n");
+            printf("  cmp rax, 0\n");   //lhs
+            printf("  je .False%03d\n", cnt);
+            printf("  cmp rdi, 0\n");   //rhs
+            printf("  je .False%03d\n", cnt);
+            printf("  mov rax, 1\n");   //True
+            printf("  jmp .End%03d\n", cnt);
+            printf(".False%03d:\n", cnt);
+            printf("  mov rax, 0\n");   //False
+            printf(".End%03d:\n", cnt);
+            break;
+        }
+        case ND_LOR: //"||"
+        {
+            int cnt = label_cnt++;
+            comment("'||'\n");
+            printf("  cmp rax, 0\n");   //lhs
+            printf("  jne .True%03d\n", cnt);
+            printf("  cmp rdi, 0\n");   //rhs
+            printf("  jne .True%03d\n", cnt);
+            printf("  mov rax, 0\n");   //False
+            printf("  jmp .End%03d\n", cnt);
+            printf(".True%03d:\n", cnt);
+            printf("  mov rax, 1\n");   //True
+            printf(".End%03d:\n", cnt);
+            break;
+        }
         case ND_EQ: //"=="
             comment("'=='\n");
             printf("  cmp rax, rdi\n");

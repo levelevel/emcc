@@ -17,6 +17,8 @@ TokenDef TokenLst1[] = {
     {"!=", 2, TK_NE},
     {">=", 2, TK_GE},
     {"<=", 2, TK_LE},
+    {"&&", 2, TK_LAND},
+    {"||", 2, TK_LOR},
     {">",  1, '>'},
     {"<",  1, '<'},
     {"+",  1, '+'},
@@ -201,7 +203,11 @@ static Node *new_node_block(void) {
     block_items: stmt
     block_items: stmt block_items
     assign: equality
-    assign: equality "=" assign
+    assign: equality "=" logical_and
+    logical_and: logical_or
+    logical_and: logical_and "&&" logical_or
+    logical_or: equality
+    logical_or: logical_or "&&" equality
     equality: relational
     equality: equality "==" relational
     equality: equality "!=" relational
@@ -234,6 +240,8 @@ static Node *stmt(void);
 static Node *block_items(void);
 static Node *assign(void);
 static Node *equality(void);
+static Node *logical_and(void);
+static Node *logical_or(void);
 static Node *relational(void);
 static Node *add(void);
 static Node *mul(void); 
@@ -330,12 +338,34 @@ static Node *assign(void) {
 }
 
 static Node *equality(void) {
-    Node *node = relational();
+    Node *node = logical_and();
     for (;;) {
         if (consume(TK_EQ)) {
-            node = new_node(ND_EQ, node, relational());
+            node = new_node(ND_EQ, node, logical_and());
         } else if (consume(TK_NE)) {
-            node = new_node(ND_NE, node, relational());
+            node = new_node(ND_NE, node, logical_and());
+        } else {
+            return node;
+        }
+    }
+}
+
+static Node *logical_and(void) {
+    Node *node = logical_or();
+    for (;;) {
+        if (consume(TK_LAND)) {
+            node = new_node(ND_LAND, node, logical_or());
+        } else {
+            return node;
+        }
+    }
+}
+
+static Node *logical_or(void) {
+    Node *node = relational();
+    for (;;) {
+        if (consume(TK_LOR)) {
+            node = new_node(ND_LOR, node, relational());
         } else {
             return node;
         }

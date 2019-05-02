@@ -53,6 +53,8 @@ try 55 "sum=0; for(i=10;i>0;i--) {sum=sum+i;} return sum;"
 try 55 "sum=0; i=0; while(i<=10) {sum=sum+i; i++;} if(!!1)return sum;"
 try 2 "a=0; if(0) a=1; else a=2; a;"
 try 2 "a=0; if(0) {a=1;} else if (1) {a=2;} else {a=3;} a;"
+try 1 "true=1&&1&&1;false=0&&1;true==1&&false==0;"
+try 1 "a=1;b=0;true=a||b;false=b||0;true==1&&false==0;"
 
 rm -f $ASM $ASM.s
 echo "test: OK"

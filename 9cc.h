@@ -14,13 +14,15 @@ typedef struct {
 //トークン ------------------------------------------
 typedef enum {
     TK_NUM = 256,   //整数トークン
+    TK_IDENT,       //識別子
     TK_INC,         // ++
     TK_DEC,         // --
     TK_EQ,          // ==
     TK_NE,          // !=
     TK_LE,          // <=
     TK_GE,          // >=
-    TK_IDENT,       //識別子
+    TK_LAND,        // &&
+    TK_LOR,         // ||
     TK_RETURN,      //return
     TK_IF,          //if
     TK_ELSE,        //else
@@ -39,6 +41,7 @@ typedef struct {
 //抽象構文木 ----------------------------------------
 enum {
     ND_NUM = 256,   //整数のノードの型
+    ND_IDENT,       //識別子のノードの型
     ND_INC,
     ND_DEC,
     ND_INC_PRE,
@@ -46,7 +49,8 @@ enum {
     ND_EQ,          // ==
     ND_NE,          // !=
     ND_LE,          // <=, >=
-    ND_IDENT,       //識別子のノードの型
+    ND_LAND,        // &&
+    ND_LOR,         // ||
     ND_RETURN,
     ND_IF,
     ND_WHILE,
