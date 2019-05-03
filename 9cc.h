@@ -80,6 +80,12 @@ struct _Node {
     char *name;     //typeがND_IDENTの場合の変数名
 };
 
+typedef struct {
+    char *name;
+    Node *node;
+    Map *ident_map; //ローカル変数：key=name, val=ベースポインタからのoffset
+} Funcdef;
+
 //グローバル変数 ----------------------------------------
 #ifndef EXTERN
 #define EXTERN extern
@@ -89,15 +95,14 @@ EXTERN Vector *token_vec;
 EXTERN Token **tokens;  //token_vec->data;
 EXTERN int token_pos;   //tokensの現在位置
 
-//識別子（変数）の管理
-EXTERN int ident_num;
-EXTERN Map *ident_map; //key=name, val=ベースポインタからのoffset
+//現在の関数定義
+EXTERN Funcdef *cur_funcdef;
 
 //識別子（関数コール）の管理
 EXTERN Map *func_map;       //key=name, value=dummy
 
 //プログラム（関数定義）の管理
-EXTERN Map *funcdef_map;    //key=name, value=Node
+EXTERN Map *funcdef_map;    //key=name, value=Funcdef
 
 // parse.c
 void tokenize(char *p);

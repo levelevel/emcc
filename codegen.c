@@ -20,7 +20,7 @@ static void gen_lval(Node*node) {
         error("代入の左辺値が変数ではありません");
     }
     long offset;
-    map_get(ident_map, node->name, (void**)&offset);
+    map_get(cur_funcdef->ident_map, node->name, (void**)&offset);
     comment("LVALUE:%s\n", node->name);
     printf("  mov rax, rbp\n");
     printf("  sub rax, %ld\n", offset);
@@ -294,14 +294,16 @@ static void gen(Node*node) {
 
 //RSPの16バイトアライメントを維持する
 static int calc_stack_offset() {
-    int size = (ident_num+1)/2 *16;
+    int size = (cur_funcdef->ident_map->keys->len+1)/2 *16;
     return size;
 }
 
 void print_functions(void) {
+    int size;
+
     // アセンブリのヘッダ部分を出力
     printf(".intel_syntax noprefix\n");
-    int size = func_map->keys->len;
+    size = func_map->keys->len;
     char **names = (char**)func_map->keys->data;
     for (int i=0; i<size; i++) {
         printf(".global %s\n", names[i]);
@@ -309,9 +311,10 @@ void print_functions(void) {
 
     // 関数ごとに、抽象構文木を下りながらコード生成
     size = funcdef_map->vals->len;
-    Node **node = (Node**)funcdef_map->vals->data;
-    for (int i=0; node[i]; i++) {
-        printf("%s:\n", node[i]->name);
+    Funcdef **funcdef = (Funcdef**)funcdef_map->vals->data;
+    for (int i=0; i < funcdef_map->keys->len; i++) {
+        cur_funcdef = funcdef[i];
+        printf("%s:\n", funcdef[i]->name);
 
         // プロローグ
         // ローカル変数用の領域を確保する
@@ -319,7 +322,8 @@ void print_functions(void) {
         printf("  mov rbp, rsp\n");
         printf("  sub rsp, %d\n", calc_stack_offset());
 
-        gen(node[i]->rhs);
+        //関数本体のコード生成
+        gen(funcdef[i]->node->rhs);
 
         // エピローグ
         // 最後の式の結果がRAXに残っているのでそれが返り値になる

@@ -142,6 +142,14 @@ static int consume(TKtype type) {
     return 1;
 }
 
+//関数定義のroot生成
+static Funcdef *new_funcdef(void) {
+    Funcdef * funcdef;
+    funcdef = calloc(1, sizeof(Funcdef));
+    funcdef->ident_map = new_map();
+    return funcdef;
+}
+
 //抽象構文木の生成（演算子）
 static Node *new_node(int type, Node *lhs, Node *rhs) {
     Node *node = calloc(1, sizeof(Node));
@@ -159,15 +167,15 @@ static Node *new_node_num(int val) {
     return node;
 }
 
-//抽象構文木の生成（識別子）
+//抽象構文木の生成（識別子：ローカル変数）
 static Node *new_node_ident(char *name) {
     Node *node = calloc(1, sizeof(Node));
     node->type = ND_IDENT;
     node->name = name;
 
     //未登録の識別子であれば登録する
-    if (map_get(ident_map, name, NULL)==0) {
-        map_put(ident_map, name, (void*)(8L*ident_num++));
+    if (map_get(cur_funcdef->ident_map, name, NULL)==0) {
+        map_put(cur_funcdef->ident_map, name, (void*)(8L*cur_funcdef->ident_map->keys->len));
     }
     return node;
 }
@@ -292,11 +300,13 @@ static Node *term(void);
 void program(void) {
     Node *node;
     while (tokens[token_pos]->type != TK_EOF) {
+        cur_funcdef = new_funcdef();
         node = function();
         assert(node->type==ND_FUNC_DEF);
-        map_put(funcdef_map, node->name, node);
+        cur_funcdef->node = node;
+        cur_funcdef->name = node->name;
+        map_put(funcdef_map, node->name, cur_funcdef);
     }
-    map_put(funcdef_map, NULL, NULL);
 }
 
 static Node *function(void) {

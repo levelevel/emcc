@@ -20,8 +20,6 @@ int main(int argc, char**argv)
 
     tokens = (Token**)token_vec->data;
     token_pos = 0;
-    ident_map = new_map();
-    ident_num = 0;
     func_map = new_map();
     funcdef_map = new_map();
     program();
