@@ -22,6 +22,7 @@ typedef struct {
 typedef enum {
     TK_NUM = 256,   //整数トークン
     TK_IDENT,       //識別子
+    TK_INT,         //int
     TK_INC,         // ++
     TK_DEC,         // --
     TK_EQ,          // ==
@@ -58,6 +59,7 @@ enum {
     ND_LE,          // <=, >=
     ND_LAND,        // &&
     ND_LOR,         // ||
+    ND_VAR_DEF,     //変数の定義
     ND_RETURN,
     ND_IF,
     ND_WHILE,

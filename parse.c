@@ -1,10 +1,13 @@
 #include "9cc.h"
 
+//トークンの種類を定義
 typedef struct {
     char *name;
     int len;
     TKtype type;
 } TokenDef;
+
+//トークンの終わり判定が不要なもの
 TokenDef TokenLst1[] = {
     {"++", 2, TK_INC},
     {"--", 2, TK_DEC},
@@ -31,7 +34,10 @@ TokenDef TokenLst1[] = {
     {",",  1, ','},
     {NULL, 0, 0}
 };
+
+//トークンの終わりをis_alnum()で判定するもの
 TokenDef TokenLst2[] = {
+    {"int",    3, TK_INT},
     {"return", 6, TK_RETURN},
     {"if",     2, TK_IF},
     {"else",   4, TK_ELSE},
@@ -236,7 +242,7 @@ static Node *new_node_list(Node *item) {
 
 /*  文法：
     program: function program
-    function: ident "(" list ")" "{" block_list "}"
+    function: "int" ident "(" func_aeg_list ")" "{" block_list "}"
     stmt: "return" list ";"
     stmt: "if" "(" list ")" stmt
     stmt: "if" "(" list ")" stmt "else" stmt
@@ -246,6 +252,8 @@ static Node *new_node_list(Node *item) {
     stmt: list ";"
     block_items: stmt
     block_items: stmt block_items
+    func_arg_list: "int" ident
+    func_arg_list: func_arg_list "," "int" ident
     list: assign
     list: list "," assign
     assign: equality
@@ -314,8 +322,10 @@ void program(void) {
 //関数の定義: lhs=引数(ND_LIST)、rhs=ブロック(ND_BLOCK)
 static Node *function(void) {
     Node *node;
-    if (tokens[token_pos]->type == TK_IDENT) {
-        char *name = tokens[token_pos++]->name;
+    //現時点では関数の型情報は捨てる
+    if (consume(TK_INT)) {
+        if (!consume(TK_IDENT)) error("関数名がありません: %s\n", tokens[token_pos]->input);
+        char *name = tokens[token_pos-1]->name;
         if (!consume('(')) error("関数定義の開きカッコがありません: %s\n", tokens[token_pos]->input);
         node = new_node_func_def(name);
         if (!consume(')')) {
@@ -408,6 +418,9 @@ static Node *block_items(void) {
 static Node *func_arg_list(void) {
     Node *node = new_node_list(NULL);
     for (;;) {
+        //現時点では引数リストの型情報は捨てる
+        //C言語仕様上型名は省略可能（デフォルトはint）
+        if (!consume(TK_INT)) error("型名がありません: %s", tokens[token_pos]->input);
         if (!consume(TK_IDENT)) error("変数名がありません: %s", tokens[token_pos]->input);
         vec_push(node->lst, new_node_ident(tokens[token_pos-1]->name));
         if (consume(')')) break;

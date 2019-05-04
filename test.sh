@@ -12,7 +12,7 @@ try() {
 
   echo "$input" | grep main > /dev/null
   if [ $? -ne 0 ]; then
-    input="main(){$input}"
+    input="int main(){$input}"
   fi
 
   if [ $expected == $ER ]; then
@@ -30,9 +30,9 @@ try() {
   fi
 
   if [ "$actual" == "$expected" ]; then
-    echo "$org_input => $actual"
+    echo "# $org_input => $actual"
   else
-    echo "$org_input => $expected expected, but got $actual"
+    echo "#! $org_input => $expected expected, but got $actual"
     exit 1
   fi 
 }
@@ -88,16 +88,25 @@ try 0 "1!=1 || 2==2+1 || 1>=2;"
 try 2 "ret1=func1(1);"
 try 8 "x=1;r1=func3(x*2,(2+1),3);"
 
-try 1 "main(){1;}"
-try 1 "func(){return 1;} main(){return func();}"
-try 15 "main(){return add(1,2)+add3(3,4,5);} 
-        add(a,b){return a+b;} 
-        add3(a,b,c){return a+b+c;}"
-try 106 "main(){a=1;b=2; return func(a,b+1);} 
-        func(a,b){c=100;a=b; sum=a+b+c; return sum;}"
-try $ER "main(1){}"
-try $ER "main(a+1){}"
-try $ER "main(a,){}"
+try 1 "int main(){1;}"
+try 1 "int func(){return 1;} int main(){return func();}"
+try 15 "int main(){return add(1,2)+add3(3,4,5);} 
+        int add(int a, int b){return a+b;} 
+        int add3(int a, int b, int c){return a+b+c;}"
+try 106 "int main(){a=1;b=2; return func(a,b+1);} 
+        int func(int a, int b){c=100;a=b; sum=a+b+c; return sum;}"
+try 55 "int main() {
+          return fact(10);
+        } 
+        int fact(int a) {
+          if (a==0) return 0;
+          else return a + fact(a-1);
+        }"
+try $ER "main(){}"
+try $ER "int main(a){}"
+try $ER "int main(1){}"
+try $ER "int main(int a+1){}"
+try $ER "int main(int a,){}"
 
 rm -f $EXE $EXE.s
 echo "test: OK"
