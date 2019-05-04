@@ -1,7 +1,8 @@
 #!/bin/bash
 set -u
 
-ASM=tmp
+EXE=tmp
+AFLAGS=-g
 
 try() {
   expected="$1"
@@ -13,9 +14,9 @@ try() {
     input="main(){$input}"
   fi
 
-  ./9cc "$input" > $ASM.s
-  gcc -o $ASM $ASM.s func.o
-  ./$ASM
+  ./9cc "$input" > $EXE.s
+  gcc $AFLAGS -o $EXE $EXE.s func.o
+  ./$EXE
   actual="$?"
 
   if [ "$actual" = "$expected" ]; then
@@ -27,12 +28,17 @@ try() {
 }
 
 if [ $# -gt 0 ]; then
+  GDB=""
+  if [ "$1" == "-d" ]; then
+    GDB=gdp
+    shift
+  fi
   make -s
-  ./9cc "$*" > $ASM.s
+  ./9cc "$*" > $EXE.s
   if [ $? != 0 ]; then exit 1; fi
-  cat -n $ASM.s
-  gcc -o $ASM $ASM.s func.o
-  ./$ASM
+  cat -n $EXE.s
+  gcc $AFLAGS -o $EXE $EXE.s func.o
+  $GDB ./$EXE
   echo $?
   exit
 fi
@@ -70,7 +76,12 @@ try 0 "1!=1 || 2==2+1 || 1>=2;"
 try 2 "ret1=func1(1);"
 try 8 "x=1;r1=func3(x*2,(2+1),3);"
 
-try 1 "func(){return 1;} main(){func();}"
+try 1 "func(){return 1;} main(){return func();}"
+try 15 "main(){return add(1,2)+add3(3,4,5);} 
+        add(a,b){return a+b;} 
+        add3(a,b,c){return a+b+c;}"
+try 106 "main(){a=1;b=2; return func(a,b+1);} 
+        func(a,b){c=100;a=b; sum=a+b+c; return sum;}"
 
-rm -f $ASM $ASM.s
+rm -f $EXE $EXE.s
 echo "test: OK"

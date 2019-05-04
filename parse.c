@@ -175,7 +175,8 @@ static Node *new_node_ident(char *name) {
 
     //未登録の識別子であれば登録する
     if (map_get(cur_funcdef->ident_map, name, NULL)==0) {
-        map_put(cur_funcdef->ident_map, name, (void*)(8L*cur_funcdef->ident_map->keys->len));
+        long offset = (cur_funcdef->ident_map->keys->len + 1) * 8;
+        map_put(cur_funcdef->ident_map, name, (void*)offset);
     }
     return node;
 }
@@ -229,7 +230,7 @@ static Node *new_node_list(Node *item) {
     Node *node = calloc(1, sizeof(Node));
     node->type = ND_LIST;
     node->lst  = new_vector();
-    vec_push(node->lst, item);
+    if (item) vec_push(node->lst, item);
     return node;
 }
 
@@ -285,6 +286,7 @@ static Node *new_node_list(Node *item) {
 static Node *function(void);
 static Node *stmt(void);
 static Node *block_items(void);
+static Node *func_arg_list(void);
 static Node *list(void);
 static Node *assign(void);
 static Node *equality(void);
@@ -309,6 +311,7 @@ void program(void) {
     }
 }
 
+//関数の定義: lhs=引数(ND_LIST)、rhs=ブロック(ND_BLOCK)
 static Node *function(void) {
     Node *node;
     if (tokens[token_pos]->type == TK_IDENT) {
@@ -316,12 +319,9 @@ static Node *function(void) {
         if (!consume('(')) error("関数定義の開きカッコがありません: %s\n", tokens[token_pos]->input);
         node = new_node_func_def(name);
         if (!consume(')')) {
-            node->lhs = list();
+            node->lhs = func_arg_list();
             if (node->lhs->type != ND_LIST) {
                 node->lhs = new_node_list(node->lhs);
-            }
-            if (!consume(')')) {
-                error("関数定義の開きカッコに対応する閉じカッコがありません: %s", tokens[token_pos]->input);
             }
         }
         if (!consume('{')) error("関数定義の { がありません: %s\n", tokens[token_pos]->input);
@@ -404,6 +404,19 @@ static Node *block_items(void) {
     return node;
 }
 
+// ')'まで読んで、空でないリスト(ND_LIST)を作成する
+static Node *func_arg_list(void) {
+    Node *node = new_node_list(NULL);
+    for (;;) {
+        if (!consume(TK_IDENT)) error("変数名がありません: %s", tokens[token_pos]->input);
+        vec_push(node->lst, new_node_ident(tokens[token_pos-1]->name));
+        if (consume(')')) break;
+        if (!consume(',')) error("コンマがありません: %s", tokens[token_pos]->input);
+    }
+    return node;
+}
+
+// ','でないトークンまで読んで、空でないリスト(ND_LIST)を作成する
 static Node *list(void) {
     Node *node = assign();
     if (consume(',')) {
@@ -539,10 +552,10 @@ static Node *term(void) {
             error("開きカッコに対応する閉じカッコがありません: %s", tokens[token_pos]->input);
         }
         return node;
-    } else if (tokens[token_pos]->type == TK_NUM) {
-        return new_node_num(tokens[token_pos++]->val);
-    } else if (tokens[token_pos]->type == TK_IDENT) {
-        char *name = tokens[token_pos++]->name;
+    } else if (consume(TK_NUM)) {
+        return new_node_num(tokens[token_pos-1]->val);
+    } else if (consume(TK_IDENT)) {
+        char *name = tokens[token_pos-1]->name;
         if (consume('(')) { //関数コール
             Node *node = new_node_func_call(name);
             if (consume(')')) return node;

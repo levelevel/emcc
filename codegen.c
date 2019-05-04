@@ -313,6 +313,7 @@ void print_functions(void) {
     size = funcdef_map->vals->len;
     Funcdef **funcdef = (Funcdef**)funcdef_map->vals->data;
     for (int i=0; i < funcdef_map->keys->len; i++) {
+        assert(funcdef[i]->node->type==ND_FUNC_DEF);
         cur_funcdef = funcdef[i];
         printf("%s:\n", funcdef[i]->name);
 
@@ -322,7 +323,18 @@ void print_functions(void) {
         printf("  mov rbp, rsp\n");
         printf("  sub rsp, %d\n", calc_stack_offset());
 
-        //関数本体のコード生成
+        // 引数をスタックのローカル変数領域にコピー
+        if (funcdef[i]->node->lhs) {
+            int size = funcdef[i]->node->lhs->lst->len;
+            assert(arg_regs[size-1]);
+            printf("  mov rax, rbp\n");
+            for (int j=0; j < size; j++) {
+                printf("  sub rax, 8\n");
+                printf("  mov [rax], %s\n", arg_regs[j]);
+            }
+        }
+
+        // 関数本体のコード生成
         gen(funcdef[i]->node->rhs);
 
         // エピローグ
