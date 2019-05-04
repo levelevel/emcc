@@ -3,6 +3,8 @@
 //エラー位置の入力文字列
 #define input_str() (tokens[token_pos]->input)
 
+#define token_is(_tk) (tokens[token_pos]->type==(_tk))
+
 //トークンの種類を定義
 typedef struct {
     char *name;
@@ -151,6 +153,15 @@ static int consume(TKtype type) {
     return 1;
 }
 
+//次のトークンが識別子(TK_IDENT)かどうかをチェックし、
+//その場合はnameを取得し、入力を1トークン読み進めて真を返す
+static int consume_ident(char**name) {
+    if (tokens[token_pos]->type != TK_IDENT) return 0;
+    *name = tokens[token_pos]->name;
+    token_pos++;
+    return 1;
+}
+
 //関数定義のroot生成
 static Funcdef *new_funcdef(void) {
     Funcdef * funcdef;
@@ -177,10 +188,11 @@ static Node *new_node_num(int val) {
 }
 
 //抽象構文木の生成（ローカル変数定義）
-static Node *new_node_var_def(char *name) {
+static Node *new_node_var_def(char *name, Type*tp) {
     Node *node = calloc(1, sizeof(Node));
     node->type = ND_VAR_DEF;
     node->name = name;
+    node->tp = tp;
 
     //未登録の識別子であれば登録する
     if (map_get(cur_funcdef->ident_map, name, NULL)==0) {
@@ -220,10 +232,11 @@ static Node *new_node_func_call(char *name) {
 }
 
 //抽象構文木の生成（関数定義）
-static Node *new_node_func_def(char *name) {
+static Node *new_node_func_def(char *name, Type *tp) {
     Node *node = calloc(1, sizeof(Node));
     node->type = ND_FUNC_DEF;
     node->name = name;
+    node->tp = tp;
 //  node->lhs  = list();        //引数リスト
 //  node->rhs  = block_items(); //ブロック
 
@@ -260,8 +273,10 @@ static Node *new_node_list(Node *item) {
 
 /*  文法：
     program: function program
-    function: "int" ident "(" func_arg_list ")" "{" block_items "}"
-    stmt: "int" ident ";"
+    function: type indent "(" func_arg_list ")" "{" block_items "}"
+    block_items: stmt
+    block_items: stmt block_items
+    stmt: var_def ";"
     stmt: "return" list ";"
     stmt: "if" "(" list ")" stmt
     stmt: "if" "(" list ")" stmt "else" stmt
@@ -269,10 +284,11 @@ static Node *new_node_list(Node *item) {
     stmt: "for" "(" empty_or_list "";" empty_or_list "";" empty_or_list ")" stmt
     stmt: "{" block_items "}"
     stmt: empty_or_list ";"
-    block_items: stmt
-    block_items: stmt block_items
-    func_arg_list: "int" ident
-    func_arg_list: func_arg_list "," "int" ident
+    var_def: type ident
+    type: "int"
+    type: type "*"
+    func_arg_list: type ident
+    func_arg_list: func_arg_list "," type ident
     func_arg_list: <empty>
     empty_or_list: list
     empty_or_list: <empty>
@@ -315,6 +331,8 @@ static Node *new_node_list(Node *item) {
 */
 static Node *function(void);
 static Node *stmt(void);
+static Node* var_def(void);
+static Type* type(void);
 static Node *block_items(void);
 static Node *func_arg_list(void);
 static Node *empty_or_list(void);
@@ -332,7 +350,7 @@ static Node *term(void);
 
 void program(void) {
     Node *node;
-    while (tokens[token_pos]->type != TK_EOF) {
+    while (!token_is(TK_EOF)) {
         cur_funcdef = new_funcdef();
         node = function();
         assert(node->type==ND_FUNC_DEF);
@@ -343,15 +361,16 @@ void program(void) {
 }
 
 //関数の定義: lhs=引数(ND_LIST)、rhs=ブロック(ND_BLOCK)
-//    function: "int" ident "(" func_arg_list ")" "{" block_items "}"
+//    function: type indent "(" func_arg_list ")" "{" block_items "}"
 static Node *function(void) {
     Node *node;
-    //現時点では関数の型情報は捨てる
-    if (consume(TK_INT)) {
-        if (!consume(TK_IDENT)) error("型名の後に関数名がありません: %s\n", input_str());
-        char *name = tokens[token_pos-1]->name;
+    Type *tp;
+    char *name;
+    if (token_is(TK_INT)) {
+        tp = type();
+        if (!consume_ident(&name)) error("型名の後に関数名がありません: %s\n", input_str());
         if (!consume('(')) error("関数定義の開きカッコがありません: %s\n", input_str());
-        node = new_node_func_def(name);
+        node = new_node_func_def(name, tp);
         node->lhs = func_arg_list();
         if (!consume(')')) error("関数定義の閉じカッコがありません: %s\n", input_str());
         if (!consume('{')) error("関数定義の { がありません: %s\n", input_str());
@@ -364,9 +383,8 @@ static Node *function(void) {
 
 static Node *stmt(void) {
     Node *node;
-    if (consume(TK_INT)) {          //int ident（変数定義）
-        if (!consume(TK_IDENT)) error("型名の後に変数名がありません: %s\n", input_str());
-        node = new_node_var_def(tokens[token_pos-1]->name);
+    if (token_is(TK_INT)) {         //int ident（変数定義）
+        node = var_def();
     } else if (consume(TK_RETURN)) {
         node = new_node(ND_RETURN, list(), NULL);
     } else if (consume(TK_IF)) {    //if(A)B else C
@@ -414,6 +432,40 @@ static Node *stmt(void) {
     return node;
 }
 
+/* int *ident（変数定義）
+    var_def: type ident
+    type: "int"
+    type: type "*"
+*/
+static Node* var_def(void) {
+    Node *node = NULL;
+    Type *tp = type();
+    char *name;
+    if (!consume_ident(&name)) error("型名の後に変数名がありません: %s\n", input_str());
+    node = new_node_var_def(name, tp); //ND_VAR_DEF
+    return node;
+}
+static Type* new_type(Type*ptr) {
+    Type *tp = calloc(1, sizeof(Type));
+    if (ptr) {
+        tp->type = PTR;
+        tp->ptr_of = ptr;
+    }
+    return tp;
+}
+static Type* type(void) {
+    Type *tp = new_type(NULL);
+    if (consume(TK_INT)) {
+        tp->type = INT;
+    } else {
+        error("型名がありません: %s\n", input_str());
+    }
+    while (consume('*')) {
+        tp = new_type(tp);
+    }
+    return tp;
+}
+
 static Node *block_items(void) {
     Node *node = new_node_block();
     Vector *blocks = node->lst;
@@ -424,19 +476,20 @@ static Node *block_items(void) {
 }
 
 /* 0個以上のident nodeをnode->lstに設定する。
-    func_arg_list: "int" ident
-    func_arg_list: func_arg_list "," "int" ident
+    func_arg_list: type ident
+    func_arg_list: func_arg_list "," type ident
     func_arg_list: 
 */
 static Node *func_arg_list(void) {
     Node *node = new_node_list(NULL);
-    if (tokens[token_pos]->type != TK_INT) return node;
+    Type *tp;
+    char *name;
+    if (!token_is(TK_INT)) return node; //空のリスト
     for (;;) {
-        //現時点では引数リストの型情報は捨てる
         //C言語仕様上型名は省略可能（デフォルトはint）
-        if (!consume(TK_INT)) error("型名がありません: %s", input_str());
-        if (!consume(TK_IDENT)) error("変数名がありません: %s", input_str());
-        vec_push(node->lst, new_node_var_def(tokens[token_pos-1]->name));
+        tp = type();
+        if (!consume_ident(&name)) error("変数名がありません: %s", input_str());
+        vec_push(node->lst, new_node_var_def(name, tp));
         if (!consume(',')) break;
     }
     return node;
@@ -444,8 +497,7 @@ static Node *func_arg_list(void) {
 
 // ';'、')'でないトークンまで読んで、空文(ND_EMPTY)またはリスト(ND_LIST)を作成する
 static Node *empty_or_list(void) {
-    if (tokens[token_pos]->type == ';' ||
-        tokens[token_pos]->type == ')') return new_node_empty();
+    if (token_is(';') || token_is(')')) return new_node_empty();
     return list();
 }
 
@@ -579,6 +631,7 @@ static Node *r_unary(void) {
 }
 
 static Node *term(void) {
+    char *name;
     if (consume('(')) {
         Node *node = assign();
         if (!consume(')')) {
@@ -587,8 +640,7 @@ static Node *term(void) {
         return node;
     } else if (consume(TK_NUM)) {
         return new_node_num(tokens[token_pos-1]->val);
-    } else if (consume(TK_IDENT)) {
-        char *name = tokens[token_pos-1]->name;
+    } else if (consume_ident(&name)) {
         if (consume('(')) { //関数コール
             Node *node = new_node_func_call(name);
             if (consume(')')) return node;

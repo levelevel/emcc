@@ -112,5 +112,7 @@ try $ER "int main(int a,){}"
 try $ER "a;"
 try $ER "int a; int a;"
 
+try 1 "int *main(int *a, int **b){int *p; 1;} int**func(int ***********a){a;}"
+
 rm -f $EXE $EXE.s
 echo "test: OK"

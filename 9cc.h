@@ -71,6 +71,12 @@ enum {
     ND_EMPTY,       //空のノード
 };
 
+typedef struct _Type Type;
+struct _Type {
+    enum {INT, PTR} type;
+    Type *ptr_of;
+};
+
 typedef struct _Node Node;
 struct _Node {
     int type;       //nodeの型：演算子、ND_INDENTなど
@@ -80,6 +86,7 @@ struct _Node {
                     //typeがND_LISTの場合のasignのリスト
     int val;        //typeがND_NUMの場合の値
     char *name;     //typeがND_IDENTの場合の変数名
+    Type *tp;       //typeがND_IDENT、ND_FUNC_DEFの場合の型情報
 };
 
 typedef struct {
