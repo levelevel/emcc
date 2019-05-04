@@ -173,16 +173,31 @@ static Node *new_node_num(int val) {
     return node;
 }
 
-//抽象構文木の生成（識別子：ローカル変数）
-static Node *new_node_ident(char *name) {
+//抽象構文木の生成（ローカル変数定義）
+static Node *new_node_var_def(char *name) {
     Node *node = calloc(1, sizeof(Node));
-    node->type = ND_IDENT;
+    node->type = ND_VAR_DEF;
     node->name = name;
 
     //未登録の識別子であれば登録する
     if (map_get(cur_funcdef->ident_map, name, NULL)==0) {
         long offset = (cur_funcdef->ident_map->keys->len + 1) * 8;
         map_put(cur_funcdef->ident_map, name, (void*)offset);
+    } else {
+        error("'%s'は変数の重複定義です: '%s'\n", name, tokens[token_pos-1]->input);
+    }
+    return node;
+}
+
+//抽象構文木の生成（識別子：ローカル変数）
+static Node *new_node_ident(char *name) {
+    Node *node = calloc(1, sizeof(Node));
+    node->type = ND_IDENT;
+    node->name = name;
+
+    //定義済みの識別子であるかをチェック
+    if (map_get(cur_funcdef->ident_map, name, NULL)==0) {
+        error("'%s'は未定義の変数です: %s\n", name, tokens[token_pos-1]->input);
     }
     return node;
 }
@@ -243,6 +258,7 @@ static Node *new_node_list(Node *item) {
 /*  文法：
     program: function program
     function: "int" ident "(" func_arg_list ")" "{" block_list "}"
+    stmt: "int" ident ";"
     stmt: "return" list ";"
     stmt: "if" "(" list ")" stmt
     stmt: "if" "(" list ")" stmt "else" stmt
@@ -345,7 +361,10 @@ static Node *function(void) {
 
 static Node *stmt(void) {
     Node *node;
-    if (consume(TK_RETURN)) {
+    if (consume(TK_INT)) {          //int ident（変数定義）
+        if (!consume(TK_IDENT)) error("変数名がありません: %s\n", tokens[token_pos]->input);
+        node = new_node_var_def(tokens[token_pos-1]->name);
+    } else if (consume(TK_RETURN)) {
         node = new_node(ND_RETURN, list(), NULL);
     } else if (consume(TK_IF)) {    //if(A)B else C
         Node *node_A, *node_B;
@@ -414,7 +433,7 @@ static Node *func_arg_list(void) {
         //C言語仕様上型名は省略可能（デフォルトはint）
         if (!consume(TK_INT)) error("型名がありません: %s", tokens[token_pos]->input);
         if (!consume(TK_IDENT)) error("変数名がありません: %s", tokens[token_pos]->input);
-        vec_push(node->lst, new_node_ident(tokens[token_pos-1]->name));
+        vec_push(node->lst, new_node_var_def(tokens[token_pos-1]->name));
         if (!consume(',')) break;
     }
     return node;

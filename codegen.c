@@ -31,12 +31,15 @@ static int label_cnt = 0;   //ラベル識別用カウンタ
 
 //ステートメントを評価
 static void gen(Node*node) {
+    assert(node!=NULL);
     if (node->type == ND_NUM) {             //数値
         printf("  push %d\t# NUM\n", node->val);
     } else if  (node->type == ND_EMPTY) {   //空
     //  printf("  push 0\t# EMPTY\n");
         printf("  push rax\t# EMPTY\n");
-    } else if (node->type == ND_IDENT) {    //変数
+    } else if (node->type == ND_VAR_DEF) {  //ローカル変数定義
+        printf("  push 0\t# VAR_DEF\n");
+    } else if (node->type == ND_IDENT) {    //変数参照
         comment("IDENT:%s\n", node->name);
         gen_lval(node);
         printf("  pop rax\n");
@@ -150,10 +153,10 @@ static void gen(Node*node) {
     } else if (node->type == '=') {         //代入
         comment("'='\n");
         gen_lval(node->lhs);    //スタックトップにアドレス設定
-        printf("  push 0\t#for RSP alignment\n");
+        printf("  push 0\t#for RSP alignment+\n");
         gen(node->rhs);
         printf("  pop rax\n");  //rhsの値
-        printf("  pop rdi\t#for RSP alignment\n");
+        printf("  pop rdi\t#for RSP alignment-\n");
         printf("  pop rdi\n");  //lhsのアドレス
         printf("  mov [rdi], rax\n");
         printf("  push rax\n");
@@ -199,6 +202,8 @@ static void gen(Node*node) {
         printf("  push rax\n");
     } else {                                //2項演算子
         //lhsとrhsを処理して結果をPUSHする
+        assert(node->lhs!=NULL);
+        assert(node->rhs!=NULL);
         gen(node->lhs);
         gen(node->rhs);
 
