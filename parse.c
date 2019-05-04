@@ -242,18 +242,21 @@ static Node *new_node_list(Node *item) {
 
 /*  文法：
     program: function program
-    function: "int" ident "(" func_aeg_list ")" "{" block_list "}"
+    function: "int" ident "(" func_arg_list ")" "{" block_list "}"
     stmt: "return" list ";"
     stmt: "if" "(" list ")" stmt
     stmt: "if" "(" list ")" stmt "else" stmt
     stmt: "while" "(" list ")" stmt
-    stmt: "for" "(" list ";" list ";" list ")" stmt
+    stmt: "for" "(" empty_or_list "";" empty_or_list "";" empty_or_list ")" stmt
     stmt: "{" block_items "}"
-    stmt: list ";"
+    stmt: empty_or_list ";"
     block_items: stmt
     block_items: stmt block_items
     func_arg_list: "int" ident
     func_arg_list: func_arg_list "," "int" ident
+    func_arg_list: <empty>
+    empty_or_list: list
+    empty_or_list: <empty>
     list: assign
     list: list "," assign
     assign: equality
@@ -295,6 +298,7 @@ static Node *function(void);
 static Node *stmt(void);
 static Node *block_items(void);
 static Node *func_arg_list(void);
+static Node *empty_or_list(void);
 static Node *list(void);
 static Node *assign(void);
 static Node *equality(void);
@@ -320,6 +324,7 @@ void program(void) {
 }
 
 //関数の定義: lhs=引数(ND_LIST)、rhs=ブロック(ND_BLOCK)
+//    function: "int" ident "(" func_arg_list ")" "{" block_list "}"
 static Node *function(void) {
     Node *node;
     //現時点では関数の型情報は捨てる
@@ -328,12 +333,8 @@ static Node *function(void) {
         char *name = tokens[token_pos-1]->name;
         if (!consume('(')) error("関数定義の開きカッコがありません: %s\n", tokens[token_pos]->input);
         node = new_node_func_def(name);
-        if (!consume(')')) {
-            node->lhs = func_arg_list();
-            if (node->lhs->type != ND_LIST) {
-                node->lhs = new_node_list(node->lhs);
-            }
-        }
+        node->lhs = func_arg_list();
+        if (!consume(')')) error("関数定義の閉じカッコがありません: %s\n", tokens[token_pos]->input);
         if (!consume('{')) error("関数定義の { がありません: %s\n", tokens[token_pos]->input);
         node->rhs = block_items();
     } else {
@@ -344,9 +345,7 @@ static Node *function(void) {
 
 static Node *stmt(void) {
     Node *node;
-    if (consume(';')) {
-        return new_node_empty();
-    } else if (consume(TK_RETURN)) {
+    if (consume(TK_RETURN)) {
         node = new_node(ND_RETURN, list(), NULL);
     } else if (consume(TK_IF)) {    //if(A)B else C
         Node *node_A, *node_B;
@@ -370,25 +369,13 @@ static Node *stmt(void) {
     } else if (consume(TK_FOR)) {   //for(A;B;C)D
         Node *node1, *node2;
         if (!consume('(')) error("forの後に開きカッコがありません: %s\n", tokens[token_pos]->input);
-        if (consume(';')) {
-            node1 = new_node_empty();   //A
-        } else {
-            node1 = list();   //A
-            if (!consume(';')) error("forの1個目の;がありません: %s\n", tokens[token_pos]->input);
-        }
-        if (consume(';')) {
-            node2 = new_node_empty();   //B
-        } else {
-            node2 = list();   //B
-            if (!consume(';')) error("forの2個目の;がありません: %s\n", tokens[token_pos]->input);
-        }
+        node1 = empty_or_list();   //A
+        if (!consume(';')) error("forの1個目の;がありません: %s\n", tokens[token_pos]->input);
+        node2 = empty_or_list();   //B
+        if (!consume(';')) error("forの2個目の;がありません: %s\n", tokens[token_pos]->input);
         node = new_node(0, node1, node2);       //A,B
-        if (consume(')')) {
-            node1 = new_node_empty();   //C
-        } else {
-            node1 = list();   //C
-            if (!consume(')')) error("forの開きカッコに対応する閉じカッコがありません: %s\n", tokens[token_pos]->input);
-        }
+        node1 = empty_or_list();   //C
+        if (!consume(')')) error("forの開きカッコに対応する閉じカッコがありません: %s\n", tokens[token_pos]->input);
         node2 = new_node(0, node1, stmt());     //C,D
         node = new_node(ND_FOR, node, node2);   //(A,B),(C,D)
         return node;
@@ -396,7 +383,7 @@ static Node *stmt(void) {
         node = block_items();
         return node;
     } else {
-        node = list();
+        node = empty_or_list();
     }
 
     if (!consume(';')) {
@@ -414,19 +401,30 @@ static Node *block_items(void) {
     return node;
 }
 
-// ')'まで読んで、空でないリスト(ND_LIST)を作成する
+/* 0個以上のident nodeをnode->lstに設定する。
+    func_arg_list: "int" ident
+    func_arg_list: func_arg_list "," "int" ident
+    func_arg_list: 
+*/
 static Node *func_arg_list(void) {
     Node *node = new_node_list(NULL);
+    if (tokens[token_pos]->type != TK_INT) return node;
     for (;;) {
         //現時点では引数リストの型情報は捨てる
         //C言語仕様上型名は省略可能（デフォルトはint）
         if (!consume(TK_INT)) error("型名がありません: %s", tokens[token_pos]->input);
         if (!consume(TK_IDENT)) error("変数名がありません: %s", tokens[token_pos]->input);
         vec_push(node->lst, new_node_ident(tokens[token_pos-1]->name));
-        if (consume(')')) break;
-        if (!consume(',')) error("コンマがありません: %s", tokens[token_pos]->input);
+        if (!consume(',')) break;
     }
     return node;
+}
+
+// ';'、')'でないトークンまで読んで、空文(ND_EMPTY)またはリスト(ND_LIST)を作成する
+static Node *empty_or_list(void) {
+    if (tokens[token_pos]->type == ';' ||
+        tokens[token_pos]->type == ')') return new_node_empty();
+    return list();
 }
 
 // ','でないトークンまで読んで、空でないリスト(ND_LIST)を作成する

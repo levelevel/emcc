@@ -324,13 +324,14 @@ void print_functions(void) {
         printf("  sub rsp, %d\n", calc_stack_offset());
 
         // 引数をスタックのローカル変数領域にコピー
-        if (funcdef[i]->node->lhs) {
-            int size = funcdef[i]->node->lhs->lst->len;
+        int size = funcdef[i]->node->lhs->lst->len;
+        Node **ident_nodes = (Node**)funcdef[i]->node->lhs->lst->data;
+        if (size) {
             assert(arg_regs[size-1]);
             printf("  mov rax, rbp\n");
             for (int j=0; j < size; j++) {
                 printf("  sub rax, 8\n");
-                printf("  mov [rax], %s\n", arg_regs[j]);
+                printf("  mov [rax], %s\t#arg:%s\n", arg_regs[j], ident_nodes[j]->name);
             }
         }
 

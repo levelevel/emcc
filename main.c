@@ -4,6 +4,8 @@
 
 int main(int argc, char**argv)
 {
+    char *input;
+
     if (argc!=2) {
         fprintf(stderr,"引数の個数が正しくありません\n");
         return 1;
@@ -14,9 +16,15 @@ int main(int argc, char**argv)
         return 0;
     }
 
+    input = argv[1];
+    if (strstr(input, "main")==NULL) {
+        input = malloc(strlen(input) + 50);
+        sprintf(input, "int main(){%s}", argv[1]);
+    }
+
     // トークナイズしてパースする
     token_vec = new_vector();
-    tokenize(argv[1]);
+    tokenize(input);
 
     tokens = (Token**)token_vec->data;
     token_pos = 0;

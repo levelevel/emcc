@@ -8,12 +8,6 @@ ER=Error
 try() {
   expected="$1"
   input="$2"
-  org_input="$2"
-
-  echo "$input" | grep main > /dev/null
-  if [ $? -ne 0 ]; then
-    input="int main(){$input}"
-  fi
 
   if [ $expected == $ER ]; then
     ./9cc "$input" 2>&1 > $EXE.s | grep "9cc:Error" > /dev/null
@@ -30,9 +24,9 @@ try() {
   fi
 
   if [ "$actual" == "$expected" ]; then
-    echo "# $org_input => $actual"
+    echo "# $input => $actual"
   else
-    echo "#! $org_input => $expected expected, but got $actual"
+    echo "#! $input => $expected expected, but got $actual"
     exit 1
   fi 
 }

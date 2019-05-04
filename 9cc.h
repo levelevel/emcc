@@ -83,7 +83,7 @@ struct _Node {
 };
 
 typedef struct {
-    char *name;
+    char *name;     //関数名
     Node *node;     //ND_FUNC_DEFのnode
     Map *ident_map; //ローカル変数：key=name, val=ベースポインタからのoffset
 } Funcdef;
