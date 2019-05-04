@@ -73,7 +73,7 @@ enum {
 
 typedef struct _Node Node;
 struct _Node {
-    int type;       //演算子、ND_NUM、ND_IDENTのいずれか
+    int type;       //nodeの型：演算子、ND_INDENTなど
     Node *lhs;
     Node *rhs;
     Vector *lst;    //typeがND_BLOCKの場合のstmtのリスト

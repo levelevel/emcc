@@ -1,5 +1,8 @@
 #include "9cc.h"
 
+//エラー位置の入力文字列
+#define input_str() (tokens[token_pos]->input)
+
 //トークンの種類を定義
 typedef struct {
     char *name;
@@ -257,7 +260,7 @@ static Node *new_node_list(Node *item) {
 
 /*  文法：
     program: function program
-    function: "int" ident "(" func_arg_list ")" "{" block_list "}"
+    function: "int" ident "(" func_arg_list ")" "{" block_items "}"
     stmt: "int" ident ";"
     stmt: "return" list ";"
     stmt: "if" "(" list ")" stmt
@@ -340,21 +343,21 @@ void program(void) {
 }
 
 //関数の定義: lhs=引数(ND_LIST)、rhs=ブロック(ND_BLOCK)
-//    function: "int" ident "(" func_arg_list ")" "{" block_list "}"
+//    function: "int" ident "(" func_arg_list ")" "{" block_items "}"
 static Node *function(void) {
     Node *node;
     //現時点では関数の型情報は捨てる
     if (consume(TK_INT)) {
-        if (!consume(TK_IDENT)) error("関数名がありません: %s\n", tokens[token_pos]->input);
+        if (!consume(TK_IDENT)) error("型名の後に関数名がありません: %s\n", input_str());
         char *name = tokens[token_pos-1]->name;
-        if (!consume('(')) error("関数定義の開きカッコがありません: %s\n", tokens[token_pos]->input);
+        if (!consume('(')) error("関数定義の開きカッコがありません: %s\n", input_str());
         node = new_node_func_def(name);
         node->lhs = func_arg_list();
-        if (!consume(')')) error("関数定義の閉じカッコがありません: %s\n", tokens[token_pos]->input);
-        if (!consume('{')) error("関数定義の { がありません: %s\n", tokens[token_pos]->input);
+        if (!consume(')')) error("関数定義の閉じカッコがありません: %s\n", input_str());
+        if (!consume('{')) error("関数定義の { がありません: %s\n", input_str());
         node->rhs = block_items();
     } else {
-        error("関数定義がありません: %s", tokens[token_pos]->input);
+        error("関数定義がありません: %s", input_str());
     }
     return node;
 }
@@ -362,15 +365,15 @@ static Node *function(void) {
 static Node *stmt(void) {
     Node *node;
     if (consume(TK_INT)) {          //int ident（変数定義）
-        if (!consume(TK_IDENT)) error("変数名がありません: %s\n", tokens[token_pos]->input);
+        if (!consume(TK_IDENT)) error("型名の後に変数名がありません: %s\n", input_str());
         node = new_node_var_def(tokens[token_pos-1]->name);
     } else if (consume(TK_RETURN)) {
         node = new_node(ND_RETURN, list(), NULL);
     } else if (consume(TK_IF)) {    //if(A)B else C
         Node *node_A, *node_B;
-        if (!consume('(')) error("ifの後に開きカッコがありません: %s\n", tokens[token_pos]->input);
+        if (!consume('(')) error("ifの後に開きカッコがありません: %s\n", input_str());
         node_A = list();
-        if (!consume(')')) error("ifの開きカッコに対応する閉じカッコがありません: %s\n", tokens[token_pos]->input);
+        if (!consume(')')) error("ifの開きカッコに対応する閉じカッコがありません: %s\n", input_str());
         node_B = stmt();
         node = new_node(0, node_A, node_B); //lhs
         if (consume(TK_ELSE)) {
@@ -380,21 +383,21 @@ static Node *stmt(void) {
         }
         return node;
     } else if (consume(TK_WHILE)) {
-        if (!consume('(')) error("whileの後に開きカッコがありません: %s\n", tokens[token_pos]->input);
+        if (!consume('(')) error("whileの後に開きカッコがありません: %s\n", input_str());
         node = list();
-        if (!consume(')')) error("whileの開きカッコに対応する閉じカッコがありません: %s\n", tokens[token_pos]->input);
+        if (!consume(')')) error("whileの開きカッコに対応する閉じカッコがありません: %s\n", input_str());
         node = new_node(ND_WHILE, node, stmt());
         return node;
     } else if (consume(TK_FOR)) {   //for(A;B;C)D
         Node *node1, *node2;
-        if (!consume('(')) error("forの後に開きカッコがありません: %s\n", tokens[token_pos]->input);
+        if (!consume('(')) error("forの後に開きカッコがありません: %s\n", input_str());
         node1 = empty_or_list();   //A
-        if (!consume(';')) error("forの1個目の;がありません: %s\n", tokens[token_pos]->input);
+        if (!consume(';')) error("forの1個目の;がありません: %s\n", input_str());
         node2 = empty_or_list();   //B
-        if (!consume(';')) error("forの2個目の;がありません: %s\n", tokens[token_pos]->input);
+        if (!consume(';')) error("forの2個目の;がありません: %s\n", input_str());
         node = new_node(0, node1, node2);       //A,B
         node1 = empty_or_list();   //C
-        if (!consume(')')) error("forの開きカッコに対応する閉じカッコがありません: %s\n", tokens[token_pos]->input);
+        if (!consume(')')) error("forの開きカッコに対応する閉じカッコがありません: %s\n", input_str());
         node2 = new_node(0, node1, stmt());     //C,D
         node = new_node(ND_FOR, node, node2);   //(A,B),(C,D)
         return node;
@@ -406,7 +409,7 @@ static Node *stmt(void) {
     }
 
     if (!consume(';')) {
-        error(";'でないトークンです: %s", tokens[token_pos]->input);
+        error(";'でないトークンです: %s", input_str());
     }
     return node;
 }
@@ -431,8 +434,8 @@ static Node *func_arg_list(void) {
     for (;;) {
         //現時点では引数リストの型情報は捨てる
         //C言語仕様上型名は省略可能（デフォルトはint）
-        if (!consume(TK_INT)) error("型名がありません: %s", tokens[token_pos]->input);
-        if (!consume(TK_IDENT)) error("変数名がありません: %s", tokens[token_pos]->input);
+        if (!consume(TK_INT)) error("型名がありません: %s", input_str());
+        if (!consume(TK_IDENT)) error("変数名がありません: %s", input_str());
         vec_push(node->lst, new_node_var_def(tokens[token_pos-1]->name));
         if (!consume(',')) break;
     }
@@ -579,7 +582,7 @@ static Node *term(void) {
     if (consume('(')) {
         Node *node = assign();
         if (!consume(')')) {
-            error("開きカッコに対応する閉じカッコがありません: %s", tokens[token_pos]->input);
+            error("開きカッコに対応する閉じカッコがありません: %s", input_str());
         }
         return node;
     } else if (consume(TK_NUM)) {
@@ -594,14 +597,14 @@ static Node *term(void) {
                 node->lhs = new_node_list(node->lhs);
             }
             if (!consume(')')) {
-                error("関数コールの開きカッコに対応する閉じカッコがありません: %s", tokens[token_pos]->input);
+                error("関数コールの開きカッコに対応する閉じカッコがありません: %s", input_str());
             }
             return node;
         } else {
             return new_node_ident(name);
         }
     } else {
-        error("終端記号でないトークンです: %s", tokens[token_pos]->input);
+        error("終端記号でないトークンです: %s", input_str());
         return NULL;
     }
 }
