@@ -3,6 +3,7 @@ set -u
 
 EXE=tmp
 AFLAGS=-g
+ER=Error
 
 try() {
   expected="$1"
@@ -10,16 +11,25 @@ try() {
   org_input="$2"
 
   echo "$input" | grep main > /dev/null
-  if [ $? != 0 ]; then
+  if [ $? -ne 0 ]; then
     input="main(){$input}"
   fi
 
-  ./9cc "$input" > $EXE.s
-  gcc $AFLAGS -o $EXE $EXE.s func.o
-  ./$EXE
-  actual="$?"
+  if [ $expected == $ER ]; then
+    ./9cc "$input" 2>&1 > $EXE.s | grep "9cc:Error" > /dev/null
+    if [ $? -eq 0 ]; then
+      actual=$ER
+    else
+      actual="Normal End"
+    fi
+  else
+    ./9cc "$input" > $EXE.s
+    gcc $AFLAGS -o $EXE $EXE.s func.o
+    ./$EXE
+    actual="$?"
+  fi
 
-  if [ "$actual" = "$expected" ]; then
+  if [ "$actual" == "$expected" ]; then
     echo "$org_input => $actual"
   else
     echo "$org_input => $expected expected, but got $actual"
@@ -44,7 +54,9 @@ if [ $# -gt 0 ]; then
 fi
 
 try 42 "42;"
+try $ER "42"
 try 14 "10 + 2 * 3 - 4/2;"
+try $ER "10 + * 2;"
 try 3 "(((2+4)*1)/2);"
 try 2 "+5%-(-3);"
 try 6 "(1<2) + (2>1) + (3<=3) + (4>=4) + (5==5) + (6!=6+1);"
@@ -76,12 +88,16 @@ try 0 "1!=1 || 2==2+1 || 1>=2;"
 try 2 "ret1=func1(1);"
 try 8 "x=1;r1=func3(x*2,(2+1),3);"
 
+try 1 "main(){1;}"
 try 1 "func(){return 1;} main(){return func();}"
 try 15 "main(){return add(1,2)+add3(3,4,5);} 
         add(a,b){return a+b;} 
         add3(a,b,c){return a+b+c;}"
 try 106 "main(){a=1;b=2; return func(a,b+1);} 
         func(a,b){c=100;a=b; sum=a+b+c; return sum;}"
+try $ER "main(1){}"
+try $ER "main(a+1){}"
+try $ER "main(a,){}"
 
 rm -f $EXE $EXE.s
 echo "test: OK"

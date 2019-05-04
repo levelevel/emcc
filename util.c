@@ -45,6 +45,7 @@ int map_get(const Map *map, char *key, void**val) {
 void error(const char*fmt, ...) {
     va_list ap;
     va_start(ap, fmt);
+    fprintf(stderr, "9cc:Error: ");
     vfprintf(stderr, fmt, ap);
     fprintf(stderr, "\n");
     exit(1);
