@@ -52,7 +52,9 @@ const char* get_type_str(const Type *tp) {
     if (tp==NULL) return "null";
     buf1[0] = 0;
     type_str(tp);
-    return buf1;
+    char *ret = malloc(strlen(buf1)+1);
+    strcpy(ret, buf1);
+    return ret;
 }
 
 static char buf2[1024];

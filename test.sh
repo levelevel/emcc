@@ -155,6 +155,11 @@ try $ER "&1;"
 try $ER "int a; *a;"
 try $ER "int a; *a=0;"
 try $ER "int a; & &a;"
+try $ER "int *a; a=1;"
+try $ER "int a; int*b; a=b;"
+try $ER "int a; int*b; b=a;"
+try $ER "int a; int b; a=&b;"
+try $ER "int*a; int**b; a=b;"
 
 rm -f $EXE $EXE.s
 echo "test: OK"

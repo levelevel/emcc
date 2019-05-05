@@ -7,11 +7,19 @@ static char *arg_regs[] = {  //関数の引数で用いるレジスタ
 
 //抽象構文木を下りながらコード生成（スタックマシン）
 
+//ソースコードにコメントを出力する。printfと同じ引数。
 static void comment(const char*fmt, ...) {
     va_list ap;
     va_start(ap, fmt);
     printf("  # ");
     vprintf(fmt, ap);
+}
+
+//ノードのタイプが等しいかどうかを判定する
+static int node_type_eq(Type *tp1, Type *tp2) {
+    if (tp1->type != tp2->type) return 0;
+    if (tp1->ptr_of) return node_type_eq(tp1->ptr_of, tp2->ptr_of);
+    return 1;
 }
 
 static void gen(Node*node);
@@ -30,6 +38,7 @@ static void gen_lval(Node*node) {
         gen(node->rhs);     //rhsでアドレスを生成する
         if (node->rhs->tp->type != PTR)
             error("'*'は非ポインタ型(%s)を参照しています: %s\n", get_type_str(node->rhs->tp), node->input);
+        node->tp = node->rhs->tp->ptr_of;
     } else {
         error("アドレスを生成できません: %s", node->input);
     }
@@ -149,7 +158,7 @@ static void gen(Node*node) {
             printf("  pop rax\n");
         }
         printf("  push rax\n");
-    } else if (node->type == ND_LIST) {         //コンマリスト
+    } else if (node->type == ND_LIST) {     //コンマリスト
         Vector *lists = node->lst;
         Node **nodes = (Node**)lists->data;
         node->tp = nodes[lists->len-1]->tp;
@@ -165,6 +174,10 @@ static void gen(Node*node) {
         gen_lval(node->lhs);    //スタックトップにアドレス設定
         printf("  push 0\t#for RSP alignment+\n");
         gen(node->rhs);
+        if (!node_type_eq(node->lhs->tp, node->rhs->tp))
+            error("=の左右の型(%s:%s)が異なります: %s\n", 
+                get_type_str(node->lhs->tp),
+                get_type_str(node->rhs->tp), node->lhs->input);
         printf("  pop rax\n");  //rhsの値
         printf("  pop rdi\t#for RSP alignment-\n");
         printf("  pop rdi\n");  //lhsのアドレス
