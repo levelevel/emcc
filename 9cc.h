@@ -119,7 +119,8 @@ EXTERN int token_pos;   //tokensの現在位置
 EXTERN Funcdef *cur_funcdef;
 
 //識別子（関数コール）の管理
-EXTERN Map *func_map;       //key=name, value=dummy
+//プログラム内で定義された関数と、外部関数の両方を含む
+EXTERN Map *func_map;       //key=name, value=Funcdef
 
 //プログラム（関数定義）の管理
 EXTERN Map *funcdef_map;    //key=name, value=Funcdef

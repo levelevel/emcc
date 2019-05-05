@@ -243,12 +243,21 @@ static Node *new_node_ident(char *name, char *input) {
 static Node *new_node_func_call(char *name, char *input) {
     Node *node = new_node(ND_FUNC_CALL, NULL, NULL, input);
     node->name = name;
-    node->tp = new_type_int();  //暫定値
 //  node->lhs  = list();    //引数リスト
 
-    //未登録の関数名であれば登録する
-    if (map_get(func_map, name, NULL)==0) {
-        map_put(func_map, name, 0);
+    //未登録の関数名であれば仮登録する。
+    Funcdef *funcdef;
+    if (map_get(func_map, name, (void**)&funcdef)==0) {
+        funcdef = new_funcdef();
+        funcdef->name = name;
+        funcdef->node = NULL;
+        funcdef->tp = new_type_int();  //暫定値
+        map_put(func_map, name, funcdef);
+        node->tp = funcdef->tp;
+    } else {
+    //登録済みであればタイプを取得する
+    //もし本登録済みであれば正しい型名が取得できる。。引数はチェックしていない。
+        node->tp = funcdef->tp;
     }
     return node;
 }
@@ -262,9 +271,11 @@ static Node *new_node_func_def(char *name, Type *tp, char *input) {
 //  node->lhs  = list();        //引数リスト
 //  node->rhs  = block_items(); //ブロック
 
-    //未登録の関数名であれば登録する
-    if (map_get(func_map, name, NULL)==0) {
-        map_put(func_map, name, 0);
+    //未登録または仮登録の関数名であれば登録する
+    Funcdef *funcdef;
+    if (map_get(func_map, name, (void**)&funcdef)==0 ||
+        funcdef->node == NULL)  {
+        map_put(func_map, name, cur_funcdef);
     }
     return node;
 }
