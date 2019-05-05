@@ -28,7 +28,8 @@ static void gen_lval(Node*node) {
     } else if (node->type == ND_INDIRECT) {
         comment("LVALUE:*var\n");
         gen(node->rhs);     //rhsでアドレスを生成する
-        if (node->rhs->tp->type != PTR) error("'*'は非ポインタを参照しています: %s\n", node->input);
+        if (node->rhs->tp->type != PTR)
+            error("'*'は非ポインタ型(%s)を参照しています: %s\n", get_type_str(node->rhs->tp), node->input);
     } else {
         error("アドレスを生成できません: %s", node->input);
     }
@@ -47,7 +48,7 @@ static void gen(Node*node) {
     } else if (node->type == ND_VAR_DEF) {  //ローカル変数定義
         printf("  push 0\t# VAR_DEF\n");
     } else if (node->type == ND_IDENT) {    //変数参照
-        comment("IDENT:%s\n", node->name);
+        comment("IDENT:%s(%s)\n", node->name, get_type_str(node->tp));
         gen_lval(node);
         printf("  pop rax\n");
         printf("  mov rax, [rax]\t# IDENT:%s\n", node->name);
@@ -172,15 +173,16 @@ static void gen(Node*node) {
     } else if (node->type == ND_INDIRECT) { //*a（間接参照）
         comment("'*A'\n");
         gen(node->rhs);
-        if (node->rhs->tp->type != PTR) error("'*'は非ポインタを参照しています: %s\n", node->input);
+        if (node->rhs->tp->type != PTR)
+            error("'*'は非ポインタ型(%s)を参照しています: %s\n", get_type_str(node->rhs->tp), node->input);
         node->tp = node->rhs->tp->ptr_of;
         printf("  pop rax\n");  //rhsの値（アドレス）
         printf("  mov rax, [rax]\n");//戻り値
         printf("  push rax\n");
     } else if (node->type == ND_ADDRESS) { //&a（アドレス演算子）
-        node->tp = new_type(node->tp);
         comment("'&A'\n");
         gen_lval(node->rhs);
+        node->tp = new_type(node->rhs->tp);
         printf("  pop rax\n");  //rhsのアドレス=戻り値
         printf("  push rax\n");
     } else if (node->type == ND_INC_PRE) {  //++a
@@ -359,7 +361,9 @@ void print_functions(void) {
     for (int i=0; i < funcdef_map->keys->len; i++) {
         assert(funcdef[i]->node->type==ND_FUNC_DEF);
         cur_funcdef = funcdef[i];
-        printf("%s:\n", funcdef[i]->name);
+        printf("%s:\t#%s %s(%s)\n", funcdef[i]->name, 
+            get_type_str(funcdef[i]->tp), funcdef[i]->name,
+            get_func_args_str(funcdef[i]->node->lhs));
 
         // プロローグ
         // ローカル変数用の領域を確保する

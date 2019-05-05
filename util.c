@@ -40,6 +40,36 @@ int map_get(const Map *map, char *key, void**val) {
     return 0;
 }
 
+// ダンプ関数 ----------------------------------------
+static char *TypeStr[] = {"int", "*"};
+static char buf1[128];
+static void type_str(const Type *tp) {
+    if (tp->type==PTR) type_str(tp->ptr_of);
+    strcat(buf1, TypeStr[tp->type]);
+}
+// 型を表す文字列を返す
+const char* get_type_str(const Type *tp) {
+    if (tp==NULL) return "null";
+    buf1[0] = 0;
+    type_str(tp);
+    return buf1;
+}
+
+static char buf2[1024];
+// 関数の引数リストを表す文字列を返す
+const char* get_func_args_str(const Node *node) {
+    assert(node->type==ND_LIST);
+    int size = node->lst->len;
+    Node **ident_nodes = (Node**)node->lst->data;
+    int len = 0;
+    for (int i=0; i<size; i++) {
+        len += sprintf(buf2+len, "%s %s", 
+            get_type_str(ident_nodes[i]->tp), ident_nodes[i]->name);
+        if (i<size-1) len += sprintf(buf2+len, ",");
+    }
+    return buf2;
+}
+
 // エラーを報告するための関数 --------------------------
 // printfと同じ引数を取る
 void error(const char*fmt, ...) {

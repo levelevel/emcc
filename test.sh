@@ -5,18 +5,29 @@ EXE=tmp
 AFLAGS=-g
 ER=Error
 
+rm -f $EXE.log
+
+GDB=""
+test_er_only=0
+cnt=0
+
 try() {
   expected="$1"
   input="$2"
+  let cnt++
 
+  echo "=== test[$cnt] ================================" >> $EXE.log
   if [ $expected == $ER ]; then
-    ./9cc "$input" 2>&1 > $EXE.s | grep "9cc:Error" > /dev/null
+    ./9cc "$input" 2>&1 > $EXE.s | tee -a $EXE.log | grep "9cc:Error" > $EXE.err
     if [ $? -eq 0 ]; then
       actual=$ER
     else
       actual="Normal End"
     fi
+    if [ $test_er_only -ne 0 ]; then cat $EXE.err; fi
+    rm -f $EXE.err
   else
+    if [ $test_er_only -ne 0 ]; then return; fi
     ./9cc "$input" > $EXE.s
     gcc $AFLAGS -o $EXE $EXE.s func.o
     ./$EXE
@@ -24,19 +35,17 @@ try() {
   fi
 
   if [ "$actual" == "$expected" ]; then
-    echo "# $input => $actual"
+    echo "# $input => $actual" | tee -a $EXE.log
   else
-    echo "#! $input => $expected expected, but got $actual"
+    echo "#! $input => $expected expected, but got $actual" | tee -a $EXE.log
     exit 1
   fi 
+
+  cat $EXE.s >> $EXE.log
+  echo >> $EXE.log
 }
 
-if [ $# -gt 0 ]; then
-  GDB=""
-  if [ "$1" == "-d" ]; then
-    GDB=gdp
-    shift
-  fi
+try1() {
   make -s
   ./9cc "$*" > $EXE.s
   if [ $? != 0 ]; then exit 1; fi
@@ -44,8 +53,17 @@ if [ $# -gt 0 ]; then
   gcc $AFLAGS -o $EXE $EXE.s func.o
   $GDB ./$EXE
   echo $?
-  exit
-fi
+  exit $?
+}
+
+while [ $# -gt 0 ]; do
+  case $1 in
+  -d*) GDB=gdb;;
+  -e*) test_er_only=1;;
+  *) try1 "$1";;
+  esac
+  shift
+done
 
 try 42 "42;"
 try $ER "42"

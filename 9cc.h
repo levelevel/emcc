@@ -142,5 +142,8 @@ Map *new_map(void);
 void map_put(Map *map, char *key, void *val);
 int map_get(const Map *map, char *key, void**val);
 
-void run_test(void);
+const char* get_type_str(const Type *tp);
+const char* get_func_args_str(const Node *node);
+
 void error(const char*fmt, ...);
+void run_test(void);
