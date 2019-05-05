@@ -47,13 +47,15 @@ typedef struct {
 } Token;
 
 //抽象構文木 ----------------------------------------
-enum {
+typedef enum {
     ND_NUM = 256,   //整数のノードの型
     ND_IDENT,       //識別子のノードの型
     ND_INC,
     ND_DEC,
     ND_INC_PRE,
     ND_DEC_PRE,
+    ND_INDIRECT,    // *（間接参照）
+    ND_ADDRESS,     // &（アドレス演算子）
     ND_EQ,          // ==
     ND_NE,          // !=
     ND_LE,          // <=, >=
@@ -69,7 +71,7 @@ enum {
     ND_FUNC_CALL,   //関数コール
     ND_FUNC_DEF,    //関数定義
     ND_EMPTY,       //空のノード
-};
+} NDtype;
 
 typedef struct _Type Type;
 struct _Type {
@@ -86,13 +88,22 @@ struct _Node {
                     //typeがND_LISTの場合のasignのリスト
     int val;        //typeがND_NUMの場合の値
     char *name;     //typeがND_IDENTの場合の変数名
-    Type *tp;       //typeがND_IDENT、ND_FUNC_DEFの場合の型情報
+    Type *tp;       //型情報：typeがND_NUM、ND_IDENT、ND_FUNC_DEFの場合の場合は
+                    //トークナイズ時に設定。それ以外は評価時に設定。
+    char *input;    //トークン文字列（エラーメッセージ用）。Token.inputと同じ。
 };
+
+typedef struct {
+    char *name;     //変数名
+    Type *tp;       //変数の型情報
+    int offset;     //ベースポインタからのoffset
+} Vardef;
 
 typedef struct {
     char *name;     //関数名
     Node *node;     //ND_FUNC_DEFのnode
-    Map *ident_map; //ローカル変数：key=name, val=ベースポインタからのoffset
+    Type *tp;       //関数の型情報
+    Map *ident_map; //ローカル変数：key=name, val=Vardef
 } Funcdef;
 
 //グローバル変数 ----------------------------------------
@@ -114,6 +125,8 @@ EXTERN Map *func_map;       //key=name, value=dummy
 EXTERN Map *funcdef_map;    //key=name, value=Funcdef
 
 // parse.c
+Type* new_type(Type*ptr);
+Type* new_type_int(void);
 void tokenize(char *p);
 void print_tokens(void);
 void program(void);

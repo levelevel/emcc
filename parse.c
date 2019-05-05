@@ -37,6 +37,7 @@ TokenDef TokenLst1[] = {
     {"}",  1, '}'},
     {"!",  1, '!'},
     {",",  1, ','},
+    {"&",  1, '&'},
     {NULL, 0, 0}
 };
 
@@ -170,34 +171,53 @@ static Funcdef *new_funcdef(void) {
     return funcdef;
 }
 
+//型情報の生成
+Type* new_type(Type*ptr) {
+    Type *tp = calloc(1, sizeof(Type));
+    if (ptr) {
+        tp->type = PTR;
+        tp->ptr_of = ptr;
+    }
+    return tp;
+}
+
+Type* new_type_int(void) {
+    Type *tp = calloc(1, sizeof(Type));
+    tp->type = INT;
+    return tp;
+}
+
 //抽象構文木の生成（演算子）
-static Node *new_node(int type, Node *lhs, Node *rhs) {
+static Node *new_node(int type, Node *lhs, Node *rhs, char *input) {
     Node *node = calloc(1, sizeof(Node));
     node->type = type;
     node->lhs = lhs;
     node->rhs = rhs;
+    node->input = input;
     return node;
 }
 
 //抽象構文木の生成（数値）
-static Node *new_node_num(int val) {
-    Node *node = calloc(1, sizeof(Node));
-    node->type = ND_NUM;
+static Node *new_node_num(int val, char *input) {
+    Node *node = new_node(ND_NUM, NULL, NULL, input);
     node->val = val;
+    node->tp = new_type_int();
     return node;
 }
 
 //抽象構文木の生成（ローカル変数定義）
-static Node *new_node_var_def(char *name, Type*tp) {
-    Node *node = calloc(1, sizeof(Node));
-    node->type = ND_VAR_DEF;
+static Node *new_node_var_def(char *name, Type*tp, char *input) {
+    Node *node = new_node(ND_VAR_DEF, NULL, NULL, input);
     node->name = name;
     node->tp = tp;
 
     //未登録の識別子であれば登録する
     if (map_get(cur_funcdef->ident_map, name, NULL)==0) {
-        long offset = (cur_funcdef->ident_map->keys->len + 1) * 8;
-        map_put(cur_funcdef->ident_map, name, (void*)offset);
+        Vardef *vardef = calloc(1, sizeof(Vardef));
+        vardef->name = name;
+        vardef->offset = (cur_funcdef->ident_map->keys->len + 1) * 8;
+        vardef->tp = tp;
+        map_put(cur_funcdef->ident_map, name, vardef);
     } else {
         error("'%s'は変数の重複定義です: '%s'\n", name, tokens[token_pos-1]->input);
     }
@@ -205,23 +225,25 @@ static Node *new_node_var_def(char *name, Type*tp) {
 }
 
 //抽象構文木の生成（識別子：ローカル変数）
-static Node *new_node_ident(char *name) {
-    Node *node = calloc(1, sizeof(Node));
-    node->type = ND_IDENT;
+static Node *new_node_ident(char *name, char *input) {
+    Node *node = new_node(ND_IDENT, NULL, NULL, input);
     node->name = name;
 
     //定義済みの識別子であるかをチェック
-    if (map_get(cur_funcdef->ident_map, name, NULL)==0) {
+    Vardef *vardef;
+    if (map_get(cur_funcdef->ident_map, name, (void**)&vardef)==0) {
         error("'%s'は未定義の変数です: %s\n", name, tokens[token_pos-1]->input);
     }
+    node->tp = vardef->tp;
+
     return node;
 }
 
 //抽象構文木の生成（関数コール）
-static Node *new_node_func_call(char *name) {
-    Node *node = calloc(1, sizeof(Node));
-    node->type = ND_FUNC_CALL;
+static Node *new_node_func_call(char *name, char *input) {
+    Node *node = new_node(ND_FUNC_CALL, NULL, NULL, input);
     node->name = name;
+    node->tp = new_type_int();  //暫定値
 //  node->lhs  = list();    //引数リスト
 
     //未登録の関数名であれば登録する
@@ -232,11 +254,11 @@ static Node *new_node_func_call(char *name) {
 }
 
 //抽象構文木の生成（関数定義）
-static Node *new_node_func_def(char *name, Type *tp) {
-    Node *node = calloc(1, sizeof(Node));
-    node->type = ND_FUNC_DEF;
+static Node *new_node_func_def(char *name, Type *tp, char *input) {
+    Node *node = new_node(ND_FUNC_DEF, NULL, NULL, input);
     node->name = name;
     node->tp = tp;
+    cur_funcdef->tp = tp;
 //  node->lhs  = list();        //引数リスト
 //  node->rhs  = block_items(); //ブロック
 
@@ -248,24 +270,21 @@ static Node *new_node_func_def(char *name, Type *tp) {
 }
 
 //抽象構文木の生成（空文）
-static Node *new_node_empty(void) {
-    Node *node = calloc(1, sizeof(Node));
-    node->type = ND_EMPTY;
+static Node *new_node_empty(char *input) {
+    Node *node = new_node(ND_EMPTY, NULL, NULL, input);
     return node;
 }
 
 //抽象構文木の生成（ブロック）
-static Node *new_node_block(void) {
-    Node *node = calloc(1, sizeof(Node));
-    node->type = ND_BLOCK;
+static Node *new_node_block(char *input) {
+    Node *node = new_node(ND_BLOCK, NULL, NULL, input);
     node->lst  = new_vector();
     return node;
 }
 
 //抽象構文木の生成（コンマリスト）
-static Node *new_node_list(Node *item) {
-    Node *node = calloc(1, sizeof(Node));
-    node->type = ND_LIST;
+static Node *new_node_list(Node *item, char *input) {
+    Node *node = new_node(ND_LIST, NULL, NULL, input);
     node->lst  = new_vector();
     if (item) vec_push(node->lst, item);
     return node;
@@ -315,15 +334,17 @@ static Node *new_node_list(Node *item) {
     mul: mul "*" unary
     mul: mul "/" unary
     mul: mod "%" unary
-    unary: r_unary
+    unary: post_unary
     unary: "+" unary
     unary: "-" unary
     unary: "!" unary
-    unary: "++" r_unnary;
-    unary: "--" r_unnary;
-    r_unary: term
-    r_unary: term "++"
-    r_unary: term "--"
+    unary: "++" post_unary;
+    unary: "--" post_unary;
+    unary: "*" post_unary
+    unary: "&" post_unary
+    post_unary: term
+    post_unary: term "++"
+    post_unary: term "--"
     term: num
     term: ident
     term: ident "(" ")"
@@ -345,7 +366,7 @@ static Node *relational(void);
 static Node *add(void);
 static Node *mul(void); 
 static Node *unary(void);
-static Node *r_unary(void);
+static Node *post_unary(void);
 static Node *term(void); 
 
 void program(void) {
@@ -366,11 +387,12 @@ static Node *function(void) {
     Node *node;
     Type *tp;
     char *name;
+    char *input = input_str();
     if (token_is(TK_INT)) {
         tp = type();
         if (!consume_ident(&name)) error("型名の後に関数名がありません: %s\n", input_str());
         if (!consume('(')) error("関数定義の開きカッコがありません: %s\n", input_str());
-        node = new_node_func_def(name, tp);
+        node = new_node_func_def(name, tp, input);
         node->lhs = func_arg_list();
         if (!consume(')')) error("関数定義の閉じカッコがありません: %s\n", input_str());
         if (!consume('{')) error("関数定義の { がありません: %s\n", input_str());
@@ -383,28 +405,31 @@ static Node *function(void) {
 
 static Node *stmt(void) {
     Node *node;
+    char *input = input_str();
     if (token_is(TK_INT)) {         //int ident（変数定義）
         node = var_def();
     } else if (consume(TK_RETURN)) {
-        node = new_node(ND_RETURN, list(), NULL);
+        node = new_node(ND_RETURN, list(), NULL, input);
     } else if (consume(TK_IF)) {    //if(A)B else C
         Node *node_A, *node_B;
         if (!consume('(')) error("ifの後に開きカッコがありません: %s\n", input_str());
         node_A = list();
         if (!consume(')')) error("ifの開きカッコに対応する閉じカッコがありません: %s\n", input_str());
+        input = input_str();
         node_B = stmt();
-        node = new_node(0, node_A, node_B); //lhs
+        node = new_node(0, node_A, node_B, input); //lhs
+        input = input_str();
         if (consume(TK_ELSE)) {
-            node = new_node(ND_IF, node, stmt());
+            node = new_node(ND_IF, node, stmt(), input);
         } else {
-            node = new_node(ND_IF, node, NULL);
+            node = new_node(ND_IF, node, NULL, input);
         }
         return node;
     } else if (consume(TK_WHILE)) {
         if (!consume('(')) error("whileの後に開きカッコがありません: %s\n", input_str());
         node = list();
         if (!consume(')')) error("whileの開きカッコに対応する閉じカッコがありません: %s\n", input_str());
-        node = new_node(ND_WHILE, node, stmt());
+        node = new_node(ND_WHILE, node, stmt(), input);
         return node;
     } else if (consume(TK_FOR)) {   //for(A;B;C)D
         Node *node1, *node2;
@@ -413,11 +438,11 @@ static Node *stmt(void) {
         if (!consume(';')) error("forの1個目の;がありません: %s\n", input_str());
         node2 = empty_or_list();   //B
         if (!consume(';')) error("forの2個目の;がありません: %s\n", input_str());
-        node = new_node(0, node1, node2);       //A,B
+        node = new_node(0, node1, node2, input);       //A,B
         node1 = empty_or_list();   //C
         if (!consume(')')) error("forの開きカッコに対応する閉じカッコがありません: %s\n", input_str());
-        node2 = new_node(0, node1, stmt());     //C,D
-        node = new_node(ND_FOR, node, node2);   //(A,B),(C,D)
+        node2 = new_node(0, node1, stmt(), input);     //C,D
+        node = new_node(ND_FOR, node, node2, input);   //(A,B),(C,D)
         return node;
     } else if (consume('{')) {      //{ ブロック }
         node = block_items();
@@ -441,18 +466,12 @@ static Node* var_def(void) {
     Node *node = NULL;
     Type *tp = type();
     char *name;
+    char *input = input_str();
     if (!consume_ident(&name)) error("型名の後に変数名がありません: %s\n", input_str());
-    node = new_node_var_def(name, tp); //ND_VAR_DEF
+    node = new_node_var_def(name, tp, input); //ND_VAR_DEF
     return node;
 }
-static Type* new_type(Type*ptr) {
-    Type *tp = calloc(1, sizeof(Type));
-    if (ptr) {
-        tp->type = PTR;
-        tp->ptr_of = ptr;
-    }
-    return tp;
-}
+
 static Type* type(void) {
     Type *tp = new_type(NULL);
     if (consume(TK_INT)) {
@@ -467,7 +486,7 @@ static Type* type(void) {
 }
 
 static Node *block_items(void) {
-    Node *node = new_node_block();
+    Node *node = new_node_block(input_str());
     Vector *blocks = node->lst;
     while (!consume('}')) {
         vec_push(blocks, stmt());
@@ -481,31 +500,35 @@ static Node *block_items(void) {
     func_arg_list: 
 */
 static Node *func_arg_list(void) {
-    Node *node = new_node_list(NULL);
+    Node *node = new_node_list(NULL, input_str());
     Type *tp;
     char *name;
     if (!token_is(TK_INT)) return node; //空のリスト
     for (;;) {
+        char *input = input_str();
         //C言語仕様上型名は省略可能（デフォルトはint）
         tp = type();
         if (!consume_ident(&name)) error("変数名がありません: %s", input_str());
-        vec_push(node->lst, new_node_var_def(name, tp));
+        vec_push(node->lst, new_node_var_def(name, tp, input));
         if (!consume(',')) break;
     }
     return node;
 }
 
+//コンマリスト（左結合）
 // ';'、')'でないトークンまで読んで、空文(ND_EMPTY)またはリスト(ND_LIST)を作成する
 static Node *empty_or_list(void) {
-    if (token_is(';') || token_is(')')) return new_node_empty();
+    if (token_is(';') || token_is(')')) return new_node_empty(input_str());
     return list();
 }
 
+//コンマリスト（左結合）
 // ','でないトークンまで読んで、空でないリスト(ND_LIST)を作成する
 static Node *list(void) {
+    char *input = input_str();
     Node *node = assign();
     if (consume(',')) {
-        node = new_node_list(node);
+        node = new_node_list(node, input);
         Vector *lists = node->lst;
         vec_push(lists, assign());
         while (consume(',')) {
@@ -515,123 +538,148 @@ static Node *list(void) {
     return node;
 }
 
+//代入（右結合）
 static Node *assign(void) {
     Node *node = logical_or();
+    char *input = input_str();
     while (consume('=')) {
-        node = new_node('=', node, assign());
+        node = new_node('=', node, assign(), input);
+        input = input_str();
     }
     return node;
 }
 
+//論理和（左結合）
 static Node *logical_or(void) {
     Node *node = logical_and();
     for (;;) {
+        char *input = input_str();
         if (consume(TK_LOR)) {
-            node = new_node(ND_LOR, node, logical_and());
+            node = new_node(ND_LOR, node, logical_and(), input);
         } else {
             return node;
         }
     }
 }
 
+//論理積（左結合）
 static Node *logical_and(void) {
     Node *node = equality();
     for (;;) {
+        char *input = input_str();
         if (consume(TK_LAND)) {
-            node = new_node(ND_LAND, node, equality());
+            node = new_node(ND_LAND, node, equality(), input);
         } else {
             return node;
         }
     }
 }
 
+//等価演算（左結合）
 static Node *equality(void) {
     Node *node = relational();
     for (;;) {
+        char *input = input_str();
         if (consume(TK_EQ)) {
-            node = new_node(ND_EQ, node, relational());
+            node = new_node(ND_EQ, node, relational(), input);
         } else if (consume(TK_NE)) {
-            node = new_node(ND_NE, node, relational());
+            node = new_node(ND_NE, node, relational(), input);
         } else {
             return node;
         }
     }
 }
 
+//関係演算（左結合）
 static Node *relational(void) {
     Node *node = add();
     for (;;) {
+        char *input = input_str();
         if (consume('<')) {
-            node = new_node('<', node, add());
+            node = new_node('<', node, add(), input);
         } else if (consume(TK_LE)) {
-            node = new_node(ND_LE, node, add());
+            node = new_node(ND_LE, node, add(), input);
         } else if (consume('>')) {
-            node = new_node('<', add(), node);
+            node = new_node('<', add(), node, input);
         } else if (consume(TK_GE)) {
-            node = new_node(ND_LE, add(), node);
+            node = new_node(ND_LE, add(), node, input);
         } else {
             return node;
         }
     }
 }
 
+//加減算（左結合）
 static Node *add(void) {
     Node *node = mul();
     for (;;) {
+        char *input = input_str();
         if (consume('+')) {
-            node = new_node('+', node, mul());
+            node = new_node('+', node, mul(), input);
         } else if (consume('-')) {
-            node = new_node('-', node, mul());
+            node = new_node('-', node, mul(), input);
         } else {
             return node;
         }
     }
 }
 
+//乗除算、剰余（左結合）
 static Node *mul(void) {
     Node *node = unary();
     for (;;) {
+        char *input = input_str();
         if (consume('*')) {
-            node = new_node('*', node, unary());
+            node = new_node('*', node, unary(), input);
         } else if (consume('/')) {
-            node = new_node('/', node, unary());
+            node = new_node('/', node, unary(), input);
         } else if (consume('%')) {
-            node = new_node('%', node, unary());
+            node = new_node('%', node, unary(), input);
         } else {
             return node;
         }
     }
 }
 
+//前置単項演算子（右結合）
 static Node *unary(void) {
+    char *input = input_str();
     if (consume('+')) {
         return unary();
     } else if (consume('-')) {
-        return new_node('-', new_node_num(0), unary());
+        return new_node('-', new_node_num(0, input), unary(), input);
     } else if (consume('!')) {
-        return new_node('!', unary(), NULL);
+        return new_node('!', NULL, unary(), input);
     } else if (consume(TK_INC)) {
-        return new_node(ND_INC_PRE, r_unary(), NULL);
+        return new_node(ND_INC_PRE, NULL, post_unary(), input);
     } else if (consume(TK_DEC)) {
-        return new_node(ND_DEC_PRE, r_unary(), NULL);
+        return new_node(ND_DEC_PRE, NULL, post_unary(), input);
+    } else if (consume('*')) {
+        return new_node(ND_INDIRECT, NULL, unary(), input);
+    } else if (consume('&')) {
+        return new_node(ND_ADDRESS, NULL, unary(), input);
     } else {
-        return r_unary();
+        return post_unary();
     }
 }
 
-static Node *r_unary(void) {
+//後置単項演算子（左結合）
+static Node *post_unary(void) {
     Node *node = term();
+    char *input = input_str();
     if (consume(TK_INC)) {
-        return new_node(ND_INC, node, NULL);
+        return new_node(ND_INC, node, NULL, input);
     } else if (consume(TK_DEC)) {
-        return new_node(ND_DEC, node, NULL);
+        return new_node(ND_DEC, node, NULL, input);
     } else {
         return node;
     }
 }
 
+//終端記号：数値、識別子（変数、関数）、カッコ
 static Node *term(void) {
     char *name;
+    char *input = input_str();
     if (consume('(')) {
         Node *node = assign();
         if (!consume(')')) {
@@ -639,24 +687,24 @@ static Node *term(void) {
         }
         return node;
     } else if (consume(TK_NUM)) {
-        return new_node_num(tokens[token_pos-1]->val);
+        return new_node_num(tokens[token_pos-1]->val, input);
     } else if (consume_ident(&name)) {
         if (consume('(')) { //関数コール
-            Node *node = new_node_func_call(name);
+            Node *node = new_node_func_call(name, input);
             if (consume(')')) return node;
             node->lhs = list();
             if (node->lhs->type != ND_LIST) {
-                node->lhs = new_node_list(node->lhs);
+                node->lhs = new_node_list(node->lhs, input);
             }
             if (!consume(')')) {
                 error("関数コールの開きカッコに対応する閉じカッコがありません: %s", input_str());
             }
             return node;
         } else {
-            return new_node_ident(name);
+            return new_node_ident(name, input);
         }
     } else {
-        error("終端記号でないトークンです: %s", input_str());
+        error("終端記号でないトークンです: %s", input);
         return NULL;
     }
 }

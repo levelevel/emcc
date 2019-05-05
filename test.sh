@@ -50,7 +50,7 @@ fi
 try 42 "42;"
 try $ER "42"
 try 14 "10 + 2 * 3 - 4/2;"
-try $ER "10 + * 2;"
+try $ER "10 + / 2;"
 try 3 "(((2+4)*1)/2);"
 try 2 "+5%-(-3);"
 try 6 "(1<2) + (2>1) + (3<=3) + (4>=4) + (5==5) + (6!=6+1);"
@@ -111,8 +111,32 @@ try $ER "int main(int a+1){}"
 try $ER "int main(int a,){}"
 try $ER "a;"
 try $ER "int a; int a;"
+try $ER "int (a);"
+try $ER "int &a;"
+try $ER "int +a;"
+try $ER "1++;"
+try $ER "--1;"
 
-try 1 "int *main(int *a, int **b){int *p; 1;} int**func(int ***********a){a;}"
+try 1 "int main() {int a; int *b; a=1; b=&a; return *b;}"
+try 20 "int main() {
+          int a; int *b;
+          a=10; b=&a;
+          return f(&a,&b);
+        }
+        int f(int *p, int**pp) {
+          return *p + **pp;
+        }"
+try 12 "int main() {int a; int *p; p=&a; *p=12; return a;}"
+try 1 "int *main(int *a, int **b){int *p; 1;} int**func(int ***********a){&(a); &(*(a)); &**(**a);}"
+
+try $ER "int a; *a;"
+try $ER "int *a; **a;"
+try $ER "*1;"
+try $ER "*1=0;"
+try $ER "&1;"
+try $ER "int a; *a;"
+try $ER "int a; *a=0;"
+try $ER "int a; & &a;"
 
 rm -f $EXE $EXE.s
 echo "test: OK"
