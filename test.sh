@@ -149,6 +149,8 @@ try 12 "int main() {int a; int *p; p=&a; *p=12; return a;}"
 try 1 "int *main(int *a, int **b){int *p; 1;} int**func(int ***********a){&(a); &(*(a)); &**(**a);}"
 try 1 "int *f(){int a; return &a;} int main(){int *a; a=f(); return 1;}"
 try 1 "int* f(int *a){return a;} int main(){int x; int *y; y=f(&x); return &x==y;}"
+try 8 "int **p; p=0; p++; ++p; return p-1;"
+try 4 "int *p; int a; p=0; a=2; p=p+a; p--; --p; p=p+0; return 1+p;"
 
 try $ER "int a; *a;"
 try $ER "int *a; **a;"
@@ -164,6 +166,9 @@ try $WR "int a; int*b; b=a;"
 try $WR "int a; int b; a=&b;"
 try $WR "int*a; int**b; a=b;"
 try $WR "int *f(){int a; return &a;} int main(){int a; a=f();}"
+try $ER "int *p; p+p;"
+try $ER "int *p; p-p;"
+try $ER "int *p; 1-p;"
 
 rm -f $EXE $EXE.s
 echo "test: OK"

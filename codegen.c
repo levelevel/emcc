@@ -22,6 +22,47 @@ static int node_type_eq(Type *tp1, Type *tp2) {
     return 1;
 }
 
+//型のサイズ
+static int size_of(Type *tp) {
+    assert(tp && tp->type==PTR);
+    if (tp->ptr_of->type==INT) return 4;
+    return 8;
+}
+
+//乗算をシフトで実現できるときのシフト量
+static int shift_size(int val) {
+    switch (val) {
+        case 1: return 0;
+        case 2: return 1;
+        case 4: return 2;
+        case 8: return 3;
+        case 16: return 4;
+        case 32: return 5;
+        case 64: return 6;
+        case 128: return 7;
+        case 256: return 8;
+    }
+    return -1;
+}
+
+// レジスタをval倍する。rdxは保存しない。
+static void gen_mul_reg(char *reg_name, int val) {
+    int shift = shift_size(val);
+    if (shift>0) {
+        printf("  shl %s, %d\t# %s * %d\n", reg_name, shift, reg_name, val);
+    } else if (strcmp(reg_name, "rax")==0) {
+        printf("  mov rdx, %d\t# start: %s * %d\n", val, reg_name, val);
+        printf("  mul rdx\t# end\n");
+    } else {
+        printf("  push rax\t# start: %s * %d\n", reg_name, val);
+        printf("  mov rax, %s\n", reg_name);
+        printf("  mov rdx, %d\n", val);
+        printf("  mul rdx\n");
+        printf("  mov %s, rax\n", reg_name);
+        printf("  pop rax\t# end\n");
+    }
+}
+
 static void gen(Node*node);
 
 //式を左辺値として評価し、そのアドレスをPUSHする
@@ -174,7 +215,8 @@ static void gen(Node*node) {
         gen_lval(node->lhs);    //スタックトップにアドレス設定
         printf("  push 0\t#for RSP alignment+\n");
         gen(node->rhs);
-        if (!node_type_eq(node->lhs->tp, node->rhs->tp))
+        if (!(node->rhs->type==ND_NUM && node->rhs->val==0) &&  //右辺が0の場合は無条件にOK
+            !node_type_eq(node->lhs->tp, node->rhs->tp))
             warning("=の左右の型(%s:%s)が異なります: %s\n", 
                 get_type_str(node->lhs->tp),
                 get_type_str(node->rhs->tp), node->lhs->input);
@@ -204,7 +246,11 @@ static void gen(Node*node) {
         gen_lval(node->rhs);
         printf("  pop rdi\n");  //rhsのアドレス
         printf("  mov rax, [rdi]\n");
-        printf("  inc rax\n");  //戻り値を設定する前にINC
+        if (node->tp->type==PTR) {
+            printf("  add rax, %d\n", size_of(node->tp));
+        } else {
+            printf("  inc rax\n");  //戻り値を設定する前にINC
+        }
         printf("  mov [rdi], rax\n");
         printf("  push rax\n"); //戻り値
     } else if (node->type == ND_DEC_PRE) {  //--a
@@ -213,7 +259,11 @@ static void gen(Node*node) {
         gen_lval(node->rhs);
         printf("  pop rdi\n");  //rhsのアドレス
         printf("  mov rax, [rdi]\n");
-        printf("  dec rax\n");  //戻り値を設定する前にDEC
+        if (node->tp->type==PTR) {
+            printf("  sub rax, %d\n", size_of(node->tp));
+        } else {
+            printf("  dec rax\n");  //戻り値を設定する前にDEC
+        }
         printf("  mov [rdi], rax\n");
         printf("  push rax\n"); //戻り値
     } else if (node->type == ND_INC) {      //a++
@@ -222,8 +272,12 @@ static void gen(Node*node) {
         gen_lval(node->lhs);
         printf("  pop rdi\n");  //lhsのアドレス
         printf("  mov rax, [rdi]\n");
-        printf("  push rax\n"); //戻り値
-        printf("  inc rax\n");  //戻り値を設定した後でINC
+        printf("  push rax\n"); //INCする前に戻り値を設定
+        if (node->tp->type==PTR) {
+            printf("  add rax, %d\n", size_of(node->tp));
+        } else {
+            printf("  inc rax\n");
+        }
         printf("  mov [rdi], rax\n");
     } else if (node->type == ND_DEC) {      //a--
         node->tp = node->lhs->tp;
@@ -231,8 +285,12 @@ static void gen(Node*node) {
         gen_lval(node->lhs);
         printf("  pop rdi\n");  //lhsのアドレス
         printf("  mov rax, [rdi]\n");
-        printf("  push rax\n"); //戻り値
-        printf("  dec rax\n");  //戻り値を設定した後でDEC
+        printf("  push rax\n"); //DECする前に戻り値を設定
+        if (node->tp->type==PTR) {
+            printf("  sub rax, %d\n", size_of(node->tp));
+        } else {
+            printf("  dec rax\n");
+        }
         printf("  mov [rdi], rax\n");
     } else if (node->type == '!') {         //否定
         node->tp = new_type_int();
@@ -318,11 +376,24 @@ static void gen(Node*node) {
         case '+':   //rax(lhs)+rdi(rhs)
             node->tp = node->lhs->tp;
             comment("'+'\n");
+            if (node->lhs->tp->type==PTR && node->rhs->tp->type==PTR) {
+                error("ポインタ同士の加算です: %s\n", node->lhs->input);
+            } else if (node->lhs->tp->type==PTR && node->rhs->tp->type!=PTR) {
+                gen_mul_reg("rdi", size_of(node->lhs->tp));
+            } else if (node->lhs->tp->type!=PTR && node->rhs->tp->type==PTR) {
+                node->tp = node->rhs->tp;
+                gen_mul_reg("rax", size_of(node->rhs->tp));
+            }
             printf("  add rax, rdi\n");
             break;
         case '-':   //rax(lhs)-rdi(rhs)
             node->tp = node->lhs->tp;
             comment("'-'\n");
+            if (node->rhs->tp->type==PTR) {
+                error("ポインタによる減算です: %s\n", node->input);
+            } else if (node->lhs->tp->type==PTR && node->rhs->tp->type!=PTR) {
+                gen_mul_reg("rdi", size_of(node->lhs->tp));
+            }
             printf("  sub rax, rdi\n");
             break;
         case '*':   //rax*rdi -> rdx:rax
