@@ -370,7 +370,7 @@ static Node *new_node_list(Node *item, char *input) {
     term: num
     term: ident
     term: ident "(" ")"
-    term: "(" assign ")"
+    term: "(" list ")"
     term: "sizeof" unary
 */
 static Node *function(void);
@@ -728,7 +728,7 @@ static Node *term(void) {
     char *name;
     char *input = input_str();
     if (consume('(')) {
-        Node *node = assign();
+        Node *node = list();
         if (!consume(')')) {
             error("開きカッコに対応する閉じカッコがありません: %s", input_str());
         }
