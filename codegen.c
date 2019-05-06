@@ -15,20 +15,6 @@ static void comment(const char*fmt, ...) {
     vprintf(fmt, ap);
 }
 
-//ノードのタイプが等しいかどうかを判定する
-static int node_type_eq(Type *tp1, Type *tp2) {
-    if (tp1->type != tp2->type) return 0;
-    if (tp1->ptr_of) return node_type_eq(tp1->ptr_of, tp2->ptr_of);
-    return 1;
-}
-
-//型のサイズ
-static int size_of(Type *tp) {
-    assert(tp && tp->type==PTR);
-    if (tp->ptr_of->type==INT) return 4;
-    return 8;
-}
-
 //乗算をシフトで実現できるときのシフト量
 static int shift_size(int val) {
     switch (val) {
@@ -79,7 +65,6 @@ static void gen_lval(Node*node) {
         gen(node->rhs);     //rhsでアドレスを生成する
         if (node->rhs->tp->type != PTR)
             error("'*'は非ポインタ型(%s)を参照しています: %s\n", get_type_str(node->rhs->tp), node->input);
-        node->tp = node->rhs->tp->ptr_of;
     } else {
         error("アドレスを生成できません: %s", node->input);
     }
@@ -202,7 +187,6 @@ static void gen(Node*node) {
     } else if (node->type == ND_LIST) {     //コンマリスト
         Vector *lists = node->lst;
         Node **nodes = (Node**)lists->data;
-        node->tp = nodes[lists->len-1]->tp;
         for (int i=0; i < lists->len; i++) {
             comment("LIST[%d]\n", i);
             gen(nodes[i]);
@@ -210,16 +194,10 @@ static void gen(Node*node) {
         }
         printf("  push rax\n");
     } else if (node->type == '=') {         //代入
-        node->tp = node->rhs->tp;
         comment("'='\n");
         gen_lval(node->lhs);    //スタックトップにアドレス設定
         printf("  push 0\t#for RSP alignment+\n");
         gen(node->rhs);
-        if (!(node->rhs->type==ND_NUM && node->rhs->val==0) &&  //右辺が0の場合は無条件にOK
-            !node_type_eq(node->lhs->tp, node->rhs->tp))
-            warning("=の左右の型(%s:%s)が異なります: %s\n", 
-                get_type_str(node->lhs->tp),
-                get_type_str(node->rhs->tp), node->lhs->input);
         printf("  pop rax\n");  //rhsの値
         printf("  pop rdi\t#for RSP alignment-\n");
         printf("  pop rdi\n");  //lhsのアドレス
@@ -230,70 +208,63 @@ static void gen(Node*node) {
         gen(node->rhs);
         if (node->rhs->tp->type != PTR)
             error("'*'は非ポインタ型(%s)を参照しています: %s\n", get_type_str(node->rhs->tp), node->input);
-        node->tp = node->rhs->tp->ptr_of;
         printf("  pop rax\n");  //rhsの値（アドレス）
         printf("  mov rax, [rax]\n");//戻り値
         printf("  push rax\n");
     } else if (node->type == ND_ADDRESS) { //&a（アドレス演算子）
         comment("'&A'\n");
         gen_lval(node->rhs);
-        node->tp = new_type(node->rhs->tp);
         printf("  pop rax\n");  //rhsのアドレス=戻り値
         printf("  push rax\n");
     } else if (node->type == ND_INC_PRE) {  //++a
-        node->tp = node->rhs->tp;
         comment("'++A'\n");
         gen_lval(node->rhs);
         printf("  pop rdi\n");  //rhsのアドレス
         printf("  mov rax, [rdi]\n");
         if (node->tp->type==PTR) {
-            printf("  add rax, %d\n", size_of(node->tp));
+            printf("  add rax, %d\n", size_of(node->tp->ptr_of));
         } else {
             printf("  inc rax\n");  //戻り値を設定する前にINC
         }
         printf("  mov [rdi], rax\n");
         printf("  push rax\n"); //戻り値
     } else if (node->type == ND_DEC_PRE) {  //--a
-        node->tp = node->rhs->tp;
         comment("'--A'\n");
         gen_lval(node->rhs);
         printf("  pop rdi\n");  //rhsのアドレス
         printf("  mov rax, [rdi]\n");
         if (node->tp->type==PTR) {
-            printf("  sub rax, %d\n", size_of(node->tp));
+            printf("  sub rax, %d\n", size_of(node->tp->ptr_of));
         } else {
             printf("  dec rax\n");  //戻り値を設定する前にDEC
         }
         printf("  mov [rdi], rax\n");
         printf("  push rax\n"); //戻り値
     } else if (node->type == ND_INC) {      //a++
-        node->tp = node->lhs->tp;
         comment("'A++'\n");
         gen_lval(node->lhs);
         printf("  pop rdi\n");  //lhsのアドレス
         printf("  mov rax, [rdi]\n");
         printf("  push rax\n"); //INCする前に戻り値を設定
         if (node->tp->type==PTR) {
-            printf("  add rax, %d\n", size_of(node->tp));
+            printf("  add rax, %d\n", size_of(node->tp->ptr_of));
         } else {
             printf("  inc rax\n");
         }
         printf("  mov [rdi], rax\n");
     } else if (node->type == ND_DEC) {      //a--
-        node->tp = node->lhs->tp;
         comment("'A--'\n");
         gen_lval(node->lhs);
         printf("  pop rdi\n");  //lhsのアドレス
         printf("  mov rax, [rdi]\n");
         printf("  push rax\n"); //DECする前に戻り値を設定
         if (node->tp->type==PTR) {
-            printf("  sub rax, %d\n", size_of(node->tp));
+            printf("  sub rax, %d\n", size_of(node->tp->ptr_of));
         } else {
             printf("  dec rax\n");
         }
         printf("  mov [rdi], rax\n");
     } else if (node->type == '!') {         //否定
-        node->tp = new_type_int();
         comment("'!'\n");
         gen(node->rhs);
         printf("  pop rax\n");
@@ -316,7 +287,6 @@ static void gen(Node*node) {
         case ND_LAND: //"&&"
         {
             int cnt = label_cnt++;
-            node->tp = new_type_int();
             comment("'&&'\n");
             printf("  cmp rax, 0\n");   //lhs
             printf("  je .LFalse%03d\n", cnt);
@@ -332,7 +302,6 @@ static void gen(Node*node) {
         case ND_LOR: //"||"
         {
             int cnt = label_cnt++;
-            node->tp = new_type_int();
             comment("'||'\n");
             printf("  cmp rax, 0\n");   //lhs
             printf("  jne .LTrue%03d\n", cnt);
@@ -346,69 +315,56 @@ static void gen(Node*node) {
             break;
         }
         case ND_EQ: //"=="
-            node->tp = new_type_int();
             comment("'=='\n");
             printf("  cmp rax, rdi\n");
             printf("  sete al\n");
             printf("  movzb rax, al\n");
             break;
         case ND_NE: //"!="
-            node->tp = new_type_int();
             comment("'!='\n");
             printf("  cmp rax, rdi\n");
             printf("  setne al\n");
             printf("  movzb rax, al\n");
             break;
         case '<':   //'>'もここで対応（構文木作成時に左右入れ替えてある）
-            node->tp = new_type_int();
             comment("'<' or '>'\n");
             printf("  cmp rax, rdi\n");
             printf("  setl al\n");
             printf("  movzb rax, al\n");
             break;
         case ND_LE: //"<="、">="もここで対応（構文木作成時に左右入れ替えてある）
-            node->tp = new_type_int();
             comment("'<=' or '>='\n");
             printf("  cmp rax, rdi\n");
             printf("  setle al\n");
             printf("  movzb rax, al\n");
             break;
         case '+':   //rax(lhs)+rdi(rhs)
-            node->tp = node->lhs->tp;
             comment("'+'\n");
-            if (node->lhs->tp->type==PTR && node->rhs->tp->type==PTR) {
-                error("ポインタ同士の加算です: %s\n", node->lhs->input);
-            } else if (node->lhs->tp->type==PTR && node->rhs->tp->type!=PTR) {
-                gen_mul_reg("rdi", size_of(node->lhs->tp));
-            } else if (node->lhs->tp->type!=PTR && node->rhs->tp->type==PTR) {
-                node->tp = node->rhs->tp;
-                gen_mul_reg("rax", size_of(node->rhs->tp));
+            if (node->lhs->tp->type==PTR) {
+                gen_mul_reg("rdi", size_of(node->lhs->tp->ptr_of));
+            } else if (node->rhs->tp->type==PTR) {
+                gen_mul_reg("rax", size_of(node->rhs->tp->ptr_of));
             }
             printf("  add rax, rdi\n");
             break;
         case '-':   //rax(lhs)-rdi(rhs)
-            node->tp = node->lhs->tp;
             comment("'-'\n");
-            if (node->rhs->tp->type==PTR) {
-                error("ポインタによる減算です: %s\n", node->input);
-            } else if (node->lhs->tp->type==PTR && node->rhs->tp->type!=PTR) {
-                gen_mul_reg("rdi", size_of(node->lhs->tp));
+            assert(node->rhs->tp->type!=PTR);
+            if (node->lhs->tp->type==PTR) {
+                gen_mul_reg("rdi", size_of(node->lhs->tp->ptr_of));
             }
             printf("  sub rax, rdi\n");
             break;
         case '*':   //rax*rdi -> rdx:rax
-            node->tp = node->lhs->tp;
             comment("'*'\n");
             printf("  mul rdi\n");
             break;
         case '/':   //rdx:rax(lhs) / rdi(rhs) -> rax（商）, rdx（余り）
-            node->tp = node->lhs->tp;
             comment("'/'\n");
             printf("  mov rdx, 0\n");
             printf("  div rdi\n");
             break;
         case '%':   //rdx:rax / rdi -> rax（商）, rdx（余り）
-            node->tp = node->lhs->tp;
             comment("'%%'\n");
             printf("  mov rdx, 0\n");
             printf("  div rdi\n");

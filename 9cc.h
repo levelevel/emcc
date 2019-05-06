@@ -126,6 +126,7 @@ EXTERN Map *func_map;       //key=name, value=Funcdef
 EXTERN Map *funcdef_map;    //key=name, value=Funcdef
 
 // parse.c
+int size_of(Type *tp);
 Type* new_type(Type*ptr);
 Type* new_type_int(void);
 void tokenize(char *p);
