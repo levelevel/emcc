@@ -4,6 +4,7 @@ set -u
 EXE=tmp
 AFLAGS=-g
 ER=Error
+WR=Warning
 
 rm -f $EXE.log
 
@@ -17,10 +18,10 @@ try() {
   let cnt++
 
   echo "=== test[$cnt] ================================" >> $EXE.log
-  if [ $expected == $ER ]; then
-    ./9cc "$input" 2>&1 > $EXE.s | tee -a $EXE.log | grep "9cc:Error" > $EXE.err
+  if [ $expected == $ER -o $expected == $WR ]; then
+    ./9cc "$input" 2>&1 > $EXE.s | tee -a $EXE.log | grep "9cc:$expected" > $EXE.err
     if [ $? -eq 0 ]; then
-      actual=$ER
+      actual=$expected
     else
       actual="Normal End"
     fi
@@ -157,12 +158,12 @@ try $ER "&1;"
 try $ER "int a; *a;"
 try $ER "int a; *a=0;"
 try $ER "int a; & &a;"
-try $ER "int *a; a=1;"
-try $ER "int a; int*b; a=b;"
-try $ER "int a; int*b; b=a;"
-try $ER "int a; int b; a=&b;"
-try $ER "int*a; int**b; a=b;"
-try $ER "int *f(){int a; return &a;} int main(){int a; a=f();}"
+try $WR "int *a; a=1;"
+try $WR "int a; int*b; a=b;"
+try $WR "int a; int*b; b=a;"
+try $WR "int a; int b; a=&b;"
+try $WR "int*a; int**b; a=b;"
+try $WR "int *f(){int a; return &a;} int main(){int a; a=f();}"
 
 rm -f $EXE $EXE.s
 echo "test: OK"

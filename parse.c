@@ -553,7 +553,7 @@ static Node *list(void) {
 static Node *assign(void) {
     Node *node = logical_or();
     char *input = input_str();
-    while (consume('=')) {
+    if (consume('=')) {
         node = new_node('=', node, assign(), input);
         input = input_str();
     }

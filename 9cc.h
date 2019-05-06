@@ -147,4 +147,5 @@ const char* get_type_str(const Type *tp);
 const char* get_func_args_str(const Node *node);
 
 void error(const char*fmt, ...);
+void warning(const char*fmt, ...);
 void run_test(void);

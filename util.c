@@ -72,7 +72,7 @@ const char* get_func_args_str(const Node *node) {
     return buf2;
 }
 
-// エラーを報告するための関数 --------------------------
+// エラーと警告を報告するための関数 --------------------------
 // printfと同じ引数を取る
 void error(const char*fmt, ...) {
     va_list ap;
@@ -81,6 +81,14 @@ void error(const char*fmt, ...) {
     vfprintf(stderr, fmt, ap);
     fprintf(stderr, "\n");
     exit(1);
+}
+
+void warning(const char*fmt, ...) {
+    va_list ap;
+    va_start(ap, fmt);
+    fprintf(stderr, "9cc:Warning: ");
+    vfprintf(stderr, fmt, ap);
+    fprintf(stderr, "\n");
 }
 
 // テスト

@@ -175,7 +175,7 @@ static void gen(Node*node) {
         printf("  push 0\t#for RSP alignment+\n");
         gen(node->rhs);
         if (!node_type_eq(node->lhs->tp, node->rhs->tp))
-            error("=の左右の型(%s:%s)が異なります: %s\n", 
+            warning("=の左右の型(%s:%s)が異なります: %s\n", 
                 get_type_str(node->lhs->tp),
                 get_type_str(node->rhs->tp), node->lhs->input);
         printf("  pop rax\n");  //rhsの値
