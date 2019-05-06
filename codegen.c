@@ -63,8 +63,6 @@ static void gen_lval(Node*node) {
     } else if (node->type == ND_INDIRECT) {
         comment("LVALUE:*var\n");
         gen(node->rhs);     //rhsでアドレスを生成する
-        if (node->rhs->tp->type != PTR)
-            error("'*'は非ポインタ型(%s)を参照しています: %s\n", get_type_str(node->rhs->tp), node->input);
     } else {
         error("アドレスを生成できません: %s", node->input);
     }
@@ -206,8 +204,6 @@ static void gen(Node*node) {
     } else if (node->type == ND_INDIRECT) { //*a（間接参照）
         comment("'*A'\n");
         gen(node->rhs);
-        if (node->rhs->tp->type != PTR)
-            error("'*'は非ポインタ型(%s)を参照しています: %s\n", get_type_str(node->rhs->tp), node->input);
         printf("  pop rax\n");  //rhsの値（アドレス）
         printf("  mov rax, [rax]\n");//戻り値
         printf("  push rax\n");
@@ -371,7 +367,7 @@ static void gen(Node*node) {
             printf("  mov rax, rdx\n");
             break;
         default:
-            error("不正なトークンです: '%d'\n", node->type);
+            error("不正なトークンです: '%d'\n", node->input);
         }
 
         printf("  push rax\n");

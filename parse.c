@@ -49,6 +49,7 @@ TokenDef TokenLst2[] = {
     {"else",   4, TK_ELSE},
     {"while",  5, TK_WHILE},
     {"for",    3, TK_FOR},
+    {"sizeof", 6, TK_SIZEOF},
     {NULL, 0, 0}
 };
 
@@ -696,6 +697,9 @@ static Node *unary(void) {
         return new_node(ND_DEC_PRE, NULL, node, node->tp, input);
     } else if (consume('*')) {
         node = unary();
+        if (node->tp->type != PTR) 
+            error("'*'は非ポインタ型(%s)を参照しています: %s\n", 
+                get_type_str(node->tp), node->input);
         return new_node(ND_INDIRECT, NULL, node, node->tp->ptr_of, input);
     } else if (consume('&')) {
         node = unary();
@@ -746,6 +750,10 @@ static Node *term(void) {
         } else {
             return new_node_ident(name, input);
         }
+    } else if (consume(TK_SIZEOF)) {
+        Node *node = unary();
+        if (node->tp == NULL) error("サイズを確定できません: %s\n", node->input);
+        return new_node_num(size_of(node->tp), input);
     } else {
         error("終端記号でないトークンです: %s", input);
         return NULL;
