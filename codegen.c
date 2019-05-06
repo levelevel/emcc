@@ -133,35 +133,35 @@ static void gen(Node*node) {
         gen(node->lhs->lhs); //A
         printf("  pop rax\n");
         printf("  cmp rax, 0\n");
-        printf("  jne .IfThen%03d\n", cnt);
+        printf("  jne .LIfThen%03d\n", cnt);
         printf("  push rax\n");
         if (node->rhs) {    //elseあり
-            printf("  jmp .IfElse%03d\n", cnt);
+            printf("  jmp .LIfElse%03d\n", cnt);
         } else {
-            printf("  jmp .IfEnd%03d\n", cnt);
+            printf("  jmp .LIfEnd%03d\n", cnt);
         }
-        printf(".IfThen%03d:\n", cnt);
+        printf(".LIfThen%03d:\n", cnt);
         gen(node->lhs->rhs); //B
         if (node->rhs) {    //elseあり
-            printf("  jmp .IfEnd%03d\n", cnt);
-            printf(".IfElse%03d:\n", cnt);
+            printf("  jmp .LIfEnd%03d\n", cnt);
+            printf(".LIfElse%03d:\n", cnt);
             gen(node->rhs); //C
         }
-        printf(".IfEnd%03d:\n", cnt);
+        printf(".LIfEnd%03d:\n", cnt);
     } else if (node->type == ND_WHILE) {    //while (A) B
         int cnt = label_cnt++;
         comment("WHILE(A)B\n");
-        printf(".WhileBegin%03d:\n", cnt);
+        printf(".LWhileBegin%03d:\n", cnt);
         gen(node->lhs); //A
         printf("  pop rax\n");
         printf("  cmp rax, 0\n");
-        printf("  jne .WhileBody%03d\n", cnt);
+        printf("  jne .LWhileBody%03d\n", cnt);
         printf("  push rax\n");
-        printf("  jmp .WhileEnd%03d\n", cnt);
-        printf(".WhileBody%03d:\n", cnt);
+        printf("  jmp .LWhileEnd%03d\n", cnt);
+        printf(".LWhileBody%03d:\n", cnt);
         gen(node->rhs); //B
-        printf("  jmp .WhileBegin%03d\n", cnt);
-        printf(".WhileEnd%03d:\n", cnt);
+        printf("  jmp .LWhileBegin%03d\n", cnt);
+        printf(".LWhileEnd%03d:\n", cnt);
     } else if (node->type == ND_FOR) {      //for (A;B;C) D
         int cnt = label_cnt++;
         comment("FOR(A;B;C)D\n");
@@ -169,17 +169,17 @@ static void gen(Node*node) {
             gen(node->lhs->lhs);//A
             printf("  pop rax\n");
         }
-        printf(".ForBegin%03d:\n", cnt);
+        printf(".LForBegin%03d:\n", cnt);
         if (node->lhs->rhs->type != ND_EMPTY) {
             comment("FOR:B\n");
             gen(node->lhs->rhs);//B
             printf("  pop rax\n");
             printf("  cmp rax, 0\n");
-            printf("  jne .ForBody%03d\n", cnt);
+            printf("  jne .LForBody%03d\n", cnt);
             printf("  push rax\n");
-            printf("  jmp .ForEnd%03d\n", cnt);
+            printf("  jmp .LForEnd%03d\n", cnt);
         }
-        printf(".ForBody%03d:\n", cnt);
+        printf(".LForBody%03d:\n", cnt);
         comment("FOR:D\n");
         gen(node->rhs->rhs);    //D
         printf("  pop rax\n");
@@ -188,8 +188,8 @@ static void gen(Node*node) {
             gen(node->rhs->lhs);//C
             printf("  pop rax\n");
         }
-        printf("  jmp .ForBegin%03d\n", cnt);
-        printf(".ForEnd%03d:\n", cnt);
+        printf("  jmp .LForBegin%03d\n", cnt);
+        printf(".LForEnd%03d:\n", cnt);
     } else if (node->type == ND_BLOCK) {    //{ ブロック }
         Vector *blocks = node->lst;
         Node **nodes = (Node**)blocks->data;
@@ -319,14 +319,14 @@ static void gen(Node*node) {
             node->tp = new_type_int();
             comment("'&&'\n");
             printf("  cmp rax, 0\n");   //lhs
-            printf("  je .False%03d\n", cnt);
+            printf("  je .LFalse%03d\n", cnt);
             printf("  cmp rdi, 0\n");   //rhs
-            printf("  je .False%03d\n", cnt);
+            printf("  je .LFalse%03d\n", cnt);
             printf("  mov rax, 1\n");   //True
-            printf("  jmp .End%03d\n", cnt);
-            printf(".False%03d:\n", cnt);
+            printf("  jmp .LEnd%03d\n", cnt);
+            printf(".LFalse%03d:\n", cnt);
             printf("  mov rax, 0\n");   //False
-            printf(".End%03d:\n", cnt);
+            printf(".LEnd%03d:\n", cnt);
             break;
         }
         case ND_LOR: //"||"
@@ -335,14 +335,14 @@ static void gen(Node*node) {
             node->tp = new_type_int();
             comment("'||'\n");
             printf("  cmp rax, 0\n");   //lhs
-            printf("  jne .True%03d\n", cnt);
+            printf("  jne .LTrue%03d\n", cnt);
             printf("  cmp rdi, 0\n");   //rhs
-            printf("  jne .True%03d\n", cnt);
+            printf("  jne .LTrue%03d\n", cnt);
             printf("  mov rax, 0\n");   //False
-            printf("  jmp .End%03d\n", cnt);
-            printf(".True%03d:\n", cnt);
+            printf("  jmp .LEnd%03d\n", cnt);
+            printf(".LTrue%03d:\n", cnt);
             printf("  mov rax, 1\n");   //True
-            printf(".End%03d:\n", cnt);
+            printf(".LEnd%03d:\n", cnt);
             break;
         }
         case ND_EQ: //"=="
