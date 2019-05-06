@@ -49,7 +49,7 @@ static void gen_mul_reg(char *reg_name, int val) {
     }
 }
 
-static void gen(Node*node);
+static int gen(Node*node);
 
 //式を左辺値として評価し、そのアドレスをPUSHする
 static void gen_lval(Node*node) {
@@ -71,15 +71,15 @@ static void gen_lval(Node*node) {
 static int label_cnt = 0;   //ラベル識別用カウンタ
 
 //ステートメントを評価
-static void gen(Node*node) {
+//結果をスタックに積んだ場合は1、そうでない場合は0を返す
+static int gen(Node*node) {
     assert(node!=NULL);
     if (node->type == ND_NUM) {             //数値
         printf("  push %d\t# NUM\n", node->val);
     } else if  (node->type == ND_EMPTY) {   //空
-    //  printf("  push 0\t# EMPTY\n");
-        printf("  push rax\t# EMPTY\n");
+        return 0;
     } else if (node->type == ND_VAR_DEF) {  //ローカル変数定義
-        printf("  push 0\t# VAR_DEF\n");
+        return 0;
     } else if (node->type == ND_IDENT) {    //変数参照
         comment("IDENT:%s(%s)\n", node->name, get_type_str(node->tp));
         gen_lval(node);
@@ -178,8 +178,7 @@ static void gen(Node*node) {
         Node **nodes = (Node**)blocks->data;
         for (int i=0; i < blocks->len; i++) {
             comment("BLOCK[%d]\n", i);
-            gen(nodes[i]);
-            printf("  pop rax\n");
+            if (gen(nodes[i])) printf("  pop rax\n");
         }
         printf("  push rax\n");
     } else if (node->type == ND_LIST) {     //コンマリスト
@@ -372,8 +371,10 @@ static void gen(Node*node) {
 
         printf("  push rax\n");
     }
+    return 1;   //結果をスタックに積んでいる
 }
 
+//ローカル変数用のスタックサイズを計算する
 //RSPの16バイトアライメントを維持する
 static int calc_stack_offset() {
     int size = (cur_funcdef->ident_map->keys->len+1)/2 *16;
