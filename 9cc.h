@@ -76,8 +76,9 @@ typedef enum {
 
 typedef struct _Type Type;
 struct _Type {
-    enum {INT, PTR} type;
+    enum {INT, PTR, ARRAY} type;
     Type *ptr_of;
+    size_t array_size;  //typeがARRAYの場合の配列サイズ
 };
 
 typedef struct _Node Node;

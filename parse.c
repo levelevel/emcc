@@ -35,6 +35,8 @@ TokenDef TokenLst1[] = {
     {"=",  1, '='},
     {"{",  1, '{'},
     {"}",  1, '}'},
+    {"[",  1, '['},
+    {"]",  1, ']'},
     {"!",  1, '!'},
     {",",  1, ','},
     {"&",  1, '&'},
@@ -167,8 +169,13 @@ static int consume_ident(char**name) {
 //型のサイズ
 int size_of(Type *tp) {
     assert(tp);
-    if (tp->type==INT) return 4;
-    return 8;
+    switch (tp->type) {
+    case INT: return sizeof(int);
+    case PTR: return sizeof(void*);
+    case ARRAY: return tp->array_size * size_of(tp->ptr_of);
+    }
+    assert(0);
+    return -1;
 }
 
 //ノードのタイプが等しいかどうかを判定する
@@ -187,12 +194,18 @@ static Funcdef *new_funcdef(void) {
 }
 
 //型情報の生成
-Type* new_type(Type*ptr) {
+Type* new_type_ptr(Type*ptr) {
     Type *tp = calloc(1, sizeof(Type));
-    if (ptr) {
-        tp->type = PTR;
-        tp->ptr_of = ptr;
-    }
+    tp->type = PTR;
+    tp->ptr_of = ptr;
+    return tp;
+}
+
+Type* new_type_array(Type*ptr, size_t size) {
+    Type *tp = calloc(1, sizeof(Type));
+    tp->type = ARRAY;
+    tp->ptr_of = ptr;
+    tp->array_size = size;
     return tp;
 }
 
@@ -326,6 +339,7 @@ static Node *new_node_list(Node *item, char *input) {
     stmt: "{" block_items "}"
     stmt: empty_or_list ";"
     var_def: type ident
+    var_def: type ident "[" num "]"
     type: "int"
     type: type "*"
     func_arg_list: type ident
@@ -372,6 +386,7 @@ static Node *new_node_list(Node *item, char *input) {
     term: ident "(" ")"
     term: "(" list ")"
     term: "sizeof" unary
+    term: "sizeof" type
 */
 static Node *function(void);
 static Node *stmt(void);
@@ -483,6 +498,7 @@ static Node *stmt(void) {
 
 /* int *ident（変数定義）
     var_def: type ident
+    var_def: type ident "[" num "]"
     type: "int"
     type: type "*"
 */
@@ -492,19 +508,25 @@ static Node* var_def(void) {
     char *name;
     char *input = input_str();
     if (!consume_ident(&name)) error("型名の後に変数名がありません: %s\n", input_str());
+    if (consume('[')) {
+        if (consume(TK_NUM)) {
+            tp = new_type_array(tp, tokens[token_pos-1]->val);
+        } else error("配列サイズ指定ではありません: %s\n", input_str());
+        if (!consume(']')) error("配列サイズの閉じかっこ ] がありません: %s\n", input_str()); 
+    }
     node = new_node_var_def(name, tp, input); //ND_VAR_DEF
     return node;
 }
 
 static Type* type(void) {
-    Type *tp = new_type(NULL);
+    Type *tp;
     if (consume(TK_INT)) {
-        tp->type = INT;
+        tp = new_type_int();
     } else {
         error("型名がありません: %s\n", input_str());
     }
     while (consume('*')) {
-        tp = new_type(tp);
+        tp = new_type_ptr(tp);
     }
     return tp;
 }
@@ -703,7 +725,7 @@ static Node *unary(void) {
         return new_node(ND_INDIRECT, NULL, node, node->tp->ptr_of, input);
     } else if (consume('&')) {
         node = unary();
-        return new_node(ND_ADDRESS, NULL, node, new_type(node->tp), input);
+        return new_node(ND_ADDRESS, NULL, node, new_type_ptr(node->tp), input);
     } else {
         return post_unary();
     }
