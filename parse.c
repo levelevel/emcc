@@ -5,6 +5,8 @@
 
 #define token_is(_tk) (tokens[token_pos]->type==(_tk))
 
+static int eval_node(Node *node, int *val);
+
 //トークンの種類を定義
 typedef struct {
     char *name;
@@ -340,7 +342,7 @@ static Node *new_node_list(Node *item, char *input) {
     stmt: empty_or_list ";"
     var_def: type ident
     var_def: type ident array_def
-    array_def: "[" assign "]"  //numのみ実装
+    array_def: "[" assign "]"  //四則演算のみ実装
     type: "int"
     type: type "*"
     func_arg_list: type ident
@@ -390,7 +392,7 @@ static Node *new_node_list(Node *item, char *input) {
     term: "sizeof" "(" sizeof_item ")"
     term: "sizeof_item" type
     term: "sizeof_item" type array_def
-    term: "sizeof_item" unary
+    term: "sizeof_item" assign
 */
 static Node *function(void);
 static Node *stmt(void);
@@ -521,9 +523,10 @@ static Node* var_def(void) {
 
 static Type* array_def(Type *tp) {
     if (consume('[')) {
-        if (consume(TK_NUM)) {
-            tp = new_type_array(tp, tokens[token_pos-1]->val);
-        } else error("配列サイズ指定ではありません: %s\n", input_str());
+        Node *node = assign();
+        int val;
+        if (eval_node(node, &val)==0) error("配列サイズが定数ではありません: %s\n", input_str());
+        tp = new_type_array(tp, val);
         if (!consume(']')) error("配列サイズの閉じかっこ ] がありません: %s\n", input_str()); 
     }
     return tp;
@@ -807,8 +810,36 @@ static Node* typedef_item(void) {
         if (token_is('[')) tp = array_def(tp);
         return new_node_num(size_of(tp), input);
     } else {
-        Node *node = unary();
+        Node *node = assign();
         if (node->tp == NULL) error("サイズを確定できません: %s\n", node->input);
         return new_node_num(size_of(node->tp), input);
     }
+}
+
+static int eval_node(Node *node, int *val) {
+    int val1, val2;
+    if (node->type == '=') {
+        return eval_node(node->rhs, val);
+    }
+
+    if (node->lhs && eval_node(node->lhs, &val1)==0) return 0;
+    if (node->rhs && eval_node(node->rhs, &val2)==0) return 0;
+    switch (node->type) {
+    case ND_NUM:  *val = node->val;    break;
+    case ND_LAND: *val = val1 && val2; break;
+    case ND_LOR:  *val = val1 || val2; break;
+    case ND_EQ:   *val = val1 == val2; break;
+    case ND_NE:   *val = val1 != val2; break;
+    case '<':     *val = val1 >  val2; break;
+    case ND_LE:   *val = val1 >= val2; break;
+    case '+':     *val = val1 +  val2; break;
+    case '-':     *val = val1 -  val2; break;
+    case '*':     *val = val1 *  val2; break;
+    case '/':     *val = val1 /  val2; break;
+    case '%':     *val = val1 %  val2; break;
+    case '!':     *val = !val1;        break;
+    default:
+        return 0;
+    }
+    return 1;
 }
