@@ -152,8 +152,9 @@ try 1 "int* f(int *a){return a;} int main(){int x; int *y; y=f(&x); return &x==y
 try 8 "int **p; p=0; p++; ++p; return p-1;"
 try 4 "int *p; int a; p=0; a=2; p=p+a; p--; --p; p=p+0; return 1+p;"
 try 8 "int main(){int *p; alloc4(&p,1,2,4,8); int *q; q=p+3; return *q;}"
-try 24 "int a; int *p; return sizeof(a)+sizeof(p)+sizeof(1)+sizeof(&p);"
+try 36 "int a; int *p; return sizeof(a)+sizeof(p)+sizeof(1)+sizeof(&p)+sizeof(int)+sizeof(int*);"
 try 40 "int a[10]; return sizeof(a);"
+try 32 "return sizeof(int*[4]);"
 
 try $ER "int a; *a;"
 try $ER "int *a; **a;"

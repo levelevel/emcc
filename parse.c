@@ -339,7 +339,8 @@ static Node *new_node_list(Node *item, char *input) {
     stmt: "{" block_items "}"
     stmt: empty_or_list ";"
     var_def: type ident
-    var_def: type ident "[" num "]"
+    var_def: type ident array_def
+    array_def: "[" assign "]"  //numのみ実装
     type: "int"
     type: type "*"
     func_arg_list: type ident
@@ -385,13 +386,17 @@ static Node *new_node_list(Node *item, char *input) {
     term: ident
     term: ident "(" ")"
     term: "(" list ")"
-    term: "sizeof" unary
-    term: "sizeof" type
+    term: "sizeof" sizeof_item
+    term: "sizeof" "(" sizeof_item ")"
+    term: "sizeof_item" type
+    term: "sizeof_item" type array_def
+    term: "sizeof_item" unary
 */
 static Node *function(void);
 static Node *stmt(void);
 static Node* var_def(void);
 static Type* type(void);
+static Type* array_def(Type *tp);
 static Node *block_items(void);
 static Node *func_arg_list(void);
 static Node *empty_or_list(void);
@@ -406,6 +411,7 @@ static Node *mul(void);
 static Node *unary(void);
 static Node *post_unary(void);
 static Node *term(void); 
+static Node* typedef_item(void);
 
 void program(void) {
     Node *node;
@@ -508,14 +514,19 @@ static Node* var_def(void) {
     char *name;
     char *input = input_str();
     if (!consume_ident(&name)) error("型名の後に変数名がありません: %s\n", input_str());
+    if (token_is('[')) tp = array_def(tp);
+    node = new_node_var_def(name, tp, input); //ND_VAR_DEF
+    return node;
+}
+
+static Type* array_def(Type *tp) {
     if (consume('[')) {
         if (consume(TK_NUM)) {
             tp = new_type_array(tp, tokens[token_pos-1]->val);
         } else error("配列サイズ指定ではありません: %s\n", input_str());
         if (!consume(']')) error("配列サイズの閉じかっこ ] がありません: %s\n", input_str()); 
     }
-    node = new_node_var_def(name, tp, input); //ND_VAR_DEF
-    return node;
+    return tp;
 }
 
 static Type* type(void) {
@@ -773,11 +784,31 @@ static Node *term(void) {
             return new_node_ident(name, input);
         }
     } else if (consume(TK_SIZEOF)) {
-        Node *node = unary();
-        if (node->tp == NULL) error("サイズを確定できません: %s\n", node->input);
-        return new_node_num(size_of(node->tp), input);
+        Node *node;
+        if (consume('(')) {
+            node = typedef_item();
+            if (!consume(')')) {
+                error("開きカッコに対応する閉じカッコがありません: %s", input_str());
+            }
+        } else {
+            node = typedef_item();
+        }
+        return node;
     } else {
         error("終端記号でないトークンです: %s", input);
         return NULL;
+    }
+}
+
+static Node* typedef_item(void) {
+    char *input = input_str();
+    if (token_is(TK_INT)) {
+        Type *tp = type();
+        if (token_is('[')) tp = array_def(tp);
+        return new_node_num(size_of(tp), input);
+    } else {
+        Node *node = unary();
+        if (node->tp == NULL) error("サイズを確定できません: %s\n", node->input);
+        return new_node_num(size_of(node->tp), input);
     }
 }
