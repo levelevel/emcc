@@ -342,7 +342,7 @@ static Node *new_node_list(Node *item, char *input) {
     stmt: empty_or_list ";"
     var_def: type ident
     var_def: type ident array_def
-    array_def: "[" assign "]"  //四則演算のみ実装
+    array_def: "[" assign "]"
     type: "int"
     type: type "*"
     func_arg_list: type ident
@@ -504,12 +504,6 @@ static Node *stmt(void) {
     return node;
 }
 
-/* int *ident（変数定義）
-    var_def: type ident
-    var_def: type ident "[" num "]"
-    type: "int"
-    type: type "*"
-*/
 static Node* var_def(void) {
     Node *node = NULL;
     Type *tp = type();
@@ -817,11 +811,11 @@ static Node* typedef_item(void) {
 }
 
 static int eval_node(Node *node, int *val) {
-    int val1, val2;
     if (node->type == '=') {
         return eval_node(node->rhs, val);
     }
 
+    int val1, val2;
     if (node->lhs && eval_node(node->lhs, &val1)==0) return 0;
     if (node->rhs && eval_node(node->rhs, &val2)==0) return 0;
     switch (node->type) {
@@ -830,8 +824,8 @@ static int eval_node(Node *node, int *val) {
     case ND_LOR:  *val = val1 || val2; break;
     case ND_EQ:   *val = val1 == val2; break;
     case ND_NE:   *val = val1 != val2; break;
-    case '<':     *val = val1 >  val2; break;
-    case ND_LE:   *val = val1 >= val2; break;
+    case '<':     *val = val1 <  val2; break;
+    case ND_LE:   *val = val1 <= val2; break;
     case '+':     *val = val1 +  val2; break;
     case '-':     *val = val1 -  val2; break;
     case '*':     *val = val1 *  val2; break;
