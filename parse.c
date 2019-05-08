@@ -125,7 +125,7 @@ void tokenize(char *p) {
             token = new_token();
             token->type = TK_NUM;
             token->input = p;
-            token->val = strtol(p, &p, 10);
+            token->val = strtol(p, &p, 0);  //10進、16進、8進
         } else {
             error("トークナイズエラー: '%s'\n", p);
             exit(1);

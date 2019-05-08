@@ -5,6 +5,22 @@ static char *arg_regs[] = {  //関数の引数で用いるレジスタ
     "rdi", "rsi", "rdx", "rcx", "r8", "r9", NULL
 };
 
+static char *regs[][4] = {
+//   8bit   16bit  32bit  64bit
+    {"al",  "ax",  "eax", "rax" },
+    {"dil", "di",  "edi", "rdi" },
+    {"sil", "si",  "esi", "rsi" },
+    {"dl",  "dx",  "edx", "rdx" },
+    {"cl",  "cx",  "ecx", "rcx" },
+    {"r8b", "r8w", "r8d", "r8"  },
+    {"r9b", "r9w", "r9d", "r9"  },
+    {"r10b","r10w","r10d","r10" },
+    {"r11b","r11w","r11d","r11" },
+    {"bpl",  "bp", "ebp", "rbp" },
+    {"spl",  "sp", "esp", "rsp" },
+    {NULL,  NULL,  NULL,  NULL },
+};
+
 //抽象構文木を下りながらコード生成（スタックマシン）
 
 //ソースコードにコメントを出力する。printfと同じ引数。
@@ -49,6 +65,29 @@ static void gen_mul_reg(char *reg_name, int val) {
     }
 }
 
+static char* reg_name(const char*name, Type *tp) {
+    int idx;
+    switch (size_of(tp)) {
+    case 8: idx = 3; break; //32bit
+    case 4: idx = 2; break;
+    case 2: idx = 1; break;
+    case 1: idx = 0; break; //8bit
+    default: assert(0);
+    }
+    for (int i=0; regs[i][3]; i++) {
+        if (strcmp(name, regs[i][3])==0) return regs[i][idx];
+    }
+    assert(0);
+    return NULL;
+}
+
+static void gen_write_reg(const char*dst, const char*src, Type *tp) {
+    printf("  mov [%s], %s\n", dst, reg_name(src, tp));
+}
+static void gen_read_reg(const char*dst, const char*src, Type *tp) {
+    printf("  mov %s, [%s]\n", reg_name(dst, tp), src);
+}
+
 static int gen(Node*node);
 
 //式を左辺値として評価し、そのアドレスをPUSHする
@@ -84,7 +123,8 @@ static int gen(Node*node) {
         comment("IDENT:%s(%s)\n", node->name, get_type_str(node->tp));
         gen_lval(node);
         printf("  pop rax\n");
-        printf("  mov rax, [rax]\t# IDENT:%s\n", node->name);
+    //  printf("  mov rax, [rax]\t# IDENT:%s\n", node->name);
+        gen_read_reg("rax", "rax", node->tp);
         printf("  push rax\n");
     } else if (node->type == ND_FUNC_CALL) {//関数コール
         comment("CALL:%s\n", node->name);
@@ -198,7 +238,8 @@ static int gen(Node*node) {
         printf("  pop rax\n");  //rhsの値
         printf("  pop rdi\t#for RSP alignment-\n");
         printf("  pop rdi\n");  //lhsのアドレス
-        printf("  mov [rdi], rax\n");
+    //  printf("  mov [rdi], rax\n");
+        gen_write_reg("rdi", "rax", node->tp);
         printf("  push rax\n");
     } else if (node->type == ND_INDIRECT) { //*a（間接参照）
         comment("'*A'\n");
