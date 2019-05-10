@@ -101,7 +101,7 @@ static void gen_lval(Node*node) {
         printf("  push rax\n");
     } else if (node->type == ND_INDIRECT) {
         comment("LVALUE:*var\n");
-        gen(node->rhs);     //rhsでアドレスを生成する
+        gen(node->rhs);     //rhsのアドレスを生成する
     } else {
         error("アドレスを生成できません: %s", node->input);
     }
@@ -122,10 +122,15 @@ static int gen(Node*node) {
     } else if (node->type == ND_IDENT) {    //変数参照
         comment("IDENT:%s(%s)\n", node->name, get_type_str(node->tp));
         gen_lval(node);
-        printf("  pop rax\n");
-    //  printf("  mov rax, [rax]\t# IDENT:%s\n", node->name);
-        gen_read_reg("rax", "rax", node->tp);
-        printf("  push rax\n");
+        if (node->tp->type==ARRAY) {
+            printf("  push rax\n");
+            printf("  pop rax\n");
+        } else {
+            printf("  pop rax\n");  //rhsのアドレス=戻り値
+        //  printf("  mov rax, [rax]\t# IDENT:%s\n", node->name);
+            gen_read_reg("rax", "rax", node->tp);
+            printf("  push rax\n");
+        }
     } else if (node->type == ND_FUNC_CALL) {//関数コール
         comment("CALL:%s\n", node->name);
         if (node->lhs) {

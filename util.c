@@ -41,11 +41,16 @@ int map_get(const Map *map, char *key, void**val) {
 }
 
 // ダンプ関数 ----------------------------------------
-static char *TypeStr[] = {"int", "*"};
+static char *TypeStr[] = {"int", "*", "["};
 static char buf1[128];
 static void type_str(const Type *tp) {
-    if (tp->type==PTR) type_str(tp->ptr_of);
+    if (tp->ptr_of) type_str(tp->ptr_of);
     strcat(buf1, TypeStr[tp->type]);
+    if (tp->type==ARRAY) {
+        char buf[20];
+        sprintf(buf, "%ld]", tp->array_size);
+        strcat(buf1, buf);
+    }
 }
 // 型を表す文字列を返す
 const char* get_type_str(const Type *tp) {
