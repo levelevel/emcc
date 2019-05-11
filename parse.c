@@ -4,8 +4,6 @@
 #define input_str() (tokens[token_pos]->input)
 //現在のトークンの型が引数と一致しているか
 #define token_is(_tk) (tokens[token_pos]->type==(_tk))
-//ノードがポインタ（PTR||ARRAY）であるか
-#define node_is_ptr(_node) ((_node)->tp->type==PTR || (_node)->tp->type==ARRAY)
 
 static int eval_node(Node *node, int *val);
 

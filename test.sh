@@ -160,6 +160,8 @@ try 1 "int a[4]; return a==&a;"
 try 4 "int a[4]; *a=2; *(a+1)=4; *(a+2)=8; return *(1+a);"
 try 4 "int a[4]; a[0]=2; a[1]=4; a[2]=8; return a[1];"
 try 8 "int a[4]; a[3]=8; (1,2)[a+1];"
+try 6 "int func(int *a){return a[0]+a[1]+a[2];}
+       int main(){int a[4]; a[0]=1; a[1]=2; a[2]=3; return func(a);}"
 
 try $ER "int a; *a;"
 try $ER "int *a; **a;"

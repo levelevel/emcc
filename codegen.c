@@ -272,7 +272,7 @@ static int gen(Node*node) {
         gen_lval(node->rhs);
         printf("  pop rdi\n");  //rhsのアドレス
         printf("  mov rax, [rdi]\n");
-        if (node->tp->type==PTR) {
+        if (node_is_ptr(node)) {
             printf("  add rax, %d\n", size_of(node->tp->ptr_of));
         } else {
             printf("  inc rax\n");  //戻り値を設定する前にINC
@@ -284,7 +284,7 @@ static int gen(Node*node) {
         gen_lval(node->rhs);
         printf("  pop rdi\n");  //rhsのアドレス
         printf("  mov rax, [rdi]\n");
-        if (node->tp->type==PTR) {
+        if (node_is_ptr(node)) {
             printf("  sub rax, %d\n", size_of(node->tp->ptr_of));
         } else {
             printf("  dec rax\n");  //戻り値を設定する前にDEC
@@ -297,7 +297,7 @@ static int gen(Node*node) {
         printf("  pop rdi\n");  //lhsのアドレス
         printf("  mov rax, [rdi]\n");
         printf("  push rax\n"); //INCする前に戻り値を設定
-        if (node->tp->type==PTR) {
+        if (node_is_ptr(node)) {
             printf("  add rax, %d\n", size_of(node->tp->ptr_of));
         } else {
             printf("  inc rax\n");
@@ -309,7 +309,7 @@ static int gen(Node*node) {
         printf("  pop rdi\n");  //lhsのアドレス
         printf("  mov rax, [rdi]\n");
         printf("  push rax\n"); //DECする前に戻り値を設定
-        if (node->tp->type==PTR) {
+        if (node_is_ptr(node)) {
             printf("  sub rax, %d\n", size_of(node->tp->ptr_of));
         } else {
             printf("  dec rax\n");
@@ -390,18 +390,18 @@ static int gen(Node*node) {
             printf("  movzb rax, al\n");
             break;
         case '+':   //rax(lhs)+rdi(rhs)
-            comment("'+'\n");
-            if (node->lhs->tp->type==PTR) {
+            comment("'+' %s %s\n", get_type_str(node->lhs->tp), get_type_str(node->rhs->tp));
+            if (node_is_ptr(node->lhs)) {
                 gen_mul_reg("rdi", size_of(node->lhs->tp->ptr_of));
-            } else if (node->rhs->tp->type==PTR) {
+            } else if (node_is_ptr(node->rhs)) {
                 gen_mul_reg("rax", size_of(node->rhs->tp->ptr_of));
             }
             printf("  add rax, rdi\n");
             break;
         case '-':   //rax(lhs)-rdi(rhs)
-            comment("'-'\n");
-            assert(node->rhs->tp->type!=PTR);
-            if (node->lhs->tp->type==PTR) {
+            comment("'-' %s %s\n", get_type_str(node->lhs->tp), get_type_str(node->rhs->tp));
+            assert(!node_is_ptr(node->rhs));
+            if (node_is_ptr(node->lhs)) {
                 gen_mul_reg("rdi", size_of(node->lhs->tp->ptr_of));
             }
             printf("  sub rax, rdi\n");

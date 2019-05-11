@@ -108,6 +108,9 @@ typedef struct {
     Map *ident_map; //ローカル変数：key=name, val=Vardef
 } Funcdef;
 
+//ノードがポインタ（PTR||ARRAY）であるか
+#define node_is_ptr(_node) ((_node)->tp->type==PTR || (_node)->tp->type==ARRAY)
+
 //グローバル変数 ----------------------------------------
 #ifndef EXTERN
 #define EXTERN extern
