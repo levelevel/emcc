@@ -42,40 +42,44 @@ int map_get(const Map *map, char *key, void**val) {
 
 // ダンプ関数 ----------------------------------------
 static char *TypeStr[] = {"int", "*", "["};
-static char buf1[128];
-static void type_str(const Type *tp) {
-    if (tp->ptr_of) type_str(tp->ptr_of);
-    strcat(buf1, TypeStr[tp->type]);
+
+//bufに対して型を表す文字列を生成する
+static void type_str(char *buf, const Type *tp) {
+    if (tp->ptr_of) type_str(buf, tp->ptr_of);
+    strcat(buf, TypeStr[tp->type]);
     if (tp->type==ARRAY) {
-        char buf[20];
-        sprintf(buf, "%ld]", tp->array_size);
-        strcat(buf1, buf);
+        char tmp[20];
+        sprintf(tmp, "%ld]", tp->array_size);
+        strcat(buf, tmp);
     }
 }
 
-// 型を表す文字列を返す
+// 型を表す文字列を返す。文字列はmallocされている。
 const char* get_type_str(const Type *tp) {
+    char buf[256];
     if (tp==NULL) return "null";
-    buf1[0] = 0;
-    type_str(tp);
-    char *ret = malloc(strlen(buf1)+1);
-    strcpy(ret, buf1);
+    buf[0] = 0;
+    type_str(buf, tp);
+    char *ret = malloc(strlen(buf)+1);
+    strcpy(ret, buf);
     return ret;
 }
 
-static char buf2[1024];
-// 関数の引数リストを表す文字列を返す
+// 関数の引数リストを表す文字列を返す。文字列はmallocされている。
 const char* get_func_args_str(const Node *node) {
+    char buf[1024];
     assert(node->type==ND_LIST);
     int size = node->lst->len;
     Node **ident_nodes = (Node**)node->lst->data;
     int len = 0;
     for (int i=0; i<size; i++) {
-        len += sprintf(buf2+len, "%s %s", 
+        len += sprintf(buf+len, "%s %s", 
             get_type_str(ident_nodes[i]->tp), ident_nodes[i]->name);
-        if (i<size-1) len += sprintf(buf2+len, ",");
+        if (i<size-1) len += sprintf(buf+len, ",");
     }
-    return buf2;
+    char *ret = malloc(strlen(buf)+1);
+    strcpy(ret, buf);
+    return ret;
 }
 
 // エラーと警告を報告するための関数 --------------------------
