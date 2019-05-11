@@ -243,21 +243,36 @@ static Node *new_node_num(int val, char *input) {
     return node;
 }
 
-//抽象構文木の生成（ローカル変数定義）
+//未登録の変数であれば登録する
+static void regist_var_def(Node *node) {
+    char *name = node->name;
+    if (cur_funcdef) {  //関数内であればローカル変数
+        if (map_get(cur_funcdef->ident_map, name, NULL)==0) {
+            Vardef *vardef = calloc(1, sizeof(Vardef));
+            vardef->name = name;
+            vardef->tp = node->tp;
+            vardef->offset = get_var_offset(node->tp);
+            map_put(cur_funcdef->ident_map, name, vardef);
+        } else {
+            error("'%s'はローカル変数の重複定義です: '%s'\n", name, node->input);
+        }
+    } else {            //グローバル変数
+        if (map_get(global_vardef_map, name, NULL)==0) {
+            Vardef *vardef = calloc(1, sizeof(Vardef));
+            vardef->name = name;
+            vardef->tp = node->tp;
+            map_put(global_vardef_map, name, vardef);
+        } else {
+            error("'%s'はグローバルの重複定義です: '%s'\n", name, node->input);
+        }
+    }
+}
+
+//抽象構文木の生成（変数定義）
 static Node *new_node_var_def(char *name, Type*tp, char *input) {
     Node *node = new_node(ND_VAR_DEF, NULL, NULL, tp, input);
     node->name = name;
-
-    //未登録の識別子であれば登録する
-    if (map_get(cur_funcdef->ident_map, name, NULL)==0) {
-        Vardef *vardef = calloc(1, sizeof(Vardef));
-        vardef->name = name;
-        vardef->offset = get_var_offset(tp);
-        vardef->tp = tp;
-        map_put(cur_funcdef->ident_map, name, vardef);
-    } else {
-        error("'%s'は変数の重複定義です: '%s'\n", name, tokens[token_pos-1]->input);
-    }
+    regist_var_def(node);
     return node;
 }
 
@@ -300,10 +315,15 @@ static Node *new_node_func_call(char *name, char *input) {
 static Node *new_node_func_def(char *name, Type *tp, char *input) {
     Node *node = new_node(ND_FUNC_DEF, NULL, NULL, tp, input);
     node->name = name;
-    cur_funcdef->tp = tp;
 //  node->lhs  = list();        //引数リスト
 //  node->rhs  = block_items(); //ブロック
     var_stack_size = 0;
+
+    cur_funcdef = new_funcdef();
+    cur_funcdef->tp = tp;
+    cur_funcdef->node = node;
+    cur_funcdef->name = node->name;
+    map_put(funcdef_map, node->name, cur_funcdef);
 
     //未登録または仮登録の関数名であれば登録する
     Funcdef *funcdef;
@@ -337,7 +357,9 @@ static Node *new_node_list(Node *item, char *input) {
 }
 
 /*  文法：
-    program: function program
+    program: top_item program
+    top_item: function      //type ident "("
+    top_item: var_def ";"   //type ident ...
     function: type indent "(" func_arg_list ")" "{" block_items "}"
     block_items: stmt
     block_items: stmt block_items
@@ -404,11 +426,12 @@ static Node *new_node_list(Node *item, char *input) {
     term: "sizeof_item" type array_def
     term: "sizeof_item" assign
 */
-static Node *function(void);
+static Node *top_item(void);
+static Node *function(Type *tp, char *name);
 static Node *stmt(void);
-static Node* var_def(void);
-static Type* type(void);
-static Type* array_def(Type *tp);
+static Node *var_def(Type *tp, char *name);
+static Type *type(void);
+static Type *array_def(Type *tp);
 static Node *block_items(void);
 static Node *func_arg_list(void);
 static Node *empty_or_list(void);
@@ -423,39 +446,44 @@ static Node *mul(void);
 static Node *unary(void);
 static Node *post_unary(void);
 static Node *term(void); 
-static Node* typedef_item(void);
+static Node *typedef_item(void);
 
 void program(void) {
-    Node *node;
     while (!token_is(TK_EOF)) {
-        cur_funcdef = new_funcdef();
-        node = function();
-        assert(node->type==ND_FUNC_DEF);
-        cur_funcdef->node = node;
-        cur_funcdef->name = node->name;
-        map_put(funcdef_map, node->name, cur_funcdef);
+        top_item();
+        cur_funcdef = NULL;
     }
+}
+
+static Node *top_item(void) {
+    Node *node;
+    Type *tp;
+    char *name;
+    if (token_is(TK_INT)) {
+        tp = type();
+        if (!consume_ident(&name)) error("型名の後に識別名がありません: %s\n", input_str());
+        if (consume('(')) {
+            node = function(tp, name);
+        } else {
+            node = var_def(tp, name);
+            if (!consume(';')) error("; がありません: %s", input_str());
+        }
+    } else {
+        error("関数・変数の定義がありません: %s", input_str());
+    }
+    return node;
 }
 
 //関数の定義: lhs=引数(ND_LIST)、rhs=ブロック(ND_BLOCK)
 //    function: type indent "(" func_arg_list ")" "{" block_items "}"
-static Node *function(void) {
+static Node *function(Type *tp, char *name) {
     Node *node;
-    Type *tp;
-    char *name;
     char *input = input_str();
-    if (token_is(TK_INT)) {
-        tp = type();
-        if (!consume_ident(&name)) error("型名の後に関数名がありません: %s\n", input_str());
-        if (!consume('(')) error("関数定義の開きカッコがありません: %s\n", input_str());
-        node = new_node_func_def(name, tp, input);
-        node->lhs = func_arg_list();
-        if (!consume(')')) error("関数定義の閉じカッコがありません: %s\n", input_str());
-        if (!consume('{')) error("関数定義の { がありません: %s\n", input_str());
-        node->rhs = block_items();
-    } else {
-        error("関数定義がありません: %s", input_str());
-    }
+    node = new_node_func_def(name, tp, input);
+    node->lhs = func_arg_list();
+    if (!consume(')')) error("関数定義の閉じカッコがありません: %s\n", input_str());
+    if (!consume('{')) error("関数定義の { がありません: %s\n", input_str());
+    node->rhs = block_items();
     return node;
 }
 
@@ -463,7 +491,7 @@ static Node *stmt(void) {
     Node *node;
     char *input = input_str();
     if (token_is(TK_INT)) {         //int ident（変数定義）
-        node = var_def();
+        node = var_def(NULL, NULL);
     } else if (consume(TK_RETURN)) {
         node = list();
         node = new_node(ND_RETURN, node, NULL, node->tp, input);
@@ -514,19 +542,20 @@ static Node *stmt(void) {
     return node;
 }
 
-static Node* var_def(void) {
+static Node *var_def(Type *tp, char *name) {
     Node *node = NULL;
-    Type *tp = type();
-    char *name;
     char *input = input_str();
-    if (!consume_ident(&name)) error("型名の後に変数名がありません: %s\n", input_str());
+    if (tp==NULL) {
+        tp = type();
+        if (!consume_ident(&name)) error("型名の後に変数名がありません: %s\n", input_str());
+    }
     if (token_is('[')) tp = array_def(tp);
     node = new_node_var_def(name, tp, input); //ND_VAR_DEF
     //fprintf(stderr, "vardef: %s %s\n", get_type_str(node->tp), name);
     return node;
 }
 
-static Type* array_def(Type *tp) {
+static Type *array_def(Type *tp) {
     if (consume('[')) {
         Node *node = assign();
         int val;
@@ -537,7 +566,7 @@ static Type* array_def(Type *tp) {
     return tp;
 }
 
-static Type* type(void) {
+static Type *type(void) {
     Type *tp;
     if (consume(TK_INT)) {
         tp = new_type_int();
@@ -818,7 +847,7 @@ static Node *term(void) {
     return node;
 }
 
-static Node* typedef_item(void) {
+static Node *typedef_item(void) {
     char *input = input_str();
     if (token_is(TK_INT)) {
         Type *tp = type();

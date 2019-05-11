@@ -72,6 +72,7 @@ const char* get_func_args_str(const Node *node) {
     int size = node->lst->len;
     Node **ident_nodes = (Node**)node->lst->data;
     int len = 0;
+    buf[0] = 0;
     for (int i=0; i<size; i++) {
         len += sprintf(buf+len, "%s %s", 
             get_type_str(ident_nodes[i]->tp), ident_nodes[i]->name);

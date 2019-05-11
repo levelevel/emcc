@@ -447,6 +447,18 @@ void print_functions(void) {
     for (int i=0; i<size; i++) {
         printf(".global %s\n", names[i]);
     }
+    
+    size = global_vardef_map->keys->len;
+    names = (char**)global_vardef_map->keys->data;
+    for (int i=0; i<size; i++) {
+        printf(".global %s\n", names[i]);
+    }
+
+    Vardef **vardefs = (Vardef**)global_vardef_map->vals->data;
+    for (int i=0; i<size; i++) {
+        printf("%s:\n", vardefs[i]->name);
+        printf("  .zero %d\n", size_of(vardefs[i]->tp));
+    }
 
     // 関数ごとに、抽象構文木を下りながらコード生成
     size = funcdef_map->vals->len;

@@ -30,6 +30,7 @@ int main(int argc, char**argv)
     token_pos = 0;
     func_map = new_map();
     funcdef_map = new_map();
+    global_vardef_map = new_map();
     program();
 
     // 抽象構文木を下りながらコード生成

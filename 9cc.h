@@ -50,7 +50,8 @@ typedef struct {
 //抽象構文木 ----------------------------------------
 typedef enum {
     ND_NUM = 256,   //整数のノードの型
-    ND_IDENT,       //識別子のノードの型
+    ND_IDENT,       //ローカル変数の参照
+    ND_GLOBAL_VAR,  //グローバル変数の参照
     ND_INC,
     ND_DEC,
     ND_INC_PRE,
@@ -119,6 +120,9 @@ typedef struct {
 EXTERN Vector *token_vec;
 EXTERN Token **tokens;  //token_vec->data;
 EXTERN int token_pos;   //tokensの現在位置
+
+//グローバル変数
+EXTERN Map *global_vardef_map;     //key=name, value=Vardef
 
 //現在の関数定義
 EXTERN Funcdef *cur_funcdef;
