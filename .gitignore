@@ -1,5 +1,6 @@
 .vscode/
 *~
 *.o
+*.bak
 tmp*
 9cc

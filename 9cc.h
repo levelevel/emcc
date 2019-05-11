@@ -127,8 +127,11 @@ EXTERN Map *func_map;       //key=name, value=Funcdef
 //プログラム（関数定義）の管理
 EXTERN Map *funcdef_map;    //key=name, value=Funcdef
 
+//ローカル変数が使用しているスタックサイズ
+EXTERN int var_stack_size;
+
 // parse.c
-int size_of(Type *tp);
+int size_of(const Type *tp);
 Type* new_type(Type*ptr);
 Type* new_type_int(void);
 void tokenize(char *p);

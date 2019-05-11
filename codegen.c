@@ -65,7 +65,8 @@ static void gen_mul_reg(char *reg_name, int val) {
     }
 }
 
-static char* reg_name(const char*name, Type *tp) {
+//型に応じたレジスタ名を返す。例：intならrax->eax
+static char* reg_name_for_type(const char*reg_name, const Type *tp) {
     int idx;
     switch (size_of(tp)) {
     case 8: idx = 3; break; //32bit
@@ -74,18 +75,27 @@ static char* reg_name(const char*name, Type *tp) {
     case 1: idx = 0; break; //8bit
     default: assert(0);
     }
-    for (int i=0; regs[i][3]; i++) {
-        if (strcmp(name, regs[i][3])==0) return regs[i][idx];
+    for (int j=3; j>=0; j--) {
+        for (int i=0; regs[i][j]; i++) {
+            if (strcmp(reg_name, regs[i][j])==0) return regs[i][idx];
+        }
     }
     assert(0);
     return NULL;
 }
 
-static void gen_write_reg(const char*dst, const char*src, Type *tp) {
-    printf("  mov [%s], %s\n", dst, reg_name(src, tp));
+//[dst]レジスタが指すアドレスにsrcレジスタの値をwriteする。
+//srcレジスタの型に応じてsrcレジスタのサイズを調整する。例：intならrax->eax
+static void gen_write_reg(const char*dst, const char*src, const Type *tp, const char* comment) {
+    if (comment) printf("  mov [%s], %s\t#%s\n", dst, reg_name_for_type(src, tp), comment);
+    else         printf("  mov [%s], %s\n",      dst, reg_name_for_type(src, tp));
 }
-static void gen_read_reg(const char*dst, const char*src, Type *tp) {
-    printf("  mov %s, [%s]\n", reg_name(dst, tp), src);
+
+//dstレジスタにsrcレジスタが指すアドレスからreadする。
+//dstレジスタの型に応じてdstレジスタのサイズを調整する。例：intならrax->eax
+static void gen_read_reg(const char*dst, const char*src, const Type *tp, const char* comment) {
+    if (comment) printf("  mov %s, [%s]\t#%s\n", reg_name_for_type(dst, tp), src, comment);
+    else         printf("  mov %s, [%s]\n",      reg_name_for_type(dst, tp), src);
 }
 
 static int gen(Node*node);
@@ -128,7 +138,7 @@ static int gen(Node*node) {
         } else {
             printf("  pop rax\n");  //rhsのアドレス=戻り値
         //  printf("  mov rax, [rax]\t# IDENT:%s\n", node->name);
-            gen_read_reg("rax", "rax", node->tp);
+            gen_read_reg("rax", "rax", node->tp, NULL);
             printf("  push rax\n");
         }
     } else if (node->type == ND_FUNC_CALL) {//関数コール
@@ -244,7 +254,7 @@ static int gen(Node*node) {
         printf("  pop rdi\t#for RSP alignment-\n");
         printf("  pop rdi\n");  //lhsのアドレス
     //  printf("  mov [rdi], rax\n");
-        gen_write_reg("rdi", "rax", node->tp);
+        gen_write_reg("rdi", "ax", node->tp, NULL);
         printf("  push rax\n");
     } else if (node->type == ND_INDIRECT) { //*a（間接参照）
         comment("'*A'\n");
@@ -423,7 +433,7 @@ static int gen(Node*node) {
 //ローカル変数用のスタックサイズを計算する
 //RSPの16バイトアライメントを維持する
 static int calc_stack_offset() {
-    int size = (cur_funcdef->ident_map->keys->len+1)/2 *16;
+    int size = (var_stack_size + 15)/16 * 16;
     return size;
 }
 
@@ -458,11 +468,13 @@ void print_functions(void) {
         int size = funcdef[i]->node->lhs->lst->len;
         Node **ident_nodes = (Node**)funcdef[i]->node->lhs->lst->data;
         if (size) {
-            assert(arg_regs[size-1]);
+            assert(size<=6);
             printf("  mov rax, rbp\n");
             for (int j=0; j < size; j++) {
-                printf("  sub rax, 8\n");
-                printf("  mov [rax], %s\t#arg:%s\n", arg_regs[j], ident_nodes[j]->name);
+                char buf[128];
+                printf("  sub rax, %d\n", size_of(ident_nodes[j]->tp));
+                sprintf(buf, "arg:%s %s", get_type_str(ident_nodes[j]->tp) ,ident_nodes[j]->name);
+                gen_write_reg("rax", arg_regs[j], ident_nodes[j]->tp, buf);
             }
         }
 

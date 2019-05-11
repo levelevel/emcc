@@ -169,7 +169,7 @@ static int consume_ident(char**name) {
 }
 
 //型のサイズ
-int size_of(Type *tp) {
+int size_of(const Type *tp) {
     assert(tp);
     switch (tp->type) {
     case INT: return sizeof(int);
@@ -185,6 +185,14 @@ static int node_type_eq(Type *tp1, Type *tp2) {
     if (tp1->type != tp2->type) return 0;
     if (tp1->ptr_of) return node_type_eq(tp1->ptr_of, tp2->ptr_of);
     return 1;
+}
+
+//ローカル変数のRBPからのoffset（バイト数）を返し、var_stack_sizeを更新する。
+static int get_var_offset(Type *tp) {
+    int size = size_of(tp);
+    var_stack_size += size; 
+    var_stack_size = (var_stack_size + (size-1))/size * size;  // アラインメント（sizeバイト単位に切り上げ）
+    return var_stack_size;
 }
 
 //関数定義のroot生成
@@ -244,7 +252,7 @@ static Node *new_node_var_def(char *name, Type*tp, char *input) {
     if (map_get(cur_funcdef->ident_map, name, NULL)==0) {
         Vardef *vardef = calloc(1, sizeof(Vardef));
         vardef->name = name;
-        vardef->offset = (cur_funcdef->ident_map->keys->len + 1) * 8;
+        vardef->offset = get_var_offset(tp);
         vardef->tp = tp;
         map_put(cur_funcdef->ident_map, name, vardef);
     } else {
@@ -295,6 +303,7 @@ static Node *new_node_func_def(char *name, Type *tp, char *input) {
     cur_funcdef->tp = tp;
 //  node->lhs  = list();        //引数リスト
 //  node->rhs  = block_items(); //ブロック
+    var_stack_size = 0;
 
     //未登録または仮登録の関数名であれば登録する
     Funcdef *funcdef;
@@ -512,6 +521,7 @@ static Node* var_def(void) {
     if (!consume_ident(&name)) error("型名の後に変数名がありません: %s\n", input_str());
     if (token_is('[')) tp = array_def(tp);
     node = new_node_var_def(name, tp, input); //ND_VAR_DEF
+    //fprintf(stderr, "vardef: %s %s\n", get_type_str(node->tp), name);
     return node;
 }
 
@@ -599,6 +609,7 @@ static Node *assign(void) {
     Node *node = logical_or(), *rhs;
     char *input = input_str();
     if (consume('=')) {
+        if (node->tp->type==ARRAY) error("左辺値ではありません: %s\n", node->input);
         rhs = assign(); 
         if (!(rhs->type==ND_NUM && rhs->val==0) &&  //右辺が0の場合は無条件にOK
             !node_type_eq(node->tp, rhs->tp))
@@ -755,10 +766,11 @@ static Node *post_unary(void) {
 
 //終端記号：数値、識別子（変数、関数）、カッコ
 static Node *term(void) {
+    Node *node;
     char *name;
     char *input = input_str();
     if (consume('(')) {
-        Node *node = list();
+        node = list();
         if (!consume(')')) {
             error("開きカッコに対応する閉じカッコがありません: %s", input_str());
         }
@@ -767,7 +779,7 @@ static Node *term(void) {
         return new_node_num(tokens[token_pos-1]->val, input);
     } else if (consume_ident(&name)) {
         if (consume('(')) { //関数コール
-            Node *node = new_node_func_call(name, input);
+            node = new_node_func_call(name, input);
             if (consume(')')) return node;
             node->lhs = list();
             if (node->lhs->type != ND_LIST) {
@@ -781,7 +793,6 @@ static Node *term(void) {
             return new_node_ident(name, input);
         }
     } else if (consume(TK_SIZEOF)) {
-        Node *node;
         if (consume('(')) {
             node = typedef_item();
             if (!consume(')')) {

@@ -156,6 +156,7 @@ try 36 "int a; int *p; return sizeof(a)+sizeof(p)+sizeof(1)+sizeof(&p)+sizeof(in
 try 40 "int a[2*5]; return sizeof(a);"
 try 32 "return sizeof(int*[2*2]);"
 try 8 "int a; return sizeof(1&&1==1>1)+sizeof(a=1);"
+try 1 "int a[4]; a==&a;"
 
 try $ER "int a; *a;"
 try $ER "int *a; **a;"
@@ -175,6 +176,7 @@ try $ER "int *p; p+p;"
 try $ER "int *p; p-p;"
 try $ER "int *p; 1-p;"
 try $ER "int *p; return sizeof(**p);"
+try $ER "int a[4]; a=1;"
 
 rm -f $EXE $EXE.s
 echo "test: OK"

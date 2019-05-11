@@ -52,6 +52,7 @@ static void type_str(const Type *tp) {
         strcat(buf1, buf);
     }
 }
+
 // 型を表す文字列を返す
 const char* get_type_str(const Type *tp) {
     if (tp==NULL) return "null";
