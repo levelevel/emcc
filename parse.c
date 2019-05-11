@@ -1,9 +1,11 @@
 #include "9cc.h"
 
-//エラー位置の入力文字列
+//現在のトークン（エラー箇所）の入力文字列
 #define input_str() (tokens[token_pos]->input)
-
+//現在のトークンの型が引数と一致しているか
 #define token_is(_tk) (tokens[token_pos]->type==(_tk))
+//ノードがポインタ（PTR||ARRAY）であるか
+#define node_is_ptr(_node) ((_node)->tp->type==PTR || (_node)->tp->type==ARRAY)
 
 static int eval_node(Node *node, int *val);
 
@@ -687,13 +689,13 @@ static Node *add(void) {
         char *input = input_str();
         if (consume('+')) {
             rhs = mul();
-            if (node->tp->type==PTR && rhs->tp->type == PTR)
+            if (node_is_ptr(node) && node_is_ptr(rhs))
                 error("ポインタ同士の加算です: %s\n", node->input);
-            Type *tp = node->tp->type==PTR ? node->tp : rhs->tp;
+            Type *tp = node_is_ptr(node) ? node->tp : rhs->tp;
             node = new_node('+', node, rhs, tp, input);
         } else if (consume('-')) {
             rhs = mul();
-            if (rhs->tp->type == PTR)
+            if (node_is_ptr(rhs))
                 error("ポインタによる減算です: %s\n", input);
             node = new_node('-', node, rhs, rhs->tp, input);
         } else {
@@ -738,7 +740,8 @@ static Node *unary(void) {
         return new_node(ND_DEC_PRE, NULL, node, node->tp, input);
     } else if (consume('*')) {
         node = unary();
-        if (node->tp->type != PTR) 
+        assert(node->tp != NULL);
+        if (!node_is_ptr(node)) 
             error("'*'は非ポインタ型(%s)を参照しています: %s\n", 
                 get_type_str(node->tp), node->input);
         return new_node(ND_INDIRECT, NULL, node, node->tp->ptr_of, input);

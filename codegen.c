@@ -254,7 +254,7 @@ static int gen(Node*node) {
         printf("  pop rdi\t#for RSP alignment-\n");
         printf("  pop rdi\n");  //lhsのアドレス
     //  printf("  mov [rdi], rax\n");
-        gen_write_reg("rdi", "ax", node->tp, NULL);
+        gen_write_reg("rdi", "rax", node->tp, NULL);
         printf("  push rax\n");
     } else if (node->type == ND_INDIRECT) { //*a（間接参照）
         comment("'*A'\n");

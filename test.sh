@@ -156,7 +156,8 @@ try 36 "int a; int *p; return sizeof(a)+sizeof(p)+sizeof(1)+sizeof(&p)+sizeof(in
 try 40 "int a[2*5]; return sizeof(a);"
 try 32 "return sizeof(int*[2*2]);"
 try 8 "int a; return sizeof(1&&1==1>1)+sizeof(a=1);"
-try 1 "int a[4]; a==&a;"
+try 1 "int a[4]; return a==&a;"
+try 4 "int a[4]; *a=2; *(a+1)=4; *(a+2)=8; return *(1+a);"
 
 try $ER "int a; *a;"
 try $ER "int *a; **a;"
