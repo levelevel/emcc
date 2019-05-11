@@ -158,6 +158,8 @@ try 32 "return sizeof(int*[2*2]);"
 try 8 "int a; return sizeof(1&&1==1>1)+sizeof(a=1);"
 try 1 "int a[4]; return a==&a;"
 try 4 "int a[4]; *a=2; *(a+1)=4; *(a+2)=8; return *(1+a);"
+try 4 "int a[4]; a[0]=2; a[1]=4; a[2]=8; return a[1];"
+try 8 "int a[4]; a[3]=8; (1,2)[a+1];"
 
 try $ER "int a; *a;"
 try $ER "int *a; **a;"

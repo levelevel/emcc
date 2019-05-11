@@ -399,6 +399,7 @@ static Node *new_node_list(Node *item, char *input) {
     term: ident
     term: ident "(" ")"
     term: "(" list ")"
+    term: term array_def
     term: "sizeof" sizeof_item
     term: "sizeof" "(" sizeof_item ")"
     term: "sizeof_item" type
@@ -759,7 +760,6 @@ static Node *post_unary(void) {
     char *input = input_str();
     if (consume(TK_INC)) {
         return new_node(ND_INC, node, NULL, node->tp, input);
-        node->tp = node->lhs->tp;
     } else if (consume(TK_DEC)) {
         return new_node(ND_DEC, node, NULL, node->tp, input);
     } else {
@@ -777,9 +777,8 @@ static Node *term(void) {
         if (!consume(')')) {
             error("開きカッコに対応する閉じカッコがありません: %s", input_str());
         }
-        return node;
     } else if (consume(TK_NUM)) {
-        return new_node_num(tokens[token_pos-1]->val, input);
+        node = new_node_num(tokens[token_pos-1]->val, input);
     } else if (consume_ident(&name)) {
         if (consume('(')) { //関数コール
             node = new_node_func_call(name, input);
@@ -791,9 +790,8 @@ static Node *term(void) {
             if (!consume(')')) {
                 error("関数コールの開きカッコに対応する閉じカッコがありません: %s", input_str());
             }
-            return node;
         } else {
-            return new_node_ident(name, input);
+            node=  new_node_ident(name, input);
         }
     } else if (consume(TK_SIZEOF)) {
         if (consume('(')) {
@@ -804,11 +802,22 @@ static Node *term(void) {
         } else {
             node = typedef_item();
         }
-        return node;
     } else {
         error("終端記号でないトークンです: %s", input);
         return NULL;
     }
+
+    if (consume('[')) {
+        // a[3] => *(a+3)
+        Node *rhs = assign();
+        node = new_node('+', node, rhs, node->tp ,input);
+        node = new_node(ND_INDIRECT, NULL, node, node->tp->ptr_of, input);
+        if (!consume(']')) {
+            error("配列の開きカッコに対応する閉じカッコがありません: %s", input_str());
+        }
+    }
+
+    return node;
 }
 
 static Node* typedef_item(void) {
