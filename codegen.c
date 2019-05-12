@@ -65,6 +65,19 @@ static void gen_mul_reg(char *reg_name, int val) {
     }
 }
 
+//型に応じたデータ型名を返す。例：intならDWORD
+static char* data_name_for_type(const Type *tp) {
+    if (tp->type==ARRAY) tp = tp->ptr_of;
+    switch (size_of(tp)) {
+    case 8: return "QWORD";
+    case 4: return "DWORD";
+    case 2: return "WORD";
+    case 1: return "BYTE";
+    default: assert(0);
+    }
+    return NULL;
+}
+
 //型に応じたレジスタ名を返す。例：intならrax->eax
 static char* reg_name_for_type(const char*reg_name, const Type *tp) {
     int idx;
@@ -102,12 +115,18 @@ static int gen(Node*node);
 
 //式を左辺値として評価し、そのアドレスをPUSHする
 static void gen_lval(Node*node) {
-    if (node->type == ND_IDENT) {   //変数
+    if (node->type == ND_LOCAL_VAR) {   //ローカル変数
         Vardef *vardef;
         map_get(cur_funcdef->ident_map, node->name, (void**)&vardef);
         comment("LVALUE:%s\n", node->name);
         printf("  mov rax, rbp\n");
         printf("  sub rax, %d\n", vardef->offset);  //ローカル変数のアドレス
+        printf("  push rax\n");
+    } else if (node->type == ND_GLOBAL_VAR) {   //グローバル変数
+        Vardef *vardef;
+        map_get(global_vardef_map, node->name, (void**)&vardef);
+        comment("LVALUE:%s\n", node->name);
+        printf("  lea rax, %s PTR %s\n", data_name_for_type(vardef->tp) ,vardef->name);
         printf("  push rax\n");
     } else if (node->type == ND_INDIRECT) {
         comment("LVALUE:*var\n");
@@ -129,15 +148,15 @@ static int gen(Node*node) {
         return 0;
     } else if (node->type == ND_VAR_DEF) {  //ローカル変数定義
         return 0;
-    } else if (node->type == ND_IDENT) {    //変数参照
-        comment("IDENT:%s(%s)\n", node->name, get_type_str(node->tp));
+    } else if (node->type == ND_LOCAL_VAR ||
+               node->type == ND_GLOBAL_VAR) {//変数参照
+        comment("%s_VAR:%s(%s)\n", node->type==ND_LOCAL_VAR?"LOCAL":"GLOBAL", node->name, get_type_str(node->tp));
         gen_lval(node);
         if (node->tp->type==ARRAY) {
             printf("  push rax\n");
             printf("  pop rax\n");
         } else {
             printf("  pop rax\n");  //rhsのアドレス=戻り値
-        //  printf("  mov rax, [rax]\t# IDENT:%s\n", node->name);
             gen_read_reg("rax", "rax", node->tp, NULL);
             printf("  push rax\n");
         }
@@ -447,13 +466,14 @@ void print_functions(void) {
     for (int i=0; i<size; i++) {
         printf(".global %s\n", names[i]);
     }
-    
+
     size = global_vardef_map->keys->len;
     names = (char**)global_vardef_map->keys->data;
     for (int i=0; i<size; i++) {
         printf(".global %s\n", names[i]);
     }
 
+    printf(".section .data\n");
     Vardef **vardefs = (Vardef**)global_vardef_map->vals->data;
     for (int i=0; i<size; i++) {
         printf("%s:\n", vardefs[i]->name);
@@ -461,6 +481,7 @@ void print_functions(void) {
     }
 
     // 関数ごとに、抽象構文木を下りながらコード生成
+    printf(".section .text\n");
     size = funcdef_map->vals->len;
     Funcdef **funcdef = (Funcdef**)funcdef_map->vals->data;
     for (int i=0; i < funcdef_map->keys->len; i++) {

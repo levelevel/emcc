@@ -2,7 +2,7 @@
 set -u
 
 EXE=tmp
-AFLAGS=-g
+AFLAGS="-g -no-pie"
 ER=Error
 WR=Warning
 
@@ -182,6 +182,11 @@ try $ER "int *p; p-p;"
 try $ER "int *p; 1-p;"
 try $ER "int *p; return sizeof(**p);"
 try $ER "int a[4]; a=1;"
+
+try 5 "int x; int y[4]; int*p; int main(){x=1; y[1]=2; p=y+1; return x+y[1]+*p;}"
+try 3 "int x; int y[4]; int main(){int x; int y; x=1; y=2; return x+y;}"
+
+try $ER "int x; int x[4]; int main(){}"
 
 rm -f $EXE $EXE.s
 echo "test: OK"

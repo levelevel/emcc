@@ -50,7 +50,7 @@ typedef struct {
 //抽象構文木 ----------------------------------------
 typedef enum {
     ND_NUM = 256,   //整数のノードの型
-    ND_IDENT,       //ローカル変数の参照
+    ND_LOCAL_VAR,   //ローカル変数の参照
     ND_GLOBAL_VAR,  //グローバル変数の参照
     ND_INC,
     ND_DEC,
@@ -140,7 +140,6 @@ EXTERN int var_stack_size;
 // parse.c
 int size_of(const Type *tp);
 Type* new_type(Type*ptr);
-Type* new_type_int(void);
 void tokenize(char *p);
 void print_tokens(void);
 void program(void);

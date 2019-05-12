@@ -74,8 +74,8 @@ static int is_alpha(char c) {
 }
 
 //識別子の文字列を返す。
-static char*ident_name(char*ptop) {
-    char *p = ptop+1;
+static char*ident_name(const char*ptop) {
+    const char *p = ptop+1;
     int len = 1;
     while (is_alnum(*p)) {
         p++;
@@ -181,14 +181,18 @@ int size_of(const Type *tp) {
 }
 
 //ノードのタイプが等しいかどうかを判定する
-static int node_type_eq(Type *tp1, Type *tp2) {
-    if (tp1->type != tp2->type) return 0;
+static int node_type_eq(const Type *tp1, const Type *tp2) {
+    if (tp1->type==PTR && tp2->type==ARRAY) {
+        ;   //一致とみなす（tp1=tp2の代入前提）
+    } else {
+        if (tp1->type != tp2->type) return 0;
+    }  
     if (tp1->ptr_of) return node_type_eq(tp1->ptr_of, tp2->ptr_of);
     return 1;
 }
 
 //ローカル変数のRBPからのoffset（バイト数）を返し、var_stack_sizeを更新する。
-static int get_var_offset(Type *tp) {
+static int get_var_offset(const Type *tp) {
     int size = size_of(tp);
     var_stack_size += size; 
     var_stack_size = (var_stack_size + (size-1))/size * size;  // アラインメント（sizeバイト単位に切り上げ）
@@ -204,14 +208,14 @@ static Funcdef *new_funcdef(void) {
 }
 
 //型情報の生成
-Type* new_type_ptr(Type*ptr) {
+static Type* new_type_ptr(Type*ptr) {
     Type *tp = calloc(1, sizeof(Type));
     tp->type = PTR;
     tp->ptr_of = ptr;
     return tp;
 }
 
-Type* new_type_array(Type*ptr, size_t size) {
+static Type* new_type_array(Type*ptr, size_t size) {
     Type *tp = calloc(1, sizeof(Type));
     tp->type = ARRAY;
     tp->ptr_of = ptr;
@@ -219,7 +223,7 @@ Type* new_type_array(Type*ptr, size_t size) {
     return tp;
 }
 
-Type* new_type_int(void) {
+static Type* new_type_int(void) {
     Type *tp = calloc(1, sizeof(Type));
     tp->type = INT;
     return tp;
@@ -276,15 +280,22 @@ static Node *new_node_var_def(char *name, Type*tp, char *input) {
     return node;
 }
 
-//抽象構文木の生成（識別子：ローカル変数）
+//抽象構文木の生成（識別子：ローカル変数・グローバル変数）
 static Node *new_node_ident(char *name, char *input) {
-    //定義済みの識別子であるかをチェック
+    Node *node;
+    NDtype type;
     Vardef *vardef;
-    if (map_get(cur_funcdef->ident_map, name, (void**)&vardef)==0) {
+
+    //定義済みの変数であるかをチェック
+    if (map_get(cur_funcdef->ident_map, name, (void**)&vardef)!=0) {
+        type = ND_LOCAL_VAR;
+    } else if (map_get(global_vardef_map, name, (void**)&vardef)!=0) {
+        type = ND_GLOBAL_VAR;
+    } else {
         error("'%s'は未定義の変数です: %s\n", name, tokens[token_pos-1]->input);
     }
 
-    Node *node = new_node(ND_IDENT, NULL, NULL, vardef->tp, input);
+    node = new_node(type, NULL, NULL, vardef->tp, input);
     node->name = name;
 
     return node;
