@@ -192,6 +192,7 @@ try 3 "int x; int y[4]; int main(){int x; int y; x=1; y=2; return x+y;}"
 try 6 "char c; char d; c=4;d=2;return c+d;"
 try 6 "char s[4]; int main(){char*p; p=s; *p++=2; *p++=4; return s[0]+s[1];}"
 try 7 'char buf[20]; strcpy(buf,"abc"); return printf("%s%d\n", buf, 123);'
+try 66 "return 'A'+1;"
 
 try $ER "int x; int x[4]; int main(){}"
 try $ER '"ABC"=1;'

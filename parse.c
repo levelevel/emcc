@@ -140,6 +140,10 @@ void tokenize(char *p) {
             token = new_token(TK_STRING, p);
             token->str = token_string(++p);
             p += strlen(token->str) + 1;
+        } else if (*p == '\'') {    //文字
+            token = new_token(TK_NUM, p++);
+            token->val = *p++;
+            if (*p++ != '\'') error("トークナイズエラー: '%s'\n", p);
         } else {
             error("トークナイズエラー: '%s'\n", p);
             exit(1);
