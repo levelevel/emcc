@@ -22,6 +22,7 @@ typedef struct {
 typedef enum {
     TK_NUM = 256,   //整数トークン
     TK_IDENT,       //識別子
+    TK_CHAR,        //char
     TK_INT,         //int
     TK_INC,         // ++
     TK_DEC,         // --
@@ -77,7 +78,7 @@ typedef enum {
 
 typedef struct _Type Type;
 struct _Type {
-    enum {INT, PTR, ARRAY} type;
+    enum {CHAR, INT, PTR, ARRAY} type;
     Type *ptr_of;
     size_t array_size;  //typeがARRAYの場合の配列サイズ
 };

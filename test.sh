@@ -16,6 +16,7 @@ try() {
   expected="$1"
   input="$2"
   let cnt++
+  rm -f $EXE
 
   echo "=== test[$cnt] ================================" >> $EXE.log
   if [ $expected == $ER -o $expected == $WR ]; then
@@ -47,13 +48,16 @@ try() {
 }
 
 try1() {
+  rm -f $EXE
   make -s
   ./9cc "$*" > $EXE.s
   if [ $? != 0 ]; then exit 1; fi
   cat -n $EXE.s
   gcc $AFLAGS -o $EXE $EXE.s func.o
-  $GDB ./$EXE
-  echo $?
+  if [ $? -eq 0 ]; then
+    $GDB ./$EXE
+    echo $?
+  fi
   exit $?
 }
 
@@ -185,6 +189,8 @@ try $ER "int a[4]; a=1;"
 
 try 5 "int x; int y[4]; int*p; int main(){x=1; y[1]=2; p=y+1; return x+y[1]+*p;}"
 try 3 "int x; int y[4]; int main(){int x; int y; x=1; y=2; return x+y;}"
+try 6 "char c; char d; c=4;d=2;return c+d;"
+try 6 "char s[4]; int main(){char*p; p=s; *p++=2; *p++=4; return s[0]+s[1];}"
 
 try $ER "int x; int x[4]; int main(){}"
 

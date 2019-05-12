@@ -79,7 +79,7 @@ static char* data_name_for_type(const Type *tp) {
 }
 
 //型に応じたレジスタ名を返す。例：intならrax->eax
-static char* reg_name_for_type(const char*reg_name, const Type *tp) {
+static char* reg_name_of_type(const char*reg_name, const Type *tp) {
     int idx;
     switch (size_of(tp)) {
     case 8: idx = 3; break; //32bit
@@ -97,18 +97,45 @@ static char* reg_name_for_type(const char*reg_name, const Type *tp) {
     return NULL;
 }
 
+//型に応じたwriteコマンド名を返す。
+static char* write_command_of_type(const Type *tp) {
+    switch (tp->type) {
+    case CHAR:  return "movb";
+    case INT:   return "mov";
+    case PTR:   return "mov";
+    case ARRAY: return "mov";
+    default: assert(0);
+    }
+    return NULL;
+}
+
+//型に応じたreadコマンド名を返す。
+static char* read_command_of_type(const Type *tp) {
+    switch (tp->type) {
+    case CHAR:  return "movsxd";
+    case INT:   return "mov";
+    case PTR:   return "mov";
+    case ARRAY: return "mov";
+    default: assert(0);
+    }
+    return NULL;
+}
+
 //[dst]レジスタが指すアドレスにsrcレジスタの値をwriteする。
 //srcレジスタの型に応じてsrcレジスタのサイズを調整する。例：intならrax->eax
 static void gen_write_reg(const char*dst, const char*src, const Type *tp, const char* comment) {
-    if (comment) printf("  mov [%s], %s\t#%s\n", dst, reg_name_for_type(src, tp), comment);
-    else         printf("  mov [%s], %s\n",      dst, reg_name_for_type(src, tp));
+    printf("  %s [%s], %s", write_command_of_type(tp), dst, reg_name_of_type(src, tp));
+    if (comment) printf("\t# %s\n", comment);
+    else         printf("\n");
 }
 
 //dstレジスタにsrcレジスタが指すアドレスからreadする。
 //dstレジスタの型に応じてdstレジスタのサイズを調整する。例：intならrax->eax
 static void gen_read_reg(const char*dst, const char*src, const Type *tp, const char* comment) {
-    if (comment) printf("  mov %s, [%s]\t#%s\n", reg_name_for_type(dst, tp), src, comment);
-    else         printf("  mov %s, [%s]\n",      reg_name_for_type(dst, tp), src);
+    printf("  %s %s, [%s]", read_command_of_type(tp), 
+        (tp->type==CHAR)?src:reg_name_of_type(src, tp), src);
+    if (comment) printf("\t# %s\n", comment);
+    else         printf("\n");
 }
 
 static int gen(Node*node);

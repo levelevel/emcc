@@ -4,6 +4,7 @@
 #define input_str() (tokens[token_pos]->input)
 //現在のトークンの型が引数と一致しているか
 #define token_is(_tk) (tokens[token_pos]->type==(_tk))
+#define token_is_type() (token_is(TK_CHAR)||token_is(TK_INT))
 
 static int eval_node(Node *node, int *val);
 
@@ -47,6 +48,7 @@ TokenDef TokenLst1[] = {
 
 //トークンの終わりをis_alnum()で判定するもの
 TokenDef TokenLst2[] = {
+    {"char",   4, TK_CHAR},
     {"int",    3, TK_INT},
     {"return", 6, TK_RETURN},
     {"if",     2, TK_IF},
@@ -172,8 +174,9 @@ static int consume_ident(char**name) {
 int size_of(const Type *tp) {
     assert(tp);
     switch (tp->type) {
-    case INT: return sizeof(int);
-    case PTR: return sizeof(void*);
+    case CHAR: return sizeof(char);
+    case INT:  return sizeof(int);
+    case PTR:  return sizeof(void*);
     case ARRAY: return tp->array_size * size_of(tp->ptr_of);
     }
     assert(0);
@@ -182,7 +185,9 @@ int size_of(const Type *tp) {
 
 //ノードのタイプが等しいかどうかを判定する
 static int node_type_eq(const Type *tp1, const Type *tp2) {
-    if (tp1->type==PTR && tp2->type==ARRAY) {
+    if ((tp1->type==PTR && tp2->type==ARRAY) ||
+        (tp1->type==CHAR && tp2->type==INT) ||
+        (tp1->type==INT && tp2->type==CHAR)) {
         ;   //一致とみなす（tp1=tp2の代入前提）
     } else {
         if (tp1->type != tp2->type) return 0;
@@ -470,7 +475,7 @@ static Node *top_item(void) {
     Node *node;
     Type *tp;
     char *name;
-    if (token_is(TK_INT)) {
+    if (token_is_type()) {
         tp = type();
         if (!consume_ident(&name)) error("型名の後に識別名がありません: %s\n", input_str());
         if (consume('(')) {
@@ -501,7 +506,7 @@ static Node *function(Type *tp, char *name) {
 static Node *stmt(void) {
     Node *node;
     char *input = input_str();
-    if (token_is(TK_INT)) {         //int ident（変数定義）
+    if (token_is_type()) {         //型名 ident（変数定義）
         node = var_def(NULL, NULL);
     } else if (consume(TK_RETURN)) {
         node = list();
@@ -579,7 +584,10 @@ static Type *array_def(Type *tp) {
 
 static Type *type(void) {
     Type *tp;
-    if (consume(TK_INT)) {
+    if (consume(TK_CHAR)) {
+        tp = new_type_int();
+        tp->type = CHAR;
+    } else if (consume(TK_INT)) {
         tp = new_type_int();
     } else {
         error("型名がありません: %s\n", input_str());
@@ -608,7 +616,7 @@ static Node *func_arg_list(void) {
     Node *node = new_node_list(NULL, input_str());
     Type *tp;
     char *name;
-    if (!token_is(TK_INT)) return node; //空のリスト
+    if (!token_is_type()) return node; //空のリスト
     for (;;) {
         char *input = input_str();
         //C言語仕様上型名は省略可能（デフォルトはint）
@@ -860,7 +868,7 @@ static Node *term(void) {
 
 static Node *typedef_item(void) {
     char *input = input_str();
-    if (token_is(TK_INT)) {
+    if (token_is_type()) {
         Type *tp = type();
         if (token_is('[')) tp = array_def(tp);
         return new_node_num(size_of(tp), input);
