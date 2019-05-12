@@ -59,8 +59,10 @@ TokenDef TokenLst2[] = {
     {NULL, 0, 0}
 };
 
-static Token *new_token(void) {
+static Token *new_token(TKtype type, char *input) {
     Token *token = calloc(1, sizeof(Token));
+    token->type = type;
+    token->input = input;
     vec_push(token_vec, token);
     return token;
 }
@@ -76,10 +78,24 @@ static int is_alpha(char c) {
 }
 
 //識別子の文字列を返す。
-static char*ident_name(const char*ptop) {
+static char*token_ident(const char*ptop) {
     const char *p = ptop+1;
     int len = 1;
     while (is_alnum(*p)) {
+        p++;
+        len++;
+    }
+    char *name = malloc(len+1);
+    strncpy(name, ptop, len);
+    name[len] = 0;
+    return name;
+}
+
+//文字列リテラルの文字列を返す。
+static char*token_string(const char*ptop) {
+    const char *p = ptop+1;
+    int len = 1;
+    while ((*p)!='"') {
         p++;
         len++;
     }
@@ -100,43 +116,37 @@ void tokenize(char *p) {
 
         for (TokenDef *tk = TokenLst1; tk->name; tk++) {
             if (strncmp(p, tk->name, tk->len)==0) {
-                token = new_token();
-                token->type = tk->type;
-                token->input = p;
+                token = new_token(tk->type, p);
                 p += tk->len;
                 goto NEXT_LOOP;
             }
         }
         for (TokenDef *tk = TokenLst2; tk->name; tk++) {
             if (strncmp(p, tk->name, tk->len)==0 && !is_alnum(p[tk->len])) {
-                token = new_token();
-                token->type = tk->type;
-                token->input = p;
+                token = new_token(tk->type, p);
                 p += tk->len;
                 goto NEXT_LOOP;
             }
         }
 
         if (is_alpha(*p)) {         //識別子
-            token = new_token();
-            token->type = TK_IDENT;
-            token->name = ident_name(p);
-            token->input = p;
-            p += strlen(token->name);
+            token = new_token(TK_IDENT, p);
+            token->str = token_ident(p);
+            p += strlen(token->str);
         } else if (isdigit(*p)) {   //数値
-            token = new_token();
-            token->type = TK_NUM;
-            token->input = p;
+            token = new_token(TK_NUM, p);
             token->val = strtol(p, &p, 0);  //10進、16進、8進
+        } else if (*p == '"') {     //文字列
+            token = new_token(TK_STRING, p);
+            token->str = token_string(++p);
+            p += strlen(token->str) + 1;
         } else {
             error("トークナイズエラー: '%s'\n", p);
             exit(1);
         }
         NEXT_LOOP:;
     }
-    token = new_token();
-    token->type = TK_EOF;
-    token->input = p;
+    token = new_token(TK_EOF, p);
     //print_tokens();
 }
 
@@ -165,7 +175,7 @@ static int consume(TKtype type) {
 //その場合はnameを取得し、入力を1トークン読み進めて真を返す
 static int consume_ident(char**name) {
     if (tokens[token_pos]->type != TK_IDENT) return 0;
-    *name = tokens[token_pos]->name;
+    *name = tokens[token_pos]->str;
     token_pos++;
     return 1;
 }
@@ -228,9 +238,9 @@ static Type* new_type_array(Type*ptr, size_t size) {
     return tp;
 }
 
-static Type* new_type_int(void) {
+static Type* new_type(int type) {
     Type *tp = calloc(1, sizeof(Type));
-    tp->type = INT;
+    tp->type = type;
     return tp;
 }
 
@@ -247,7 +257,7 @@ static Node *new_node(int type, Node *lhs, Node *rhs, Type *tp, char *input) {
 
 //抽象構文木の生成（数値）
 static Node *new_node_num(int val, char *input) {
-    Node *node = new_node(ND_NUM, NULL, NULL, new_type_int(), input);
+    Node *node = new_node(ND_NUM, NULL, NULL, new_type(INT), input);
     node->val = val;
     return node;
 }
@@ -285,6 +295,16 @@ static Node *new_node_var_def(char *name, Type*tp, char *input) {
     return node;
 }
 
+//抽象構文木の生成（文字列リテラル）
+static Node *new_node_string(char *string, char *input) {
+    Type *tp = new_type_array(new_type(CHAR), strlen(string));
+    Node *node = new_node(ND_STRING, NULL, NULL, tp, input);
+    node->val = string_vec->len;    //インデックス
+    vec_push(string_vec, string);
+
+    return node;
+}
+
 //抽象構文木の生成（識別子：ローカル変数・グローバル変数）
 static Node *new_node_ident(char *name, char *input) {
     Node *node;
@@ -316,7 +336,7 @@ static Node *new_node_func_call(char *name, char *input) {
         funcdef = new_funcdef();
         funcdef->name = name;
         funcdef->node = NULL;
-        funcdef->tp = new_type_int();  //暫定値
+        funcdef->tp = new_type(INT);  //暫定値
         map_put(func_map, name, funcdef);
     }
 
@@ -585,10 +605,9 @@ static Type *array_def(Type *tp) {
 static Type *type(void) {
     Type *tp;
     if (consume(TK_CHAR)) {
-        tp = new_type_int();
-        tp->type = CHAR;
+        tp = new_type(CHAR);
     } else if (consume(TK_INT)) {
-        tp = new_type_int();
+        tp = new_type(INT);
     } else {
         error("型名がありません: %s\n", input_str());
     }
@@ -675,7 +694,7 @@ static Node *logical_or(void) {
     for (;;) {
         char *input = input_str();
         if (consume(TK_LOR)) {
-            node = new_node(ND_LOR, node, logical_and(), new_type_int(), input);
+            node = new_node(ND_LOR, node, logical_and(), new_type(INT), input);
         } else {
             return node;
         }
@@ -688,7 +707,7 @@ static Node *logical_and(void) {
     for (;;) {
         char *input = input_str();
         if (consume(TK_LAND)) {
-            node = new_node(ND_LAND, node, equality(), new_type_int(), input);
+            node = new_node(ND_LAND, node, equality(), new_type(INT), input);
         } else {
             return node;
         }
@@ -701,9 +720,9 @@ static Node *equality(void) {
     for (;;) {
         char *input = input_str();
         if (consume(TK_EQ)) {
-            node = new_node(ND_EQ, node, relational(), new_type_int(), input);
+            node = new_node(ND_EQ, node, relational(), new_type(INT), input);
         } else if (consume(TK_NE)) {
-            node = new_node(ND_NE, node, relational(), new_type_int(), input);
+            node = new_node(ND_NE, node, relational(), new_type(INT), input);
         } else {
             return node;
         }
@@ -716,13 +735,13 @@ static Node *relational(void) {
     for (;;) {
         char *input = input_str();
         if (consume('<')) {
-            node = new_node('<',   node, add(), new_type_int(), input);
+            node = new_node('<',   node, add(), new_type(INT), input);
         } else if (consume(TK_LE)) {
-            node = new_node(ND_LE, node, add(), new_type_int(), input);
+            node = new_node(ND_LE, node, add(), new_type(INT), input);
         } else if (consume('>')) {
-            node = new_node('<',   add(), node, new_type_int(), input);
+            node = new_node('<',   add(), node, new_type(INT), input);
         } else if (consume(TK_GE)) {
-            node = new_node(ND_LE, add(), node, new_type_int(), input);
+            node = new_node(ND_LE, add(), node, new_type(INT), input);
         } else {
             return node;
         }
@@ -778,7 +797,7 @@ static Node *unary(void) {
         node = unary();
         return new_node('-', new_node_num(0, input), node, node->tp, input);
     } else if (consume('!')) {
-        return new_node('!', NULL, unary(), new_type_int(), input);
+        return new_node('!', NULL, unary(), new_type(INT), input);
     } else if (consume(TK_INC)) {
         node = post_unary();
         return new_node(ND_INC_PRE, NULL, node, node->tp, input);
@@ -825,6 +844,8 @@ static Node *term(void) {
         }
     } else if (consume(TK_NUM)) {
         node = new_node_num(tokens[token_pos-1]->val, input);
+    } else if (consume(TK_STRING)) {
+        node = new_node_string(tokens[token_pos-1]->str, input);
     } else if (consume_ident(&name)) {
         if (consume('(')) { //関数コール
             node = new_node_func_call(name, input);
@@ -837,7 +858,7 @@ static Node *term(void) {
                 error("関数コールの開きカッコに対応する閉じカッコがありません: %s", input_str());
             }
         } else {
-            node=  new_node_ident(name, input);
+            node = new_node_ident(name, input);
         }
     } else if (consume(TK_SIZEOF)) {
         if (consume('(')) {

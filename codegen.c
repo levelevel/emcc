@@ -171,6 +171,11 @@ static int gen(Node*node) {
     assert(node!=NULL);
     if (node->type == ND_NUM) {             //数値
         printf("  push %d\t# NUM\n", node->val);
+    } else if (node->type == ND_STRING) {   //文字列リテラル
+        char buf[20];
+        sprintf(buf, ".LC%03d", node->val);
+        printf("  lea rax, BYTE PTR %s\n", buf);
+        printf("  push rax\n");
     } else if  (node->type == ND_EMPTY) {   //空
         return 0;
     } else if (node->type == ND_VAR_DEF) {  //ローカル変数定義
@@ -202,6 +207,7 @@ static int gen(Node*node) {
                 printf("  pop %s\n", arg_regs[i-1]);
             }
         }
+        printf("  mov al, 0\n");
         printf("  call %s\n", node->name);
         printf("  push rax\n");
     } else if (node->type == ND_RETURN) {   //return
@@ -489,18 +495,31 @@ void print_functions(void) {
     // アセンブリのヘッダ部分を出力
     printf(".intel_syntax noprefix\n");
     size = func_map->keys->len;
-    char **names = (char**)func_map->keys->data;
+
+    //グローバルシンボル（関数）
+    char **strs = (char**)func_map->keys->data;
     for (int i=0; i<size; i++) {
-        printf(".global %s\n", names[i]);
+        printf(".global %s\n", strs[i]);
     }
 
+    //グローバルシンボル（変数）
     size = global_vardef_map->keys->len;
-    names = (char**)global_vardef_map->keys->data;
+    strs = (char**)global_vardef_map->keys->data;
     for (int i=0; i<size; i++) {
-        printf(".global %s\n", names[i]);
+        printf(".global %s\n", strs[i]);
     }
 
     printf(".section .data\n");
+    //文字列リテラル
+    size = string_vec->len;
+    strs = (char**)string_vec->data;
+    for (int i=0; i<size; i++) {
+        printf(".LC%03d:\n", i);
+        printf("   .string \"%s\"\n", strs[i]);
+    }
+
+    //グローバル変数
+    size = global_vardef_map->vals->len;
     Vardef **vardefs = (Vardef**)global_vardef_map->vals->data;
     for (int i=0; i<size; i++) {
         printf("%s:\n", vardefs[i]->name);

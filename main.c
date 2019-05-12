@@ -28,6 +28,7 @@ int main(int argc, char**argv)
 
     tokens = (Token**)token_vec->data;
     token_pos = 0;
+    string_vec = new_vector();
     func_map = new_map();
     funcdef_map = new_map();
     global_vardef_map = new_map();

@@ -21,6 +21,7 @@ typedef struct {
 //トークン ------------------------------------------
 typedef enum {
     TK_NUM = 256,   //整数トークン
+    TK_STRING,      //文字列
     TK_IDENT,       //識別子
     TK_CHAR,        //char
     TK_INT,         //int
@@ -44,13 +45,14 @@ typedef enum {
 typedef struct {
     TKtype type;    //トークンの型
     int val;        //typeがTK_TOKENの場合、値
-    char *name;     //typeがTK_IDENTの場合、その名前
+    char *str;      //typeがTK_STRING/TK_IDENTの場合、その文字列
     char *input;    //トークン文字列（エラーメッセージ用）
 } Token;
 
 //抽象構文木 ----------------------------------------
 typedef enum {
     ND_NUM = 256,   //整数のノードの型
+    ND_STRING,
     ND_LOCAL_VAR,   //ローカル変数の参照
     ND_GLOBAL_VAR,  //グローバル変数の参照
     ND_INC,
@@ -91,6 +93,7 @@ struct _Node {
     Vector *lst;    //typeがND_BLOCKの場合のstmtのリスト
                     //typeがND_LISTの場合のasignのリスト
     int val;        //typeがND_NUMの場合の値
+                    //typeがND_STRINGの場合のインデックス
     char *name;     //typeがND_IDENTの場合の変数名
     Type *tp;       //型情報：typeがND_NUM、ND_IDENT、ND_FUNC_DEFの場合の場合は
                     //トークナイズ時に設定。それ以外は評価時に設定。
@@ -122,6 +125,9 @@ EXTERN Vector *token_vec;
 EXTERN Token **tokens;  //token_vec->data;
 EXTERN int token_pos;   //tokensの現在位置
 
+//文字列リテラル
+EXTERN Vector *string_vec;
+
 //グローバル変数
 EXTERN Map *global_vardef_map;     //key=name, value=Vardef
 
@@ -140,7 +146,6 @@ EXTERN int var_stack_size;
 
 // parse.c
 int size_of(const Type *tp);
-Type* new_type(Type*ptr);
 void tokenize(char *p);
 void print_tokens(void);
 void program(void);
