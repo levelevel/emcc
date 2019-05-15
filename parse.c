@@ -301,7 +301,7 @@ static Node *new_node_var_def(char *name, Type*tp, char *input) {
 
 //抽象構文木の生成（文字列リテラル）
 static Node *new_node_string(char *string, char *input) {
-    Type *tp = new_type_array(new_type(CHAR), strlen(string));
+    Type *tp = new_type_array(new_type(CHAR), strlen(string)+1);
     Node *node = new_node(ND_STRING, NULL, NULL, tp, input);
     node->val = string_vec->len;    //インデックス
     vec_push(string_vec, string);
