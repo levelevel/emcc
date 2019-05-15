@@ -6,7 +6,7 @@
 #define token_is(_tk) (tokens[token_pos]->type==(_tk))
 #define token_is_type() (token_is(TK_CHAR)||token_is(TK_INT))
 
-static int eval_node(Node *node, int *val);
+static int node_is_const(Node *node, int *val);
 
 //トークンの種類を定義
 typedef struct {
@@ -273,7 +273,7 @@ static void regist_var_def(Node *node) {
         if (map_get(cur_funcdef->ident_map, name, NULL)==0) {
             Vardef *vardef = calloc(1, sizeof(Vardef));
             vardef->name = name;
-            vardef->tp = node->tp;
+            vardef->node = node;
             vardef->offset = get_var_offset(node->tp);
             map_put(cur_funcdef->ident_map, name, vardef);
         } else {
@@ -283,7 +283,7 @@ static void regist_var_def(Node *node) {
         if (map_get(global_vardef_map, name, NULL)==0) {
             Vardef *vardef = calloc(1, sizeof(Vardef));
             vardef->name = name;
-            vardef->tp = node->tp;
+            vardef->node = node;
             map_put(global_vardef_map, name, vardef);
         } else {
             error("'%s'はグローバルの重複定義です: '%s'\n", name, node->input);
@@ -310,13 +310,13 @@ static Node *new_node_string(char *string, char *input) {
 }
 
 //抽象構文木の生成（識別子：ローカル変数・グローバル変数）
-static Node *new_node_ident(char *name, char *input) {
+static Node *new_node_var(char *name, char *input) {
     Node *node;
     NDtype type;
     Vardef *vardef;
 
     //定義済みの変数であるかをチェック
-    if (map_get(cur_funcdef->ident_map, name, (void**)&vardef)!=0) {
+    if (cur_funcdef && map_get(cur_funcdef->ident_map, name, (void**)&vardef)!=0) {
         type = ND_LOCAL_VAR;
     } else if (map_get(global_vardef_map, name, (void**)&vardef)!=0) {
         type = ND_GLOBAL_VAR;
@@ -324,7 +324,7 @@ static Node *new_node_ident(char *name, char *input) {
         error("'%s'は未定義の変数です: %s\n", name, tokens[token_pos-1]->input);
     }
 
-    node = new_node(type, NULL, NULL, vardef->tp, input);
+    node = new_node(type, NULL, NULL, vardef->node->tp, input);
     node->name = name;
 
     return node;
@@ -411,8 +411,13 @@ static Node *new_node_list(Node *item, char *input) {
     stmt: "for" "(" empty_or_list "";" empty_or_list "";" empty_or_list ")" stmt
     stmt: "{" block_items "}"
     stmt: empty_or_list ";"
-    var_def: type ident
-    var_def: type ident array_def
+    var_def: type var_list
+    var_list: var
+    var_list: var_list "," var
+    var: ident
+    var: ident array_def
+    var: ident "=" assign
+    var: ident array_def "=" assign
     array_def: "[" assign "]"
     type: "int"
     type: type "*"
@@ -486,7 +491,7 @@ static Node *mul(void);
 static Node *unary(void);
 static Node *post_unary(void);
 static Node *term(void); 
-static Node *typedef_item(void);
+static Node *sizeof_item(void);
 
 void program(void) {
     while (!token_is(TK_EOF)) {
@@ -583,14 +588,31 @@ static Node *stmt(void) {
 }
 
 static Node *var_def(Type *tp, char *name) {
-    Node *node = NULL;
+    Node *node;
     char *input = input_str();
+
+    //typeを先読みしていなければtypeを読む
     if (tp==NULL) {
         tp = type();
         if (!consume_ident(&name)) error("型名の後に変数名がありません: %s\n", input_str());
     }
+
+    //配列
     if (token_is('[')) tp = array_def(tp);
     node = new_node_var_def(name, tp, input); //ND_VAR_DEF
+
+    //初期値
+    if (consume('=')) {
+        //rhsに変数=初期値の形のノードを設定する。
+        //new_node_var()の型は、上のnew_node_var_def()で設定したtpが用いられる。
+        Node *rhs = assign();
+        int val;
+        if (node_is_const(rhs, &val)) {
+            rhs = new_node_num(val, rhs->input);
+        }
+        node->rhs = new_node('=', new_node_var(name, input), rhs, tp, input);
+    }
+
     //fprintf(stderr, "vardef: %s %s\n", get_type_str(node->tp), name);
     return node;
 }
@@ -599,7 +621,7 @@ static Type *array_def(Type *tp) {
     if (consume('[')) {
         Node *node = assign();
         int val;
-        if (eval_node(node, &val)==0) error("配列サイズが定数ではありません: %s\n", input_str());
+        if (!node_is_const(node, &val)) error("配列サイズが定数ではありません: %s\n", input_str());
         tp = new_type_array(tp, val);
         if (!consume(']')) error("配列サイズの閉じかっこ ] がありません: %s\n", input_str()); 
     }
@@ -862,16 +884,16 @@ static Node *term(void) {
                 error("関数コールの開きカッコに対応する閉じカッコがありません: %s", input_str());
             }
         } else {
-            node = new_node_ident(name, input);
+            node = new_node_var(name, input);
         }
     } else if (consume(TK_SIZEOF)) {
         if (consume('(')) {
-            node = typedef_item();
+            node = sizeof_item();
             if (!consume(')')) {
                 error("開きカッコに対応する閉じカッコがありません: %s", input_str());
             }
         } else {
-            node = typedef_item();
+            node = sizeof_item();
         }
     } else {
         error("終端記号でないトークンです: %s", input);
@@ -891,7 +913,7 @@ static Node *term(void) {
     return node;
 }
 
-static Node *typedef_item(void) {
+static Node *sizeof_item(void) {
     char *input = input_str();
     if (token_is_type()) {
         Type *tp = type();
@@ -904,14 +926,15 @@ static Node *typedef_item(void) {
     }
 }
 
-static int eval_node(Node *node, int *val) {
+static int node_is_const(Node *node, int *val) {
+    /*代入は副作用を伴うので定数とはみなさない。
     if (node->type == '=') {
-        return eval_node(node->rhs, val);
-    }
+        return node_is_const(node->rhs, val);   //厳密にはlhsへの型変換を考慮すべき？
+    }*/
 
     int val1, val2;
-    if (node->lhs && eval_node(node->lhs, &val1)==0) return 0;
-    if (node->rhs && eval_node(node->rhs, &val2)==0) return 0;
+    if (node->lhs && !node_is_const(node->lhs, &val1)) return 0;
+    if (node->rhs && !node_is_const(node->rhs, &val2)) return 0;
     switch (node->type) {
     case ND_NUM:  *val = node->val;    break;
     case ND_LAND: *val = val1 && val2; break;

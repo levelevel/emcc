@@ -153,7 +153,7 @@ static void gen_lval(Node*node) {
         Vardef *vardef;
         map_get(global_vardef_map, node->name, (void**)&vardef);
         comment("LVALUE:%s\n", node->name);
-        printf("  lea rax, %s PTR %s\n", data_name_for_type(vardef->tp) ,vardef->name);
+        printf("  lea rax, %s PTR %s\n", data_name_for_type(vardef->node->tp) ,vardef->name);
         printf("  push rax\n");
     } else if (node->type == ND_INDIRECT) {
         comment("LVALUE:*var\n");
@@ -179,7 +179,8 @@ static int gen(Node*node) {
     } else if  (node->type == ND_EMPTY) {   //空
         return 0;
     } else if (node->type == ND_VAR_DEF) {  //ローカル変数定義
-        return 0;
+        if (node->rhs==NULL) return 0;
+        gen(node->rhs); //代入
     } else if (node->type == ND_LOCAL_VAR ||
                node->type == ND_GLOBAL_VAR) {//変数参照
         comment("%s_VAR:%s(%s)\n", node->type==ND_LOCAL_VAR?"LOCAL":"GLOBAL", node->name, get_type_str(node->tp));
@@ -523,7 +524,12 @@ void print_functions(void) {
     Vardef **vardefs = (Vardef**)global_vardef_map->vals->data;
     for (int i=0; i<size; i++) {
         printf("%s:\n", vardefs[i]->name);
-        printf("  .zero %d\n", size_of(vardefs[i]->tp));
+        if (vardefs[i]->node->rhs) {    //初期値あり、rhsは'='のノード
+            assert(vardefs[i]->node->rhs->rhs->type==ND_NUM);
+            printf("  .long %d\n", vardefs[i]->node->rhs->rhs->val);
+        } else {
+            printf("  .zero %d\n", size_of(vardefs[i]->node->tp));
+        }
     }
 
     // 関数ごとに、抽象構文木を下りながらコード生成

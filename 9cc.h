@@ -102,7 +102,7 @@ struct _Node {
 
 typedef struct {
     char *name;     //変数名
-    Type *tp;       //変数の型情報
+    Node *node;     //ノード（型情報、初期値、ローカル・グローバルなどもここから取得する）
     int offset;     //ベースポインタからのoffset
 } Vardef;
 

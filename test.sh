@@ -142,8 +142,7 @@ try $ER "--1;"
 
 try 1 "int main() {int a; int *b; a=1; b=&a; return *b;}"
 try 20 "int main() {
-          int a; int *b;
-          a=10; b=&a;
+          int a=10; int *b=&a;
           return f(&a,&b);
         }
         int f(int *p, int**pp) {
@@ -154,7 +153,7 @@ try 1 "int *main(int *a, int **b){int *p; 1;} int**func(int ***********a){&(a); 
 try 1 "int *f(){int a; return &a;} int main(){int *a; a=f(); return 1;}"
 try 1 "int* f(int *a){return a;} int main(){int x; int *y; y=f(&x); return &x==y;}"
 try 8 "int **p; p=0; p++; ++p; return p-1;"
-try 4 "int *p; int a; p=0; a=2; p=p+a; p--; --p; p=p+0; return 1+p;"
+try 4 "int *p=0; int a=2; p=p+a; p--; --p; p=p+0; return 1+p;"
 try 4 "int main(){int *p; alloc4(&p,1,2,4,8); *p=0; *(p+1)=0; return *(p+2);}"
 try 36 "int a; int *p; return sizeof(a)+sizeof(p)+sizeof(1)+sizeof(&p)+sizeof(int)+sizeof(int*);"
 try 40 "int a[2*5]; return sizeof(a);"
@@ -192,6 +191,7 @@ try 3 "int x; int y[4]; int main(){int x; int y; x=1; y=2; return x+y;}"
 try 6 "char c; char d; c=4;d=2;return c+d;"
 try 6 "char s[4]; int main(){char*p; p=s; *p++=2; *p++=4; return s[0]+s[1];}"
 try 7 'char buf[20]; strcpy(buf,"abc"); return printf("%s%d\n", buf, 123);'
+try 4 "int a=2*2; int main(){return a;}"
 try 66 "return 'A'+1;"
 
 try $ER "int x; int x[4]; int main(){}"
