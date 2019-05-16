@@ -82,7 +82,7 @@ typedef struct _Type Type;
 struct _Type {
     enum {CHAR, INT, PTR, ARRAY} type;
     Type *ptr_of;
-    size_t array_size;  //typeがARRAYの場合の配列サイズ
+    long array_size;  //typeがARRAYの場合の配列サイズ
 };
 
 typedef struct _Node Node;

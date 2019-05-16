@@ -165,6 +165,7 @@ try 4 "int a[4]; a[0]=2; a[1]=4; a[2]=8; return a[1];"
 try 8 "int a[4]; a[3]=8; (1,2)[a+1];"
 try 6 "int func(int *a){return a[0]+a[1]+a[2];}
        int main(){int a[4]; a[0]=1; a[1]=2; a[2]=3; return func(a);}"
+try 1 "int main(int argc, char*argv[]){return 1;}"
 
 try $ER "int a; *a;"
 try $ER "int *a; **a;"
@@ -193,9 +194,11 @@ try 6 "char s[4]; int main(){char*p; p=s; *p++=2; *p++=4; return s[0]+s[1];}"
 try 7 'char buf[20]; strcpy(buf,"abc"); return printf("%s%d\n", buf, 123);'
 try 4 "int a=2*2; int main(){return a;}"
 try 66 "return 'A'+1;"
+try 1 "int main(int argc, char *argv[]){return 1;}"
 
 try $ER "int x; int x[4]; int main(){}"
 try $ER '"ABC"=1;'
+try $ER "char *argv[];"
 
 rm -f $EXE $EXE.s
 echo "test: OK"

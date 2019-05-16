@@ -214,7 +214,7 @@ static int node_type_eq(const Type *tp1, const Type *tp2) {
 static int get_var_offset(const Type *tp) {
     int size = size_of(tp);
     var_stack_size += size; 
-    var_stack_size = (var_stack_size + (size-1))/size * size;  // アラインメント（sizeバイト単位に切り上げ）
+    if (size>0) var_stack_size = (var_stack_size + (size-1))/size * size;  // アラインメント（sizeバイト単位に切り上げ）
     return var_stack_size;
 }
 
@@ -419,6 +419,7 @@ static Node *new_node_list(Node *item, char *input) {
     var: ident "=" assign
     var: ident array_def "=" assign
     array_def: "[" assign "]"
+    array_def: "[" "]"
     type: "int"
     type: type "*"
     func_arg_list: type ident
@@ -613,17 +614,26 @@ static Node *var_def(Type *tp, char *name) {
         node->rhs = new_node('=', new_node_var(name, input), rhs, tp, input);
     }
 
+    //初期値のないサイズ0のARRAYはエラー
+    if (node->tp->type==ARRAY && node->tp->array_size<0 &&
+        (node->rhs==NULL || node->rhs->type!='='))
+        error("配列のサイズが未定義です: %s", node->input);
+
     //fprintf(stderr, "vardef: %s %s\n", get_type_str(node->tp), name);
     return node;
 }
 
 static Type *array_def(Type *tp) {
     if (consume('[')) {
-        Node *node = assign();
-        int val;
-        if (!node_is_const(node, &val)) error("配列サイズが定数ではありません: %s\n", input_str());
-        tp = new_type_array(tp, val);
-        if (!consume(']')) error("配列サイズの閉じかっこ ] がありません: %s\n", input_str()); 
+        if (consume(']')) { //char *argv[];
+            tp = new_type_array(tp, -1);
+        } else {
+            Node *node = assign();
+            int val;
+            if (!node_is_const(node, &val)) error("配列サイズが定数ではありません: %s\n", input_str());
+            tp = new_type_array(tp, val);
+            if (!consume(']')) error("配列サイズの閉じかっこ ] がありません: %s\n", input_str()); 
+        }
     }
     return tp;
 }
@@ -667,6 +677,10 @@ static Node *func_arg_list(void) {
         //C言語仕様上型名は省略可能（デフォルトはint）
         tp = type();
         if (!consume_ident(&name)) error("変数名がありません: %s", input_str());
+        if (token_is('[')) {    //char *argv[]
+            tp = array_def(tp);
+            if (tp->type==ARRAY && tp->array_size<0) tp->type = PTR;
+        }
         vec_push(node->lst, new_node_var_def(name, tp, input));
         if (!consume(',')) break;
     }
