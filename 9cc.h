@@ -1,3 +1,4 @@
+#include <errno.h>
 #include <stdarg.h>
 #include <ctype.h>
 #include <stdio.h>
@@ -166,6 +167,10 @@ int map_get(const Map *map, char *key, void**val);
 const char* get_type_str(const Type *tp);
 const char* get_func_args_str(const Node *node);
 
+EXTERN char *filename;
+EXTERN char *user_input;
+void error_at(const char*loc, const char*fmt, ...);
+void warning_at(const char*loc, const char*fmt, ...);
 void error(const char*fmt, ...);
 void warning(const char*fmt, ...);
 void run_test(void);

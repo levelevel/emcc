@@ -141,9 +141,9 @@ void tokenize(char *p) {
         } else if (*p == '\'') {    //文字
             token = new_token(TK_NUM, p++);
             token->val = *p++;
-            if (*p++ != '\'') error("トークナイズエラー: '%s'\n", p);
+            if (*p++ != '\'') error_at(p, "トークナイズエラー");
         } else {
-            error("トークナイズエラー: '%s'\n", p);
+            error_at(p, "トークナイズエラー");
             exit(1);
         }
         NEXT_LOOP:;
@@ -275,7 +275,7 @@ static void regist_var_def(Node *node) {
             vardef->offset = get_var_offset(node->tp);
             map_put(cur_funcdef->ident_map, name, vardef);
         } else {
-            error("'%s'はローカル変数の重複定義です: '%s'\n", name, node->input);
+            error_at(node->input, "'%s'はローカル変数の重複定義です", name);
         }
     } else {            //グローバル変数
         if (map_get(global_vardef_map, name, NULL)==0) {
@@ -284,7 +284,7 @@ static void regist_var_def(Node *node) {
             vardef->node = node;
             map_put(global_vardef_map, name, vardef);
         } else {
-            error("'%s'はグローバルの重複定義です: '%s'\n", name, node->input);
+            error_at(node->input, "'%s'はグローバルの重複定義です", name);
         }
     }
 }
@@ -319,7 +319,7 @@ static Node *new_node_var(char *name, char *input) {
     } else if (map_get(global_vardef_map, name, (void**)&vardef)!=0) {
         type = ND_GLOBAL_VAR;
     } else {
-        error("'%s'は未定義の変数です: %s\n", name, tokens[token_pos-1]->input);
+        error_at(tokens[token_pos-1]->input, "'%s'は未定義の変数です", name);
     }
 
     node = new_node(type, NULL, NULL, vardef->node->tp, input);
@@ -505,15 +505,15 @@ static Node *top_item(void) {
     char *name;
     if (token_is_type()) {
         tp = type();
-        if (!consume_ident(&name)) error("型名の後に識別名がありません: %s\n", input_str());
+        if (!consume_ident(&name)) error_at(input_str(), "型名の後に識別名がありません");
         if (consume('(')) {
             node = function(tp, name);
         } else {
             node = var_def(tp, name);
-            if (!consume(';')) error("; がありません: %s", input_str());
+            if (!consume(';')) error_at(input_str(), "; がありません");
         }
     } else {
-        error("関数・変数の定義がありません: %s", input_str());
+        error_at(input_str(), "関数・変数の定義がありません");
     }
     return node;
 }
@@ -525,8 +525,8 @@ static Node *function(Type *tp, char *name) {
     char *input = input_str();
     node = new_node_func_def(name, tp, input);
     node->lhs = func_arg_list();
-    if (!consume(')')) error("関数定義の閉じカッコがありません: %s\n", input_str());
-    if (!consume('{')) error("関数定義の { がありません: %s\n", input_str());
+    if (!consume(')')) error_at(input_str(), "関数定義の閉じカッコがありません");
+    if (!consume('{')) error_at(input_str(), "関数定義の { がありません");
     node->rhs = block_items();
     return node;
 }
@@ -541,9 +541,9 @@ static Node *stmt(void) {
         node = new_node(ND_RETURN, node, NULL, node->tp, input);
     } else if (consume(TK_IF)) {    //if(A)B else C
         Node *node_A, *node_B;
-        if (!consume('(')) error("ifの後に開きカッコがありません: %s\n", input_str());
+        if (!consume('(')) error_at(input_str(), "ifの後に開きカッコがありません");
         node_A = list();
-        if (!consume(')')) error("ifの開きカッコに対応する閉じカッコがありません: %s\n", input_str());
+        if (!consume(')')) error_at(input_str(), "ifの開きカッコに対応する閉じカッコがありません");
         input = input_str();
         node_B = stmt();
         node = new_node(0, node_A, node_B, NULL, input); //lhs
@@ -555,21 +555,21 @@ static Node *stmt(void) {
         }
         return node;
     } else if (consume(TK_WHILE)) {
-        if (!consume('(')) error("whileの後に開きカッコがありません: %s\n", input_str());
+        if (!consume('(')) error_at(input_str(), "whileの後に開きカッコがありません");
         node = list();
-        if (!consume(')')) error("whileの開きカッコに対応する閉じカッコがありません: %s\n", input_str());
+        if (!consume(')')) error_at(input_str(), "whileの開きカッコに対応する閉じカッコがありません");
         node = new_node(ND_WHILE, node, stmt(), NULL, input);
         return node;
     } else if (consume(TK_FOR)) {   //for(A;B;C)D
         Node *node1, *node2;
-        if (!consume('(')) error("forの後に開きカッコがありません: %s\n", input_str());
+        if (!consume('(')) error_at(input_str(), "forの後に開きカッコがありません");
         node1 = empty_or_list();   //A
-        if (!consume(';')) error("forの1個目の;がありません: %s\n", input_str());
+        if (!consume(';')) error_at(input_str(), "forの1個目の;がありません");
         node2 = empty_or_list();   //B
-        if (!consume(';')) error("forの2個目の;がありません: %s\n", input_str());
+        if (!consume(';')) error_at(input_str(), "forの2個目の;がありません");
         node = new_node(0, node1, node2, NULL, input);       //A,B
         node1 = empty_or_list();   //C
-        if (!consume(')')) error("forの開きカッコに対応する閉じカッコがありません: %s\n", input_str());
+        if (!consume(')')) error_at(input_str(), "forの開きカッコに対応する閉じカッコがありません");
         node2 = new_node(0, node1, stmt(), NULL, input);     //C,D
         node = new_node(ND_FOR, node, node2, NULL, input);   //(A,B),(C,D)
         return node;
@@ -581,7 +581,7 @@ static Node *stmt(void) {
     }
 
     if (!consume(';')) {
-        error(";'でないトークンです: %s", input_str());
+        error_at(input_str(), ";'でないトークンです");
     }
     return node;
 }
@@ -593,7 +593,7 @@ static Node *var_def(Type *tp, char *name) {
     //typeを先読みしていなければtypeを読む
     if (tp==NULL) {
         tp = type();
-        if (!consume_ident(&name)) error("型名の後に変数名がありません: %s\n", input_str());
+        if (!consume_ident(&name)) error_at(input_str(), "型名の後に変数名がありません");
     }
 
     //配列
@@ -605,7 +605,7 @@ static Node *var_def(Type *tp, char *name) {
         rhs = assign();
         int val;
         if (tp->type==ARRAY) {
-            if (rhs->tp->type!=ARRAY) error("配列の初期値が配列形式になっていません: %s\n", rhs->input);
+            if (rhs->tp->type!=ARRAY) error_at(rhs->input, "配列の初期値が配列形式になっていません");
             if (tp->array_size<0) {
                 tp->array_size = rhs->tp->array_size;
                 fprintf(stderr, "array_size=%ld\n", tp->array_size);
@@ -622,7 +622,7 @@ static Node *var_def(Type *tp, char *name) {
     //初期値のないサイズ未定義のARRAYはエラー
     if (node->tp->type==ARRAY && node->tp->array_size<0 &&
         (node->rhs==NULL || node->rhs->type!='='))
-        error("配列のサイズが未定義です: %s", node->input);
+        error_at(input_str(), "配列のサイズが未定義です");
 
     //fprintf(stderr, "vardef: %s %s\n", get_type_str(node->tp), name);
     return node;
@@ -633,12 +633,13 @@ static Type *array_def(Type *tp) {
         if (consume(']')) { //char *argv[];
             tp = new_type_array(tp, -1);
         } else {
+            char *input = input_str();
             Node *node = assign();
             int val;
-            if (!node_is_const(node, &val)) error("配列サイズが定数ではありません: %s\n", node->input);
-            if (val==0) error("配列のサイズが0です: %s\n", node->input);
+            if (!node_is_const(node, &val)) error_at(input, "配列サイズが定数ではありません");
+            if (val==0) error_at(input, "配列のサイズが0です");
             tp = new_type_array(tp, val);
-            if (!consume(']')) error("配列サイズの閉じかっこ ] がありません: %s\n", input_str()); 
+            if (!consume(']')) error_at(input_str(), "配列サイズの閉じかっこ ] がありません"); 
         }
     }
     return tp;
@@ -651,7 +652,7 @@ static Type *type(void) {
     } else if (consume(TK_INT)) {
         tp = new_type(INT);
     } else {
-        error("型名がありません: %s\n", input_str());
+        error_at(input_str(), "型名がありません: %s\n");
     }
     while (consume('*')) {
         tp = new_type_ptr(tp);
@@ -682,7 +683,7 @@ static Node *func_arg_list(void) {
         char *input = input_str();
         //C言語仕様上型名は省略可能（デフォルトはint）
         tp = type();
-        if (!consume_ident(&name)) error("変数名がありません: %s", input_str());
+        if (!consume_ident(&name)) error_at(input_str(), "変数名がありません");
         if (token_is('[')) {    //char *argv[]
             tp = array_def(tp);
             if (tp->type==ARRAY && tp->array_size<0) tp->type = PTR;
@@ -723,12 +724,12 @@ static Node *assign(void) {
     Node *node = logical_or(), *rhs;
     char *input = input_str();
     if (consume('=')) {
-        if (node->tp->type==ARRAY) error("左辺値ではありません: %s\n", node->input);
+        if (node->tp->type==ARRAY) error_at(node->input, "左辺値ではありません");
         rhs = assign(); 
         if (!(rhs->type==ND_NUM && rhs->val==0) &&  //右辺が0の場合は無条件にOK
             !node_type_eq(node->tp, rhs->tp))
-            warning("=の左右の型(%s:%s)が異なります: %s\n", 
-                get_type_str(node->tp), get_type_str(rhs->tp), node->input);
+            warning_at(input, "=の左右の型(%s:%s)が異なります", 
+                get_type_str(node->tp), get_type_str(rhs->tp));
         node = new_node('=', node, rhs, node->tp, input);
     }
     return node;
@@ -802,13 +803,13 @@ static Node *add(void) {
         if (consume('+')) {
             rhs = mul();
             if (node_is_ptr(node) && node_is_ptr(rhs))
-                error("ポインタ同士の加算です: %s\n", node->input);
+                error_at(node->input, "ポインタ同士の加算です");
             Type *tp = node_is_ptr(node) ? node->tp : rhs->tp;
             node = new_node('+', node, rhs, tp, input);
         } else if (consume('-')) {
             rhs = mul();
             if (node_is_ptr(rhs))
-                error("ポインタによる減算です: %s\n", input);
+                error_at(input, "ポインタによる減算です");
             node = new_node('-', node, rhs, rhs->tp, input);
         } else {
             return node;
@@ -854,8 +855,8 @@ static Node *unary(void) {
         node = unary();
         assert(node->tp != NULL);
         if (!node_is_ptr(node)) 
-            error("'*'は非ポインタ型(%s)を参照しています: %s\n", 
-                get_type_str(node->tp), node->input);
+            error_at(node->input, "'*'は非ポインタ型(%s)を参照しています", 
+                get_type_str(node->tp));
         return new_node(ND_INDIRECT, NULL, node, node->tp->ptr_of, input);
     } else if (consume('&')) {
         node = unary();
@@ -886,7 +887,7 @@ static Node *term(void) {
     if (consume('(')) {
         node = list();
         if (!consume(')')) {
-            error("開きカッコに対応する閉じカッコがありません: %s", input_str());
+            error_at(input_str(), "開きカッコに対応する閉じカッコがありません");
         }
     } else if (consume(TK_NUM)) {
         node = new_node_num(tokens[token_pos-1]->val, input);
@@ -901,7 +902,7 @@ static Node *term(void) {
                 node->lhs = new_node_list(node->lhs, input);
             }
             if (!consume(')')) {
-                error("関数コールの開きカッコに対応する閉じカッコがありません: %s", input_str());
+                error_at(input_str(), "関数コールの開きカッコに対応する閉じカッコがありません");
             }
         } else {
             node = new_node_var(name, input);
@@ -910,13 +911,13 @@ static Node *term(void) {
         if (consume('(')) {
             node = sizeof_item();
             if (!consume(')')) {
-                error("開きカッコに対応する閉じカッコがありません: %s", input_str());
+                error_at(input_str(), "開きカッコに対応する閉じカッコがありません");
             }
         } else {
             node = sizeof_item();
         }
     } else {
-        error("終端記号でないトークンです: %s", input);
+        error_at(input, "終端記号でないトークンです");
         return NULL;
     }
 
@@ -928,7 +929,7 @@ static Node *term(void) {
         assert(tp!=NULL);
         node = new_node(ND_INDIRECT, NULL, node, tp, input);
         if (!consume(']')) {
-            error("配列の開きカッコに対応する閉じカッコがありません: %s", input_str());
+            error_at(input_str(), "配列の開きカッコに対応する閉じカッコがありません");
         }
     }
 
@@ -943,7 +944,7 @@ static Node *sizeof_item(void) {
         return new_node_num(size_of(tp), input);
     } else {
         Node *node = assign();
-        if (node->tp == NULL) error("サイズを確定できません: %s\n", node->input);
+        if (node->tp == NULL) error_at(node->input, "サイズを確定できません");
         return new_node_num(size_of(node->tp), input);
     }
 }

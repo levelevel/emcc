@@ -159,7 +159,7 @@ static void gen_lval(Node*node) {
         comment("LVALUE:*var\n");
         gen(node->rhs);     //rhsのアドレスを生成する
     } else {
-        error("アドレスを生成できません: %s", node->input);
+        error_at(node->input, "アドレスを生成できません");
     }
 }
 
@@ -490,7 +490,7 @@ static int gen(Node*node) {
             printf("  mov rax, rdx\n");
             break;
         default:
-            error("不正なトークンです: '%d'\n", node->input);
+            error_at(node->input, "不正なトークンです");
         }
 
         printf("  push rax\n");

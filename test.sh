@@ -20,7 +20,7 @@ try() {
 
   echo "=== test[$cnt] ================================" >> $EXE.log
   if [ $expected == $ER -o $expected == $WR ]; then
-    ./9cc "$input" 2>&1 > $EXE.s | tee -a $EXE.log | grep "9cc:$expected" > $EXE.err
+    ./9cc -s "$input" 2>&1 > $EXE.s | tee -a $EXE.log | grep "9cc:$expected" > $EXE.err
     if [ $? -eq 0 ]; then
       actual=$expected
     else
@@ -30,7 +30,7 @@ try() {
     rm -f $EXE.err
   else
     if [ $test_er_only -ne 0 ]; then return; fi
-    ./9cc "$input" > $EXE.s
+    ./9cc -s "$input" > $EXE.s
     gcc $AFLAGS -o $EXE $EXE.s func.o
     ./$EXE
     actual="$?"
@@ -50,7 +50,7 @@ try() {
 try1() {
   rm -f $EXE
   make -s
-  ./9cc "$*" > $EXE.s
+  ./9cc -s "$*" > $EXE.s
   if [ $? != 0 ]; then exit 1; fi
   cat -n $EXE.s
   gcc $AFLAGS -o $EXE $EXE.s func.o

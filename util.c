@@ -88,6 +88,52 @@ const char* get_func_args_str(const Node *node) {
     return ret;
 }
 
+// エラーの起きた場所を報告するための関数
+static void message_at(const char*loc, const char *level) {
+    // locが含まれている行の開始地点と終了地点を取得
+    const char *line = loc;
+    while (user_input < line && line[-1] != '\n') line--;
+
+    const char *end = loc;
+    while (*end && *end != '\n') end++;
+
+    // 見つかった行が全体の何行目なのかを調べる
+    int line_num = 1;
+    for (char *p = user_input; p < line; p++)
+        if (*p == '\n') line_num++;
+
+    // 見つかった行を、ファイル名と行番号と一緒に表示
+    int indent = fprintf(stderr, "9cc:%s: %s:%d: ", level, filename, line_num);
+    fprintf(stderr, "%.*s\n", (int)(end - line), line);
+
+    // エラー箇所を"^"で指し示して、エラーメッセージを表示
+    int pos = loc - line + indent;
+    fprintf(stderr, "%*s", pos, ""); // pos個の空白を出力
+    fprintf(stderr, "^ ");
+}
+
+void error_at(const char*loc, const char*fmt, ...){
+    message_at(loc, "Error");
+
+    va_list ap;
+    va_start(ap, fmt);
+    vfprintf(stderr, fmt, ap);
+    fprintf(stderr, "\n");
+
+    exit(1);
+  }
+
+void warning_at(const char*loc, const char*fmt, ...){
+    message_at(loc, "Warning");
+
+    va_list ap;
+    va_start(ap, fmt);
+    vfprintf(stderr, fmt, ap);
+    fprintf(stderr, "\n");
+
+    exit(1);
+  }
+
 // エラーと警告を報告するための関数 --------------------------
 // printfと同じ引数を取る
 void error(const char*fmt, ...) {
@@ -122,9 +168,12 @@ static void test_vector(void) {
         vec_push(vec, (void*)i);
     }
     expect(__LINE__, 100, vec->len);
-    expect(__LINE__, 0, (long)vec->data[0]);
+    expect(__LINE__, 0,  (long)vec->data[0]);
     expect(__LINE__, 50, (long)vec->data[50]);
     expect(__LINE__, 99, (long)vec->data[99]);
+    expect(__LINE__, 0,  (long)vec_get(vec, 0));
+    expect(__LINE__, 50, (long)vec_get(vec, 50));
+    expect(__LINE__, 99, (long)vec_get(vec, 99));
 }
 
 static void test_map(void) {
