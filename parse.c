@@ -589,7 +589,7 @@ static Node *stmt(void) {
 }
 
 static Node *var_def(Type *tp, char *name) {
-    Node *node;
+    Node *node, *rhs=NULL;
     char *input = input_str();
 
     //typeを先読みしていなければtypeを読む
@@ -600,21 +600,28 @@ static Node *var_def(Type *tp, char *name) {
 
     //配列
     if (token_is('[')) tp = array_def(tp);
-    node = new_node_var_def(name, tp, input); //ND_VAR_DEF
 
     //初期値
     if (consume('=')) {
-        //rhsに変数=初期値の形のノードを設定する。
-        //new_node_var()の型は、上のnew_node_var_def()で設定したtpが用いられる。
-        Node *rhs = assign();
+        //node->rhsに変数=初期値の形のノードを設定する。->そのまま初期値設定のコード生成に用いる
+        rhs = assign();
         int val;
+        if (tp->type==ARRAY) {
+            if (rhs->tp->type!=ARRAY) error("配列の初期値が配列形式になっていません: %s\n", rhs->input);
+            if (tp->array_size<0) {
+                tp->array_size = rhs->tp->array_size;
+                fprintf(stderr, "array_size=%ld\n", tp->array_size);
+            }
+        }
         if (node_is_const(rhs, &val)) {
             rhs = new_node_num(val, rhs->input);
         }
-        node->rhs = new_node('=', new_node_var(name, input), rhs, tp, input);
     }
 
-    //初期値のないサイズ0のARRAYはエラー
+    node = new_node_var_def(name, tp, input); //ND_VAR_DEF
+    if (rhs) node->rhs = new_node('=', new_node_var(name, input), rhs, tp, input);
+
+    //初期値のないサイズ未定義のARRAYはエラー
     if (node->tp->type==ARRAY && node->tp->array_size<0 &&
         (node->rhs==NULL || node->rhs->type!='='))
         error("配列のサイズが未定義です: %s", node->input);
@@ -630,7 +637,8 @@ static Type *array_def(Type *tp) {
         } else {
             Node *node = assign();
             int val;
-            if (!node_is_const(node, &val)) error("配列サイズが定数ではありません: %s\n", input_str());
+            if (!node_is_const(node, &val)) error("配列サイズが定数ではありません: %s\n", node->input);
+            if (val==0) error("配列のサイズが0です: %s\n", node->input);
             tp = new_type_array(tp, val);
             if (!consume(']')) error("配列サイズの閉じかっこ ] がありません: %s\n", input_str()); 
         }

@@ -186,6 +186,9 @@ try $ER "int *p; p-p;"
 try $ER "int *p; 1-p;"
 try $ER "int *p; return sizeof(**p);"
 try $ER "int a[4]; a=1;"
+try $ER "char *argv[];"
+try $ER "char *argv[0];"
+try $ER "int a; char *argv[a];"
 
 try 5 "int x; int y[4]; int*p; int main(){x=1; y[1]=2; p=y+1; return x+y[1]+*p;}"
 try 3 "int x; int y[4]; int main(){int x; int y; x=1; y=2; return x+y;}"
@@ -195,10 +198,14 @@ try 7 'char buf[20]; strcpy(buf,"abc"); return printf("%s%d\n", buf, 123);'
 try 4 "int a=2*2; int main(){return a;}"
 try 66 "return 'A'+1;"
 try 1 "int main(int argc, char *argv[]){return 1;}"
+try 2 "char*p[4];p[0]=0;p[1]=\"ABCD\"; return *(p[1]+2)-'A';"
+try 1 'char str[4]="ABC"; return strcmp(str, "ABC")==0;'
+try 1 'char str[]="ABC"; return strcmp(str, "ABC")==0 && strlen(str)==3;'
+try 1 'char str[4]="ABCDEFGHIJK"; strncmp(str, "ABCD", 4)==0;'
 
 try $ER "int x; int x[4]; int main(){}"
 try $ER '"ABC"=1;'
-try $ER "char *argv[];"
+try $ER "char p[3]=1;"
 
 rm -f $EXE $EXE.s
 echo "test: OK"

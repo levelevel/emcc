@@ -301,14 +301,28 @@ static int gen(Node*node) {
     } else if (node->type == '=') {         //代入
         comment("'='\n");
         gen_lval(node->lhs);    //スタックトップにアドレス設定
-        printf("  push 0\t#for RSP alignment+\n");
-        gen(node->rhs);
-        printf("  pop rax\n");  //rhsの値
-        printf("  pop rdi\t#for RSP alignment-\n");
-        printf("  pop rdi\n");  //lhsのアドレス
-    //  printf("  mov [rdi], rax\n");
-        gen_write_reg("rdi", "rax", node->tp, NULL);
-        printf("  push rax\n");
+        if (node->lhs->tp->type==ARRAY) {   //ローカル変数の初期値
+            //文字配列の初期化
+            assert(node->lhs->type==ND_LOCAL_VAR);
+            assert(node->rhs->tp->ptr_of->type==CHAR);
+            long size  = node->lhs->tp->array_size;
+            long rsize = node->rhs->tp->array_size;
+            if (size > rsize) size = rsize;
+            printf("  pop rdi\n");
+            printf("  lea rsi, BYTE PTR .LC%03d\n", node->rhs->val);
+            printf("  mov rcx, %ld\n", size);
+            printf("  rep movsb\n");
+            return 0;
+        } else {
+            printf("  push 0\t#for RSP alignment+\n");
+            gen(node->rhs);
+            printf("  pop rax\n");  //rhsの値
+            printf("  pop rdi\t#for RSP alignment-\n");
+            printf("  pop rdi\n");  //lhsのアドレス
+        //  printf("  mov [rdi], rax\n");
+            gen_write_reg("rdi", "rax", node->tp, NULL);
+            printf("  push rax\n");
+        }
     } else if (node->type == ND_INDIRECT) { //*a（間接参照）
         comment("'*A'\n");
         gen(node->rhs);

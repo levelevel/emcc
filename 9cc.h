@@ -82,7 +82,7 @@ typedef struct _Type Type;
 struct _Type {
     enum {CHAR, INT, PTR, ARRAY} type;
     Type *ptr_of;
-    long array_size;  //typeがARRAYの場合の配列サイズ
+    long array_size;  //typeがARRAYの場合の配列サイズ。未定義の場合は-1
 };
 
 typedef struct _Node Node;
@@ -93,7 +93,7 @@ struct _Node {
     Vector *lst;    //typeがND_BLOCKの場合のstmtのリスト
                     //typeがND_LISTの場合のasignのリスト
     int val;        //typeがND_NUMの場合の値
-                    //typeがND_STRINGの場合のインデックス
+                    //typeがND_STRINGの場合のstring_vecのインデックス
     char *name;     //typeがND_IDENTの場合の変数名
     Type *tp;       //型情報：typeがND_NUM、ND_IDENT、ND_FUNC_DEFの場合の場合は
                     //トークナイズ時に設定。それ以外は評価時に設定。
