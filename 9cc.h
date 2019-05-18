@@ -87,7 +87,7 @@ struct _Type {
 
 typedef struct _Node Node;
 struct _Node {
-    int type;       //nodeの型：演算子、ND_INDENTなど
+    NDtype type;    //nodeの型：演算子、ND_INDENTなど
     Node *lhs;
     Node *rhs;
     Vector *lst;    //typeがND_BLOCKの場合のstmtのリスト
@@ -149,6 +149,7 @@ int size_of(const Type *tp);
 void tokenize(char *p);
 void print_tokens(void);
 void program(void);
+int node_is_const(Node *node, int *val);
 
 // codegen.c
 void print_functions(void);
@@ -156,6 +157,7 @@ void print_functions(void);
 // util.c
 Vector *new_vector(void);
 void vec_push(Vector *vec, void *elem);
+void *vec_get(Vector *vec, int idx);
 
 Map *new_map(void);
 void map_put(Map *map, char *key, void *val);

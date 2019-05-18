@@ -112,7 +112,7 @@ static char* write_command_of_type(const Type *tp) {
 //型に応じたreadコマンド名を返す。
 static char* read_command_of_type(const Type *tp) {
     switch (tp->type) {
-    case CHAR:  return "movsxd";
+    case CHAR:  return "movsx";
     case INT:   return "mov";
     case PTR:   return "mov";
     case ARRAY: return "mov";
@@ -132,8 +132,8 @@ static void gen_write_reg(const char*dst, const char*src, const Type *tp, const 
 //dstレジスタにsrcレジスタが指すアドレスからreadする。
 //dstレジスタの型に応じてdstレジスタのサイズを調整する。例：intならrax->eax
 static void gen_read_reg(const char*dst, const char*src, const Type *tp, const char* comment) {
-    printf("  %s %s, [%s]", read_command_of_type(tp), 
-        (tp->type==CHAR)?src:reg_name_of_type(src, tp), src);
+    printf("  %s %s, %s PTR [%s]", read_command_of_type(tp), 
+        (tp->type==CHAR)?src:reg_name_of_type(src, tp), data_name_for_type(tp), src);
     if (comment) printf("\t# %s\n", comment);
     else         printf("\n");
 }
@@ -180,7 +180,7 @@ static int gen(Node*node) {
         return 0;
     } else if (node->type == ND_VAR_DEF) {  //ローカル変数定義
         if (node->rhs==NULL) return 0;
-        gen(node->rhs); //代入
+        return gen(node->rhs); //代入
     } else if (node->type == ND_LOCAL_VAR ||
                node->type == ND_GLOBAL_VAR) {//変数参照
         comment("%s_VAR:%s(%s)\n", node->type==ND_LOCAL_VAR?"LOCAL":"GLOBAL", node->name, get_type_str(node->tp));
@@ -305,12 +305,12 @@ static int gen(Node*node) {
             //文字配列の初期化
             assert(node->lhs->type==ND_LOCAL_VAR);
             assert(node->rhs->tp->ptr_of->type==CHAR);
-            long size  = node->lhs->tp->array_size;
-            long rsize = node->rhs->tp->array_size;
+            int size  = node->lhs->tp->array_size;
+            int rsize = node->rhs->tp->array_size;
             if (size > rsize) size = rsize;
             printf("  pop rdi\n");
             printf("  lea rsi, BYTE PTR .LC%03d\n", node->rhs->val);
-            printf("  mov rcx, %ld\n", size);
+            printf("  mov rcx, %d\n", size);
             printf("  rep movsb\n");
             return 0;
         } else {
@@ -327,7 +327,8 @@ static int gen(Node*node) {
         comment("'*A'\n");
         gen(node->rhs);
         printf("  pop rax\n");  //rhsの値（アドレス）
-        printf("  mov rax, [rax]\n");//戻り値
+    //  printf("  mov rax, [rax]\n");//戻り値
+        gen_read_reg("rax", "rax", node->tp, NULL);
         printf("  push rax\n");
     } else if (node->type == ND_ADDRESS) { //&a（アドレス演算子）
         comment("'&A'\n");
@@ -401,7 +402,7 @@ static int gen(Node*node) {
         printf("  pop rdi\n");  //rhs
         printf("  pop rax\n");  //lhs
 
-        switch(node->type) {
+        switch((int)node->type) {
         case ND_LAND: //"&&"
         {
             int cnt = label_cnt++;
@@ -497,6 +498,49 @@ static int gen(Node*node) {
     return 1;   //結果をスタックに積んでいる
 }
 
+//グローバル変数のコードを生成
+static void gen_global_var(Node *node) {
+    int size = size_of(node->tp);
+    printf("%s:\t# %s\n", node->name, get_type_str(node->tp));
+    if (node->rhs) {    //初期値あり、rhsは'='のノード
+        Node *rhs = node->rhs->rhs; //'='の右辺
+        switch (node->tp->type) {
+        case CHAR:
+            assert(rhs->type==ND_NUM);
+            printf("  .byte %d\n", rhs->val);
+            break;
+        case INT:
+            assert(rhs->type==ND_NUM);
+            printf("  .long %d\n", rhs->val);
+            break;
+        case PTR:
+            if (rhs->type==ND_ADDRESS) {
+                printf("  .quad %s\n", rhs->rhs->name);
+            } else {
+                printf("  .quad %d\n", rhs->val);
+            }
+            break;
+        case ARRAY:
+            assert(node->tp->ptr_of->type==CHAR);
+            int rsize = rhs->tp->array_size;
+            char *str = (char*)vec_get(string_vec, rhs->val);
+            if (size < rsize) {
+                str[size] = 0;
+                printf("  .ascii \"%s\"\n", str);
+            } else {
+                printf("  .string \"%s\"\n", str);
+            }
+            if (size > rsize) printf("  .zero %d\n", size-rsize);
+            break;
+        default:
+            assert(0);
+        }
+    } else {
+        printf("  .zero %d\n", size);
+    }
+
+}
+
 //ローカル変数用のスタックサイズを計算する
 //RSPの16バイトアライメントを維持する
 static int calc_stack_offset() {
@@ -537,13 +581,7 @@ void print_functions(void) {
     size = global_vardef_map->vals->len;
     Vardef **vardefs = (Vardef**)global_vardef_map->vals->data;
     for (int i=0; i<size; i++) {
-        printf("%s:\n", vardefs[i]->name);
-        if (vardefs[i]->node->rhs) {    //初期値あり、rhsは'='のノード
-            assert(vardefs[i]->node->rhs->rhs->type==ND_NUM);
-            printf("  .long %d\n", vardefs[i]->node->rhs->rhs->val);
-        } else {
-            printf("  .zero %d\n", size_of(vardefs[i]->node->tp));
-        }
+        gen_global_var(vardefs[i]->node);
     }
 
     // 関数ごとに、抽象構文木を下りながらコード生成

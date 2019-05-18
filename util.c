@@ -17,6 +17,11 @@ void vec_push(Vector *vec, void *elem) {
     vec->data[vec->len++] = elem;
 }
 
+void *vec_get(Vector *vec, int idx) {
+    assert(idx < vec->len);
+    return vec->data[idx];
+}
+
 //マップ --------------------------------------------
 Map *new_map(void) {
     Map *map = malloc(sizeof(Map));

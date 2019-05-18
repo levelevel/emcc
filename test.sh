@@ -166,6 +166,7 @@ try 8 "int a[4]; a[3]=8; (1,2)[a+1];"
 try 6 "int func(int *a){return a[0]+a[1]+a[2];}
        int main(){int a[4]; a[0]=1; a[1]=2; a[2]=3; return func(a);}"
 try 1 "int main(int argc, char*argv[]){return 1;}"
+try 5 'char c=5; char *a=&c; int main(){*a;}'
 
 try $ER "int a; *a;"
 try $ER "int *a; **a;"
@@ -199,9 +200,14 @@ try 4 "int a=2*2; int main(){return a;}"
 try 66 "return 'A'+1;"
 try 1 "int main(int argc, char *argv[]){return 1;}"
 try 2 "char*p[4];p[0]=0;p[1]=\"ABCD\"; return *(p[1]+2)-'A';"
+
 try 1 'char str[4]="ABC"; return strcmp(str, "ABC")==0;'
-try 1 'char str[]="ABC"; return strcmp(str, "ABC")==0 && strlen(str)==3;'
-try 1 'char str[4]="ABCDEFGHIJK"; strncmp(str, "ABCD", 4)==0;'
+try 1 'char str[] ="ABC"; return strcmp(str, "ABC")==0 && strlen(str)==3;'
+try 1 'char str[4]="ABCDEFGHIJK"; return strncmp(str, "ABCD", 4)==0;'
+try 1 'char str[4]="ABC"; int main(){return strcmp(str, "ABC")==0;}'
+try 1 'char str[] ="ABC"; int main(){return strcmp(str, "ABC")==0 && strlen(str)==3;}'
+try 1 'char str[4]="ABCDEFGHIJK"; int main(){return strncmp(str, "ABCD", 4)==0;}'
+try 1 'char s1[4]="ABC"; int main(){char s2[4]="ABC"; char*p1=&s1; char*p2=s2; return p1[1]==p2[1];}'
 
 try $ER "int x; int x[4]; int main(){}"
 try $ER '"ABC"=1;'

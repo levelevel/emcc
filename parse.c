@@ -6,8 +6,6 @@
 #define token_is(_tk) (tokens[token_pos]->type==(_tk))
 #define token_is_type() (token_is(TK_CHAR)||token_is(TK_INT))
 
-static int node_is_const(Node *node, int *val);
-
 //トークンの種類を定義
 typedef struct {
     char *name;
@@ -926,7 +924,9 @@ static Node *term(void) {
         // a[3] => *(a+3)
         Node *rhs = assign();
         node = new_node('+', node, rhs, node->tp ,input);
-        node = new_node(ND_INDIRECT, NULL, node, node->tp->ptr_of, input);
+        Type *tp = node->tp->ptr_of ? node->tp->ptr_of : rhs->tp->ptr_of;
+        assert(tp!=NULL);
+        node = new_node(ND_INDIRECT, NULL, node, tp, input);
         if (!consume(']')) {
             error("配列の開きカッコに対応する閉じカッコがありません: %s", input_str());
         }
@@ -948,31 +948,32 @@ static Node *sizeof_item(void) {
     }
 }
 
-static int node_is_const(Node *node, int *val) {
+int node_is_const(Node *node, int *valp) {
     /*代入は副作用を伴うので定数とはみなさない。
     if (node->type == '=') {
         return node_is_const(node->rhs, val);   //厳密にはlhsへの型変換を考慮すべき？
     }*/
 
-    int val1, val2;
+    int val, val1, val2;
     if (node->lhs && !node_is_const(node->lhs, &val1)) return 0;
     if (node->rhs && !node_is_const(node->rhs, &val2)) return 0;
-    switch (node->type) {
-    case ND_NUM:  *val = node->val;    break;
-    case ND_LAND: *val = val1 && val2; break;
-    case ND_LOR:  *val = val1 || val2; break;
-    case ND_EQ:   *val = val1 == val2; break;
-    case ND_NE:   *val = val1 != val2; break;
-    case '<':     *val = val1 <  val2; break;
-    case ND_LE:   *val = val1 <= val2; break;
-    case '+':     *val = val1 +  val2; break;
-    case '-':     *val = val1 -  val2; break;
-    case '*':     *val = val1 *  val2; break;
-    case '/':     *val = val1 /  val2; break;
-    case '%':     *val = val1 %  val2; break;
-    case '!':     *val = !val1;        break;
+    switch ((int)node->type) {
+    case ND_NUM:  val = node->val;    break;
+    case ND_LAND: val = val1 && val2; break;
+    case ND_LOR:  val = val1 || val2; break;
+    case ND_EQ:   val = val1 == val2; break;
+    case ND_NE:   val = val1 != val2; break;
+    case '<':     val = val1 <  val2; break;
+    case ND_LE:   val = val1 <= val2; break;
+    case '+':     val = val1 +  val2; break;
+    case '-':     val = val1 -  val2; break;
+    case '*':     val = val1 *  val2; break;
+    case '/':     val = val1 /  val2; break;
+    case '%':     val = val1 %  val2; break;
+    case '!':     val = !val1;        break;
     default:
         return 0;
     }
+    if (valp) *valp = val;
     return 1;
 }
