@@ -54,12 +54,12 @@ static void gen_mul_reg(char *reg_name, int val) {
         printf("  shl %s, %d\t# %s * %d\n", reg_name, shift, reg_name, val);
     } else if (strcmp(reg_name, "rax")==0) {
         printf("  mov rdx, %d\t# start: %s * %d\n", val, reg_name, val);
-        printf("  mul rdx\t# end\n");
+        printf("  imul rdx\t# end\n");
     } else {
         printf("  push rax\t# start: %s * %d\n", reg_name, val);
         printf("  mov rax, %s\n", reg_name);
         printf("  mov rdx, %d\n", val);
-        printf("  mul rdx\n");
+        printf("  imul rdx\n");
         printf("  mov %s, rax\n", reg_name);
         printf("  pop rax\t# end\n");
     }
@@ -476,7 +476,7 @@ static int gen(Node*node) {
             break;
         case '*':   //rax*rdi -> rdx:rax
             comment("'*'\n");
-            printf("  mul rdi\n");
+            printf("  imul rdi\n");
             break;
         case '/':   //rdx:rax(lhs) / rdi(rhs) -> rax（商）, rdx（余り）
             comment("'/'\n");
@@ -485,8 +485,8 @@ static int gen(Node*node) {
             break;
         case '%':   //rdx:rax / rdi -> rax（商）, rdx（余り）
             comment("'%%'\n");
-            printf("  mov rdx, 0\n");
-            printf("  div rdi\n");
+            printf("  cqo\n");
+            printf("  idiv rdi\n");
             printf("  mov rax, rdx\n");
             break;
         default:
