@@ -1,7 +1,7 @@
 #!/bin/bash
 set -u
 
-EXE=tmp
+EXE=tmp/test
 AFLAGS="-g -no-pie"
 ER=Error
 WR=Warning
