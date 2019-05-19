@@ -294,8 +294,7 @@ static int gen(Node*node) {
         Node **nodes = (Node**)lists->data;
         for (int i=0; i < lists->len; i++) {
             comment("LIST[%d]\n", i);
-            gen(nodes[i]);
-            printf("  pop rax\n");
+            if (gen(nodes[i])) printf("  pop rax\n");
         }
         printf("  push rax\n");
     } else if (node->type == '=') {         //代入

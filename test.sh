@@ -191,9 +191,9 @@ try $ER "char *argv[];"
 try $ER "char *argv[0];"
 try $ER "int a; char *argv[a];"
 
-try 5 "int x; int y[4]; int*p; int main(){x=1; y[1]=2; p=y+1; return x+y[1]+*p;}"
-try 3 "int x; int y[4]; int main(){int x; int y; x=1; y=2; return x+y;}"
-try 6 "char c; char d; c=4;d=2;return c+d;"
+try 5 "int x,y[4]; int*p; int main(){x=1; y[1]=2; p=y+1; return x+y[1]+*p;}"
+try 3 "int x,y[4]; int main(){int x; int y; x=1; y=2; return x+y;}"
+try 6 "char c,d; c=4;d=2;return c+d;"
 try 6 "char s[4]; int main(){char*p; p=s; *p++=2; *p++=4; return s[0]+s[1];}"
 try 7 'char buf[20]; strcpy(buf,"abc"); return printf("%s%d\n", buf, 123);'
 try 4 "int a=2*2; int main(){return a;}"
@@ -208,6 +208,7 @@ try 1 'char str[4]="ABC"; int main(){return strcmp(str, "ABC")==0;}'
 try 1 'char str[] ="ABC"; int main(){return strcmp(str, "ABC")==0 && strlen(str)==3;}'
 try 1 'char str[4]="ABCDEFGHIJK"; int main(){return strncmp(str, "ABCD", 4)==0;}'
 try 1 'char s1[4]="ABC"; int main(){char s2[4]="ABC"; char*p1=&s1; char*p2=s2; return p1[1]==p2[1];}'
+try 6 "int a=1,b=2,c=3; return a+b+c;"
 
 try $ER "int x; int x[4]; int main(){}"
 try $ER '"ABC"=1;'

@@ -559,6 +559,7 @@ static Node *stmt(void) {
 
 //    var_def     = simple_type var_def1 ( "," var_def1 )*
 static Node *var_def(Type *tp, char *name) {
+    Node *node, *last_node;
     Type *simple_tp;
 
     if (tp==NULL) {
@@ -570,7 +571,20 @@ static Node *var_def(Type *tp, char *name) {
         while (simple_tp->ptr_of) simple_tp = simple_tp->ptr_of;
     }
 
-    return var_def1(simple_tp, tp, name);
+    node = var_def1(simple_tp, tp, name);
+
+    if (consume(',')) {
+        node = new_node_list(node, node->input);
+        Vector *lists = node->lst;
+        vec_push(lists, last_node=var_def1(simple_tp, NULL, NULL));
+        while (consume(',')) {
+            vec_push(lists, last_node=var_def1(simple_tp, NULL, NULL));
+        }
+    } else {
+        return node;
+    }
+    node->tp = last_node->tp;
+    return node;
 }
 
 //    var_def1    = ( "*" )* var array_def? ( "=" assign )?
