@@ -5,6 +5,8 @@
 //現在のトークンの型が引数と一致しているか
 #define token_is(_tk) (tokens[token_pos]->type==(_tk))
 #define token_is_type() (token_is(TK_CHAR)||token_is(TK_INT))
+#define next_token_is(_tk) (tokens[token_pos+1]->type==(_tk))
+#define next_token_is_type() (next_token_is(TK_CHAR)||next_token_is(TK_INT))
 
 //トークンの種類を定義
 typedef struct {
@@ -397,7 +399,7 @@ static Node *new_node_list(Node *item, char *input) {
 /*  文法：
     program     = top_item*
     top_item    = function | var_def ";"
-    function    = type_ptr indent "(" func_arg* ")" "{" stmt* "}"
+    function    = type_ptr ident "(" func_arg* ")" "{" stmt* "}"
     stmt        = expr ";"
                 | var_def ";"
                 | return" expr ";"
@@ -405,11 +407,12 @@ static Node *new_node_list(Node *item, char *input) {
                 | "while" "(" expr ")"
                 | "for" "(" expr? ";" expr? ";" expr? ")" stmt
                 | "{" expr* "}"
-    var_def     = simple_type var_def1 ( "," var_def1 )*
-    var_def1    = ( "*" )* var array_def? ( "=" assign )?
+    var_def     = type_spec var_def1 ( "," var_def1 )*
+    var_def1    = pointer* ident array_def? ( "=" assign )?
     array_def   = "[" assign? "]"
-    type_ptr    = simple_type ( "*" )*
-    simple_type = "char" | "int"
+    type_ptr    = type_spec pointer*
+    pointer     = ( "*" )*
+    type_spec =  "char" | "int"
     func_arg    = type_ptr ident ( "," func_arg )
     expr        = assign ( "," assign )* 
     assign      = logical_or ( "=" assign )*
@@ -421,15 +424,15 @@ static Node *new_node_list(Node *item, char *input) {
     mul         = unary ( "*" unary | "/" unary | "%" unary )*
     unary       = ( "+" | "-" |  "!" | "*" | "&" ) unary
                 | ( "++" | "--" )? post_unary
-                | "sizeof" ( type_ptr array_def? | assign )
+                | "sizeof" unary
+                | "sizeof" "(" type_ptr array_def? ")"
     post_unary  = term ( "++" | "--" )
     term        = num
+                | string
                 | ident
                 | ident "(" expr? ")"   //関数コール
                 |  "(" expr ")"
                 | term array_def
-    sizeof_item = type_ptr array_def?
-                | assign
 */
 static Node *top_item(void);
 static Node *function(Type *tp, char *name);
@@ -437,7 +440,8 @@ static Node *stmt(void);
 static Node *var_def(Type *tp, char *name);
 static Node *var_def1(Type *simple_tp, Type *tp, char *name);
 static Type *type_ptr(void);
-static Type *simple_type(void);
+static Type *pointer(Type *tp);
+static Type *type_spec(void);
 static Type *array_def(Type *tp);
 static Node *func_arg(void);
 static Node *empty_or_expr(void);
@@ -452,7 +456,6 @@ static Node *mul(void);
 static Node *unary(void);
 static Node *post_unary(void);
 static Node *term(void); 
-static Node *sizeof_item(void);
 
 void program(void) {
     while (!token_is(TK_EOF)) {
@@ -557,14 +560,14 @@ static Node *stmt(void) {
     return node;
 }
 
-//    var_def     = simple_type var_def1 ( "," var_def1 )*
+//    var_def     = type_spec var_def1 ( "," var_def1 )*
 static Node *var_def(Type *tp, char *name) {
     Node *node, *last_node;
     Type *simple_tp;
 
     if (tp==NULL) {
         //type_ptrと名前を先読みしていなければsimple_typeを読む
-        simple_tp = simple_type();
+        simple_tp = type_spec();
     } else {
         //ポインタを含まないsimple_typeを取り出す
         simple_tp = tp;
@@ -587,7 +590,7 @@ static Node *var_def(Type *tp, char *name) {
     return node;
 }
 
-//    var_def1    = ( "*" )* var array_def? ( "=" assign )?
+//    var_def1    = pointer* ident array_def? ( "=" assign )?
 static Node *var_def1(Type *simple_tp, Type *tp, char *name) {
     Node *node, *rhs=NULL;
     char *input = input_str();
@@ -651,10 +654,15 @@ static Type *array_def(Type *tp) {
     return tp;
 }
 
-//    type_ptr    = simple_type ( "*" )*
+//    type_ptr    = type_spec pointer*
 static Type *type_ptr(void) {
-    Type *tp = simple_type();
+    Type *tp = type_spec();
+    tp = pointer(tp);
 
+    return tp;
+}
+
+static Type *pointer(Type *tp) {
     while (consume('*')) {
         tp = new_type_ptr(tp);
     }
@@ -662,7 +670,7 @@ static Type *type_ptr(void) {
     return tp;
 }
 
-static Type *simple_type(void) {
+static Type *type_spec(void) {
     Type *tp;
     if (consume(TK_CHAR)) {
         tp = new_type(CHAR);
@@ -874,15 +882,22 @@ static Node *unary(void) {
         node = unary();
         return new_node(ND_ADDRESS, NULL, node, new_type_ptr(node->tp), input);
     } else if (consume(TK_SIZEOF)) {
-        if (consume('(')) {
-            node = sizeof_item();
-            if (!consume(')')) {
-                error_at(input_str(), "開きカッコに対応する閉じカッコがありません");
+        Type *tp;
+        if (token_is('(')) {
+            if (next_token_is_type()) {
+                consume('(');
+                tp = type_ptr();
+                if (token_is('[')) tp = array_def(tp);
+                if (!consume(')')) error_at(input_str(), "開きカッコに対応する閉じカッコがありません");
+            } else {
+                node = unary();
+                tp = node->tp;
             }
         } else {
-            node = sizeof_item();
+            node = unary();
+            tp = node->tp;
         }
-        return node;
+        return new_node_num(size_of(tp), input);
     } else {
         return post_unary();
     }
@@ -948,19 +963,6 @@ static Node *term(void) {
     }
 
     return node;
-}
-
-static Node *sizeof_item(void) {
-    char *input = input_str();
-    if (token_is_type()) {
-        Type *tp = type_ptr();
-        if (token_is('[')) tp = array_def(tp);
-        return new_node_num(size_of(tp), input);
-    } else {
-        Node *node = assign();
-        if (node->tp == NULL) error_at(node->input, "サイズを確定できません");
-        return new_node_num(size_of(node->tp), input);
-    }
 }
 
 int node_is_const(Node *node, int *valp) {
