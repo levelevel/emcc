@@ -408,7 +408,12 @@ static Node *new_node_list(Node *item, char *input) {
                 | "for" "(" expr? ";" expr? ";" expr? ")" stmt
                 | "{" expr* "}"
     var_def     = type_spec var_def1 ( "," var_def1 )*
-    var_def1    = pointer* ident array_def? ( "=" assign )?
+    var_def1    = pointer* ident array_def? ( "=" initializer )?
+    initializer = assign
+                | "{" init_list "}"
+                | "{" init_list "," "}"
+    init_list   = initializer
+                | init_list "," initializer
     array_def   = "[" assign? "]"
     type_ptr    = type_spec pointer*
     pointer     = ( "*" )*
@@ -439,6 +444,8 @@ static Node *function(Type *tp, char *name);
 static Node *stmt(void);
 static Node *var_def(Type *tp, char *name);
 static Node *var_def1(Type *simple_tp, Type *tp, char *name);
+static Node *initializer(void);
+static Node *init_list(void);
 static Type *type_ptr(void);
 static Type *pointer(Type *tp);
 static Type *type_spec(void);
@@ -590,7 +597,7 @@ static Node *var_def(Type *tp, char *name) {
     return node;
 }
 
-//    var_def1    = pointer* ident array_def? ( "=" assign )?
+//    var_def1    = pointer* ident array_def? ( "=" initializer )?
 static Node *var_def1(Type *simple_tp, Type *tp, char *name) {
     Node *node, *rhs=NULL;
     char *input = input_str();
@@ -610,13 +617,21 @@ static Node *var_def1(Type *simple_tp, Type *tp, char *name) {
     //初期値
     if (consume('=')) {
         //node->rhsに変数=初期値の形のノードを設定する。->そのまま初期値設定のコード生成に用いる
-        rhs = assign();
-        int val;
-        if (tp->type==ARRAY) {
-            if (rhs->tp->type!=ARRAY) error_at(rhs->input, "配列の初期値が配列形式になっていません");
-            if (tp->array_size<0) {
-                tp->array_size = rhs->tp->array_size;
-                fprintf(stderr, "array_size=%ld\n", tp->array_size);
+        rhs = initializer();
+        long val;
+        if (tp->type==ARRAY) {  //左辺が配列
+            if (rhs->tp->type==ARRAY) {
+                if (tp->array_size<0) {
+                    tp->array_size = rhs->tp->array_size;
+                    //fprintf(stderr, "array_size=%ld\n", tp->array_size);
+                }
+            } else if (rhs->type==ND_LIST) {
+                if (tp->array_size<0) {
+                    tp->array_size = rhs->lst->len;
+                    fprintf(stderr, "array_size=%ld\n", tp->array_size);
+                }
+            } else {
+                error_at(rhs->input, "配列の初期値が配列形式になっていません");
             }
         }
         if (node_is_const(rhs, &val)) {
@@ -636,6 +651,37 @@ static Node *var_def1(Type *simple_tp, Type *tp, char *name) {
     return node;
 }
 
+//    initializer = assign
+//                | "{" init_list "}"
+//                | "{" init_list "," "}"
+static Node *initializer(void) {
+    Node *node;
+
+    if (consume('{')) {
+        node = init_list();
+        consume(',');
+        if (!consume('}')) error_at(input_str(),"初期化式の閉じカッコ } がありません");
+    } else {
+        node = assign();
+    }
+    return node;
+}
+
+//    init_list   = initializer
+//                | init_list "," initializer
+static Node *init_list(void) {
+    Node *node = new_node_list(NULL, input_str());
+    Node *last_node;
+
+    vec_push(node->lst, last_node=initializer());
+    while (consume(',') && !token_is('}')) {
+        vec_push(node->lst, last_node=initializer());
+    }
+    node->tp = last_node->tp;
+
+    return node;
+}
+
 //    array_def   = "[" assign? "]"
 static Type *array_def(Type *tp) {
     if (consume('[')) {
@@ -644,7 +690,7 @@ static Type *array_def(Type *tp) {
         } else {
             char *input = input_str();
             Node *node = assign();
-            int val;
+            long val;
             if (!node_is_const(node, &val)) error_at(input, "配列サイズが定数ではありません");
             if (val==0) error_at(input, "配列のサイズが0です");
             tp = new_type_array(tp, val);
@@ -965,13 +1011,13 @@ static Node *term(void) {
     return node;
 }
 
-int node_is_const(Node *node, int *valp) {
+int node_is_const(Node *node, long *valp) {
     /*代入は副作用を伴うので定数とはみなさない。
     if (node->type == '=') {
         return node_is_const(node->rhs, val);   //厳密にはlhsへの型変換を考慮すべき？
     }*/
 
-    int val, val1, val2;
+    long val, val1, val2;
     if (node->lhs && !node_is_const(node->lhs, &val1)) return 0;
     if (node->rhs && !node_is_const(node->rhs, &val2)) return 0;
     switch ((int)node->type) {

@@ -150,7 +150,7 @@ int size_of(const Type *tp);
 void tokenize(char *p);
 void print_tokens(void);
 void program(void);
-int node_is_const(Node *node, int *val);
+int node_is_const(Node *node, long *val);
 
 // codegen.c
 void print_functions(void);

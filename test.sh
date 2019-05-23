@@ -209,6 +209,10 @@ try 1 'char str[] ="ABC"; int main(){return strcmp(str, "ABC")==0 && strlen(str)
 try 1 'char str[4]="ABCDEFGHIJK"; int main(){return strncmp(str, "ABCD", 4)==0;}'
 try 1 'char s1[4]="ABC"; int main(){char s2[4]="ABC"; char*p1=&s1; char*p2=s2; return p1[1]==p2[1];}'
 try 6 "int a=1,b=2,c=3; return a+b+c;"
+try 5 "int a={5,}; return a;"
+try 6 "int a[]={1,2,1+2}; return a[0]+a[1]+a[2];"
+try 1 "char s1[]=\"ABC\"; char s2[]={'A', 66, 'C', 0}; strcmp(s1,s2)==0;"
+#try 13 "int a[][3]={{1,2,3},{11,12,13}; return a[1][2]}"
 
 try $ER "int x; int x[4]; int main(){}"
 try $ER '"ABC"=1;'

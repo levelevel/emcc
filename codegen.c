@@ -138,6 +138,85 @@ static void gen_read_reg(const char*dst, const char*src, const Type *tp, const c
     else         printf("\n");
 }
 
+//array_size個のノードをdata_size単位のバイト列に変換して返す。
+//定数でないノードがあればNULLを返す。
+char *get_byte_string(Node *node, int array_size, int data_size) {
+    int byte_len = array_size * data_size;
+    char *byte_string = malloc(byte_len);
+    char *p = byte_string;
+    long val;
+    Node **nodes = (Node**)node->lst->data;
+    for (int i=0; i<array_size; i++) {
+        if (!node_is_const(nodes[i],&val)) return NULL;
+        memcpy(p, (char*)(&val), data_size);
+        p += data_size;
+    }
+    return byte_string;
+}
+
+//ローカル変数の配列の初期化
+static void gen_array_init(Node *node) {
+    assert(node->type=='=');
+    assert(node->lhs->type==ND_LOCAL_VAR);
+    assert(node->lhs->tp->type==ARRAY);
+    int array_size  = node->lhs->tp->array_size;  //配列のサイズ
+    int data_len;
+    int size = size_of(node->lhs->tp->ptr_of);   //左辺の型のサイズ
+
+    if (node->lhs->tp->ptr_of->type==CHAR &&
+        node->rhs->type==ND_STRING) {
+        // char a[]="ABC";
+        data_len = node->rhs->tp->array_size;
+        if (array_size > data_len) array_size = data_len;
+        // [rdi++] = [rsi++] を rcx回繰り返す
+        printf("  pop rdi\n");
+        printf("  lea rsi, BYTE PTR .LC%03d\n", node->rhs->val);
+        printf("  mov rcx, %d\n", array_size);
+        printf("  rep movsb\n");
+        return;
+    }
+
+    assert(node->rhs->type==ND_LIST);
+    // char a[]={'A', 'B', 'C', '\0'}
+    // int  b[]={1, 2, 4, 8}
+    data_len = node->rhs->lst->len;
+    if (array_size > data_len) array_size = data_len;
+    char *data = get_byte_string(node->rhs, array_size, size);
+    if (data) { //定数のみの初期値
+        printf("  pop rdi\n");
+        switch (size) {
+        case 1:
+            for (int i=0; i<array_size; i++) {
+                printf("  movb BYTE PTR [rdi+%d], %d\n", i*size, data[i]);
+            }
+            break;
+        case 2: ;
+            short *datas = (short*)data;
+            for (int i=0; i<array_size; i++) {
+                printf("  movb BYTE PTR [rdi+%d], %d\n", i*size, datas[i]);
+            }
+            break;
+        case 4: ;
+            int *datai = (int*)data;
+            for (int i=0; i<array_size; i++) {
+                printf("  mov DWORD PTR [rdi+%d], %d\n", i*size, datai[i]);
+            }
+            break;
+        case 8: ;
+            long *datal = (long*)data;
+            for (int i=0; i<array_size; i++) {
+                printf("  mov QWORD PTR [rdi+%d], %ld\n", i*size, datal[i]);
+            }
+            break;
+        default:
+            assert(0);
+            break;
+        }
+    } else {
+        assert(0);
+    }
+}
+
 static int gen(Node*node);
 
 //式を左辺値として評価し、そのアドレスをPUSHする
@@ -301,16 +380,8 @@ static int gen(Node*node) {
         comment("'='\n");
         gen_lval(node->lhs);    //スタックトップにアドレス設定
         if (node->lhs->tp->type==ARRAY) {   //ローカル変数の初期値
-            //文字配列の初期化
-            assert(node->lhs->type==ND_LOCAL_VAR);
-            assert(node->rhs->tp->ptr_of->type==CHAR);
-            int size  = node->lhs->tp->array_size;
-            int rsize = node->rhs->tp->array_size;
-            if (size > rsize) size = rsize;
-            printf("  pop rdi\n");
-            printf("  lea rsi, BYTE PTR .LC%03d\n", node->rhs->val);
-            printf("  mov rcx, %d\n", size);
-            printf("  rep movsb\n");
+            //ここに到達するのはローカル変数の初期化のはず
+            gen_array_init(node);
             return 0;
         } else {
             printf("  push 0\t#for RSP alignment+\n");
