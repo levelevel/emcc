@@ -212,6 +212,8 @@ try 6 "int a=1,b=2,c=3; return a+b+c;"
 try 5 "int a={5,}; return a;"
 try 6 "int a[]={1,2,1+2}; return a[0]+a[1]+a[2];"
 try 1 "char s1[]=\"ABC\"; char s2[]={'A', 66, 'C', 0}; strcmp(s1,s2)==0;"
+try 16 "int i=2; char a[]={i,i*2,10}; return a[0]+a[1]+a[2];"
+try 106 "int i=2; int a[]={i,i*2,100}; return a[0]+a[1]+a[2];"
 #try 13 "int a[][3]={{1,2,3},{11,12,13}; return a[1][2]}"
 
 try $ER "int x; int x[4]; int main(){}"

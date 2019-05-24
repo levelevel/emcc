@@ -154,6 +154,8 @@ char *get_byte_string(Node *node, int array_size, int data_size) {
     return byte_string;
 }
 
+static int gen(Node*node);
+
 //ローカル変数の配列の初期化
 static void gen_array_init(Node *node) {
     assert(node->type=='=');
@@ -212,12 +214,21 @@ static void gen_array_init(Node *node) {
             assert(0);
             break;
         }
-    } else {
-        assert(0);
+    } else {    //初期値に定数でない式を含む場合
+        Node **nodes = (Node**)node->rhs->lst->data;
+        for (int i=0; i<array_size; i++) {
+            gen(nodes[i]);
+            printf("  pop rax\n");
+            printf("  pop rdi\n");
+            printf("  %s %s PTR [rdi+%d], %s\n", 
+                write_command_of_type(node->lhs->tp->ptr_of),
+                data_name_for_type(node->lhs->tp->ptr_of), i*size,
+                reg_name_of_type("rax", node->lhs->tp->ptr_of));
+            printf("  push rdi\n");
+        }
+        printf("  pop rdi\n");
     }
 }
-
-static int gen(Node*node);
 
 //式を左辺値として評価し、そのアドレスをPUSHする
 static void gen_lval(Node*node) {
