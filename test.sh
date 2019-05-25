@@ -231,7 +231,9 @@ try 1 "int main(){
         return &i%4==0 && &p%8==0;
       }"
 try 1 'int c=1; int*p=2+&c-1; int main(){&c+1 == p;}'
-try $ER "int a[]={1,2,3}; int main(){}"
+try 1 "char c, *a[3]={0,&c+1,3,4}; int main(){return a[1]==&c+1 && a[2]==3;}"
+try 1 "int  c, *a[5]={0,&c+1,3,4}; int main(){return a[1]==&c+1 && a[2]==3;}"
+
 #多次元配列
 try $ER "int a[][3]={{1,2,3},{11,12,13}; return a[1][2]}"
 

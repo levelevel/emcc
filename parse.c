@@ -675,8 +675,9 @@ static Node *var_def1(Type *simple_tp, Type *tp, char *name) {
         (node->rhs==NULL || node->rhs->type!='='))
         error_at(input_str(), "配列のサイズが未定義です");
 
-    //グローバル変数の初期値は定数または固定アドレスでなければならない
-    if (node->type==ND_GLOBAL_VAR_DEF && node->rhs && node->rhs->rhs->type!=ND_STRING) {
+    //グローバルスカラー変数の初期値は定数または固定アドレスでなければならない
+    if (node->tp->type!=ARRAY && node->type==ND_GLOBAL_VAR_DEF && node->rhs &&
+        node->rhs->rhs->type!=ND_STRING) {  //文字列リテラルはここではチェックしない
         long val;
         Node *var=NULL;
         if (!node_is_const_or_address(node->rhs->rhs, &val, &var))
@@ -1136,7 +1137,7 @@ int node_is_const(Node *node, long *valp) {
     return 1;
 }
 
-//nodeがアドレス+定数の形式になっているかどうかを調べる。varpにND_GLOBAL_VARのノード、valpに定数を返す
+//nodeがアドレス+定数の形式になっているかどうかを調べる。varpにND_ADDRESS(&var)のノード、valpに定数を返す
 int node_is_const_or_address(Node *node, long *valp, Node **varp) {
     long val, val1, val2;
     Node *var1=NULL, *var2=NULL;

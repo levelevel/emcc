@@ -66,13 +66,26 @@ static void gen_mul_reg(char *reg_name, int val) {
 }
 
 //型に応じたデータ型名を返す。例：intならDWORD
-static char* data_name_for_type(const Type *tp) {
+static char* data_name_of_type(const Type *tp) {
     if (tp->type==ARRAY) tp = tp->ptr_of;
     switch (size_of(tp)) {
     case 8: return "QWORD";
     case 4: return "DWORD";
     case 2: return "WORD";
     case 1: return "BYTE";
+    default: _ERROR_;
+    }
+    return NULL;
+}
+
+//型に応じたデータ型名（初期値）を返す。
+static char* val_name_of_type(const Type *tp) {
+    if (tp->type==ARRAY) tp = tp->ptr_of;
+    switch (size_of(tp)) {
+    case 8: return "quad";
+    case 4: return "long";
+    case 2: return "value";
+    case 1: return "byte";
     default: _ERROR_;
     }
     return NULL;
@@ -133,7 +146,7 @@ static void gen_write_reg(const char*dst, const char*src, const Type *tp, const 
 //dstレジスタの型に応じてdstレジスタのサイズを調整する。例：intならrax->eax
 static void gen_read_reg(const char*dst, const char*src, const Type *tp, const char* comment) {
     printf("  %s %s, %s PTR [%s]", read_command_of_type(tp), 
-        (tp->type==CHAR)?src:reg_name_of_type(src, tp), data_name_for_type(tp), src);
+        (tp->type==CHAR)?src:reg_name_of_type(src, tp), data_name_of_type(tp), src);
     if (comment) printf("\t# %s\n", comment);
     else         printf("\n");
 }
@@ -163,11 +176,10 @@ static void gen_array_init(Node *node) {
     assert(node->lhs->tp->type==ARRAY);
     int array_size  = node->lhs->tp->array_size;  //配列のサイズ
     int data_len;
-    int size = size_of(node->lhs->tp->ptr_of);   //左辺の型のサイズ
 
     if (node->lhs->tp->ptr_of->type==CHAR &&
         node->rhs->type==ND_STRING) {
-        // char a[]="ABC";
+        //文字列リテラルによる初期化: char a[]="ABC";
         data_len = node->rhs->tp->array_size;
         if (array_size > data_len) array_size = data_len;
         // [rdi++] = [rsi++] を rcx回繰り返す
@@ -181,33 +193,34 @@ static void gen_array_init(Node *node) {
     assert(node->rhs->type==ND_LIST);
     // char a[]={'A', 'B', 'C', '\0'}
     // int  b[]={1, 2, 4, 8}
+    int type_size = size_of(node->lhs->tp->ptr_of);   //左辺の型のサイズ
     data_len = node->rhs->lst->len;
     if (array_size > data_len) array_size = data_len;
-    char *data = get_byte_string(node->rhs, array_size, size);
+    char *data = get_byte_string(node->rhs, array_size, type_size);
     if (data) { //定数のみの初期値
         printf("  pop rdi\n");
-        switch (size) {
+        switch (type_size) {
         case 1:
             for (int i=0; i<array_size; i++) {
-                printf("  movb BYTE PTR [rdi+%d], %d\n", i*size, data[i]);
+                printf("  movb BYTE PTR [rdi+%d], %d\n", i*type_size, data[i]);
             }
             break;
         case 2: ;
             short *datas = (short*)data;
             for (int i=0; i<array_size; i++) {
-                printf("  movb BYTE PTR [rdi+%d], %d\n", i*size, datas[i]);
+                printf("  movb BYTE PTR [rdi+%d], %d\n", i*type_size, datas[i]);
             }
             break;
         case 4: ;
             int *datai = (int*)data;
             for (int i=0; i<array_size; i++) {
-                printf("  mov DWORD PTR [rdi+%d], %d\n", i*size, datai[i]);
+                printf("  mov DWORD PTR [rdi+%d], %d\n", i*type_size, datai[i]);
             }
             break;
         case 8: ;
             long *datal = (long*)data;
             for (int i=0; i<array_size; i++) {
-                printf("  mov QWORD PTR [rdi+%d], %ld\n", i*size, datal[i]);
+                printf("  mov QWORD PTR [rdi+%d], %ld\n", i*type_size, datal[i]);
             }
             break;
         default:
@@ -222,12 +235,61 @@ static void gen_array_init(Node *node) {
             printf("  pop rdi\n");
             printf("  %s %s PTR [rdi+%d], %s\n", 
                 write_command_of_type(node->lhs->tp->ptr_of),
-                data_name_for_type(node->lhs->tp->ptr_of), i*size,
+                data_name_of_type(node->lhs->tp->ptr_of), i*type_size,
                 reg_name_of_type("rax", node->lhs->tp->ptr_of));
             printf("  push rdi\n");
         }
         printf("  pop rdi\n");
     }
+}
+
+//ローカル変数の配列の初期化
+static void gen_array_init_global(Node *node) {
+    assert(node->type=='=');
+    assert(node->lhs->type==ND_GLOBAL_VAR);
+    assert(node->lhs->tp->type==ARRAY);
+    int array_size  = node->lhs->tp->array_size;  //配列のサイズ
+    int data_len;
+
+    if (node->lhs->tp->ptr_of->type==CHAR &&
+        node->rhs->type==ND_STRING) {
+        //文字列リテラルによる初期化: char a[]="ABC";
+        data_len = node->rhs->tp->array_size;
+        char *str = (char*)vec_get(string_vec, node->rhs->val);
+        if (array_size < data_len) {
+            str[array_size] = 0;
+            printf("  .ascii \"%s\"\n", str);
+        } else {
+            printf("  .string \"%s\"\n", str);
+        }
+        if (array_size > data_len) printf("  .zero %d\n", array_size-data_len);
+        return;
+    }
+
+    assert(node->rhs->type==ND_LIST);
+    // char a[]={'A', 'B', 'C', '\0'}
+    // int  b[]={1, 2, 4, 8}
+    int type_size = size_of(node->lhs->tp->ptr_of);   //左辺の型のサイズ
+    Node **nodes = (Node**)node->rhs->lst->data;
+    data_len = node->rhs->lst->len;
+    long val;
+    Node *var = NULL;
+    char *val_name = val_name_of_type(node->lhs->tp);
+    for (int i=0; i<array_size && i<data_len; i++) {
+        var = NULL;
+        //nodes[i]がアドレス+定数の形式になっているかどうかを調べる。
+        //varにND_ADDRESS(&var)のノード、valに定数を返す
+        if (!node_is_const_or_address(nodes[i], &val, &var))
+            error_at(nodes[i]->input, "初期値が定数式ではありません");
+        if (var && val) {
+            printf("  .%s %s%+ld\n", val_name, var->rhs->name, val*size_of(var->rhs->tp));
+        } else if (var) {
+            printf("  .%s %s\n", val_name, var->rhs->name);
+        } else {
+            printf("  .%s %ld\n", val_name, val);
+        }
+    }
+    if (array_size > data_len) printf("  .zero %d\n", (array_size-data_len)*type_size);
 }
 
 //式を左辺値として評価し、そのアドレスをPUSHする
@@ -243,7 +305,7 @@ static void gen_lval(Node*node) {
         Vardef *vardef;
         map_get(global_vardef_map, node->name, (void**)&vardef);
         comment("LVALUE:%s\n", node->name);
-        printf("  lea rax, %s PTR %s\n", data_name_for_type(vardef->node->tp) ,vardef->name);
+        printf("  lea rax, %s PTR %s\n", data_name_of_type(vardef->node->tp) ,vardef->name);
         printf("  push rax\n");
     } else if (node->type == ND_INDIRECT) {
         comment("LVALUE:*var\n");
@@ -627,21 +689,8 @@ static void gen_global_var(Node *node) {
             }
             break;
         case ARRAY:
-            if (node->tp->ptr_of->type==CHAR &&
-                rhs->type==ND_STRING) {
-                int rsize = rhs->tp->array_size;
-                char *str = (char*)vec_get(string_vec, rhs->val);
-                if (size < rsize) {
-                    str[size] = 0;
-                    printf("  .ascii \"%s\"\n", str);
-                } else {
-                    printf("  .string \"%s\"\n", str);
-                }
-                if (size > rsize) printf("  .zero %d\n", size-rsize);
-            } else {
-                _NOT_YET_(rhs);
-            }
-            break;
+            gen_array_init_global(node->rhs);
+            return;
         default:
             _NOT_YET_(node);
         }
