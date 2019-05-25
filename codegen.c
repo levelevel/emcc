@@ -268,7 +268,7 @@ static int gen(Node*node) {
         printf("  push rax\n");
     } else if  (node->type == ND_EMPTY) {   //空
         return 0;
-    } else if (node->type == ND_VAR_DEF) {  //ローカル変数定義
+    } else if (node->type == ND_LOCAL_VAR_DEF) {  //ローカル変数定義
         if (node->rhs==NULL) return 0;
         return gen(node->rhs); //代入
     } else if (node->type == ND_LOCAL_VAR ||
@@ -596,7 +596,7 @@ static int gen(Node*node) {
 
 //グローバル変数のコードを生成
 static void gen_global_var(Node *node) {
-    assert(node->type == ND_VAR_DEF);
+    assert(node->type == ND_GLOBAL_VAR_DEF);
     int size = size_of(node->tp);
     int align_size = align_of(node->tp);
 
@@ -620,6 +620,8 @@ static void gen_global_var(Node *node) {
                 printf("  .quad %s\n", rhs->rhs->name);
             } else if (rhs->type==ND_NUM) {
                 printf("  .quad %d\n", rhs->val);
+            } else if (rhs->type=='+') {
+                printf("  .quad %s%+d\n", rhs->lhs->rhs->name, size_of(node->tp->ptr_of)*rhs->rhs->val);
             } else {
                 _NOT_YET_(rhs);
             }

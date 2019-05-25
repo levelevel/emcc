@@ -68,7 +68,8 @@ typedef enum {
     ND_LE,          // <=, >=
     ND_LAND,        // &&
     ND_LOR,         // ||
-    ND_VAR_DEF,     //変数の定義
+    ND_LOCAL_VAR_DEF,   //ローカル変数の定義
+    ND_GLOBAL_VAR_DEF,  //グローバル変数の定義
     ND_RETURN,
     ND_IF,
     ND_WHILE,
@@ -159,6 +160,7 @@ void tokenize(char *p);
 void print_tokens(void);
 void program(void);
 int node_is_const(Node *node, long *val);
+int node_is_const_or_address(Node *node, long *valp, Node **varp);
 
 // codegen.c
 void print_functions(void);

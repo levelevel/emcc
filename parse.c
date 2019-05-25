@@ -291,6 +291,7 @@ static void regist_var_def(Node *node) {
             vardef->name = name;
             vardef->node = node;
             vardef->offset = get_var_offset(node->tp);
+            node->type = ND_LOCAL_VAR_DEF;
             map_put(cur_funcdef->ident_map, name, vardef);
         } else {
             error_at(node->input, "'%s'はローカル変数の重複定義です", name);
@@ -300,6 +301,7 @@ static void regist_var_def(Node *node) {
             Vardef *vardef = calloc(1, sizeof(Vardef));
             vardef->name = name;
             vardef->node = node;
+            node->type = ND_GLOBAL_VAR_DEF;
             map_put(global_vardef_map, name, vardef);
         } else {
             error_at(node->input, "'%s'はグローバルの重複定義です", name);
@@ -309,7 +311,7 @@ static void regist_var_def(Node *node) {
 
 //抽象構文木の生成（変数定義）
 static Node *new_node_var_def(char *name, Type*tp, char *input) {
-    Node *node = new_node(ND_VAR_DEF, NULL, NULL, tp, input);
+    Node *node = new_node(0, NULL, NULL, tp, input);
     node->name = name;
     regist_var_def(node);
     return node;
@@ -637,7 +639,7 @@ static Node *var_def1(Type *simple_tp, Type *tp, char *name) {
     //配列
     if (token_is('[')) tp = array_def(tp);
 
-    //初期値
+    //初期値: rhsに初期値を設定する
     if (consume('=')) {
         //node->rhsに変数=初期値の形のノードを設定する。->そのまま初期値設定のコード生成に用いる
         rhs = initializer();
@@ -665,13 +667,28 @@ static Node *var_def1(Type *simple_tp, Type *tp, char *name) {
         }
     }
 
-    node = new_node_var_def(name, tp, input); //ND_VAR_DEF
+    node = new_node_var_def(name, tp, input); //ND_(LOCAL|GLOBAL)_VAR_DEF
     if (rhs) node->rhs = new_node('=', new_node_var(name, input), rhs, tp, input);
 
     //初期値のないサイズ未定義のARRAYはエラー
     if (node->tp->type==ARRAY && node->tp->array_size<0 &&
         (node->rhs==NULL || node->rhs->type!='='))
         error_at(input_str(), "配列のサイズが未定義です");
+
+    //グローバル変数の初期値は定数または固定アドレスでなければならない
+    if (node->type==ND_GLOBAL_VAR_DEF && node->rhs && node->rhs->rhs->type!=ND_STRING) {
+        long val;
+        Node *var=NULL;
+        if (!node_is_const_or_address(node->rhs->rhs, &val, &var))
+            error_at(node->rhs->rhs->input, "グローバル変数の初期値が定数ではありません");
+        if (var) {
+            if (val) {
+                node->rhs->rhs = new_node('+', var, new_node_num(val, input), var->tp, input);
+            } else {
+                node->rhs->rhs = var;
+            }
+        }
+    }
 
     //fprintf(stderr, "vardef: %s %s\n", get_type_str(node->tp), name);
     return node;
@@ -1100,6 +1117,59 @@ int node_is_const(Node *node, long *valp) {
     case ND_LAND: val = val1 && val2; break;
     case ND_LOR:  val = val1 || val2; break;
     case '&':     val = val1 &  val2; break;
+    case '^':     val = val1 ^  val2; break;
+    case '|':     val = val1 |  val2; break;
+    case ND_EQ:   val = val1 == val2; break;
+    case ND_NE:   val = val1 != val2; break;
+    case '<':     val = val1 <  val2; break;
+    case ND_LE:   val = val1 <= val2; break;
+    case '+':     val = val1 +  val2; break;
+    case '-':     val = val1 -  val2; break;
+    case '*':     val = val1 *  val2; break;
+    case '/':     val = val1 /  val2; break;
+    case '%':     val = val1 %  val2; break;
+    case '!':     val = !val1;        break;
+    default:
+        return 0;
+    }
+    if (valp) *valp = val;
+    return 1;
+}
+
+//nodeがアドレス+定数の形式になっているかどうかを調べる。varpにND_GLOBAL_VARのノード、valpに定数を返す
+int node_is_const_or_address(Node *node, long *valp, Node **varp) {
+    long val, val1, val2;
+    Node *var1=NULL, *var2=NULL;
+
+    if (node->type==ND_ADDRESS && node->rhs->type==ND_GLOBAL_VAR) {
+        if (varp) *varp = node;
+        if (valp) *valp = 0;
+        return 1;
+    }
+
+    if (node->lhs && !node_is_const_or_address(node->lhs, &val1, &var1)) return 0;
+    if (node->rhs && !node_is_const_or_address(node->rhs, &val2, &var2)) return 0;
+    if (var1 && var2) {
+        return 0;
+    } else if (var1) {
+        if (node->type=='+' || node->type=='-') {
+            if (varp) *varp = var1;
+        } else {
+            return 0;
+        }
+    } else if (var2) {
+        if (node->type=='+') {
+            if (varp) *varp = var2;
+        } else {
+            return 0;
+        }
+    }
+
+    switch ((int)node->type) {
+    case ND_NUM:  val = node->val;    break;
+    case ND_LAND: val = val1 && val2; break;
+    case ND_LOR:  val = val1 || val2; break;
+    case '&':     val = val1 &  val2; break;    //bitwise and
     case '^':     val = val1 ^  val2; break;
     case '|':     val = val1 |  val2; break;
     case ND_EQ:   val = val1 == val2; break;
