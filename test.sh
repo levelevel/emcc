@@ -104,6 +104,9 @@ try 1 "1!=2 && 2==2 && 1>0;"
 try 0 "1!=1 || 2==2+1 || 1>=2;"
 try 2 "int ret1; ret1=func1(1);"
 try 8 "int x; int r1; x=1; r1=func3(x*2,(2+1),3);"
+try 15 "8|7;"
+try 1 "8^9;"
+try 3 "15&3;"
 
 try 1 "int main(){1;}"
 try 1 "int func(){return 1;} int main(){return func();}"
@@ -215,6 +218,7 @@ try 1 "char s1[]=\"ABC\"; char s2[]={'A', 66, 'C', 0}; strcmp(s1,s2)==0;"
 try 16 "int i=2; char a[]={i,i*2,10}; return a[0]+a[1]+a[2];"
 try 106 "int i=2; int a[]={i,i*2,100}; return a[0]+a[1]+a[2];"
 #try 13 "int a[][3]={{1,2,3},{11,12,13}; return a[1][2]}"
+#       'char c[4+1]; int i[3]; char*p=&c; int main(){printf("%p\n%p\n%p\n",&c,&i,&p);}'
 
 try $ER "int x; int x[4]; int main(){}"
 try $ER '"ABC"=1;'

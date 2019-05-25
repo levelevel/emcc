@@ -484,6 +484,21 @@ static int gen(Node*node) {
         printf("  pop rax\n");  //lhs
 
         switch((int)node->type) {
+        case ND_LOR: //"||"
+        {
+            int cnt = label_cnt++;
+            comment("'||'\n");
+            printf("  cmp rax, 0\n");   //lhs
+            printf("  jne .LTrue%03d\n", cnt);
+            printf("  cmp rdi, 0\n");   //rhs
+            printf("  jne .LTrue%03d\n", cnt);
+            printf("  mov rax, 0\n");   //False
+            printf("  jmp .LEnd%03d\n", cnt);
+            printf(".LTrue%03d:\n", cnt);
+            printf("  mov rax, 1\n");   //True
+            printf(".LEnd%03d:\n", cnt);
+            break;
+        }
         case ND_LAND: //"&&"
         {
             int cnt = label_cnt++;
@@ -499,19 +514,19 @@ static int gen(Node*node) {
             printf(".LEnd%03d:\n", cnt);
             break;
         }
-        case ND_LOR: //"||"
+        case '|':
         {
-            int cnt = label_cnt++;
-            comment("'||'\n");
-            printf("  cmp rax, 0\n");   //lhs
-            printf("  jne .LTrue%03d\n", cnt);
-            printf("  cmp rdi, 0\n");   //rhs
-            printf("  jne .LTrue%03d\n", cnt);
-            printf("  mov rax, 0\n");   //False
-            printf("  jmp .LEnd%03d\n", cnt);
-            printf(".LTrue%03d:\n", cnt);
-            printf("  mov rax, 1\n");   //True
-            printf(".LEnd%03d:\n", cnt);
+            printf("  or rax, rdi\t # |\n");
+            break;
+        }
+        case '^':
+        {
+            printf("  xor rax, rdi\t # ^\n");
+            break;
+        }
+        case '&':
+        {
+            printf("  and rax, rdi\t # &\n");
             break;
         }
         case ND_EQ: //"=="
@@ -571,7 +586,7 @@ static int gen(Node*node) {
             printf("  mov rax, rdx\n");
             break;
         default:
-            error_at(node->input, "不正なトークンです");
+            _NOT_YET_(node);
         }
 
         printf("  push rax\n");
@@ -606,7 +621,7 @@ static void gen_global_var(Node *node) {
             } else if (rhs->type==ND_NUM) {
                 printf("  .quad %d\n", rhs->val);
             } else {
-                _ERROR_;
+                _NOT_YET_(rhs);
             }
             break;
         case ARRAY:
@@ -622,7 +637,7 @@ static void gen_global_var(Node *node) {
             if (size > rsize) printf("  .zero %d\n", size-rsize);
             break;
         default:
-            _ERROR_;
+            _NOT_YET_(node);
         }
     } else {
         printf("  .zero %d\n", size);

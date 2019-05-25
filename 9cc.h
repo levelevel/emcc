@@ -117,8 +117,10 @@ typedef struct {
 //ノードがポインタ（PTR||ARRAY）であるか
 #define node_is_ptr(_node) ((_node)->tp->type==PTR || (_node)->tp->type==ARRAY)
 
+//アサーション
 #define COMPILE_ERROR 0
 #define _ERROR_ assert(COMPILE_ERROR)
+#define _NOT_YET_(node) error_at((node)->input, "未実装です") 
 
 //グローバル変数 ----------------------------------------
 #ifndef EXTERN

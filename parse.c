@@ -43,6 +43,8 @@ TokenDef TokenLst1[] = {
     {"!",  1, '!'},
     {",",  1, ','},
     {"&",  1, '&'},
+    {"|",  1, '|'},
+    {"^",  1, '^'},
     {NULL, 0, 0}
 };
 
@@ -429,7 +431,10 @@ static Node *new_node_list(Node *item, char *input) {
     expr        = assign ( "," assign )* 
     assign      = logical_or ( "=" assign )*
     logical_or  = logical_and ( "||" logical_and )*
-    logical_and = equality ( "&&" equality )*
+    logical_and = bitwise_or ( "&&" bitwise_or )*
+    bitwise_or  = ex_or ( "&" ex_or )*
+    ex_or       = bitwise_and ( "^" bitwise_and )*
+    bitwise_and = equality ( "&" equality )*
     equality    = relational ( "==" relational | "!=" relational )*
     relational  = add ( "<" add | "<=" add | ">" add | ">=" add )*
     add         = mul ( "+" mul | "-" mul )*
@@ -464,6 +469,9 @@ static Node *assign(void);
 static Node *equality(void);
 static Node *logical_or(void);
 static Node *logical_and(void);
+static Node *bitwise_or(void);
+static Node *ex_or(void);
+static Node *bitwise_and(void);
 static Node *relational(void);
 static Node *add(void);
 static Node *mul(void); 
@@ -815,13 +823,55 @@ static Node *logical_or(void) {
 }
 
 //論理積（左結合）
-//    logical_and = equality ( "&&" equality )*
+//    logical_and = bitwise_or ( "&&" bitwise_or )*
 static Node *logical_and(void) {
-    Node *node = equality();
+    Node *node = bitwise_or();
     for (;;) {
         char *input = input_str();
         if (consume(TK_LAND)) {
-            node = new_node(ND_LAND, node, equality(), new_type(INT), input);
+            node = new_node(ND_LAND, node, bitwise_or(), new_type(INT), input);
+        } else {
+            return node;
+        }
+    }
+}
+
+//OR（左結合）
+//    bitwise_or = ex_or ( "|" ex_or )*
+static Node *bitwise_or(void) {
+    Node *node = ex_or();
+    for (;;) {
+        char *input = input_str();
+        if (consume('|')) {
+            node = new_node('|', node, ex_or(), new_type(INT), input);
+        } else {
+            return node;
+        }
+    }
+}
+
+//EX-OR（左結合）
+//    bitwise_or = bitwise_and ( "|" bitwise_and )*
+static Node *ex_or(void) {
+    Node *node = bitwise_and();
+    for (;;) {
+        char *input = input_str();
+        if (consume('^')) {
+            node = new_node('^', node, bitwise_and(), new_type(INT), input);
+        } else {
+            return node;
+        }
+    }
+}
+
+//AND（左結合）
+//    bitwise_and = equality ( "&" equality )*
+static Node *bitwise_and(void) {
+    Node *node = equality();
+    for (;;) {
+        char *input = input_str();
+        if (consume('&')) {
+            node = new_node('&', node, equality(), new_type(INT), input);
         } else {
             return node;
         }
@@ -1031,6 +1081,9 @@ int node_is_const(Node *node, long *valp) {
     case ND_NUM:  val = node->val;    break;
     case ND_LAND: val = val1 && val2; break;
     case ND_LOR:  val = val1 || val2; break;
+    case '&':     val = val1 &  val2; break;
+    case '^':     val = val1 ^  val2; break;
+    case '|':     val = val1 |  val2; break;
     case ND_EQ:   val = val1 == val2; break;
     case ND_NE:   val = val1 != val2; break;
     case '<':     val = val1 <  val2; break;
