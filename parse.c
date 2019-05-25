@@ -50,14 +50,15 @@ TokenDef TokenLst1[] = {
 
 //トークンの終わりをis_alnum()で判定するもの
 TokenDef TokenLst2[] = {
-    {"char",   4, TK_CHAR},
-    {"int",    3, TK_INT},
-    {"return", 6, TK_RETURN},
-    {"if",     2, TK_IF},
-    {"else",   4, TK_ELSE},
-    {"while",  5, TK_WHILE},
-    {"for",    3, TK_FOR},
-    {"sizeof", 6, TK_SIZEOF},
+    {"char",     4, TK_CHAR},
+    {"int",      3, TK_INT},
+    {"return",   6, TK_RETURN},
+    {"if",       2, TK_IF},
+    {"else",     4, TK_ELSE},
+    {"while",    5, TK_WHILE},
+    {"for",      3, TK_FOR},
+    {"sizeof",   6, TK_SIZEOF},
+    {"_Alignof", 8, TK_ALIGNOF},
     {NULL, 0, 0}
 };
 
@@ -187,6 +188,8 @@ static int consume_ident(char**name) {
 }
 
 //型のサイズ
+// - 配列の場合、要素のサイズ*要素数
+// - 構造体の場合、アラインメントで単位切り上げ
 int size_of(const Type *tp) {
     assert(tp);
     switch (tp->type) {
@@ -200,6 +203,8 @@ int size_of(const Type *tp) {
 }
 
 //型のアラインメント
+// - 配列の場合、要素のアラインメント
+// - 構造体の場合、メンバー内の最大のアラインメント
 int align_of(const Type *tp) {
     assert(tp);
     if (tp->type==ARRAY) return align_of(tp->ptr_of);
@@ -222,8 +227,10 @@ static int node_type_eq(const Type *tp1, const Type *tp2) {
 //ローカル変数のRBPからのoffset（バイト数）を返し、var_stack_sizeを更新する。
 static int get_var_offset(const Type *tp) {
     int size = size_of(tp);
+    int align_size = align_of(tp);
     var_stack_size += size; 
-    if (size>0) var_stack_size = (var_stack_size + (size-1))/size * size;  // アラインメント（sizeバイト単位に切り上げ）
+    // アラインメント（align_sizeバイト単位に切り上げ）
+    if (size>0) var_stack_size = (var_stack_size + (size-1))/align_size * align_size;
     return var_stack_size;
 }
 
@@ -443,6 +450,7 @@ static Node *new_node_list(Node *item, char *input) {
                 | ( "++" | "--" )? post_unary
                 | "sizeof" unary
                 | "sizeof" "(" type_ptr array_def? ")"
+                | "_Alignof" "(" type_ptr array_def? ")"
     post_unary  = term ( "++" | "--" )
     term        = num
                 | string
@@ -1001,6 +1009,13 @@ static Node *unary(void) {
             tp = node->tp;
         }
         return new_node_num(size_of(tp), input);
+    } else if (consume(TK_ALIGNOF)) {
+        Type *tp;
+        if (!consume('(')) error_at(input_str(), "開きカッコがありません");
+        tp = type_ptr();
+        if (token_is('[')) tp = array_def(tp);
+        if (!consume(')')) error_at(input_str(), "開きカッコに対応する閉じカッコがありません");
+        return new_node_num(align_of(tp), input);
     } else {
         return post_unary();
     }

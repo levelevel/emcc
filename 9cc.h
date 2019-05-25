@@ -40,6 +40,7 @@ typedef enum {
     TK_WHILE,       //while
     TK_FOR,         //for
     TK_SIZEOF,      //sizeof
+    TK_ALIGNOF,     //_Alignof (C11)
     TK_EOF,         //入力の終わり
 } TKtype;
 

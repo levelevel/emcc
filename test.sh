@@ -158,10 +158,15 @@ try 1 "int* f(int *a){return a;} int main(){int x; int *y; y=f(&x); return &x==y
 try 8 "int **p; p=0; p++; ++p; return p-1;"
 try 4 "int *p=0; int a=2; p=p+a; p--; --p; p=p+0; return 1+p;"
 try 4 "int main(){int *p; alloc4(&p,1,2,4,8); *p=0; *(p+1)=0; return *(p+2);}"
-try 36 "int a; int *p; return sizeof(a)+sizeof(p)+sizeof(1)+sizeof(&p)+sizeof(int)+sizeof(int*);"
+try 1 "int a; int *p; 
+      return sizeof(a)==4 && sizeof(p)==8 && sizeof(1)==4 && sizeof(&p)==8 && 
+             sizeof(char)==1 && sizeof(int)==4 && sizeof(int*)==8 &&
+             sizeof(char[5])==5 && sizeof(int[5])==4*5 && sizeof(int*[3])==8*3;"
 try 40 "int a[2*5]; return sizeof(a);"
 try 32 "return sizeof(int*[2*2]);"
 try 8 "int a; return sizeof(1&&1==1>1)+sizeof(a=1);"
+try 1 "return _Alignof(char)==1 && _Alignof(int)==4 && _Alignof(int*)==8 &&
+              _Alignof(char[5])==1 && _Alignof(int[5])==4 && _Alignof(int*[3])==8;"
 try 1 "int a[4]; return a==&a;"
 try 4 "int a[4]; *a=2; *(a+1)=4; *(a+2)=8; return *(1+a);"
 try 4 "int a[4]; a[0]=2; a[1]=4; a[2]=8; return a[1];"
@@ -217,8 +222,16 @@ try 6 "int a[]={1,2,1+2}; return a[0]+a[1]+a[2];"
 try 1 "char s1[]=\"ABC\"; char s2[]={'A', 66, 'C', 0}; strcmp(s1,s2)==0;"
 try 16 "int i=2; char a[]={i,i*2,10}; return a[0]+a[1]+a[2];"
 try 106 "int i=2; int a[]={i,i*2,100}; return a[0]+a[1]+a[2];"
+try 1 "char c1; int i; char c2; char*p;
+      int main(){
+        return &i%4==0 && &p%8==0;
+      }"
+try 1 "int main(){
+        char c1; int i; char c2; char*p;
+        return &i%4==0 && &p%8==0;
+      }"
 #try 13 "int a[][3]={{1,2,3},{11,12,13}; return a[1][2]}"
-#       'char c[4+1]; int i[3]; char*p=&c; int main(){printf("%p\n%p\n%p\n",&c,&i,&p);}'
+#       'char c[4+1]; int i[3]; char*p=&c+1; int main(){printf("%p\n%p\n%p\n",&c,&i,&p);}'
 
 try $ER "int x; int x[4]; int main(){}"
 try $ER '"ABC"=1;'
