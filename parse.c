@@ -644,6 +644,9 @@ static Node *var_def1(Type *simple_tp, Type *tp, char *name) {
         long val;
         if (tp->type==ARRAY) {  //左辺が配列
             if (rhs->tp->type==ARRAY) {
+                //文字列リテラルで初期化できるのはcharの配列だけ
+                if (rhs->type==ND_STRING && tp->ptr_of->type!=CHAR)
+                    error_at(rhs->input, "%sを文字列リテラルで初期化できません", get_type_str(tp));
                 if (tp->array_size<0) {
                     tp->array_size = rhs->tp->array_size;
                     //fprintf(stderr, "array_size=%ld\n", tp->array_size);

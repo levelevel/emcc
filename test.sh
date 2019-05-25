@@ -230,12 +230,17 @@ try 1 "int main(){
         char c1; int i; char c2; char*p;
         return &i%4==0 && &p%8==0;
       }"
-#try 13 "int a[][3]={{1,2,3},{11,12,13}; return a[1][2]}"
-#       'char c[4+1]; int i[3]; char*p=&c+1; int main(){printf("%p\n%p\n%p\n",&c,&i,&p);}'
+try $ER "int a[]={1,2,3}; int main(){}"
+#多次元配列
+try $ER "int a[][3]={{1,2,3},{11,12,13}; return a[1][2]}"
+#アドレスを含む定数式
+try $ER 'char c[4+1]; int i[3]; char*p=&c+1; int main(){printf("%p\n%p\n%p\n",&c,&i,&p);}'
 
 try $ER "int x; int x[4]; int main(){}"
 try $ER '"ABC"=1;'
 try $ER "char p[3]=1;"
+try $ER 'int a[]="ABC";'
+try $ER 'char *p[]="ABC";'
 
 rm -f $EXE $EXE.s
 echo "test: OK"

@@ -54,7 +54,8 @@ static void type_str(char *buf, const Type *tp) {
     strcat(buf, TypeStr[tp->type]);
     if (tp->type==ARRAY) {
         char tmp[20];
-        sprintf(tmp, "%ld]", tp->array_size);
+        if (tp->array_size>=0) sprintf(tmp, "%ld]", tp->array_size);
+        else                   sprintf(tmp ,"]");
         strcat(buf, tmp);
     }
 }

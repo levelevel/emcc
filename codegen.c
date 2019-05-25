@@ -625,16 +625,20 @@ static void gen_global_var(Node *node) {
             }
             break;
         case ARRAY:
-            assert(node->tp->ptr_of->type==CHAR);
-            int rsize = rhs->tp->array_size;
-            char *str = (char*)vec_get(string_vec, rhs->val);
-            if (size < rsize) {
-                str[size] = 0;
-                printf("  .ascii \"%s\"\n", str);
+            if (node->tp->ptr_of->type==CHAR &&
+                rhs->type==ND_STRING) {
+                int rsize = rhs->tp->array_size;
+                char *str = (char*)vec_get(string_vec, rhs->val);
+                if (size < rsize) {
+                    str[size] = 0;
+                    printf("  .ascii \"%s\"\n", str);
+                } else {
+                    printf("  .string \"%s\"\n", str);
+                }
+                if (size > rsize) printf("  .zero %d\n", size-rsize);
             } else {
-                printf("  .string \"%s\"\n", str);
+                _NOT_YET_(rhs);
             }
-            if (size > rsize) printf("  .zero %d\n", size-rsize);
             break;
         default:
             _NOT_YET_(node);
