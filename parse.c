@@ -117,6 +117,21 @@ void tokenize(char *p) {
             continue;
         }
 
+        //行コメントをスキップ
+        if (strncmp(p, "//", 2)==0) {
+            p += 2;
+            while (*p && *p!='\n') p++;
+            continue;
+        }
+
+        //ブロックコメントをスキップ
+        if (strncmp(p, "/*", 2)==0) {
+            char *q = strstr(p + 2, "*/");
+            if (!q) error_at(p, "コメントが閉じられていません");
+            p = q + 2;
+            continue;
+        }
+
         for (TokenDef *tk = TokenLst1; tk->name; tk++) {
             if (strncmp(p, tk->name, tk->len)==0) {
                 token = new_token(tk->type, p);

@@ -122,7 +122,8 @@ try 55 "int main() {
           if (a==0) return 0;
           else return a + fact(a-1);
         }"
-try 55 "int main() {
+try 55 "int main() {  //フィボナッチ数
+          /* comment */
           return fib(10);
         } 
         int fib(int a) {
