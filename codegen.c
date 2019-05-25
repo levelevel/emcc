@@ -73,7 +73,7 @@ static char* data_name_for_type(const Type *tp) {
     case 4: return "DWORD";
     case 2: return "WORD";
     case 1: return "BYTE";
-    default: assert(0);
+    default: _ERROR_;
     }
     return NULL;
 }
@@ -86,14 +86,14 @@ static char* reg_name_of_type(const char*reg_name, const Type *tp) {
     case 4: idx = 2; break;
     case 2: idx = 1; break;
     case 1: idx = 0; break; //8bit
-    default: assert(0);
+    default: _ERROR_;
     }
     for (int j=3; j>=0; j--) {
         for (int i=0; regs[i][j]; i++) {
             if (strcmp(reg_name, regs[i][j])==0) return regs[i][idx];
         }
     }
-    assert(0);
+    _ERROR_;
     return NULL;
 }
 
@@ -104,7 +104,7 @@ static char* write_command_of_type(const Type *tp) {
     case INT:   return "mov";
     case PTR:   return "mov";
     case ARRAY: return "mov";
-    default: assert(0);
+    default: _ERROR_;
     }
     return NULL;
 }
@@ -116,7 +116,7 @@ static char* read_command_of_type(const Type *tp) {
     case INT:   return "mov";
     case PTR:   return "mov";
     case ARRAY: return "mov";
-    default: assert(0);
+    default: _ERROR_;
     }
     return NULL;
 }
@@ -211,7 +211,7 @@ static void gen_array_init(Node *node) {
             }
             break;
         default:
-            assert(0);
+            _ERROR_;
             break;
         }
     } else {    //初期値に定数でない式を含む場合
@@ -581,8 +581,14 @@ static int gen(Node*node) {
 
 //グローバル変数のコードを生成
 static void gen_global_var(Node *node) {
+    assert(node->type == ND_VAR_DEF);
     int size = size_of(node->tp);
+    int align_size = align_of(node->tp);
+
+    printf(".global %s\n", node->name);
+    if (align_size > 1) printf(".align %d\n", align_size);
     printf("%s:\t# %s\n", node->name, get_type_str(node->tp));
+
     if (node->rhs) {    //初期値あり、rhsは'='のノード
         Node *rhs = node->rhs->rhs; //'='の右辺
         switch (node->tp->type) {
@@ -597,8 +603,10 @@ static void gen_global_var(Node *node) {
         case PTR:
             if (rhs->type==ND_ADDRESS) {
                 printf("  .quad %s\n", rhs->rhs->name);
-            } else {
+            } else if (rhs->type==ND_NUM) {
                 printf("  .quad %d\n", rhs->val);
+            } else {
+                _ERROR_;
             }
             break;
         case ARRAY:
@@ -614,7 +622,7 @@ static void gen_global_var(Node *node) {
             if (size > rsize) printf("  .zero %d\n", size-rsize);
             break;
         default:
-            assert(0);
+            _ERROR_;
         }
     } else {
         printf("  .zero %d\n", size);
@@ -638,13 +646,6 @@ void print_functions(void) {
 
     //グローバルシンボル（関数）
     char **strs = (char**)func_map->keys->data;
-    for (int i=0; i<size; i++) {
-        printf(".global %s\n", strs[i]);
-    }
-
-    //グローバルシンボル（変数）
-    size = global_vardef_map->keys->len;
-    strs = (char**)global_vardef_map->keys->data;
     for (int i=0; i<size; i++) {
         printf(".global %s\n", strs[i]);
     }

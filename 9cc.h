@@ -117,10 +117,14 @@ typedef struct {
 //ノードがポインタ（PTR||ARRAY）であるか
 #define node_is_ptr(_node) ((_node)->tp->type==PTR || (_node)->tp->type==ARRAY)
 
+#define COMPILE_ERROR 0
+#define _ERROR_ assert(COMPILE_ERROR)
+
 //グローバル変数 ----------------------------------------
 #ifndef EXTERN
 #define EXTERN extern
 #endif
+
 // トークナイズした結果のトークン列はこのVectorに保存する
 EXTERN Vector *token_vec;
 EXTERN Token **tokens;  //token_vec->data;
@@ -147,6 +151,7 @@ EXTERN int var_stack_size;
 
 // parse.c
 int size_of(const Type *tp);
+int align_of(const Type *tp);
 void tokenize(char *p);
 void print_tokens(void);
 void program(void);

@@ -193,8 +193,15 @@ int size_of(const Type *tp) {
     case PTR:  return sizeof(void*);
     case ARRAY: return tp->array_size * size_of(tp->ptr_of);
     }
-    assert(0);
+    _ERROR_;
     return -1;
+}
+
+//型のアラインメント
+int align_of(const Type *tp) {
+    assert(tp);
+    if (tp->type==ARRAY) return align_of(tp->ptr_of);
+    return size_of(tp);
 }
 
 //ノードのタイプが等しいかどうかを判定する
