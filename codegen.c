@@ -704,8 +704,8 @@ static void gen_global_var(Node *node) {
 
 //ローカル変数用のスタックサイズを計算する
 //RSPの16バイトアライメントを維持する
-static int calc_stack_offset() {
-    int size = (var_stack_size + 15)/16 * 16;
+static int calc_stack_offset(int stack_size) {
+    int size = (stack_size + 15)/16 * 16;
     return size;
 }
 
@@ -753,7 +753,7 @@ void print_functions(void) {
         // ローカル変数用の領域を確保する
         printf("  push rbp\n");
         printf("  mov rbp, rsp\n");
-        printf("  sub rsp, %d\n", calc_stack_offset());
+        printf("  sub rsp, %d\n", calc_stack_offset(funcdef[i]->var_stack_size));
 
         // 引数をスタックのローカル変数領域にコピー
         int size = funcdef[i]->node->lhs->lst->len;

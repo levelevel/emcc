@@ -243,10 +243,10 @@ static int node_type_eq(const Type *tp1, const Type *tp2) {
 static int get_var_offset(const Type *tp) {
     int size = size_of(tp);
     int align_size = align_of(tp);
-    var_stack_size += size; 
+    cur_funcdef->var_stack_size += size;
     // アラインメント（align_sizeバイト単位に切り上げ）
-    if (size>0) var_stack_size = (var_stack_size + (size-1))/align_size * align_size;
-    return var_stack_size;
+    if (size>0) cur_funcdef->var_stack_size = (cur_funcdef->var_stack_size + (size-1))/align_size * align_size;
+    return cur_funcdef->var_stack_size;
 }
 
 //関数定義のroot生成
@@ -390,7 +390,6 @@ static Node *new_node_func_def(char *name, Type *tp, char *input) {
     node->name = name;
 //  node->lhs       //引数リスト
 //  node->rhs       //ブロック
-    var_stack_size = 0;
 
     cur_funcdef = new_funcdef();
     cur_funcdef->tp = tp;

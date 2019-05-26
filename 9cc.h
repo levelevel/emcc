@@ -114,6 +114,7 @@ typedef struct {
     Node *node;     //ND_FUNC_DEFのnode
     Type *tp;       //関数の型情報
     Map *ident_map; //ローカル変数：key=name, val=Vardef
+    int var_stack_size; //ローカル変数のために必要となるスタックサイズ（offset）
 } Funcdef;
 
 //ノードがポインタ（PTR||ARRAY）であるか
@@ -149,9 +150,6 @@ EXTERN Map *func_map;       //key=name, value=Funcdef
 
 //プログラム（関数定義）の管理
 EXTERN Map *funcdef_map;    //key=name, value=Funcdef
-
-//ローカル変数が使用しているスタックサイズ
-EXTERN int var_stack_size;
 
 // parse.c
 int size_of(const Type *tp);
