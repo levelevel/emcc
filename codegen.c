@@ -486,7 +486,7 @@ static int gen(Node*node) {
         printf("  pop rdi\n");  //rhsのアドレス
         printf("  mov rax, [rdi]\n");
         if (node_is_ptr(node)) {
-            printf("  add rax, %d\n", size_of(node->tp->ptr_of));
+            printf("  add rax, %ld\n", size_of(node->tp->ptr_of));
         } else {
             printf("  inc rax\n");  //戻り値を設定する前にINC
         }
@@ -498,7 +498,7 @@ static int gen(Node*node) {
         printf("  pop rdi\n");  //rhsのアドレス
         printf("  mov rax, [rdi]\n");
         if (node_is_ptr(node)) {
-            printf("  sub rax, %d\n", size_of(node->tp->ptr_of));
+            printf("  sub rax, %ld\n", size_of(node->tp->ptr_of));
         } else {
             printf("  dec rax\n");  //戻り値を設定する前にDEC
         }
@@ -511,7 +511,7 @@ static int gen(Node*node) {
         printf("  mov rax, [rdi]\n");
         printf("  push rax\n"); //INCする前に戻り値を設定
         if (node_is_ptr(node)) {
-            printf("  add rax, %d\n", size_of(node->tp->ptr_of));
+            printf("  add rax, %ld\n", size_of(node->tp->ptr_of));
         } else {
             printf("  inc rax\n");
         }
@@ -523,7 +523,7 @@ static int gen(Node*node) {
         printf("  mov rax, [rdi]\n");
         printf("  push rax\n"); //DECする前に戻り値を設定
         if (node_is_ptr(node)) {
-            printf("  sub rax, %d\n", size_of(node->tp->ptr_of));
+            printf("  sub rax, %ld\n", size_of(node->tp->ptr_of));
         } else {
             printf("  dec rax\n");
         }
@@ -658,6 +658,18 @@ static int gen(Node*node) {
     return 1;   //結果をスタックに積んでいる
 }
 
+static long get_single_val(Node *node) {
+    long val;
+    if (node->type==ND_NUM) {
+        val = node->val;
+    } else if (node->type==ND_LIST) {
+        val = get_single_val((Node*)node->lst->data[0]);
+    } else {
+        error_at(node->input, "スカラー定数ではありません");
+    }
+    return val;
+}
+
 //グローバル変数のコードを生成
 static void gen_global_var(Node *node) {
     assert(node->type == ND_GLOBAL_VAR_DEF);
@@ -672,20 +684,18 @@ static void gen_global_var(Node *node) {
         Node *rhs = node->rhs->rhs; //'='の右辺
         switch (node->tp->type) {
         case CHAR:
-            assert(rhs->type==ND_NUM);
-            printf("  .byte %d\n", rhs->val);
+            printf("  .byte %ld\n", get_single_val(rhs));
             break;
         case INT:
-            assert(rhs->type==ND_NUM);
-            printf("  .long %d\n", rhs->val);
+            printf("  .long %ld\n", get_single_val(rhs));
             break;
         case PTR:
             if (rhs->type==ND_ADDRESS) {
                 printf("  .quad %s\n", rhs->rhs->name);
-            } else if (rhs->type==ND_NUM) {
-                printf("  .quad %d\n", rhs->val);
+            } else if (rhs->type==ND_NUM || rhs->type==ND_LIST) {
+                printf("  .quad %ld\n", get_single_val(rhs));
             } else if (rhs->type=='+') {
-                printf("  .quad %s%+d\n", rhs->lhs->rhs->name, size_of(node->tp->ptr_of)*rhs->rhs->val);
+                printf("  .quad %s%+ld\n", rhs->lhs->rhs->name, size_of(node->tp->ptr_of)*rhs->rhs->val);
             } else {
                 _NOT_YET_(rhs);
             }
@@ -763,7 +773,7 @@ void print_functions(void) {
             printf("  mov rax, rbp\n");
             for (int j=0; j < size; j++) {
                 char buf[128];
-                printf("  sub rax, %d\n", size_of(ident_nodes[j]->tp));
+                printf("  sub rax, %ld\n", size_of(ident_nodes[j]->tp));
                 sprintf(buf, "arg:%s %s", get_type_str(ident_nodes[j]->tp) ,ident_nodes[j]->name);
                 gen_write_reg("rax", arg_regs[j], ident_nodes[j]->tp, buf);
             }

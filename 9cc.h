@@ -123,7 +123,7 @@ typedef struct {
 //アサーション
 #define COMPILE_ERROR 0
 #define _ERROR_ assert(COMPILE_ERROR)
-#define _NOT_YET_(node) error_at((node)->input, "未実装です") 
+#define _NOT_YET_(node) error_at((node)->input, "未実装です（%s:%d）",__FILE__,__LINE__) 
 
 //グローバル変数 ----------------------------------------
 #ifndef EXTERN
@@ -152,7 +152,7 @@ EXTERN Map *func_map;       //key=name, value=Funcdef
 EXTERN Map *funcdef_map;    //key=name, value=Funcdef
 
 // parse.c
-int size_of(const Type *tp);
+long size_of(const Type *tp);
 int align_of(const Type *tp);
 void tokenize(char *p);
 void print_tokens(void);

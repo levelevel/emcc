@@ -205,7 +205,7 @@ static int consume_ident(char**name) {
 //型のサイズ
 // - 配列の場合、要素のサイズ*要素数
 // - 構造体の場合、アラインメントで単位切り上げ
-int size_of(const Type *tp) {
+long size_of(const Type *tp) {
     assert(tp);
     switch (tp->type) {
     case CHAR: return sizeof(char);
@@ -1160,6 +1160,12 @@ int node_is_const_or_address(Node *node, long *valp, Node **varp) {
         if (varp) *varp = node;
         if (valp) *valp = 0;
         return 1;
+    }
+    if (node->type==ND_LIST) {
+        Node **nodes = (Node**)node->lst->data;
+        if (node->lst->len==1)
+            return node_is_const_or_address(nodes[0], valp, varp);
+        return 0;
     }
 
     if (node->lhs && !node_is_const_or_address(node->lhs, &val1, &var1)) return 0;
