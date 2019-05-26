@@ -39,6 +39,8 @@ typedef enum {
     TK_ELSE,        //else
     TK_WHILE,       //while
     TK_FOR,         //for
+    TK_BREAK,       //break
+    TK_CONTINUE,    //continue
     TK_SIZEOF,      //sizeof
     TK_ALIGNOF,     //_Alignof (C11)
     TK_EOF,         //入力の終わり
@@ -74,6 +76,8 @@ typedef enum {
     ND_IF,
     ND_WHILE,
     ND_FOR,
+    ND_BREAK,
+    ND_CONTINUE,
     ND_BLOCK,       //{...}
     ND_LIST,        //コンマリスト
     ND_FUNC_CALL,   //関数コール
@@ -130,13 +134,23 @@ typedef struct {
 #define EXTERN extern
 #endif
 
+EXTERN int verbose;
+
 // トークナイズした結果のトークン列はこのVectorに保存する
 EXTERN Vector *token_vec;
 EXTERN Token **tokens;  //token_vec->data;
 EXTERN int token_pos;   //tokensの現在位置
 
+//break時のジャンプ先のラベルを示すスタック
+EXTERN Vector *break_stack;     //value=文字列
+//continue時のジャンプ先のラベルを示すスタック
+EXTERN Vector *continue_stack;  //value=文字列
+#define stack_push(vec, elem) vec_push(vec, elem)
+#define stack_pop(vec) ((vec)->len--)
+#define stack_get(vec) vec_get(vec, vec->len - 1)
+
 //文字列リテラル
-EXTERN Vector *string_vec;
+EXTERN Vector *string_vec;      //value=文字列リテラル
 
 //グローバル変数
 EXTERN Map *global_vardef_map;     //key=name, value=Vardef

@@ -18,7 +18,7 @@ test_src() {
   rm -f $EXE
 
   cpp $CFLAGS $src | grep -v "^#" > $EXE.c
-  ./9cc $EXE.c 2>&1 > $EXE.s | tee -a $EXE.log | grep "9cc:$ER" > $EXE.err
+  ./9cc $EXE.c 2>&1 > $EXE.s | tee -a $EXE.log | grep "9cc:" > $EXE.err
   if [ $? -eq 0 ]; then
     cat $EXE.log
     exit 1

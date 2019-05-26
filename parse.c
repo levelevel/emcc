@@ -57,6 +57,8 @@ TokenDef TokenLst2[] = {
     {"else",     4, TK_ELSE},
     {"while",    5, TK_WHILE},
     {"for",      3, TK_FOR},
+    {"break",    5, TK_BREAK},
+    {"continue", 8, TK_CONTINUE},
     {"sizeof",   6, TK_SIZEOF},
     {"_Alignof", 8, TK_ALIGNOF},
     {NULL, 0, 0}
@@ -438,6 +440,8 @@ static Node *new_node_list(Node *item, char *input) {
                 | "if" "(" expr ")" ( "else" expr )?
                 | "while" "(" expr ")"
                 | "for" "(" expr? ";" expr? ";" expr? ")" stmt
+                | "break"
+                | "continue"
                 | "{" expr* "}"
     var_def     = type_spec var_def1 ( "," var_def1 )*
     var_def1    = pointer* ident array_def? ( "=" initializer )?
@@ -590,6 +594,10 @@ static Node *stmt(void) {
         node2 = new_node(0, node1, stmt(), NULL, input);     //C,D
         node = new_node(ND_FOR, node, node2, NULL, input);   //(A,B),(C,D)
         return node;
+    } else if (consume(TK_BREAK)) {     //break
+        node = new_node(ND_BREAK, NULL, NULL, NULL, input);
+    } else if (consume(TK_CONTINUE)) {  //continue
+        node = new_node(ND_CONTINUE, NULL, NULL, NULL, input);
     } else if (consume('{')) {      //{ ブロック }
         node = new_node_block(input_str());
         while (!consume('}')) {
@@ -665,12 +673,10 @@ static Node *var_def1(Type *simple_tp, Type *tp, char *name) {
                     error_at(rhs->input, "%sを文字列リテラルで初期化できません", get_type_str(tp));
                 if (tp->array_size<0) {
                     tp->array_size = rhs->tp->array_size;
-                    //fprintf(stderr, "array_size=%ld\n", tp->array_size);
                 }
             } else if (rhs->type==ND_LIST) {
                 if (tp->array_size<0) {
                     tp->array_size = rhs->lst->len;
-                    fprintf(stderr, "array_size=%ld\n", tp->array_size);
                 }
             } else {
                 error_at(rhs->input, "配列の初期値が配列形式になっていません");

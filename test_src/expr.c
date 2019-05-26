@@ -8,7 +8,7 @@
 #include <string.h>
 #endif
 
-#define TEST(func) if(!func()) {printf("Error at %s:%d:%s\n",__FILE__,__LINE__,#func);exit(1);}
+#define TEST(func) if(!func()) {printf("Error at %s:%d:%s\n",__FILE__,__LINE__,#func);exit(1);} else {printf("  OK: %s\n",#func);}
 
 int f42() {42; ;;;;;}
 int addsub1(){
@@ -59,30 +59,46 @@ int eq_rel() {
     return 1;
 }
 
-int loop() {
+int while1() {
     int a=3;
     while (a) a = a-1; 
-
-    int b;
-    for (b=0; b<5; b=b+1) b;
-    int c;
-    for (c=10; c>0; c--);
+    while (1) {break;}
+    while(0);
+    int i=0, sum=0;
+    while (i<=10) {sum = sum + i; i++;}
+    return a==0 && sum==55;
+}
+int for1() {
+    int a, b, i, j;
+    for (i=0; i<5; i++) a=i;
+    for (i=10; i; i--) {b=i; continue; b=999;};
     //for (int i=10; i; i--) {};
-    //for (;;) {}
+    for (;;) {break;}
+
+    int x=0;
+    for (i=0;;i++) {
+        if (i>=3) { x++; break ;}
+        for (j=0;;j++) {
+            if (j>=5)  { break; }
+        }
+    }
+    return a==4 && b==1;
+}
+int loop() {
 
     if(0);
-    while(0);
     if(0) while(0) if(1) while(0);
 
     int i;
-    int sum1 = 0, sum2 = 0;
+    int sum1 = 0;
     for (i=10;i>0;i--) {sum1=sum1+i;}
-    while (i<=10) {sum2=sum2+i; i++;}
 
     int d=0; if(0) d=1; else d=2;
     int e=0; if(0) {e=1;} else if (1) {e=2;} else {e=3;}
 
-    return a==0 && b==5 && c==0 && d==2 && e==2 && sum1==55 && sum2==55;
+    TEST(while1);
+    TEST(for1);
+    return d==2 && e==2 && sum1==55;
 }
 
 int inc() {

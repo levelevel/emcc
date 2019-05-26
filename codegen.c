@@ -169,7 +169,7 @@ char *get_byte_string(Node *node, int array_size, int data_size) {
 
 static int gen(Node*node);
 
-//ローカル変数の配列の初期化
+//ローカル変数の配列の初期化。スタックトップに変数のアドレスが設定されている前提。
 static void gen_array_init(Node *node) {
     assert(node->type=='=');
     assert(node->lhs->type==ND_LOCAL_VAR);
@@ -320,6 +320,7 @@ static int label_cnt = 0;   //ラベル識別用カウンタ
 //ステートメントを評価
 //結果をスタックに積んだ場合は1、そうでない場合は0を返す
 static int gen(Node*node) {
+    int ret;
     assert(node!=NULL);
     if (node->type == ND_NUM) {             //数値
         printf("  push %d\t# NUM\n", node->val);
@@ -327,8 +328,8 @@ static int gen(Node*node) {
         char buf[20];
         sprintf(buf, ".LC%03d", node->val);
         printf("  lea rax, BYTE PTR %s\n", buf);
-        printf("  push rax\n");
-    } else if  (node->type == ND_EMPTY) {   //空
+        printf("  push rax\n");             //文字列リテラルのアドレスを返す
+    } else if  (node->type == ND_EMPTY) {   //空文
         return 0;
     } else if (node->type == ND_LOCAL_VAR_DEF) {  //ローカル変数定義
         if (node->rhs==NULL) return 0;
@@ -338,8 +339,7 @@ static int gen(Node*node) {
         comment("%s_VAR:%s(%s)\n", node->type==ND_LOCAL_VAR?"LOCAL":"GLOBAL", node->name, get_type_str(node->tp));
         gen_lval(node);
         if (node->tp->type==ARRAY) {
-            printf("  push rax\n");
-            printf("  pop rax\n");
+            //アドレスをそのまま返す
         } else {
             printf("  pop rax\n");  //rhsのアドレス=戻り値
             gen_read_reg("rax", "rax", node->tp, NULL);
@@ -370,52 +370,57 @@ static int gen(Node*node) {
         printf("  mov rsp, rbp\n");
         printf("  pop rbp\n");
         printf("  ret\n");
+        return 0;
     } else if (node->type == ND_IF) {       //if (A) B [else C]
         int cnt = label_cnt++;
         comment("IF(A) B [else C]\n");
-        gen(node->lhs->lhs); //A
+        ret = gen(node->lhs->lhs); //A
+        assert(ret);
         printf("  pop rax\n");
         printf("  cmp rax, 0\n");
-        printf("  jne .LIfThen%03d\n", cnt);
-        printf("  push rax\n");
         if (node->rhs) {    //elseあり
-            printf("  jmp .LIfElse%03d\n", cnt);
+            printf("  je .LIfElse%03d\n", cnt);
         } else {
-            printf("  jmp .LIfEnd%03d\n", cnt);
+            printf("  je .LIfEnd%03d\n", cnt);
         }
-        printf(".LIfThen%03d:\n", cnt);
-        gen(node->lhs->rhs); //B
+        if (gen(node->lhs->rhs)) //B
+            printf("  pop rax\n");
         if (node->rhs) {    //elseあり
             printf("  jmp .LIfEnd%03d\n", cnt);
             printf(".LIfElse%03d:\n", cnt);
-            gen(node->rhs); //C
+            if (gen(node->rhs)) //C
+                printf("  pop rax\n");
         }
         printf(".LIfEnd%03d:\n", cnt);
+        return 0;
     } else if (node->type == ND_WHILE) {    //while (A) B
         int cnt = label_cnt++;
+        char b_label[20]; sprintf(b_label, ".LWhileEnd%03d",  cnt); stack_push(break_stack, b_label);
+        char c_label[20]; sprintf(c_label, ".LWhileBody%03d", cnt); stack_push(continue_stack, c_label);
         comment("WHILE(A)B\n");
         printf(".LWhileBegin%03d:\n", cnt);
-        gen(node->lhs); //A
+        ret = gen(node->lhs); //A
+        assert(ret);
         printf("  pop rax\n");
         printf("  cmp rax, 0\n");
-        printf("  jne .LWhileBody%03d\n", cnt);
-        printf("  push rax\n");
-        printf("  jmp .LWhileEnd%03d\n", cnt);
-        printf(".LWhileBody%03d:\n", cnt);
-        gen(node->rhs); //B
+        printf("  je .LWhileEnd%03d\n", cnt);
+        if (gen(node->rhs)) //B
+            printf("  pop rax\n");
         printf("  jmp .LWhileBegin%03d\n", cnt);
         printf(".LWhileEnd%03d:\n", cnt);
+        stack_pop(break_stack);
+        stack_pop(continue_stack);
+        return 0;
     } else if (node->type == ND_FOR) {      //for (A;B;C) D
         int cnt = label_cnt++;
+        char b_label[20]; sprintf(b_label, ".LForEnd%03d",  cnt); stack_push(break_stack, b_label);
+        char c_label[20]; sprintf(c_label, ".LForNext%03d", cnt); stack_push(continue_stack, c_label);
         comment("FOR(A;B;C)D\n");
-        if (node->lhs->lhs->type != ND_EMPTY) {
-            gen(node->lhs->lhs);//A
+        if (gen(node->lhs->lhs))//A
             printf("  pop rax\n");
-        }
         printf(".LForBegin%03d:\n", cnt);
-        if (node->lhs->rhs->type != ND_EMPTY) {
-            comment("FOR:B\n");
-            gen(node->lhs->rhs);//B
+        comment("FOR:B\n");
+        if (gen(node->lhs->rhs)) {//B
             printf("  pop rax\n");
             printf("  cmp rax, 0\n");
             printf("  jne .LForBody%03d\n", cnt);
@@ -423,18 +428,26 @@ static int gen(Node*node) {
             printf("  jmp .LForEnd%03d\n", cnt);
         }
         printf(".LForBody%03d:\n", cnt);
-        if (node->rhs->rhs->type != ND_EMPTY) {
-            comment("FOR:D\n");
-            gen(node->rhs->rhs);    //D
+        comment("FOR:D\n");
+        if (gen(node->rhs->rhs))    //D
             printf("  pop rax\n");
-        }
-        if (node->rhs->lhs->type != ND_EMPTY) {
-            comment("FOR:C\n");
-            gen(node->rhs->lhs);//C
+        printf(".LForNext%03d:\n", cnt);
+        comment("FOR:C\n");
+        if (gen(node->rhs->lhs))//C
             printf("  pop rax\n");
-        }
         printf("  jmp .LForBegin%03d\n", cnt);
         printf(".LForEnd%03d:\n", cnt);
+        stack_pop(break_stack);
+        stack_pop(continue_stack);
+        return 0;
+    } else if (node->type == ND_BREAK) {    //break
+        char *label = (char*)stack_get(break_stack);
+        printf("  jmp %s\t# break\n", label);
+        return 0;
+    } else if (node->type == ND_CONTINUE) { //continue
+        char *label = (char*)stack_get(continue_stack);
+        printf("  jmp %s\t# continue\n", label);
+        return 0;
     } else if (node->type == ND_BLOCK) {    //{ ブロック }
         Vector *blocks = node->lst;
         Node **nodes = (Node**)blocks->data;
@@ -442,7 +455,7 @@ static int gen(Node*node) {
             comment("BLOCK[%d]\n", i);
             if (gen(nodes[i])) printf("  pop rax\n");
         }
-        printf("  push rax\n");
+        return 0;
     } else if (node->type == ND_LIST) {     //コンマリスト
         Vector *lists = node->lst;
         Node **nodes = (Node**)lists->data;
@@ -472,14 +485,11 @@ static int gen(Node*node) {
         comment("'*A'\n");
         gen(node->rhs);
         printf("  pop rax\n");  //rhsの値（アドレス）
-    //  printf("  mov rax, [rax]\n");//戻り値
         gen_read_reg("rax", "rax", node->tp, NULL);
         printf("  push rax\n");
     } else if (node->type == ND_ADDRESS) { //&a（アドレス演算子）
         comment("'&A'\n");
         gen_lval(node->rhs);
-        printf("  pop rax\n");  //rhsのアドレス=戻り値
-        printf("  push rax\n");
     } else if (node->type == ND_INC_PRE) {  //++a
         comment("'++A'\n");
         gen_lval(node->rhs);
