@@ -423,9 +423,11 @@ static int gen(Node*node) {
             printf("  jmp .LForEnd%03d\n", cnt);
         }
         printf(".LForBody%03d:\n", cnt);
-        comment("FOR:D\n");
-        gen(node->rhs->rhs);    //D
-        printf("  pop rax\n");
+        if (node->rhs->rhs->type != ND_EMPTY) {
+            comment("FOR:D\n");
+            gen(node->rhs->rhs);    //D
+            printf("  pop rax\n");
+        }
         if (node->rhs->lhs->type != ND_EMPTY) {
             comment("FOR:C\n");
             gen(node->rhs->lhs);//C
