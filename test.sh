@@ -3,6 +3,7 @@ set -u
 
 EXE=tmp/test
 AFLAGS="-g -no-pie"
+CFLAGS="-D_9cc"
 ER=Error
 WR=Warning
 
@@ -16,7 +17,7 @@ test_src() {
   src=$1
   rm -f $EXE
 
-  cpp $src | grep -v "^#" > $EXE.c
+  cpp $CFLAGS $src | grep -v "^#" > $EXE.c
   ./9cc $EXE.c 2>&1 > $EXE.s | tee -a $EXE.log | grep "9cc:$ER" > $EXE.err
   if [ $? -eq 0 ]; then
     cat $EXE.log

@@ -1,3 +1,13 @@
+#ifdef _9cc
+#define static
+#define const
+#define void
+#else
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#endif
+
 #define TEST(func) if(!func()) {printf("Error at %s:%d:%s\n",__FILE__,__LINE__,#func);exit(1);}
 
 int f42() {42; ;;;;;}
@@ -153,7 +163,7 @@ int**pointer3(int ***********a) {
     &(a);
     &(*(a));
     &**(**a);
-    return 1;
+    return 0;
 }
 int* pf4(int *a){return a;}
 int pointer4() {
@@ -352,7 +362,7 @@ int size_of() {
 }
 
     int sc_x=0, sc_y=0;
-int scope(int sc_y) {
+int scope() {
     int sc_x; 
     sc_x=1;
     sc_y=2;
