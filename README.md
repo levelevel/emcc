@@ -14,8 +14,6 @@ https://www.sigbus.info/compilerbook/
 - 多次元配列
 - \による文字のエスケープ
 - case文
-- continue
-- break
 - goto（多重ループから抜けるために使っているけど、コードを書き直してもよい）
 - enum
 - long

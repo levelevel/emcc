@@ -3,10 +3,12 @@
 //現在のトークン（エラー箇所）の入力文字列
 #define input_str() (tokens[token_pos]->input)
 //現在のトークンの型が引数と一致しているか
-#define token_is(_tk) (tokens[token_pos]->type==(_tk))
-#define token_is_type() (token_is(TK_CHAR)||token_is(TK_INT))
-#define next_token_is(_tk) (tokens[token_pos+1]->type==(_tk))
-#define next_token_is_type() (next_token_is(TK_CHAR)||next_token_is(TK_INT))
+#define token_type() (tokens[token_pos]->type)
+#define token_is(_tk) (token_type()==(_tk))
+#define token_is_type() (TK_CHAR<=token_type() && token_type()<=TK_LONG)
+#define next_token_type() (tokens[token_pos+1]->type)
+#define next_token_is(_tk) (next_token_type()==(_tk))
+#define next_token_is_type() (TK_CHAR<=next_token_type() && next_token_type()<=TK_LONG)
 
 //トークンの種類を定義
 typedef struct {
@@ -51,7 +53,9 @@ TokenDef TokenLst1[] = {
 //トークンの終わりをis_alnum()で判定するもの
 TokenDef TokenLst2[] = {
     {"char",     4, TK_CHAR},
+    {"short",    5, TK_SHORT},
     {"int",      3, TK_INT},
+    {"long",     4, TK_LONG},
     {"return",   6, TK_RETURN},
     {"if",       2, TK_IF},
     {"else",     4, TK_ELSE},
@@ -210,10 +214,13 @@ static int consume_ident(char**name) {
 long size_of(const Type *tp) {
     assert(tp);
     switch (tp->type) {
-    case CHAR: return sizeof(char);
-    case INT:  return sizeof(int);
-    case PTR:  return sizeof(void*);
-    case ARRAY: return tp->array_size * size_of(tp->ptr_of);
+    case CHAR:     return sizeof(char);
+    case SHORT:    return sizeof(short);
+    case INT:      return sizeof(int);
+    case LONG:     return sizeof(long);
+    case LONGLONG: return sizeof(long long);
+    case PTR:      return sizeof(void*);
+    case ARRAY:    return tp->array_size * size_of(tp->ptr_of);
     }
     _ERROR_;
     return -1;
@@ -231,8 +238,7 @@ int align_of(const Type *tp) {
 //ノードのタイプが等しいかどうかを判定する
 static int node_type_eq(const Type *tp1, const Type *tp2) {
     if ((tp1->type==PTR && tp2->type==ARRAY) ||
-        (tp1->type==CHAR && tp2->type==INT) ||
-        (tp1->type==INT && tp2->type==CHAR)) {
+        (type_is_integer(tp1) && type_is_integer(tp2))) {
         ;   //一致とみなす（tp1=tp2の代入前提）
     } else {
         if (tp1->type != tp2->type) return 0;
@@ -784,8 +790,18 @@ static Type *type_spec(void) {
     Type *tp;
     if (consume(TK_CHAR)) {
         tp = new_type(CHAR);
+    } else if (consume(TK_SHORT)) {
+        tp = new_type(SHORT);
+        consume(TK_INT);
     } else if (consume(TK_INT)) {
         tp = new_type(INT);
+    } else if (consume(TK_LONG)) {
+        if (consume(TK_LONG)) {
+            tp = new_type(LONGLONG);
+        } else {
+            tp = new_type(LONG);
+        }
+        consume(TK_INT);
     } else {
         error_at(input_str(), "型名がありません: %s\n");
     }

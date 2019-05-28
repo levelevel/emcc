@@ -12,7 +12,40 @@
 
 int f42() {42; ;;;;;}
 int addsub1(){
-    int a; int b; int c; int sum;
+    int a, b, c, sum;
+    a = 1;
+    b = 2 ;
+    (c = + - -3);
+    sum = a + b * -c;
+
+    if (1) if (a==1) a = a + 1 ;
+
+    return sum == 7 && a == 2;
+}
+char addsub1c(){
+    char a, b, c, sum;
+    a = 1;
+    b = 2 ;
+    (c = + - -3);
+    sum = a + b * -c;
+
+    if (1) if (a==1) a = a + 1 ;
+
+    return sum == 7 && a == 2;
+}
+short addsub1s(){
+    short a, b, c, sum;
+    a = 1;
+    b = 2 ;
+    (c = + - -3);
+    sum = a + b * -c;
+
+    if (1) if (a==1) a = a + 1 ;
+
+    return sum == 7 && a == 2;
+}
+long addsub1l(){
+    long a, b, c, sum;
     a = 1;
     b = 2 ;
     (c = + - -3);
@@ -29,6 +62,8 @@ int addsub() {
         3  == (((2+4)*1)/2) &&
         2  == +5%-(-3) &&
         addsub1() == 1 &&
+        addsub1c() == 1 &&
+        addsub1l() == 1 &&
         (1,2,3)==3 &&
         (8|7) == 15 &&
         (8^9) == 1 &&
@@ -353,27 +388,70 @@ int align() {
 }
 
 int size_of1() {
-    int a; int *p; 
+    int n; int *p; int a[2*4];
     return
-        sizeof(a)==4 && sizeof(p)==8 && sizeof(1)==4 && sizeof(&p)==8 && 
-        sizeof(char)==1 && sizeof(int)==4 && sizeof(int*)==8 &&
-        sizeof(char[5])==5 && sizeof(int[5])==4*5 && sizeof(int*[3])==8*3 &&
-        sizeof(1&&1==1>1)==4 && sizeof(a=1)==4;
+        sizeof(n)==4 && sizeof(&n)==8 && sizeof(p)==8 &&
+        sizeof(a)==4*8 && sizeof(a[0])==4 &&
+        sizeof(int)==4 && sizeof(int*)==8 &&
+        sizeof(int[5])==4*5 && sizeof(int*[3])==8*3 &&
+        sizeof(1)==4 && sizeof(1==1)==4 && sizeof(n=1)==4;
+}
+int size_of1c() {
+    char n, *p, a[2*4];
+    return
+        sizeof(n)==1 && sizeof(&n)==8 && sizeof(p)==8 &&
+        sizeof(a)==1*8 && sizeof(a[0])==1 &&
+        sizeof(char)==1 && sizeof(char*)==8 &&
+        sizeof(char[5])==1*5 && sizeof(char*[3])==8*3 &&
+        sizeof(1)==4 && sizeof(1==1)==4 && sizeof(n=1)==1;
+}
+int size_of1s() {
+    short n, *p, a[2*4];
+    return
+        sizeof(n)==2 && sizeof(&n)==8 && sizeof(p)==8 &&
+        sizeof(a)==2*8 && sizeof(a[0])==2 &&
+        sizeof(short)==2 && sizeof(short*)==8 &&
+        sizeof(short[5])==2*5 && sizeof(short*[3])==8*3 &&
+        sizeof(1)==4 && sizeof(1==1)==4 && sizeof(n=1)==2;
+}
+int size_of1l() {
+    long n, *p, a[2*4];
+    return 
+        sizeof(n)==8 && sizeof(&n)==8 && sizeof(p)==8 &&
+        sizeof(a)==8*8 && sizeof(a[0])==8 &&
+        sizeof(long)==8 && sizeof(long*)==8 &&
+        sizeof(long[5])==8*5 && sizeof(long*[3])==8*3 &&
+        sizeof(1)==4 && sizeof(1==1)==4 && sizeof(n=1)==8;
+}
+int size_of1ll() {
+    long long n, *p, a[2*4];
+    return 
+        sizeof(n)==8 && sizeof(&n)==8 && sizeof(p)==8 &&
+        sizeof(a)==8*8 && sizeof(a[0])==8 &&
+        sizeof(long long)==8 && sizeof(long*)==8 &&
+        sizeof(long[5])==8*5 && sizeof(long long*[3])==8*3 &&
+        sizeof(1)==4 && sizeof(1==1)==4 && sizeof(n=1)==8;
 }
 int size_of2() {
-    int a[2*5];
     return
-        sizeof(a)==40 && sizeof(int*[2*2])==32;
-}
-int size_of3() {
-    return
-        _Alignof(char)==1 && _Alignof(int)==4 && _Alignof(int*)==8 &&
-        _Alignof(char[5])==1 && _Alignof(int[5])==4 && _Alignof(int*[3])==8;
+        _Alignof(char)==1     && _Alignof(char*)==8 &&
+        _Alignof(char[5])==1  && _Alignof(char*[3])==8 &&
+        _Alignof(short)==2    && _Alignof(short*)==8 &&
+        _Alignof(short[5])==2 && _Alignof(short*[3])==8 &&
+        _Alignof(int)==4      && _Alignof(int*)==8 &&
+        _Alignof(int[5])==4   && _Alignof(int*[3])==8 &&
+        _Alignof(long)==8     && _Alignof(long*)==8 &&
+        _Alignof(long[5])==8  && _Alignof(long*[3])==8;
+        _Alignof(long long)==8     && _Alignof(long long*)==8 &&
+        _Alignof(long long[5])==8  && _Alignof(long long*[3])==8;
 }
 int size_of() {
     TEST(size_of1);
+    TEST(size_of1c);
+    TEST(size_of1s);
+    TEST(size_of1l);
+    TEST(size_of1ll);
     TEST(size_of2);
-    TEST(size_of3);
     return 1;
 }
 
@@ -385,12 +463,61 @@ int scope() {
     return sc_x+sc_y==3;
 }
 
-int overflow() {
-    char c=255;
-    char i=0xffff;
+int overflow1() {
+    int a = 0xffffffff;
+    int b = 0 - 1;
     return
-        c == -1 && c<0 &&
-        i == -1 && i<0; 
+        a == -1 && a<0 &&
+        b == -1 && b<0; 
+}
+int overflow1c() {
+    char a = 0xff;
+    char b = 0 - 1;
+    return
+        a == -1 && a<0 &&
+        b == -1 && b<0; 
+}
+int overflow1s() {
+    short a = 0xffff;
+    short b = 0 - 1;
+    return
+        a == -1 && a<0 &&
+        b == -1 && b<0; 
+}
+int overflow1l() {
+    long a = 0xffffffffffffffff;
+    long b = 0 - 1;
+    return
+        a == -1 && a<0 &&
+        b == -1 && b<0; 
+}
+int overflow1ll() {
+    long long a = 0xffffffffffffffff;
+    long long b = 0 - 1;
+    return
+        a == -1 && a<0 &&
+        b == -1 && b<0; 
+}
+int overflow2() {
+    char          c = -1;
+    short int     s = -1;
+    int           i = -1;
+    long int      l = -1;
+    long long int ll = -1;
+    return
+        c == s && c == i && c == l && c == ll &&
+        s == i && s == l && s == ll &&
+        i == l && i == ll &&
+        l == ll; 
+}
+int overflow() {
+    TEST(overflow1);
+    TEST(overflow1c);
+    TEST(overflow1s);
+    TEST(overflow1l);
+    TEST(overflow1ll);
+    TEST(overflow2);
+    return 1;
 }
 
 int main() {

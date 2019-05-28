@@ -25,7 +25,9 @@ typedef enum {
     TK_STRING,      //文字列
     TK_IDENT,       //識別子
     TK_CHAR,        //char
+    TK_SHORT,       //short
     TK_INT,         //int
+    TK_LONG,        //long
     TK_INC,         // ++
     TK_DEC,         // --
     TK_EQ,          // ==
@@ -87,7 +89,7 @@ typedef enum {
 
 typedef struct _Type Type;
 struct _Type {
-    enum {CHAR, INT, PTR, ARRAY} type;
+    enum {CHAR, SHORT, INT, LONG, LONGLONG, PTR, ARRAY} type;
     Type *ptr_of;
     long array_size;  //typeがARRAYの場合の配列サイズ。未定義の場合は-1
 };
@@ -99,7 +101,7 @@ struct _Node {
     Node *rhs;
     Vector *lst;    //typeがND_BLOCKの場合のstmtのリスト
                     //typeがND_LISTの場合のasignのリスト
-    int val;        //typeがND_NUMの場合の値
+    long val;       //typeがND_NUMの場合の値
                     //typeがND_STRINGの場合のstring_vecのインデックス
     char *name;     //typeがND_IDENTの場合の変数名
     Type *tp;       //型情報：typeがND_NUM、ND_IDENT、ND_FUNC_DEFの場合の場合は
@@ -120,6 +122,9 @@ typedef struct {
     Map *ident_map; //ローカル変数：key=name, val=Vardef
     int var_stack_size; //ローカル変数のために必要となるスタックサイズ（offset）
 } Funcdef;
+
+//型がinteger型であるか
+#define type_is_integer(_tp) (CHAR<=(_tp)->type && (_tp)->type<=LONGLONG)
 
 //ノードがポインタ（PTR||ARRAY）であるか
 #define node_is_ptr(_node) ((_node)->tp->type==PTR || (_node)->tp->type==ARRAY)

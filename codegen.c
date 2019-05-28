@@ -66,7 +66,7 @@ static void gen_mul_reg(char *reg_name, int val) {
 }
 
 //型に応じたデータ型名を返す。例：intならDWORD
-static char* data_name_of_type(const Type *tp) {
+static char* ptr_name_of_type(const Type *tp) {
     if (tp->type==ARRAY) tp = tp->ptr_of;
     switch (size_of(tp)) {
     case 8: return "QWORD";
@@ -80,7 +80,7 @@ static char* data_name_of_type(const Type *tp) {
 
 //型に応じたデータ型名（初期値）を返す。
 static char* val_name_of_type(const Type *tp) {
-    if (tp->type==ARRAY) tp = tp->ptr_of;
+    while (tp->type==ARRAY) tp = tp->ptr_of;
     switch (size_of(tp)) {
     case 8: return "quad";
     case 4: return "long";
@@ -94,6 +94,7 @@ static char* val_name_of_type(const Type *tp) {
 //型に応じたレジスタ名を返す。例：intならrax->eax
 static char* reg_name_of_type(const char*reg_name, const Type *tp) {
     int idx;
+    while (tp->type==ARRAY) tp = tp->ptr_of;
     switch (size_of(tp)) {
     case 8: idx = 3; break; //32bit
     case 4: idx = 2; break;
@@ -113,10 +114,13 @@ static char* reg_name_of_type(const char*reg_name, const Type *tp) {
 //型に応じたwriteコマンド名を返す。
 static char* write_command_of_type(const Type *tp) {
     switch (tp->type) {
-    case CHAR:  return "movb";
-    case INT:   return "mov";
-    case PTR:   return "mov";
-    case ARRAY: return "mov";
+    case CHAR:     return "movb";
+    case SHORT:    return "mov";
+    case INT:      return "mov";
+    case LONG:     return "mov";
+    case LONGLONG: return "mov";
+    case PTR:      return "mov";
+    case ARRAY:    return "mov";
     default: _ERROR_;
     }
     return NULL;
@@ -125,17 +129,20 @@ static char* write_command_of_type(const Type *tp) {
 //型に応じたreadコマンド名を返す。
 static char* read_command_of_type(const Type *tp) {
     switch (tp->type) {
-    case CHAR:  return "movsx";
-    case INT:   return "mov";
-    case PTR:   return "mov";
-    case ARRAY: return "mov";
+    case CHAR:     return "movsx"; //srcで提供されない残りのビットをsrcの符号で埋める
+    case SHORT:    return "movsx";
+    case INT:      return "movsx";
+    case LONG:     return "mov";
+    case LONGLONG: return "mov";
+    case PTR:      return "mov";
+    case ARRAY:    return "mov";
     default: _ERROR_;
     }
     return NULL;
 }
 
 //[dst]レジスタが指すアドレスにsrcレジスタの値をwriteする。
-//srcレジスタの型に応じてsrcレジスタのサイズを調整する。例：intならrax->eax
+//型(tp)に応じてsrcレジスタのサイズを調整する。例：intならrax->eax
 static void gen_write_reg(const char*dst, const char*src, const Type *tp, const char* comment) {
     printf("  %s [%s], %s", write_command_of_type(tp), dst, reg_name_of_type(src, tp));
     if (comment) printf("\t# %s\n", comment);
@@ -143,10 +150,9 @@ static void gen_write_reg(const char*dst, const char*src, const Type *tp, const 
 }
 
 //dstレジスタにsrcレジスタが指すアドレスからreadする。
-//dstレジスタの型に応じてdstレジスタのサイズを調整する。例：intならrax->eax
+//型(tp)に応じてsrcの修飾子を調整する。例：intならrax->eax
 static void gen_read_reg(const char*dst, const char*src, const Type *tp, const char* comment) {
-    printf("  %s %s, %s PTR [%s]", read_command_of_type(tp), 
-        (tp->type==CHAR)?src:reg_name_of_type(src, tp), data_name_of_type(tp), src);
+    printf("  %s %s, %s PTR [%s]", read_command_of_type(tp), dst, ptr_name_of_type(tp), src);
     if (comment) printf("\t# %s\n", comment);
     else         printf("\n");
 }
@@ -184,7 +190,7 @@ static void gen_array_init(Node *node) {
         if (array_size > data_len) array_size = data_len;
         // [rdi++] = [rsi++] を rcx回繰り返す
         printf("  pop rdi\n");
-        printf("  lea rsi, BYTE PTR .LC%03d\n", node->rhs->val);
+        printf("  lea rsi, BYTE PTR .LC%03ld\n", node->rhs->val);
         printf("  mov rcx, %d\n", array_size);
         printf("  rep movsb\n");
         return;
@@ -235,7 +241,7 @@ static void gen_array_init(Node *node) {
             printf("  pop rdi\n");
             printf("  %s %s PTR [rdi+%d], %s\n", 
                 write_command_of_type(node->lhs->tp->ptr_of),
-                data_name_of_type(node->lhs->tp->ptr_of), i*type_size,
+                ptr_name_of_type(node->lhs->tp->ptr_of), i*type_size,
                 reg_name_of_type("rax", node->lhs->tp->ptr_of));
             printf("  push rdi\n");
         }
@@ -305,7 +311,7 @@ static void gen_lval(Node*node) {
         Vardef *vardef;
         map_get(global_vardef_map, node->name, (void**)&vardef);
         comment("LVALUE:%s\n", node->name);
-        printf("  lea rax, %s PTR %s\n", data_name_of_type(vardef->node->tp) ,vardef->name);
+        printf("  lea rax, %s PTR %s\n", ptr_name_of_type(vardef->node->tp) ,vardef->name);
         printf("  push rax\n");
     } else if (node->type == ND_INDIRECT) {
         comment("LVALUE:*var\n");
@@ -323,10 +329,10 @@ static int gen(Node*node) {
     int ret;
     assert(node!=NULL);
     if (node->type == ND_NUM) {             //数値
-        printf("  push %d\t# NUM\n", node->val);
+        printf("  push %ld\t# NUM\n", node->val);
     } else if (node->type == ND_STRING) {   //文字列リテラル
         char buf[20];
-        sprintf(buf, ".LC%03d", node->val);
+        sprintf(buf, ".LC%03ld", node->val);
         printf("  lea rax, BYTE PTR %s\n", buf);
         printf("  push rax\n");             //文字列リテラルのアドレスを返す
     } else if  (node->type == ND_EMPTY) {   //空文
@@ -494,50 +500,50 @@ static int gen(Node*node) {
         comment("'++A'\n");
         gen_lval(node->rhs);
         printf("  pop rdi\n");  //rhsのアドレス
-        printf("  mov rax, [rdi]\n");
+        gen_read_reg("rax", "rdi", node->rhs->tp, NULL);
         if (node_is_ptr(node)) {
             printf("  add rax, %ld\n", size_of(node->tp->ptr_of));
         } else {
             printf("  inc rax\n");  //戻り値を設定する前にINC
         }
-        printf("  mov [rdi], rax\n");
+        gen_write_reg("rdi", "rax", node->rhs->tp, NULL);
         printf("  push rax\n"); //戻り値
     } else if (node->type == ND_DEC_PRE) {  //--a
         comment("'--A'\n");
         gen_lval(node->rhs);
         printf("  pop rdi\n");  //rhsのアドレス
-        printf("  mov rax, [rdi]\n");
+        gen_read_reg("rax", "rdi", node->rhs->tp, NULL);
         if (node_is_ptr(node)) {
             printf("  sub rax, %ld\n", size_of(node->tp->ptr_of));
         } else {
             printf("  dec rax\n");  //戻り値を設定する前にDEC
         }
-        printf("  mov [rdi], rax\n");
+        gen_write_reg("rdi", "rax", node->rhs->tp, NULL);
         printf("  push rax\n"); //戻り値
     } else if (node->type == ND_INC) {      //a++
         comment("'A++'\n");
         gen_lval(node->lhs);
         printf("  pop rdi\n");  //lhsのアドレス
-        printf("  mov rax, [rdi]\n");
+        gen_read_reg("rax", "rdi", node->lhs->tp, NULL);
         printf("  push rax\n"); //INCする前に戻り値を設定
         if (node_is_ptr(node)) {
             printf("  add rax, %ld\n", size_of(node->tp->ptr_of));
         } else {
             printf("  inc rax\n");
         }
-        printf("  mov [rdi], rax\n");
+        gen_write_reg("rdi", "rax", node->lhs->tp, NULL);
     } else if (node->type == ND_DEC) {      //a--
         comment("'A--'\n");
         gen_lval(node->lhs);
         printf("  pop rdi\n");  //lhsのアドレス
-        printf("  mov rax, [rdi]\n");
+        gen_read_reg("rax", "rdi", node->lhs->tp, NULL);
         printf("  push rax\n"); //DECする前に戻り値を設定
         if (node_is_ptr(node)) {
             printf("  sub rax, %ld\n", size_of(node->tp->ptr_of));
         } else {
             printf("  dec rax\n");
         }
-        printf("  mov [rdi], rax\n");
+        gen_write_reg("rdi", "rax", node->lhs->tp, NULL);
     } else if (node->type == '!') {         //否定
         comment("'!'\n");
         gen(node->rhs);
@@ -696,8 +702,15 @@ static void gen_global_var(Node *node) {
         case CHAR:
             printf("  .byte %ld\n", get_single_val(rhs));
             break;
+        case SHORT:
+            printf("  .value %ld\n", get_single_val(rhs));
+            break;
         case INT:
             printf("  .long %ld\n", get_single_val(rhs));
+            break;
+        case LONG:
+        case LONGLONG:
+            printf("  .quad %ld\n", get_single_val(rhs));
             break;
         case PTR:
             if (rhs->type==ND_ADDRESS) {
