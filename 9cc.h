@@ -30,6 +30,8 @@ typedef enum {
     TK_INT,         //int
     TK_LONG,        //long
     TK_TYPEOF,      //typeof（非標準）
+    TK_SIGNED,      //signed
+    TK_UNSIGNED,    //unsigned
     TK_INC,         // ++
     TK_DEC,         // --
     TK_EQ,          // ==
@@ -101,6 +103,7 @@ typedef enum {
 typedef struct _Type Type;
 struct _Type {
     Typ type;
+    char is_unsigned; //unsigned型
     Type *ptr_of;
     long array_size;  //typeがARRAYの場合の配列サイズ。未定義の場合は-1
 };

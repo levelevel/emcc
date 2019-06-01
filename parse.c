@@ -4,11 +4,11 @@
 #define input_str() (tokens[token_pos]->input)
 //現在のトークンの型が引数と一致しているか
 #define token_type() (tokens[token_pos]->type)
-#define token_is(_tk) (token_type()==(_tk))
-#define token_is_type() (TK_CHAR<=token_type() && token_type()<=TK_TYPEOF)
+#define token_is(_tp) (token_type()==(_tp))
+#define token_is_type() (TK_CHAR<=token_type() && token_type()<=TK_UNSIGNED)
 #define next_token_type() (tokens[token_pos+1]->type)
-#define next_token_is(_tk) (next_token_type()==(_tk))
-#define next_token_is_type() (TK_CHAR<=next_token_type() && next_token_type()<=TK_TYPEOF)
+#define next_token_is(_tp) (next_token_type()==(_tp))
+#define next_token_is_type() (TK_CHAR<=next_token_type() && next_token_type()<=TK_UNSIGNED)
 
 //トークンの種類を定義
 typedef struct {
@@ -56,6 +56,8 @@ TokenDef TokenLst2[] = {
     {"short",    5, TK_SHORT},
     {"int",      3, TK_INT},
     {"long",     4, TK_LONG},
+    {"signed",   6, TK_SIGNED},
+    {"unsigned", 8, TK_UNSIGNED},
     {"return",   6, TK_RETURN},
     {"if",       2, TK_IF},
     {"else",     4, TK_ELSE},
@@ -288,9 +290,10 @@ static Type* new_type_array(Type*ptr, size_t size) {
     return tp;
 }
 
-static Type* new_type(int type) {
+static Type* new_type(int type, int is_unsigned) {
     Type *tp = calloc(1, sizeof(Type));
     tp->type = type;
+    tp->is_unsigned = is_unsigned;
     return tp;
 }
 
@@ -308,8 +311,9 @@ static Node *new_node(int type, Node *lhs, Node *rhs, Type *tp, char *input) {
 //抽象構文木の生成（数値）
 static Node *new_node_num(long val, char *input) {
     NDtype type = (val>UINT_MAX || val<INT_MIN) ? LONG : INT;
-    Node *node = new_node(ND_NUM, NULL, NULL, new_type(type), input);
+    Node *node = new_node(ND_NUM, NULL, NULL, new_type(type, 0), input);
     node->val = val;
+//    fprintf(stderr, "val=%ld\n", val);
     return node;
 }
 
@@ -350,7 +354,7 @@ static Node *new_node_var_def(char *name, Type*tp, char *input) {
 
 //抽象構文木の生成（文字列リテラル）
 static Node *new_node_string(char *string, char *input) {
-    Type *tp = new_type_array(new_type(CHAR), strlen(string)+1);
+    Type *tp = new_type_array(new_type(CHAR, 0), strlen(string)+1);
     Node *node = new_node(ND_STRING, NULL, NULL, tp, input);
     node->val = string_vec->len;    //インデックス
     vec_push(string_vec, string);
@@ -389,7 +393,7 @@ static Node *new_node_func_call(char *name, char *input) {
         funcdef = new_funcdef();
         funcdef->name = name;
         funcdef->node = NULL;
-        funcdef->tp = new_type(INT);  //暫定値
+        funcdef->tp = new_type(INT, 0);  //暫定値
         map_put(func_map, name, funcdef);
     }
 
@@ -467,7 +471,8 @@ static Node *new_node_list(Node *item, char *input) {
     array_def   = "[" assign? "]"
     type_ptr    = type_spec pointer*
     pointer     = ( "*" )*
-    type_spec =  "char" | "short" | "int" | "long" "long"? | "typeof" "(" ident ")"
+    type_spec   =  "signed" | "unsigned" | "typeof" "(" ident ")" |
+                   "char" | "short" | "int" | "long" ) type_spec
     func_arg    = type_ptr ident ( "," func_arg )
     expr        = assign ( "," assign )* 
     assign      = logical_or ( "=" assign )*
@@ -796,30 +801,64 @@ static Type *pointer(Type *tp) {
 
 static Type *type_spec(void) {
     Type *tp;
-    if (consume(TK_CHAR)) {
-        tp = new_type(CHAR);
-    } else if (consume(TK_SHORT)) {
-        tp = new_type(SHORT);
-        consume(TK_INT);
-    } else if (consume(TK_INT)) {
-        tp = new_type(INT);
-    } else if (consume(TK_LONG)) {
-        if (consume(TK_LONG)) {
-            tp = new_type(LONGLONG);
-        } else {
-            tp = new_type(LONG);
-        }
-        consume(TK_INT);
-    } else if (consume(TK_TYPEOF)) {
+
+    if (consume(TK_TYPEOF)) {
         if (!consume('(')) error_at(input_str(), "typeofの後に開きカッコがありません");
         char *name;
         if (!consume_ident(&name)) error_at(input_str(), "識別子がありません");
         Node *node = new_node_var(name, NULL);
         tp = node->tp;
         if (!consume(')')) error_at(input_str(), "typeofの後に閉じカッコがありません");
-    } else {
-        error_at(input_str(), "型名がありません: %s\n");
+    	return tp;
     }
+
+    char *input;
+    Typ type = 0;
+    int is_unsigned = 0;
+    int signed_cnt = 0;
+    int unsigned_cnt = 0;
+    int char_cnt = 0;
+    int short_cnt = 0;
+    int int_cnt = 0;
+    int long_cnt = 0;
+
+    while (1) {
+        input = input_str();
+        if (consume(TK_SIGNED)) {
+            if (unsigned_cnt) error_at(input, "型指定が不正です\n");
+            signed_cnt++;
+        } else if (consume(TK_UNSIGNED)) {
+            if (signed_cnt) error_at(input, "型指定が不正です\n");
+            unsigned_cnt++;
+            is_unsigned = 1;
+        } else if (consume(TK_CHAR)) {
+            if (type) error_at(input, "型指定が不正です\n");
+            type = CHAR;
+            char_cnt++;
+        } else if (consume(TK_SHORT)) {
+            if (type && type!=INT) error_at(input, "型指定が不正です\n");
+            type = SHORT;
+            short_cnt++;
+        } else if (consume(TK_INT)) {
+            if (type && type!=SHORT && type!=LONG && type!=LONGLONG) error_at(input, "型指定が不正です\n");
+            type = INT;
+            int_cnt++;
+        } else if (consume(TK_LONG)) {
+            if (type==LONG) type = LONGLONG;
+            else if (type && type!=INT) error_at(input, "型指定が不正です\n");
+            else type = LONG;
+            long_cnt++;
+        } else {
+            if (!type && (signed_cnt || unsigned_cnt)) type = INT;
+            if (!type) error_at(input_str(), "型名がありません\n");
+            break;
+        }
+        if (signed_cnt>1 || unsigned_cnt>1 || char_cnt>1 || 
+            short_cnt>1 || int_cnt>1 || long_cnt>2 )
+            error_at(input, "型指定が不正です\n");
+    }
+
+    tp = new_type(type, is_unsigned);
     return tp;
 }
 
@@ -895,7 +934,7 @@ static Node *logical_or(void) {
     for (;;) {
         char *input = input_str();
         if (consume(TK_LOR)) {
-            node = new_node(ND_LOR, node, logical_and(), new_type(INT), input);
+            node = new_node(ND_LOR, node, logical_and(), new_type(INT, 0), input);
         } else {
             return node;
         }
@@ -909,7 +948,7 @@ static Node *logical_and(void) {
     for (;;) {
         char *input = input_str();
         if (consume(TK_LAND)) {
-            node = new_node(ND_LAND, node, bitwise_or(), new_type(INT), input);
+            node = new_node(ND_LAND, node, bitwise_or(), new_type(INT, 0), input);
         } else {
             return node;
         }
@@ -923,7 +962,7 @@ static Node *bitwise_or(void) {
     for (;;) {
         char *input = input_str();
         if (consume('|')) {
-            node = new_node('|', node, ex_or(), new_type(INT), input);
+            node = new_node('|', node, ex_or(), new_type(INT, 0), input);
         } else {
             return node;
         }
@@ -937,7 +976,7 @@ static Node *ex_or(void) {
     for (;;) {
         char *input = input_str();
         if (consume('^')) {
-            node = new_node('^', node, bitwise_and(), new_type(INT), input);
+            node = new_node('^', node, bitwise_and(), new_type(INT, 0), input);
         } else {
             return node;
         }
@@ -951,7 +990,7 @@ static Node *bitwise_and(void) {
     for (;;) {
         char *input = input_str();
         if (consume('&')) {
-            node = new_node('&', node, equality(), new_type(INT), input);
+            node = new_node('&', node, equality(), new_type(INT, 0), input);
         } else {
             return node;
         }
@@ -965,9 +1004,9 @@ static Node *equality(void) {
     for (;;) {
         char *input = input_str();
         if (consume(TK_EQ)) {
-            node = new_node(ND_EQ, node, relational(), new_type(INT), input);
+            node = new_node(ND_EQ, node, relational(), new_type(INT, 0), input);
         } else if (consume(TK_NE)) {
-            node = new_node(ND_NE, node, relational(), new_type(INT), input);
+            node = new_node(ND_NE, node, relational(), new_type(INT, 0), input);
         } else {
             return node;
         }
@@ -981,13 +1020,13 @@ static Node *relational(void) {
     for (;;) {
         char *input = input_str();
         if (consume('<')) {
-            node = new_node('<',   node, add(), new_type(INT), input);
+            node = new_node('<',   node, add(), new_type(INT, 0), input);
         } else if (consume(TK_LE)) {
-            node = new_node(ND_LE, node, add(), new_type(INT), input);
+            node = new_node(ND_LE, node, add(), new_type(INT, 0), input);
         } else if (consume('>')) {
-            node = new_node('<',   add(), node, new_type(INT), input);
+            node = new_node('<',   add(), node, new_type(INT, 0), input);
         } else if (consume(TK_GE)) {
-            node = new_node(ND_LE, add(), node, new_type(INT), input);
+            node = new_node(ND_LE, add(), node, new_type(INT, 0), input);
         } else {
             return node;
         }
@@ -1047,7 +1086,7 @@ static Node *unary(void) {
         node = unary();
         return new_node('-', new_node_num(0, input), node, node->tp, input);
     } else if (consume('!')) {
-        return new_node('!', NULL, unary(), new_type(INT), input);
+        return new_node('!', NULL, unary(), new_type(INT, 0), input);
     } else if (consume(TK_INC)) {
         node = post_unary();
         return new_node(ND_INC_PRE, NULL, node, node->tp, input);

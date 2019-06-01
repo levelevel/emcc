@@ -23,7 +23,7 @@ test_src() {
     echo "gcc TEST OK    : $src"
   else
     tail $EXE.gcc.log
-    echo "9cc TEST FAIL! : $src"
+    echo "gcc TEST FAIL! : $src"
     exit 1;
   fi
 

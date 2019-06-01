@@ -31,12 +31,42 @@ long long addsub1ll(){
     long long a=10, b=3, c=a+b*(-2), d=a/b, e=a%b;
     return c==4 && d==3 && e==1;
 }
+int addsub_mix1() {
+    char c = 0x7f; unsigned char uc = 0x7f; int ic = 0x7f;
+    short s = 0x7fff; unsigned short us = 0x7fff; int is = 0x7fff;
+    int i = 0x7fffffff; unsigned int ui = 0x7fffffff; long li = 0x7fffffff;
+    long l = 0x7fffffffffffffff; unsigned long ul = 0x7fffffffffffffff;
+    return
+        c+uc == uc*2 && ic+c == uc*2 &&
+        s+us == us*2 && is+s == us*2 &&
+        i+ui == ui*2 && li+i == ui*2 &&
+        l+ul == ul*2;
+}
+int addsub_mix2() {
+    char  c = -1; unsigned char  uc = 1;
+    short s = -1; unsigned short us = 1;
+    int   i = -1; unsigned int   ui = 1;
+    long  l = -1; unsigned long  ul = 1;
+    return
+        uc - c == 2 && uc == -c &&
+        us - s == 2 && us == -s &&
+        ui - i == 2 && ui == -i &&
+        ul - l == 2 && ul == -l &&
+        s == c && c == s && us == uc && us == -c &&
+        i == c && c == i && ui == uc && ui == -c &&
+        i == s && s == i && ui == us && ui == -s &&
+        l == c && c == l && ul == uc && ul == -c &&
+        l == s && s == l && ul == us && ul == -s &&
+        l == i && i == l && ul == ui && ul == -i;
+}
 int addsub() {
     TEST(addsub1);
     TEST(addsub1c);
     TEST(addsub1s);
     TEST(addsub1l);
     TEST(addsub1ll);
+    TEST(addsub_mix1);
+    TEST(addsub_mix2);
     return 
 #ifdef _9cc
         42 == f42();    //これはCの仕様とは異なる
@@ -415,12 +445,12 @@ int init() {
 
 int align1() {
     char c1; int i; char c2; int*p;
-    long ui = &i, up = &p;
+    unsigned long ui = &i, up = &p;
     return ui%4==0 && up%8==0;
 }
     char ag1_c1; int ag1_i; char ag1_c2; char*ag1_p;
 int align1g() {
-    long ui = &ag1_i, up = &ag1_p;
+    unsigned long ui = &ag1_i, up = &ag1_p;
     return ui%4==0 && up%8==0;
 }
 int align() {
@@ -435,6 +465,7 @@ int size_of1() {
         sizeof(n)==4 && sizeof(&n)==8 && sizeof(p)==8 &&
         sizeof(a)==4*8 && sizeof(a[0])==4 &&
         sizeof(int)==4 && sizeof(int*)==8 &&
+        sizeof(unsigned int)==4 && sizeof(signed int)==4 &&
         sizeof(int[5])==4*5 && sizeof(int*[3])==8*3 &&
         sizeof(1)==4 && sizeof(1==1)==4 && sizeof(n=1)==4;
 }
@@ -444,6 +475,7 @@ int size_of1c() {
         sizeof(n)==1 && sizeof(&n)==8 && sizeof(p)==8 &&
         sizeof(a)==1*8 && sizeof(a[0])==1 &&
         sizeof(char)==1 && sizeof(char*)==8 &&
+        sizeof(unsigned char)==1 && sizeof(signed char)==1 &&
         sizeof(char[5])==1*5 && sizeof(char*[3])==8*3 &&
         sizeof(1)==4 && sizeof(1==1)==4 && sizeof(n=1)==1;
 }
@@ -453,6 +485,7 @@ int size_of1s() {
         sizeof(n)==2 && sizeof(&n)==8 && sizeof(p)==8 &&
         sizeof(a)==2*8 && sizeof(a[0])==2 &&
         sizeof(short)==2 && sizeof(short*)==8 &&
+        sizeof(unsigned short)==2 && sizeof(signed short)==2 &&
         sizeof(short[5])==2*5 && sizeof(short*[3])==8*3 &&
         sizeof(1)==4 && sizeof(1==1)==4 && sizeof(n=1)==2;
 }
@@ -462,6 +495,7 @@ int size_of1l() {
         sizeof(n)==8 && sizeof(&n)==8 && sizeof(p)==8 &&
         sizeof(a)==8*8 && sizeof(a[0])==8 &&
         sizeof(long)==8 && sizeof(long*)==8 &&
+        sizeof(unsigned long)==8 && sizeof(signed long)==8 &&
         sizeof(long[5])==8*5 && sizeof(long*[3])==8*3 &&
         sizeof(1)==4 && sizeof(1==1)==4 && sizeof(n=1)==8;
 }
@@ -471,6 +505,7 @@ int size_of1ll() {
         sizeof(n)==8 && sizeof(&n)==8 && sizeof(p)==8 &&
         sizeof(a)==8*8 && sizeof(a[0])==8 &&
         sizeof(long long)==8 && sizeof(long long*)==8 &&
+        sizeof(unsigned long long)==8 && sizeof(signed long long)==8 &&
         sizeof(long long[5])==8*5 && sizeof(long long*[3])==8*3 &&
         sizeof(1)==4 && sizeof(1==1)==4 && sizeof(n=1)==8;
 }
@@ -524,37 +559,62 @@ int scope() {
 int overflow1() {
     int a = 0xffffffff;
     int b = 0 - 1;
+    unsigned int ua = 0xffffffff;
+    unsigned int ub = 0 - 1;
     return
         a == -1 && a<0 &&
-        b == -1 && b<0; 
+        b == -1 && b<0 &&
+        ua == -1 && ua > 0 && 
+        ub == -1 && ub > 0  &&
+        ua == ub && a == ub ; 
 }
 int overflow1c() {
     char a = 0xff;
     char b = 0 - 1;
+    unsigned char ua = 0xff;
+    unsigned char ub = 0 - 1;
     return
         a == -1 && a<0 &&
-        b == -1 && b<0; 
+        b == -1 && b<0 &&
+        ua != -1 && ua > 0 && 
+        ub != -1 && ub > 0  &&
+        ua == ub && a != ub ; 
 }
 int overflow1s() {
     short a = 0xffff;
     short b = 0 - 1;
+    unsigned short ua = 0xffff;
+    unsigned short ub = 0 - 1;
     return
         a == -1 && a<0 &&
-        b == -1 && b<0; 
+        b == -1 && b<0 &&
+        ua != -1 && ua > 0 && 
+        ub != -1 && ub > 0  &&
+        ua == ub && a != ub ; 
 }
 int overflow1l() {
     long a = 0xffffffffffffffff;
     long b = 0 - 1;
+    unsigned long ua = 0xffffffffffffffff;
+    unsigned long ub = 0 - 1;
     return
         a == -1 && a<0 &&
-        b == -1 && b<0; 
+        b == -1 && b<0 &&
+        ua == -1 && ua > 0 && 
+        ub == -1 && ub > 0  &&
+        ua == ub && a == ub ; 
 }
 int overflow1ll() {
     long long a = 0xffffffffffffffff;
     long long b = 0 - 1;
+    unsigned long long ua = 0xffffffffffffffff;
+    unsigned long long ub = 0 - 1;
     return
         a == -1 && a<0 &&
-        b == -1 && b<0; 
+        b == -1 && b<0 &&
+        ua == -1 && ua > 0 && 
+        ub == -1 && ub > 0  &&
+        ua == ub && a == ub ; 
 }
 int overflow2() {
     char          c = -1;
@@ -578,6 +638,32 @@ int overflow() {
     return 1;
 }
 
+int integer_def() {
+    short int si;
+    long int li;
+    long long int lli;
+    signed char Sc;
+    signed short int Ssi;
+    signed int Si;
+    signed long int Sli;
+    signed long long int Slli;
+    unsigned char uc;
+    unsigned short int usi;
+    unsigned int ui;
+    unsigned long int uli;
+    unsigned long long int ulli;
+    signed S;
+    unsigned u;
+
+    int short is;
+    int long il;
+    int long long ill;
+    long int long lil;
+    long signed int long lSil;
+    long int long unsigned lilu;
+    return 1;
+}
+
 int main() {
     TEST(addsub);
     TEST(eq_rel);
@@ -593,5 +679,6 @@ int main() {
     TEST(type_of);
     TEST(scope);
     TEST(overflow);
+    TEST(integer_def);
     return 0;
 }

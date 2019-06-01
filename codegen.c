@@ -134,7 +134,7 @@ static char* read_command_of_type(const Type *tp) {
     case CHAR:
     case SHORT:
     case INT:
-         return "movsx";
+         return tp->is_unsigned ? "movzx" : "movsx";
     case LONG:
     case LONGLONG:
         return "mov";
@@ -157,7 +157,11 @@ static void gen_write_reg(const char*dst, const char*src, const Type *tp, const 
 //dstレジスタにsrcレジスタが指すアドレスからreadする。
 //型(tp)に応じてsrcの修飾子を調整する。例：intならDWORD PTR
 static void gen_read_reg(const char*dst, const char*src, const Type *tp, const char* comment) {
-    printf("  %s %s, %s PTR [%s]", read_command_of_type(tp), dst, ptr_name_of_type(tp), src);
+    if (tp->type==INT && tp->is_unsigned) {
+        printf("  mov %s, %s PTR [%s]", reg_name_of_type(dst, tp), ptr_name_of_type(tp), src);
+    } else {
+        printf("  %s %s, %s PTR [%s]", read_command_of_type(tp), dst, ptr_name_of_type(tp), src);
+    }
     if (comment) printf("\t# %s\n", comment);
     else         printf("\n");
 }
@@ -563,15 +567,28 @@ static int gen(Node*node) {
         printf("  movzb rax, al\n");
         printf("  push rax\n");
     } else {                                //2項演算子
+        Node *lhs = node->lhs;
+        Node *rhs = node->rhs;
         //lhsとrhsを処理して結果をPUSHする
-        assert(node->lhs!=NULL);
-        assert(node->rhs!=NULL);
-        gen(node->lhs);
-        gen(node->rhs);
+        assert(lhs!=NULL);
+        assert(rhs!=NULL);
+        gen(lhs);
+        gen(rhs);
 
         //それらをPOPして、演算する
         printf("  pop rdi\n");  //rhs
         printf("  pop rax\n");  //lhs
+
+        int size1 = size_of(lhs->tp);
+        int size2 = size_of(rhs->tp);
+        char *reg1, *reg2;
+        if (size1>4 || size2>4) {
+            reg1 = "rax";
+            reg2 = "rdi"; 
+        } else {
+            reg1 = "eax";
+            reg2 = "edi"; 
+        }
 
         switch((int)node->type) {
         case ND_LOR: //"||"
@@ -621,42 +638,50 @@ static int gen(Node*node) {
         }
         case ND_EQ: //"=="
             comment("'=='\n");
-            printf("  cmp rax, rdi\n");
+            printf("  cmp %s, %s\n", reg1, reg2);
             printf("  sete al\n");
             printf("  movzb rax, al\n");
             break;
         case ND_NE: //"!="
             comment("'!='\n");
-            printf("  cmp rax, rdi\n");
+            printf("  cmp %s, %s\n", reg1, reg2);
             printf("  setne al\n");
             printf("  movzb rax, al\n");
             break;
         case '<':   //'>'もここで対応（構文木作成時に左右入れ替えてある）
             comment("'<' or '>'\n");
-            printf("  cmp rax, rdi\n");
-            printf("  setl al\n");
+            printf("  cmp %s, %s\n", reg1, reg2);
+            if (lhs->tp->is_unsigned || rhs->tp->is_unsigned) {
+                printf("  setb al\n");
+            } else {
+                printf("  setl al\n");
+            }
             printf("  movzb rax, al\n");
             break;
         case ND_LE: //"<="、">="もここで対応（構文木作成時に左右入れ替えてある）
             comment("'<=' or '>='\n");
-            printf("  cmp rax, rdi\n");
-            printf("  setle al\n");
+            printf("  cmp %s, %s\n", reg1, reg2);
+            if (lhs->tp->is_unsigned || rhs->tp->is_unsigned) {
+                printf("  setbe al\n");
+            } else {
+                printf("  setle al\n");
+            }
             printf("  movzb rax, al\n");
             break;
         case '+':   //rax(lhs)+rdi(rhs)
-            comment("'+' %s %s\n", get_type_str(node->lhs->tp), get_type_str(node->rhs->tp));
-            if (node_is_ptr(node->lhs)) {
-                gen_mul_reg("rdi", size_of(node->lhs->tp->ptr_of));
-            } else if (node_is_ptr(node->rhs)) {
-                gen_mul_reg("rax", size_of(node->rhs->tp->ptr_of));
+            comment("'+' %s %s\n", get_type_str(lhs->tp), get_type_str(rhs->tp));
+            if (node_is_ptr(lhs)) {
+                gen_mul_reg("rdi", size_of(lhs->tp->ptr_of));
+            } else if (node_is_ptr(rhs)) {
+                gen_mul_reg("rax", size_of(rhs->tp->ptr_of));
             }
             printf("  add rax, rdi\n");
             break;
         case '-':   //rax(lhs)-rdi(rhs)
-            comment("'-' %s %s\n", get_type_str(node->lhs->tp), get_type_str(node->rhs->tp));
-            assert(!node_is_ptr(node->rhs));
-            if (node_is_ptr(node->lhs)) {
-                gen_mul_reg("rdi", size_of(node->lhs->tp->ptr_of));
+            comment("'-' %s %s\n", get_type_str(lhs->tp), get_type_str(rhs->tp));
+            assert(!node_is_ptr(rhs));
+            if (node_is_ptr(lhs)) {
+                gen_mul_reg("rdi", size_of(lhs->tp->ptr_of));
             }
             printf("  sub rax, rdi\n");
             break;
