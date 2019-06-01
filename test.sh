@@ -17,6 +17,16 @@ test_src() {
   src=$1
   rm -f $EXE
 
+  gcc $src -o $EXE > $EXE.gcc.log 2>&1
+  ./$EXE          >> $EXE.gcc.log
+  if [ $? -eq 0 ]; then
+    echo "gcc TEST OK    : $src"
+  else
+    tail $EXE.gcc.log
+    echo "9cc TEST FAIL! : $src"
+    exit 1;
+  fi
+
   cpp $CFLAGS $src | grep -v "^#" > $EXE.c
   ./9cc $EXE.c 2>&1 > $EXE.s | tee -a $EXE.log | grep "9cc:" > $EXE.err
   if [ $? -eq 0 ]; then
@@ -26,11 +36,12 @@ test_src() {
 
   gcc $AFLAGS -o $EXE $EXE.s
   
-  ./$EXE
+  ./$EXE >> $EXE.log
   if [ $? -eq 0 ]; then
-    echo "TEST OK    : $src"
+    echo "9cc TEST OK    : $src"
   else
-    echo "TEST FAIL! : $src"
+    tail $EXE.log
+    echo "9cc TEST FAIL! : $src"
     exit 1;
   fi
 }

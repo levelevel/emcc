@@ -46,7 +46,7 @@ int map_get(const Map *map, char *key, void**val) {
 }
 
 // ダンプ関数 ----------------------------------------
-static char *TypeStr[] = {"char", "short", "int", "long", "long long", "*", "["};
+static char *TypeStr[] = {"Nul", "char", "short", "int", "long", "long long", "*", "["};
 
 //bufに対して型を表す文字列を生成する
 static void type_str(char *buf, const Type *tp) {

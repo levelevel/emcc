@@ -16,7 +16,6 @@ https://www.sigbus.info/compilerbook/
 - case文
 - goto（多重ループから抜けるために使っているけど、コードを書き直してもよい）
 - enum
-- long
 - void型のポインタ
 - 三項演算子
 - 複合代入（+=など）

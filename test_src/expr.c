@@ -12,58 +12,38 @@
 
 int f42() {42; ;;;;;}
 int addsub1(){
-    int a, b, c, sum;
-    a = 1;
-    b = 2 ;
-    (c = + - -3);
-    sum = a + b * -c;
-
-    if (1) if (a==1) a = a + 1 ;
-
-    return sum == 7 && a == 2;
+    int a=10, b=3, c=a+b*(-2), d=a/b, e=a%b;
+    return c==4 && d==3 && e==1;
 }
 char addsub1c(){
-    char a, b, c, sum;
-    a = 1;
-    b = 2 ;
-    (c = + - -3);
-    sum = a + b * -c;
-
-    if (1) if (a==1) a = a + 1 ;
-
-    return sum == 7 && a == 2;
+    char a=10, b=3, c=a+b*(-2), d=a/b, e=a%b;
+    return c==4 && d==3 && e==1;
 }
 short addsub1s(){
-    short a, b, c, sum;
-    a = 1;
-    b = 2 ;
-    (c = + - -3);
-    sum = a + b * -c;
-
-    if (1) if (a==1) a = a + 1 ;
-
-    return sum == 7 && a == 2;
+    short a=10, b=3, c=a+b*(-2), d=a/b, e=a%b;
+    return c==4 && d==3 && e==1;
 }
 long addsub1l(){
-    long a, b, c, sum;
-    a = 1;
-    b = 2 ;
-    (c = + - -3);
-    sum = a + b * -c;
-
-    if (1) if (a==1) a = a + 1 ;
-
-    return sum == 7 && a == 2;
+    long a=10, b=3, c=a+b*(-2), d=a/b, e=a%b;
+    return c==4 && d==3 && e==1;
+}
+long long addsub1ll(){
+    long long a=10, b=3, c=a+b*(-2), d=a/b, e=a%b;
+    return c==4 && d==3 && e==1;
 }
 int addsub() {
+    TEST(addsub1);
+    TEST(addsub1c);
+    TEST(addsub1s);
+    TEST(addsub1l);
+    TEST(addsub1ll);
     return 
+#ifdef _9cc
         42 == f42();    //これはCの仕様とは異なる
+#endif
         14 == 10 + 2 * 3 - 4/2 &&
         3  == (((2+4)*1)/2) &&
         2  == +5%-(-3) &&
-        addsub1() == 1 &&
-        addsub1c() == 1 &&
-        addsub1l() == 1 &&
         (1,2,3)==3 &&
         (8|7) == 15 &&
         (8^9) == 1 &&
@@ -148,6 +128,18 @@ int inc_char() {
     c = ++b;
     return a+b+c==6;
 }
+int inc_short() {
+    short a=1, b, c;
+    b = a++;
+    c = ++b;
+    return a+b+c==6;
+}
+int inc_long() {
+    long a=1, b, c;
+    b = a++;
+    c = ++b;
+    return a+b+c==6;
+}
 int dec() {
     int a=2, b, c;
     b = a--;
@@ -160,11 +152,27 @@ int dec_char() {
     c = --b;
     return a+b+c==3;
 }
+int dec_short() {
+    char a=2, b, c;
+    b = a--;
+    c = --b;
+    return a+b+c==3;
+}
+int dec_long() {
+    long a=2, b, c;
+    b = a--;
+    c = --b;
+    return a+b+c==3;
+}
 int incdec() {
     TEST(inc);
     TEST(inc_char);
+    TEST(inc_short);
+    TEST(inc_long);
     TEST(dec);
     TEST(dec_char);
+    TEST(dec_short);
+    TEST(dec_long);
     return 1;
 }
 
@@ -266,6 +274,24 @@ int array1c() {
     return
         a==&a && a[0]==2 && *(a+1)==4 && a[2]==8 && (1,2)[1+a]==16;
 }
+int array1s() {
+    short a[4];
+    *a     = 2;
+    a[1]   = 4;
+    *(a+2) = 8;
+    a[3]   = 16;
+    return
+        a==&a && a[0]==2 && *(a+1)==4 && a[2]==8 && (1,2)[1+a]==16;
+}
+int array1l() {
+    long a[4];
+    *a     = 2;
+    a[1]   = 4;
+    *(a+2) = 8;
+    a[3]   = 16;
+    return
+        a==&a && a[0]==2 && *(a+1)==4 && a[2]==8 && (1,2)[1+a]==16;
+}
 int af2(int *a){return a[0]+a[1]+a[2];}
 int array2() {
     int a[4]={1,2,3,4};
@@ -276,14 +302,28 @@ int array2c() {
     char a[4]={1,2,3,4};
     return af2c(a)==6;
 }
+short af2s(short *a){return a[0]+a[1]+a[2];}
+int array2s() {
+    short a[4]={1,2,3,4};
+    return af2s(a)==6;
+}
+long af2l(long *a){return a[0]+a[1]+a[2];}
+int array2l() {
+    long a[4]={1,2,3,4};
+    return af2l(a)==6;
+}
 int array3(int argc, char*argv[]) { //コンパイルのみ
     return 1;
 }
 int array() {
     TEST(array1);
     TEST(array1c);
+    TEST(array1s);
+    TEST(array1l);
     TEST(array2);
     TEST(array2c);
+    TEST(array2s);
+    TEST(array2l);
     return 1;
 }
 
@@ -374,12 +414,14 @@ int init() {
 }
 
 int align1() {
-    char c1; int i; char c2; char*p;
-    return &i%4==0 && &p%8==0;
+    char c1; int i; char c2; int*p;
+    long ui = &i, up = &p;
+    return ui%4==0 && up%8==0;
 }
     char ag1_c1; int ag1_i; char ag1_c2; char*ag1_p;
 int align1g() {
-    return &ag1_i%4==0 && &ag1_p%8==0;
+    long ui = &ag1_i, up = &ag1_p;
+    return ui%4==0 && up%8==0;
 }
 int align() {
     TEST(align1);
@@ -428,8 +470,8 @@ int size_of1ll() {
     return 
         sizeof(n)==8 && sizeof(&n)==8 && sizeof(p)==8 &&
         sizeof(a)==8*8 && sizeof(a[0])==8 &&
-        sizeof(long long)==8 && sizeof(long*)==8 &&
-        sizeof(long[5])==8*5 && sizeof(long long*[3])==8*3 &&
+        sizeof(long long)==8 && sizeof(long long*)==8 &&
+        sizeof(long long[5])==8*5 && sizeof(long long*[3])==8*3 &&
         sizeof(1)==4 && sizeof(1==1)==4 && sizeof(n=1)==8;
 }
 int size_of2() {

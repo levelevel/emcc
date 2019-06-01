@@ -127,15 +127,20 @@ static char* write_command_of_type(const Type *tp) {
 }
 
 //型に応じたreadコマンド名を返す。
+ //movsx: srcで提供されない残りのビットをsrcの符号で埋める
+ //movzx: srcで提供されない残りのビットを0で埋める
 static char* read_command_of_type(const Type *tp) {
     switch (tp->type) {
-    case CHAR:     return "movsx"; //srcで提供されない残りのビットをsrcの符号で埋める
-    case SHORT:    return "movsx";
-    case INT:      return "movsx";
-    case LONG:     return "mov";
-    case LONGLONG: return "mov";
-    case PTR:      return "mov";
-    case ARRAY:    return "mov";
+    case CHAR:
+    case SHORT:
+    case INT:
+         return "movsx";
+    case LONG:
+    case LONGLONG:
+        return "mov";
+    case PTR:
+    case ARRAY:
+        return "mov";
     default: _ERROR_;
     }
     return NULL;
@@ -150,7 +155,7 @@ static void gen_write_reg(const char*dst, const char*src, const Type *tp, const 
 }
 
 //dstレジスタにsrcレジスタが指すアドレスからreadする。
-//型(tp)に応じてsrcの修飾子を調整する。例：intならrax->eax
+//型(tp)に応じてsrcの修飾子を調整する。例：intならDWORD PTR
 static void gen_read_reg(const char*dst, const char*src, const Type *tp, const char* comment) {
     printf("  %s %s, %s PTR [%s]", read_command_of_type(tp), dst, ptr_name_of_type(tp), src);
     if (comment) printf("\t# %s\n", comment);
@@ -329,7 +334,12 @@ static int gen(Node*node) {
     int ret;
     assert(node!=NULL);
     if (node->type == ND_NUM) {             //数値
-        printf("  push %ld\t# NUM\n", node->val);
+        if (node->tp->type==LONG) {
+            printf("  mov rax, %ld\t# NUM(%s 0x%lx)\n", node->val, get_type_str(node->tp), node->val);
+            printf("  push rax\n");
+        } else {
+            printf("  push %d\t# NUM(%s 0x%x)\n", (int)node->val, get_type_str(node->tp), (int)node->val);
+        }
     } else if (node->type == ND_STRING) {   //文字列リテラル
         char buf[20];
         sprintf(buf, ".LC%03ld", node->val);

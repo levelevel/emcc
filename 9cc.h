@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+#include <limits.h>
 
 //可変長ベクタ ---------------------------------------
 typedef struct {
@@ -50,7 +51,7 @@ typedef enum {
 
 typedef struct {
     TKtype type;    //トークンの型
-    int val;        //typeがTK_TOKENの場合、値
+    long val;       //typeがTK_TOKENの場合、値
     char *str;      //typeがTK_STRING/TK_IDENTの場合、その文字列
     char *input;    //トークン文字列（エラーメッセージ用）
 } Token;
@@ -87,9 +88,18 @@ typedef enum {
     ND_EMPTY,       //空のノード
 } NDtype;
 
+typedef enum {
+    CHAR = 1,
+    SHORT,
+    INT,
+    LONG,
+    LONGLONG,
+    PTR,
+    ARRAY
+} Typ;
 typedef struct _Type Type;
 struct _Type {
-    enum {CHAR, SHORT, INT, LONG, LONGLONG, PTR, ARRAY} type;
+    Typ type;
     Type *ptr_of;
     long array_size;  //typeがARRAYの場合の配列サイズ。未定義の場合は-1
 };
@@ -97,12 +107,12 @@ struct _Type {
 typedef struct _Node Node;
 struct _Node {
     NDtype type;    //nodeの型：演算子、ND_INDENTなど
+    long val;       //typeがND_NUMの場合の値
+                    //typeがND_STRINGの場合のstring_vecのインデックス
     Node *lhs;
     Node *rhs;
     Vector *lst;    //typeがND_BLOCKの場合のstmtのリスト
                     //typeがND_LISTの場合のasignのリスト
-    long val;       //typeがND_NUMの場合の値
-                    //typeがND_STRINGの場合のstring_vecのインデックス
     char *name;     //typeがND_IDENTの場合の変数名
     Type *tp;       //型情報：typeがND_NUM、ND_IDENT、ND_FUNC_DEFの場合の場合は
                     //トークナイズ時に設定。それ以外は評価時に設定。

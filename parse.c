@@ -159,7 +159,13 @@ void tokenize(char *p) {
             p += strlen(token->str);
         } else if (isdigit(*p)) {   //数値
             token = new_token(TK_NUM, p);
-            token->val = strtol(p, &p, 0);  //10進、16進、8進
+            if (strncmp(p, "0x", 2)==0 || strncmp(p, "0X", 2)==0) {
+                token->val = strtoul(p, &p, 0); //16進
+            //  fprintf(stderr, "strtoul=%lu,%lx\n", token->val, token->val);
+            } else {
+                token->val = strtol(p, &p, 0);  //10進、8進
+            //  fprintf(stderr, "strtol=%ld,%lx\n", token->val, token->val);
+            }
         } else if (*p == '"') {     //文字列
             token = new_token(TK_STRING, p);
             token->str = token_string(++p);
@@ -186,7 +192,7 @@ void print_tokens(void) {
         if (tp->type < TK_NUM) {
             printf("%d: type='%c', input='%s'\n", i, tp->type, tp->input);
         } else {
-            printf("%d: type='%d', val=%d, input='%s'\n", i, tp->type, tp->val, tp->input);
+            printf("%d: type='%d', val=%ld, input='%s'\n", i, tp->type, tp->val, tp->input);
         }
     }
 }
@@ -299,8 +305,9 @@ static Node *new_node(int type, Node *lhs, Node *rhs, Type *tp, char *input) {
 }
 
 //抽象構文木の生成（数値）
-static Node *new_node_num(int val, char *input) {
-    Node *node = new_node(ND_NUM, NULL, NULL, new_type(INT), input);
+static Node *new_node_num(long val, char *input) {
+    NDtype type = (val>UINT_MAX || val<INT_MIN) ? LONG : INT;
+    Node *node = new_node(ND_NUM, NULL, NULL, new_type(type), input);
     node->val = val;
     return node;
 }
@@ -459,7 +466,7 @@ static Node *new_node_list(Node *item, char *input) {
     array_def   = "[" assign? "]"
     type_ptr    = type_spec pointer*
     pointer     = ( "*" )*
-    type_spec =  "char" | "int"
+    type_spec =  "char" | "short" | "int" | "long" "long"?
     func_arg    = type_ptr ident ( "," func_arg )
     expr        = assign ( "," assign )* 
     assign      = logical_or ( "=" assign )*
