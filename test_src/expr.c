@@ -497,6 +497,22 @@ int size_of() {
     return 1;
 }
 
+int type_of() {
+    char  c; typeof(c) c2;
+    short s; typeof(s) s2;
+    int   i; typeof(i) i2;
+    long  l; typeof(l) l2;
+    long long ll; typeof(ll) ll2;
+    char *p; typeof(p) p2;
+    return
+        sizeof(c) == sizeof(c2) &&
+        sizeof(s) == sizeof(s2) &&
+        sizeof(i) == sizeof(i2) &&
+        sizeof(l) == sizeof(l2) &&
+        sizeof(ll) == sizeof(ll2) &&
+        sizeof(p) == sizeof(p2);
+}
+
     int sc_x=0, sc_y=0;
 int scope() {
     int sc_x; 
@@ -574,6 +590,7 @@ int main() {
     TEST(init);
     TEST(align);
     TEST(size_of);
+    TEST(type_of);
     TEST(scope);
     TEST(overflow);
     return 0;

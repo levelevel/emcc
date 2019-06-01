@@ -5,10 +5,10 @@
 //現在のトークンの型が引数と一致しているか
 #define token_type() (tokens[token_pos]->type)
 #define token_is(_tk) (token_type()==(_tk))
-#define token_is_type() (TK_CHAR<=token_type() && token_type()<=TK_LONG)
+#define token_is_type() (TK_CHAR<=token_type() && token_type()<=TK_TYPEOF)
 #define next_token_type() (tokens[token_pos+1]->type)
 #define next_token_is(_tk) (next_token_type()==(_tk))
-#define next_token_is_type() (TK_CHAR<=next_token_type() && next_token_type()<=TK_LONG)
+#define next_token_is_type() (TK_CHAR<=next_token_type() && next_token_type()<=TK_TYPEOF)
 
 //トークンの種類を定義
 typedef struct {
@@ -64,6 +64,7 @@ TokenDef TokenLst2[] = {
     {"break",    5, TK_BREAK},
     {"continue", 8, TK_CONTINUE},
     {"sizeof",   6, TK_SIZEOF},
+    {"typeof",   6, TK_TYPEOF},
     {"_Alignof", 8, TK_ALIGNOF},
     {NULL, 0, 0}
 };
@@ -466,7 +467,7 @@ static Node *new_node_list(Node *item, char *input) {
     array_def   = "[" assign? "]"
     type_ptr    = type_spec pointer*
     pointer     = ( "*" )*
-    type_spec =  "char" | "short" | "int" | "long" "long"?
+    type_spec =  "char" | "short" | "int" | "long" "long"? | "typeof" "(" ident ")"
     func_arg    = type_ptr ident ( "," func_arg )
     expr        = assign ( "," assign )* 
     assign      = logical_or ( "=" assign )*
@@ -809,6 +810,13 @@ static Type *type_spec(void) {
             tp = new_type(LONG);
         }
         consume(TK_INT);
+    } else if (consume(TK_TYPEOF)) {
+        if (!consume('(')) error_at(input_str(), "typeofの後に開きカッコがありません");
+        char *name;
+        if (!consume_ident(&name)) error_at(input_str(), "識別子がありません");
+        Node *node = new_node_var(name, NULL);
+        tp = node->tp;
+        if (!consume(')')) error_at(input_str(), "typeofの後に閉じカッコがありません");
     } else {
         error_at(input_str(), "型名がありません: %s\n");
     }

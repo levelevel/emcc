@@ -29,6 +29,7 @@ typedef enum {
     TK_SHORT,       //short
     TK_INT,         //int
     TK_LONG,        //long
+    TK_TYPEOF,      //typeof（非標準）
     TK_INC,         // ++
     TK_DEC,         // --
     TK_EQ,          // ==
