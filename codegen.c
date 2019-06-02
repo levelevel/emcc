@@ -486,7 +486,7 @@ static int gen(Node*node) {
             if (gen(nodes[i])) printf("  pop rax\n");
         }
         printf("  push rax\n");
-    } else if (node->type == '=') {         //代入
+    } else if (node->type == '=') {         //代入(ND_ASSIGN)
         comment("'='\n");
         gen_lval(node->lhs);    //スタックトップにアドレス設定
         if (node->lhs->tp->type==ARRAY) {   //ローカル変数の初期値
@@ -499,10 +499,31 @@ static int gen(Node*node) {
             printf("  pop rax\n");  //rhsの値
             printf("  pop rdi\t#for RSP alignment-\n");
             printf("  pop rdi\n");  //lhsのアドレス
-        //  printf("  mov [rdi], rax\n");
             gen_write_reg("rdi", "rax", node->tp, NULL);
             printf("  push rax\n");
         }
+    } else if (node->type == ND_PLUS_ASSIGN ||
+               node->type == ND_MINUS_ASSIGN) {  //+=/-=
+        comment("'A+=B'\n");
+        gen_lval(node->lhs);
+        printf("  mov rdi, QWORD PTR [rsp]\n");  //lhsのアドレス
+        gen_read_reg("rax", "rdi", node->lhs->tp, NULL);    //lhsの値
+        printf("  push rax\n"); //lhsの値
+        gen(node->rhs);
+        printf("  pop rax\n");  //rhsの値
+        printf("  pop rdi\n");  //lhsの値
+        if (node_is_ptr(node)) {
+            gen_mul_reg("rax", size_of(node->tp->ptr_of));
+        }
+        if (node->type == ND_PLUS_ASSIGN) {
+            printf("  add rax, rdi\n");
+        } else {
+            printf("  sub rdi, rax\n");
+            printf("  mov rax, rdi\n");
+        }
+        printf("  pop rdi\n");  //lhsのアドレス
+        gen_write_reg("rdi", "rax", node->lhs->tp, NULL);
+        printf("  push rax\n"); //戻り値
     } else if (node->type == ND_INDIRECT) { //*a（間接参照）
         comment("'*A'\n");
         gen(node->rhs);

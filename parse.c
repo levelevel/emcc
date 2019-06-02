@@ -27,6 +27,8 @@ TokenDef TokenLst1[] = {
     {"<=", 2, TK_LE},
     {"&&", 2, TK_LAND},
     {"||", 2, TK_LOR},
+    {"+=", 2, TK_PLUS_ASSIGN},
+    {"-=", 2, TK_MINUS_ASSIGN},
     {">",  1, '>'},
     {"<",  1, '<'},
     {"+",  1, '+'},
@@ -942,7 +944,19 @@ static Node *assign(void) {
             !node_type_eq(node->tp, rhs->tp))
             warning_at(input, "=の左右の型(%s:%s)が異なります", 
                 get_type_str(node->tp), get_type_str(rhs->tp));
-        node = new_node('=', node, rhs, node->tp, input);
+        node = new_node('=', node, rhs, node->tp, input); //ND_ASIGN
+    } else if (consume(TK_PLUS_ASSIGN)) { //+=
+        if (node->tp->type==ARRAY) error_at(node->input, "左辺値ではありません");
+        rhs = assign(); 
+        if (node_is_ptr(node) && node_is_ptr(rhs))
+            error_at(node->input, "ポインタ同士の加算です");
+        node = new_node(ND_PLUS_ASSIGN, node, rhs, node->tp, input);
+    } else if (consume(TK_MINUS_ASSIGN)) { //-=
+        if (node->tp->type==ARRAY) error_at(node->input, "左辺値ではありません");
+        rhs = assign(); 
+        if node_is_ptr(rhs)
+            error_at(node->input, "ポインタによる減算です");
+        node = new_node(ND_MINUS_ASSIGN, node, rhs, node->tp, input);
     }
     return node;
 }

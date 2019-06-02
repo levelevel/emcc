@@ -147,60 +147,68 @@ int loop() {
 }
 
 int inc() {
-    int a=1, b, c, x[]={1,2,3}, *px=&x[1];
+    int a=1, b, c, x[]={1,2,3,4}, *px=&x[0];
     b = a++;
     c = ++b;
-    x[1]++;
-    px++;
-    return a+b+c==6 && x[1]==3 && *px==3;
+    x[1]++; x[2]+=10;
+    px++; px+=2;
+    return a+b+c==6 && x[1]==3 && x[2]==13 && *px==4;
 }
 int inc_char() {
-    char a=1, b, c, x[]={1,2,3}, *px=&x[1];
+    char a=1, b, c, x[]={1,2,3,4}, *px=&x[0];
     b = a++;
     c = ++b;
-    x[1]++;
-    px++;
-    return a+b+c==6 && x[1]==3 && *px==3;
+    x[1]++; x[2]+=10;
+    px++; px+=2;
+    return a+b+c==6 && x[1]==3 && x[2]==13 && *px==4;
 }
 int inc_short() {
-    short a=1, b, c, x[]={1,2,3}, *px=&x[1];
+    short a=1, b, c, x[]={1,2,3,4}, *px=&x[0];
     b = a++;
     c = ++b;
-    x[1]++;
-    px++;
-    return a+b+c==6 && x[1]==3 && *px==3;
+    x[1]++; x[2]+=10;
+    px++; px+=2;
+    return a+b+c==6 && x[1]==3 && x[2]==13 && *px==4;
 }
 int inc_long() {
-    long a=1, b, c, x[]={1,2,3}, *px=&x[1];
+    long a=1, b, c, x[]={1,2,3,4}, *px=&x[0];
     b = a++;
     c = ++b;
-    x[1]++;
-    px++;
-    return a+b+c==6 && x[1]==3 && *px==3;
+    x[1]++; x[2]+=10;
+    px++; px+=2;
+    return a+b+c==6 && x[1]==3 && x[2]==13 && *px==4;
 }
 int dec() {
-    int a=2, b, c;
+    int a=2, b, c, x[]={1,2,3,4}, *px=&x[3];
     b = a--;
     c = --b;
-    return a+b+c==3;
+    x[1]--; x[2]-=10;
+    px--; px-=2;
+    return a+b+c==3 && x[1]==1 && x[2]==-7 && *px==1;
 }
 int dec_char() {
-    char a=2, b, c;
+    char a=2, b, c, x[]={1,2,3,4}, *px=&x[3];
     b = a--;
     c = --b;
-    return a+b+c==3;
+    x[1]--; x[2]-=10;
+    px--; px-=2;
+    return a+b+c==3 && x[1]==1 && x[2]==-7 && *px==1;
 }
 int dec_short() {
-    char a=2, b, c;
+    char a=2, b, c, x[]={1,2,3,4}, *px=&x[3];
     b = a--;
     c = --b;
-    return a+b+c==3;
+    x[1]--; x[2]-=10;
+    px--; px-=2;
+    return a+b+c==3 && x[1]==1 && x[2]==-7 && *px==1;
 }
 int dec_long() {
-    long a=2, b, c;
+    long a=2, b, c, x[]={1,2,3,4}, *px=&x[3];
     b = a--;
     c = --b;
-    return a+b+c==3;
+    x[1]--; x[2]-=10;
+    px--; px-=2;
+    return a+b+c==3 && x[1]==1 && x[2]==-7 && *px==1;
 }
 int incdec() {
     TEST(inc);

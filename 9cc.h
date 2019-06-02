@@ -40,6 +40,8 @@ typedef enum {
     TK_GE,          // >=
     TK_LAND,        // &&
     TK_LOR,         // ||
+    TK_PLUS_ASSIGN, // +=
+    TK_MINUS_ASSIGN,// -=
     TK_RETURN,      //return
     TK_IF,          //if
     TK_ELSE,        //else
@@ -88,6 +90,8 @@ typedef enum {
     ND_LE,          // <=, >=
     ND_LAND,        // &&
     ND_LOR,         // ||
+    ND_PLUS_ASSIGN, // +=
+    ND_MINUS_ASSIGN,// -=
     ND_LOCAL_VAR_DEF,   //ローカル変数の定義
     ND_GLOBAL_VAR_DEF,  //グローバル変数の定義
     ND_RETURN,

@@ -18,7 +18,6 @@ https://www.sigbus.info/compilerbook/
 - enum
 - void型のポインタ
 - 三項演算子
-- 複合代入（+=など）
 - 関数の戻り値のvoid（int扱いでもたぶんOK）
 - グローバル変数のextern宣言
 - 関数の宣言（引数の情報は使わない：たぶんOK）
