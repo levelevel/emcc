@@ -90,6 +90,7 @@ typedef enum {
     ND_LE,          // <=, >=
     ND_LAND,        // &&
     ND_LOR,         // ||
+    ND_TRI_COND,    // A ? B : C（三項演算子）
     ND_PLUS_ASSIGN, // +=
     ND_MINUS_ASSIGN,// -=
     ND_LOCAL_VAR_DEF,   //ローカル変数の定義

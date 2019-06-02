@@ -507,6 +507,18 @@ static int gen(Node*node) {
         char *label = (char*)stack_get(continue_stack);
         printf("  jmp %s\t# continue\n", label);
         return 0;
+    } else if (node->type == ND_TRI_COND) { //A ? B * C（三項演算）
+        int cnt = label_cnt++;
+        comment("A ? B : C\n");
+        gen(node->lhs);         //A
+        printf("  pop rax\n");
+        printf("  cmp rax, 0\n");
+        printf("  je .LTriFalse%03d\n", cnt);
+        gen(node->rhs->lhs);    //B
+        printf("  jmp .LTriEnd%03d\n", cnt);
+        printf(".LTriFalse%03d:\n", cnt);
+        gen(node->rhs->rhs);    //C
+        printf(".LTriEnd%03d:\n", cnt);
     } else if (node->type == ND_BLOCK) {    //{ ブロック }
         Vector *blocks = node->lst;
         Node **nodes = (Node**)blocks->data;

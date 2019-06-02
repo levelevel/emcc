@@ -129,6 +129,15 @@ int for1() {
     }
     return a==4 && b==1;
 }
+    int gtri_x;
+    int gtri_a = 1?2:gtri_x;
+int tri_cond() {
+    int a,b;
+    a = 1?10:20;
+    b = 0?10:20;
+    return
+        a==10 && b==20 && gtri_a==2;
+}
 int loop() {
 
     if(0);
@@ -143,6 +152,7 @@ int loop() {
 
     TEST(while1);
     TEST(for1);
+    TEST(tri_cond);
     return d==2 && e==2 && sum1==55;
 }
 

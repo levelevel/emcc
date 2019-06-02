@@ -29,26 +29,28 @@ TokenDef TokenLst1[] = {
     {"||", 2, TK_LOR},
     {"+=", 2, TK_PLUS_ASSIGN},
     {"-=", 2, TK_MINUS_ASSIGN},
-    {">",  1, '>'},
-    {"<",  1, '<'},
-    {"+",  1, '+'},
-    {"-",  1, '-'},
-    {"*",  1, '*'},
-    {"/",  1, '/'},
+    {"!",  1, '!'},
     {"%",  1, '%'},
+    {"&",  1, '&'},
     {"(",  1, '('},
     {")",  1, ')'},
+    {"*",  1, '*'},
+    {"+",  1, '+'},
+    {",",  1, ','},
+    {"-",  1, '-'},
+    {"/",  1, '/'},
+    {":",  1, ':'},
     {";",  1, ';'},
+    {"<",  1, '<'},
     {"=",  1, '='},
-    {"{",  1, '{'},
-    {"}",  1, '}'},
+    {">",  1, '>'},
+    {"?",  1, '?'},
     {"[",  1, '['},
     {"]",  1, ']'},
-    {"!",  1, '!'},
-    {",",  1, ','},
-    {"&",  1, '&'},
-    {"|",  1, '|'},
     {"^",  1, '^'},
+    {"{",  1, '{'},
+    {"|",  1, '|'},
+    {"}",  1, '}'},
     {NULL, 0, 0}
 };
 
@@ -470,14 +472,15 @@ static Node *new_node_list(Node *item, char *input) {
                 | "{" init_list "," "}"
     init_list   = initializer
                 | init_list "," initializer
-    array_def   = "[" assign? "]" ( "[" assign "]" )*
+    array_def   = "[" expr? "]" ( "[" expr "]" )*
     type_ptr    = type_spec pointer*
     pointer     = ( "*" )*
     type_spec   =  "signed" | "unsigned" | "typeof" "(" ident ")" |
                    "char" | "short" | "int" | "long" ) type_spec
     func_arg    = type_ptr ident ( "," func_arg )
     expr        = assign ( "," assign )* 
-    assign      = logical_or ( "=" assign )*
+    assign      = tri_cond ( "=" assign | "+=" assign | "-=" assign )*
+    tri_cond    = logical_or "?" expr ":" tri_cond
     logical_or  = logical_and ( "||" logical_and )*
     logical_and = bitwise_or ( "&&" bitwise_or )*
     bitwise_or  = ex_or ( "&" ex_or )*
@@ -492,13 +495,12 @@ static Node *new_node_list(Node *item, char *input) {
                 | "sizeof" unary
                 | "sizeof" "(" type_ptr array_def? ")"
                 | "_Alignof" "(" type_ptr array_def? ")"
-    post_unary  = term ( "++" | "--" )
+    post_unary  = term ( "++" | "--" | "[" expr "]")
     term        = num
                 | string
                 | ident
                 | ident "(" expr? ")"   //関数コール
                 |  "(" expr ")"
-                | term array_def
 */
 static Node *top_item(void);
 static Node *function(Type *tp, char *name);
@@ -515,6 +517,7 @@ static Node *func_arg(void);
 static Node *empty_or_expr(void);
 static Node *expr(void);
 static Node *assign(void);
+static Node *tri_cond(void);
 static Node *equality(void);
 static Node *logical_or(void);
 static Node *logical_and(void);
@@ -776,7 +779,7 @@ static Type *array_def(Type *tp) {
             tp = new_type_array(tp, -1);    //最初だけ省略できる（初期化が必要）
         } else {
             char *input = input_str();
-            Node *node = assign();
+            Node *node = expr();
             long val;
             if (!node_is_const(node, &val)) error_at(input, "配列サイズが定数ではありません");
             if (val==0) error_at(input, "配列のサイズが0です");
@@ -789,7 +792,7 @@ static Type *array_def(Type *tp) {
 
     while (consume('[')) {
         char *input = input_str();
-        Node *node = assign();
+        Node *node = expr();
         long val;
         if (!node_is_const(node, &val)) error_at(input, "配列サイズが定数ではありません");
         if (val==0) error_at(input, "配列のサイズが0です");
@@ -935,7 +938,7 @@ static Node *expr(void) {
 
 //代入（右結合）
 static Node *assign(void) {
-    Node *node = logical_or(), *rhs;
+    Node *node = tri_cond(), *rhs;
     char *input = input_str();
     if (consume('=')) {
         if (node->tp->type==ARRAY) error_at(node->input, "左辺値ではありません");
@@ -961,6 +964,22 @@ static Node *assign(void) {
     return node;
 }
 
+//三項演算子（右結合）
+//    tri_cond    = logical_or "?" expr ":" tri_cond
+static Node *tri_cond(void) {
+    Node *node = logical_or(), *sub_node, *lhs, *rhs;
+    char *input = input_str();
+    if (consume('?')) {
+        lhs = expr();
+        if (!consume(':'))
+            error_at(node->input, "三項演算に : がありません");
+        rhs = tri_cond();
+        sub_node = new_node(0, lhs, rhs, lhs->tp, input);
+        node = new_node(ND_TRI_COND, node, sub_node, lhs->tp, node->input);
+    }
+    return node;
+}
+
 //論理和（左結合）
 //    logical_or  = logical_and ( "||" logical_and )*
 static Node *logical_or(void) {
@@ -970,9 +989,10 @@ static Node *logical_or(void) {
         if (consume(TK_LOR)) {
             node = new_node(ND_LOR, node, logical_and(), new_type(INT, 0), input);
         } else {
-            return node;
+            break;
         }
     }
+    return node;
 }
 
 //論理積（左結合）
@@ -984,9 +1004,10 @@ static Node *logical_and(void) {
         if (consume(TK_LAND)) {
             node = new_node(ND_LAND, node, bitwise_or(), new_type(INT, 0), input);
         } else {
-            return node;
+            break;
         }
     }
+    return node;
 }
 
 //OR（左結合）
@@ -998,9 +1019,10 @@ static Node *bitwise_or(void) {
         if (consume('|')) {
             node = new_node('|', node, ex_or(), new_type(INT, 0), input);
         } else {
-            return node;
+            break;
         }
     }
+    return node;
 }
 
 //EX-OR（左結合）
@@ -1012,9 +1034,10 @@ static Node *ex_or(void) {
         if (consume('^')) {
             node = new_node('^', node, bitwise_and(), new_type(INT, 0), input);
         } else {
-            return node;
+            break;
         }
     }
+    return node;
 }
 
 //AND（左結合）
@@ -1026,9 +1049,10 @@ static Node *bitwise_and(void) {
         if (consume('&')) {
             node = new_node('&', node, equality(), new_type(INT, 0), input);
         } else {
-            return node;
+            break;
         }
     }
+    return node;
 }
 
 //等価演算（左結合）
@@ -1042,9 +1066,10 @@ static Node *equality(void) {
         } else if (consume(TK_NE)) {
             node = new_node(ND_NE, node, relational(), new_type(INT, 0), input);
         } else {
-            return node;
+            break;
         }
     }
+    return node;
 }
 
 //関係演算（左結合）
@@ -1062,9 +1087,10 @@ static Node *relational(void) {
         } else if (consume(TK_GE)) {
             node = new_node(ND_LE, add(), node, new_type(INT, 0), input);
         } else {
-            return node;
+            break;
         }
     }
+    return node;
 }
 
 //加減算（左結合）
@@ -1085,9 +1111,10 @@ static Node *add(void) {
                 error_at(input, "ポインタによる減算です");
             node = new_node('-', node, rhs, rhs->tp, input);
         } else {
-            return node;
+            break;
         }
     }
+    return node;
 }
 
 //乗除算、剰余（左結合）
@@ -1103,9 +1130,10 @@ static Node *mul(void) {
         } else if (consume('%')) {
             node = new_node('%', node, unary(), node->tp, input);
         } else {
-            return node;
+            break;
         }
     }
+    return node;
 }
 
 //前置単項演算子（右結合）
@@ -1115,26 +1143,26 @@ static Node *unary(void) {
     Node *node;
     char *input = input_str();
     if (consume('+')) {
-        return unary();
+        node = unary();
     } else if (consume('-')) {
         node = unary();
-        return new_node('-', new_node_num(0, input), node, node->tp, input);
+        node = new_node('-', new_node_num(0, input), node, node->tp, input);
     } else if (consume('!')) {
-        return new_node('!', NULL, unary(), new_type(INT, 0), input);
+        node = new_node('!', NULL, unary(), new_type(INT, 0), input);
     } else if (consume(TK_INC)) {
         node = post_unary();
-        return new_node(ND_INC_PRE, NULL, node, node->tp, input);
+        node = new_node(ND_INC_PRE, NULL, node, node->tp, input);
     } else if (consume(TK_DEC)) {
         node = post_unary();
-        return new_node(ND_DEC_PRE, NULL, node, node->tp, input);
+        node = new_node(ND_DEC_PRE, NULL, node, node->tp, input);
     } else if (consume('*')) {
         node = unary();
         if (!node_is_ptr(node)) 
             error_at(node->input, "'*'は非ポインタ型(%s)を参照しています", get_type_str(node->tp));
-        return new_node(ND_INDIRECT, NULL, node, node->tp->ptr_of, input);
+        node = new_node(ND_INDIRECT, NULL, node, node->tp->ptr_of, input);
     } else if (consume('&')) {
         node = unary();
-        return new_node(ND_ADDRESS, NULL, node, new_type_ptr(node->tp), input);
+        node = new_node(ND_ADDRESS, NULL, node, new_type_ptr(node->tp), input);
     } else if (consume(TK_SIZEOF)) {
         Type *tp;
         if (token_is('(')) {
@@ -1151,31 +1179,48 @@ static Node *unary(void) {
             node = unary();
             tp = node->tp;
         }
-        return new_node_num(size_of(tp), input);
+        node = new_node_num(size_of(tp), input);
     } else if (consume(TK_ALIGNOF)) {
         Type *tp;
         if (!consume('(')) error_at(input_str(), "開きカッコがありません");
         tp = type_ptr();
         if (token_is('[')) tp = array_def(tp);
         if (!consume(')')) error_at(input_str(), "開きカッコに対応する閉じカッコがありません");
-        return new_node_num(align_of(tp), input);
+        node = new_node_num(align_of(tp), input);
     } else {
-        return post_unary();
+        node = post_unary();
     }
+    return node;
 }
 
 //後置単項演算子（左結合）
 //    post_unary  = term ( "++" | "--" )
 static Node *post_unary(void) {
     Node *node = term();
-    char *input = input_str();
-    if (consume(TK_INC)) {
-        return new_node(ND_INC, node, NULL, node->tp, input);
-    } else if (consume(TK_DEC)) {
-        return new_node(ND_DEC, node, NULL, node->tp, input);
-    } else {
-        return node;
+    for (;;) {
+        char *input = input_str();
+        Type *tp = node->tp;
+        if (consume(TK_INC)) {
+            node = new_node(ND_INC, node, NULL, node->tp, input);
+        } else if (consume(TK_DEC)) {
+            node = new_node(ND_DEC, node, NULL, node->tp, input);
+        } else if (consume('[')) {
+            // a[3] => *(a+3)
+            // a[3][2] => *(*(a+3)+2)
+            input = input_str();
+            Node *rhs = expr();
+            node = new_node('+', node, rhs, tp ,input);
+            tp = node->tp->ptr_of ? node->tp->ptr_of : rhs->tp->ptr_of;
+            if (tp==NULL) error_at(input_str(), "ここでは配列を指定できません");
+            node = new_node(ND_INDIRECT, NULL, node, tp, input);
+            if (!consume(']')) {
+                error_at(input_str(), "配列の開きカッコに対応する閉じカッコがありません");
+            }
+        } else {
+            break;
+        }
     }
+    return node;
 }
 
 //終端記号：数値、識別子（変数、関数）、カッコ
@@ -1208,22 +1253,6 @@ static Node *term(void) {
         }
     } else {
         error_at(input, "終端記号でないトークンです");
-        return NULL;
-    }
-
-    Type *tp = node->tp;
-    while (consume('[')) {
-        // a[3] => *(a+3)
-        // a[3][2] => *(*(a+3)+2)
-        input = input_str();
-        Node *rhs = assign();
-        node = new_node('+', node, rhs, tp ,input);
-        tp = node->tp->ptr_of ? node->tp->ptr_of : rhs->tp->ptr_of;
-        if (tp==NULL) error_at(input_str(), "ここでは配列を指定できません");
-        node = new_node(ND_INDIRECT, NULL, node, tp, input);
-        if (!consume(']')) {
-            error_at(input_str(), "配列の開きカッコに対応する閉じカッコがありません");
-        }
     }
 
     return node;
@@ -1236,6 +1265,18 @@ int node_is_const(Node *node, long *valp) {
     }*/
 
     long val, val1, val2;
+
+    if (node->type==ND_TRI_COND) {
+        if (!node_is_const(node->lhs, &val)) return 0;
+        if (val) {
+            if (!node_is_const(node->rhs->lhs, &val)) return 0;
+        } else {
+            if (!node_is_const(node->rhs->rhs, &val)) return 0;
+        }
+        if (valp) *valp = val;
+        return 1;
+    }
+
     if (node->lhs && !node_is_const(node->lhs, &val1)) return 0;
     if (node->rhs && !node_is_const(node->rhs, &val2)) return 0;
     switch ((int)node->type) {
