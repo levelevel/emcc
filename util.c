@@ -63,10 +63,20 @@ static void type_str(char *buf, const Type *tp) {
 
 // 型を表す文字列を返す。文字列はmallocされている。
 const char* get_type_str(const Type *tp) {
-    char buf[256];
+    char buf[1024];
+    const Type *p;
     if (tp==NULL) return "null";
     buf[0] = 0;
-    type_str(buf, tp);
+    //ARRAY[10]->array[2]->PTR->INT
+    //ARRAY以外を深さ優先で先に処理する
+    for (p=tp; p->type==ARRAY; p=p->ptr_of);
+    type_str(buf, p);
+    for (p=tp; p->type==ARRAY; p=p->ptr_of) {
+        char tmp[20];
+        if (p->array_size>=0) sprintf(tmp, "[%ld]", p->array_size);
+        else                  sprintf(tmp ,"[]]");
+        strcat(buf, tmp);
+    }
     char *ret = malloc(strlen(buf)+1);
     strcpy(ret, buf);
     return ret;

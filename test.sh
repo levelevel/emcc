@@ -22,7 +22,7 @@ test_src() {
   if [ $? -eq 0 ]; then
     echo "gcc TEST OK    : $src"
   else
-    tail $EXE.gcc.log
+    grep error $EXE.gcc.log
     echo "gcc TEST FAIL! : $src"
     exit 1;
   fi
@@ -143,7 +143,6 @@ try $ER "char *argv[];"
 try $ER "char *argv[0];"
 try $ER "int a; char *argv[a];"
 
-
 #多次元配列
 try $ER "int a[][3]={{1,2,3},{11,12,13}; return a[1][2]}"
 
@@ -152,6 +151,7 @@ try $ER '"ABC"=1;'
 try $ER "char p[3]=1;"
 try $ER 'int a[]="ABC";'
 try $ER 'char *p[]="ABC";'
+try $ER "int a; a[1];"
 
 rm -f $EXE $EXE.s
 echo "test: OK"

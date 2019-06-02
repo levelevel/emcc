@@ -184,10 +184,10 @@ void tokenize(char *p) {
         NEXT_LOOP:;
     }
     token = new_token(TK_EOF, p);
-    //print_tokens();
+    //dump_tokens();
 }
 
-void print_tokens(void) {
+void dump_tokens(void) {
     Token **tk = (Token**)token_vec->data;
     Token *tp;
     for (int i=0; i<token_vec->len; i++) {
@@ -468,7 +468,7 @@ static Node *new_node_list(Node *item, char *input) {
                 | "{" init_list "," "}"
     init_list   = initializer
                 | init_list "," initializer
-    array_def   = "[" assign? "]"
+    array_def   = "[" assign? "]" ( "[" assign "]" )*
     type_ptr    = type_spec pointer*
     pointer     = ( "*" )*
     type_spec   =  "signed" | "unsigned" | "typeof" "(" ident ")" |
@@ -767,9 +767,11 @@ static Node *init_list(void) {
 
 //    array_def   = "[" assign? "]"
 static Type *array_def(Type *tp) {
+    Type *ret_tp = tp;
+    // int *a[10][2][3]
     if (consume('[')) {
         if (consume(']')) { //char *argv[];
-            tp = new_type_array(tp, -1);
+            tp = new_type_array(tp, -1);    //最初だけ省略できる（初期化が必要）
         } else {
             char *input = input_str();
             Node *node = assign();
@@ -779,8 +781,26 @@ static Type *array_def(Type *tp) {
             tp = new_type_array(tp, val);
             if (!consume(']')) error_at(input_str(), "配列サイズの閉じかっこ ] がありません"); 
         }
+        ret_tp = tp;
+        // ret_tp=tp=ARRAY[10] -> PTR -> INT 
     }
-    return tp;
+
+    while (consume('[')) {
+        char *input = input_str();
+        Node *node = assign();
+        long val;
+        if (!node_is_const(node, &val)) error_at(input, "配列サイズが定数ではありません");
+        if (val==0) error_at(input, "配列のサイズが0です");
+        tp->ptr_of = new_type_array(tp->ptr_of, val);
+        tp = tp->ptr_of;
+        if (!consume(']')) error_at(input_str(), "配列サイズの閉じかっこ ] がありません"); 
+        // ARRAYのリストの最後に挿入してゆく
+        // ret_tp=tp=ARRAY[10]                               -> PTR -> INT 
+        // ret_tp=   ARRAY[10] -> tp=ARRAY[2]                -> PTR -> INT 
+        // ret_tp=   ARRAY[10] ->    ARRAY[2] -> tp=ARRAY[3] -> PTR -> INT 
+    }
+
+    return ret_tp;
 }
 
 //    type_ptr    = type_spec pointer*
@@ -1095,10 +1115,8 @@ static Node *unary(void) {
         return new_node(ND_DEC_PRE, NULL, node, node->tp, input);
     } else if (consume('*')) {
         node = unary();
-        assert(node->tp != NULL);
         if (!node_is_ptr(node)) 
-            error_at(node->input, "'*'は非ポインタ型(%s)を参照しています", 
-                get_type_str(node->tp));
+            error_at(node->input, "'*'は非ポインタ型(%s)を参照しています", get_type_str(node->tp));
         return new_node(ND_INDIRECT, NULL, node, node->tp->ptr_of, input);
     } else if (consume('&')) {
         node = unary();
@@ -1179,12 +1197,15 @@ static Node *term(void) {
         return NULL;
     }
 
-    if (consume('[')) {
+    Type *tp = node->tp;
+    while (consume('[')) {
         // a[3] => *(a+3)
+        // a[3][2] => *(*(a+3)+2)
+        input = input_str();
         Node *rhs = assign();
-        node = new_node('+', node, rhs, node->tp ,input);
-        Type *tp = node->tp->ptr_of ? node->tp->ptr_of : rhs->tp->ptr_of;
-        assert(tp!=NULL);
+        node = new_node('+', node, rhs, tp ,input);
+        tp = node->tp->ptr_of ? node->tp->ptr_of : rhs->tp->ptr_of;
+        if (tp==NULL) error_at(input_str(), "ここでは配列を指定できません");
         node = new_node(ND_INDIRECT, NULL, node, tp, input);
         if (!consume(']')) {
             error_at(input_str(), "配列の開きカッコに対応する閉じカッコがありません");

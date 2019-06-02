@@ -158,7 +158,7 @@ static void gen_write_reg(const char*dst, const char*src, const Type *tp, const 
 //型(tp)に応じてsrcの修飾子を調整する。例：intならDWORD PTR
 static void gen_read_reg(const char*dst, const char*src, const Type *tp, const char* comment) {
     if (tp->type==INT && tp->is_unsigned) {
-        printf("  mov %s, %s PTR [%s]", reg_name_of_type(dst, tp), ptr_name_of_type(tp), src);
+        printf("  mov %s, DWORD PTR [%s]", reg_name_of_type(dst, tp), src);
     } else {
         printf("  %s %s, %s PTR [%s]", read_command_of_type(tp), dst, ptr_name_of_type(tp), src);
     }
@@ -175,7 +175,9 @@ char *get_byte_string(Node *node, int array_size, int data_size) {
     long val;
     Node **nodes = (Node**)node->lst->data;
     for (int i=0; i<array_size; i++) {
-        if (!node_is_const(nodes[i],&val)) return NULL;
+        if (nodes[i]->type==ND_LIST) {
+            _ERROR_;
+        } else if (!node_is_const(nodes[i],&val)) return NULL;
         memcpy(p, (char*)(&val), data_size);
         p += data_size;
     }
@@ -223,7 +225,7 @@ static void gen_array_init(Node *node) {
         case 2: ;
             short *datas = (short*)data;
             for (int i=0; i<array_size; i++) {
-                printf("  movb BYTE PTR [rdi+%d], %d\n", i*type_size, datas[i]);
+                printf("  mov WORD PTR [rdi+%d], %d\n", i*type_size, datas[i]);
             }
             break;
         case 4: ;
@@ -504,9 +506,13 @@ static int gen(Node*node) {
     } else if (node->type == ND_INDIRECT) { //*a（間接参照）
         comment("'*A'\n");
         gen(node->rhs);
-        printf("  pop rax\n");  //rhsの値（アドレス）
-        gen_read_reg("rax", "rax", node->tp, NULL);
-        printf("  push rax\n");
+        if (node->tp->type==ARRAY) {
+            //rhsのアドレスをそのまま返す
+        } else {
+            printf("  pop rax\n");  //rhsの値（アドレス）
+            gen_read_reg("rax", "rax", node->tp, NULL);
+            printf("  push rax\n");
+        }
     } else if (node->type == ND_ADDRESS) { //&a（アドレス演算子）
         comment("'&A'\n");
         gen_lval(node->rhs);
@@ -777,7 +783,7 @@ static int calc_stack_offset(int stack_size) {
     return size;
 }
 
-void print_functions(void) {
+void gen_program(void) {
     int size;
 
     // アセンブリのヘッダ部分を出力

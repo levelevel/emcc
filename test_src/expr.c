@@ -147,28 +147,36 @@ int loop() {
 }
 
 int inc() {
-    int a=1, b, c;
+    int a=1, b, c, x[]={1,2,3}, *px=&x[1];
     b = a++;
     c = ++b;
-    return a+b+c==6;
+    x[1]++;
+    px++;
+    return a+b+c==6 && x[1]==3 && *px==3;
 }
 int inc_char() {
-    char a=1, b, c;
+    char a=1, b, c, x[]={1,2,3}, *px=&x[1];
     b = a++;
     c = ++b;
-    return a+b+c==6;
+    x[1]++;
+    px++;
+    return a+b+c==6 && x[1]==3 && *px==3;
 }
 int inc_short() {
-    short a=1, b, c;
+    short a=1, b, c, x[]={1,2,3}, *px=&x[1];
     b = a++;
     c = ++b;
-    return a+b+c==6;
+    x[1]++;
+    px++;
+    return a+b+c==6 && x[1]==3 && *px==3;
 }
 int inc_long() {
-    long a=1, b, c;
+    long a=1, b, c, x[]={1,2,3}, *px=&x[1];
     b = a++;
     c = ++b;
-    return a+b+c==6;
+    x[1]++;
+    px++;
+    return a+b+c==6 && x[1]==3 && *px==3;
 }
 int dec() {
     int a=2, b, c;
@@ -342,8 +350,33 @@ int array2l() {
     long a[4]={1,2,3,4};
     return af2l(a)==6;
 }
-int array3(int argc, char*argv[]) { //コンパイルのみ
-    return 1;
+int array3() {
+    int a[4][5], *p=a, b[4][5][6], *q=b;
+    a[2][3] = 10;
+    b[2][3][4] = 20;
+    return
+        a[1] == a+1 && p[2*5+3]==10 && *(q+2*5*6+3*6+4)==20;
+}
+int array3c() {
+    char a[4][5], *p=a, b[4][5][6], *q=b;
+    a[2][3] = 10;
+    b[2][3][4] = 20;
+    return
+        a[1] == a+1 && p[2*5+3]==10 && *(q+2*5*6+3*6+4)==20;
+}
+int array3s() {
+    short a[4][5], *p=a, b[4][5][6], *q=b;
+    a[2][3] = 10;
+    b[2][3][4] = 20;
+    return
+        a[1] == a+1 && p[2*5+3]==10 && *(q+2*5*6+3*6+4)==20;
+}
+int array3l() {
+    long a[4][5], *p=a, b[4][5][6], *q=b;
+    a[2][3] = 10;
+    b[2][3][4] = 20;
+    return
+        a[1] == a+1 && p[2*5+3]==10 && *(q+2*5*6+3*6+4)==20;
 }
 int array() {
     TEST(array1);
@@ -354,6 +387,10 @@ int array() {
     TEST(array2c);
     TEST(array2s);
     TEST(array2l);
+    TEST(array3);
+    TEST(array3c);
+    TEST(array3s);
+    TEST(array3l);
     return 1;
 }
 
@@ -460,67 +497,81 @@ int align() {
 }
 
 int size_of1() {
-    int n; int *p; int a[2*4];
+    int n, *p, a[2*4], a2[2][3];
     return
         sizeof(n)==4 && sizeof(&n)==8 && sizeof(p)==8 &&
         sizeof(a)==4*8 && sizeof(a[0])==4 &&
+        sizeof(a2)==4*2*3 && sizeof(a2[0])==4*3 && sizeof(a2[0][1])==4 &&
         sizeof(int)==4 && sizeof(int*)==8 &&
         sizeof(unsigned int)==4 && sizeof(signed int)==4 &&
         sizeof(int[5])==4*5 && sizeof(int*[3])==8*3 &&
+        sizeof(int[5][2])==4*5*2 && sizeof(int*[3][2])==8*3*2 &&
         sizeof(1)==4 && sizeof(1==1)==4 && sizeof(n=1)==4;
 }
 int size_of1c() {
-    char n, *p, a[2*4];
+    char n, *p, a[2*4], a2[2][3];
     return
         sizeof(n)==1 && sizeof(&n)==8 && sizeof(p)==8 &&
         sizeof(a)==1*8 && sizeof(a[0])==1 &&
+        sizeof(a2)==1*2*3 && sizeof(a2[0])==1*3 && sizeof(a2[0][1])==1 &&
         sizeof(char)==1 && sizeof(char*)==8 &&
         sizeof(unsigned char)==1 && sizeof(signed char)==1 &&
         sizeof(char[5])==1*5 && sizeof(char*[3])==8*3 &&
+        sizeof(char[5][2])==1*5*2 && sizeof(char*[3][2])==8*3*2 &&
         sizeof(1)==4 && sizeof(1==1)==4 && sizeof(n=1)==1;
 }
 int size_of1s() {
-    short n, *p, a[2*4];
+    short n, *p, a[2*4], a2[2][3];
     return
         sizeof(n)==2 && sizeof(&n)==8 && sizeof(p)==8 &&
         sizeof(a)==2*8 && sizeof(a[0])==2 &&
+        sizeof(a2)==2*2*3 && sizeof(a2[0])==2*3 && sizeof(a2[0][1])==2 &&
         sizeof(short)==2 && sizeof(short*)==8 &&
         sizeof(unsigned short)==2 && sizeof(signed short)==2 &&
         sizeof(short[5])==2*5 && sizeof(short*[3])==8*3 &&
+        sizeof(short[5][2])==2*5*2 && sizeof(short*[3][2])==8*3*2 &&
         sizeof(1)==4 && sizeof(1==1)==4 && sizeof(n=1)==2;
 }
 int size_of1l() {
-    long n, *p, a[2*4];
+    long n, *p, a[2*4], a2[2][3];
     return 
         sizeof(n)==8 && sizeof(&n)==8 && sizeof(p)==8 &&
         sizeof(a)==8*8 && sizeof(a[0])==8 &&
+        sizeof(a2)==8*2*3 && sizeof(a2[0])==8*3 && sizeof(a2[0][1])==8 &&
         sizeof(long)==8 && sizeof(long*)==8 &&
         sizeof(unsigned long)==8 && sizeof(signed long)==8 &&
         sizeof(long[5])==8*5 && sizeof(long*[3])==8*3 &&
+        sizeof(long[5][2])==8*5*2 && sizeof(long*[3][2])==8*3*2 &&
         sizeof(1)==4 && sizeof(1==1)==4 && sizeof(n=1)==8;
 }
 int size_of1ll() {
-    long long n, *p, a[2*4];
+    long long n, *p, a[2*4], a2[2][3];
     return 
         sizeof(n)==8 && sizeof(&n)==8 && sizeof(p)==8 &&
         sizeof(a)==8*8 && sizeof(a[0])==8 &&
+        sizeof(a2)==8*2*3 && sizeof(a2[0])==8*3 && sizeof(a2[0][1])==8 &&
         sizeof(long long)==8 && sizeof(long long*)==8 &&
         sizeof(unsigned long long)==8 && sizeof(signed long long)==8 &&
         sizeof(long long[5])==8*5 && sizeof(long long*[3])==8*3 &&
+        sizeof(long long[5][2])==8*5*2 && sizeof(long long*[3][2])==8*3*2 &&
         sizeof(1)==4 && sizeof(1==1)==4 && sizeof(n=1)==8;
 }
 int size_of2() {
     return
-        _Alignof(char)==1     && _Alignof(char*)==8 &&
-        _Alignof(char[5])==1  && _Alignof(char*[3])==8 &&
-        _Alignof(short)==2    && _Alignof(short*)==8 &&
-        _Alignof(short[5])==2 && _Alignof(short*[3])==8 &&
-        _Alignof(int)==4      && _Alignof(int*)==8 &&
-        _Alignof(int[5])==4   && _Alignof(int*[3])==8 &&
-        _Alignof(long)==8     && _Alignof(long*)==8 &&
-        _Alignof(long[5])==8  && _Alignof(long*[3])==8;
-        _Alignof(long long)==8     && _Alignof(long long*)==8 &&
-        _Alignof(long long[5])==8  && _Alignof(long long*[3])==8;
+        _Alignof(char)==1            && _Alignof(char*)==8 &&
+        _Alignof(char[5])==1         && _Alignof(char*[3])==8 &&
+        _Alignof(char[5][2])==1      && _Alignof(char*[3][2])==8 &&
+        _Alignof(short)==2           && _Alignof(short*)==8 &&
+        _Alignof(short[5])==2        && _Alignof(short*[3])==8 &&
+        _Alignof(short[5][2])==2     && _Alignof(short*[3][2])==8 &&
+        _Alignof(int)==4             && _Alignof(int*)==8 &&
+        _Alignof(int[5])==4          && _Alignof(int*[3])==8 &&
+        _Alignof(int[5][2])==4       && _Alignof(int*[3][2])==8 &&
+        _Alignof(long)==8            && _Alignof(long*)==8 &&
+        _Alignof(long[5])==8         && _Alignof(long*[3])==8;
+        _Alignof(long[5][2])==8      && _Alignof(long*[3][2])==8;
+        _Alignof(long long)==8       && _Alignof(long long*)==8 &&
+        _Alignof(long long[5][2])==8 && _Alignof(long long*[3][2])==8;
 }
 int size_of() {
     TEST(size_of1);

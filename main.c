@@ -64,7 +64,7 @@ int main(int argc, char*argv[])
     program();
 
     // 抽象構文木を下りながらコード生成
-    print_functions();
+    gen_program();
 
     return 0;
 }

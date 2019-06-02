@@ -61,14 +61,26 @@ typedef struct {
 
 //抽象構文木 ----------------------------------------
 typedef enum {
-    ND_NUM = 256,   //整数のノードの型
+    ND_NOT   = '!',
+    ND_MOD   = '%',
+    ND_AND   = '&',
+    ND_MUL   = '*',
+    ND_PLUS  = '+',
+    ND_MINUS = '-',
+    ND_DIV   = '/',
+    ND_LT    = '<',
+    ND_ASIGN = '=',
+    ND_GT    = '>',
+    ND_XOR   = '^',
+    ND_OR    = '|',
+    ND_NUM   = 256, //整数のノードの型
     ND_STRING,
     ND_LOCAL_VAR,   //ローカル変数の参照
     ND_GLOBAL_VAR,  //グローバル変数の参照
-    ND_INC,
-    ND_DEC,
-    ND_INC_PRE,
-    ND_DEC_PRE,
+    ND_INC,         // a++
+    ND_DEC,         // a--
+    ND_INC_PRE,     // ++a
+    ND_DEC_PRE,     // --a
     ND_INDIRECT,    // *（間接参照）
     ND_ADDRESS,     // &（アドレス演算子）
     ND_EQ,          // ==
@@ -188,13 +200,13 @@ EXTERN Map *funcdef_map;    //key=name, value=Funcdef
 long size_of(const Type *tp);
 int align_of(const Type *tp);
 void tokenize(char *p);
-void print_tokens(void);
+void dump_tokens(void);
 void program(void);
 int node_is_const(Node *node, long *val);
 int node_is_const_or_address(Node *node, long *valp, Node **varp);
 
 // codegen.c
-void print_functions(void);
+void gen_program(void);
 
 // util.c
 Vector *new_vector(void);
