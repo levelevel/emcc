@@ -15,32 +15,33 @@ cnt=0
 
 test_src() {
   src=$1
-  rm -f $EXE
+  EXE2=tmp/test_src
+  rm -f $EXE2
 
-  gcc $src -o $EXE > $EXE.gcc.log 2>&1
-  ./$EXE          >> $EXE.gcc.log
+  gcc $src -o $EXE2 > $EXE2.gcc.log 2>&1
+  ./$EXE2          >> $EXE2.gcc.log
   if [ $? -eq 0 ]; then
     echo "gcc TEST OK    : $src"
   else
-    grep error $EXE.gcc.log
+    grep error $EXE2.gcc.log
     echo "gcc TEST FAIL! : $src"
     exit 1;
   fi
 
-  cpp $CFLAGS $src | grep -v "^#" > $EXE.c
-  ./9cc $EXE.c 2>&1 > $EXE.s | tee -a $EXE.log | grep "9cc:" > $EXE.err
+  cpp $CFLAGS $src | grep -v "^#" > $EXE2.c
+  ./9cc $EXE.c 2>&1 > $EXE2.s | tee -a $EXE2.log | grep "9cc:" > $EXE2.err
   if [ $? -eq 0 ]; then
-    cat $EXE.log
+    cat $EXE2.log
     exit 1
   fi
 
-  gcc $AFLAGS -o $EXE $EXE.s
+  gcc $AFLAGS -o $EXE2 $EXE2.s
   
-  ./$EXE >> $EXE.log
+  ./$EXE2 >> $EXE2.log
   if [ $? -eq 0 ]; then
     echo "9cc TEST OK    : $src"
   else
-    tail $EXE.log
+    tail $EXE2.log
     echo "9cc TEST FAIL! : $src"
     exit 1;
   fi
@@ -153,5 +154,5 @@ try $ER 'int a[]="ABC";'
 try $ER 'char *p[]="ABC";'
 try $ER "int a; a[1];"
 
-rm -f $EXE $EXE.s
+#rm -f $EXE $EXE.s
 echo "test: OK"

@@ -332,6 +332,44 @@ static void gen_lval(Node*node) {
     }
 }
 
+//変数の内容を指定したレジスタにreadする
+//スタックは変化しない
+static void gen_read_var(Node *node, const char *reg) {
+    char cbuf[256];
+    sprintf(cbuf, "%s(%s)", node->name, get_type_str(node->tp));
+    if (node->type==ND_LOCAL_VAR) {
+        Vardef *vardef;
+        char buf[20];
+        map_get(cur_funcdef->ident_map, node->name, (void**)&vardef);
+        sprintf(buf, "rbp-%d", vardef->offset);  //rbp-ローカル変数のoffset
+        gen_read_reg(reg, buf, node->tp, cbuf);
+    } else {
+        gen_lval(node);
+        printf("  pop rax\n");  //rhsのアドレス=戻り値
+        gen_read_reg(reg, "rax", node->tp, cbuf);
+    }
+}
+
+//スタックトップをpopして変数にwriteする
+//結果は指定したregに残る
+static void gen_write_var(Node *node, char *reg) {
+    char cbuf[256];
+    sprintf(cbuf, "%s(%s)", node->name, get_type_str(node->tp));
+    if (node->type==ND_LOCAL_VAR) {
+        Vardef *vardef;
+        char buf[20];
+        map_get(cur_funcdef->ident_map, node->name, (void**)&vardef);
+        sprintf(buf, "rbp-%d", vardef->offset);  //rbp-ローカル変数のoffset
+        printf("  pop %s\n", reg);  //writeする値
+        gen_write_reg(buf, reg, node->tp, cbuf);
+    } else {
+        gen_lval(node);
+        printf("  pop rcx\n");  //変数のアドレス
+        printf("  pop %s\n", reg);  //writeする値
+        gen_write_reg("rcx", reg, node->tp, cbuf);
+    }
+}
+
 static int label_cnt = 0;   //ラベル識別用カウンタ
 
 //ステートメントを評価
@@ -341,10 +379,10 @@ static int gen(Node*node) {
     assert(node!=NULL);
     if (node->type == ND_NUM) {             //数値
         if (node->tp->type==LONG) {
-            printf("  mov rax, %ld\t# NUM(%s 0x%lx)\n", node->val, get_type_str(node->tp), node->val);
+            printf("  mov rax, %ld\t# 0x%lx (%s)\n", node->val, node->val, get_type_str(node->tp));
             printf("  push rax\n");
         } else {
-            printf("  push %d\t# NUM(%s 0x%x)\n", (int)node->val, get_type_str(node->tp), (int)node->val);
+            printf("  push %d\t# 0x%lx (%s)\n", (int)node->val, node->val, get_type_str(node->tp));
         }
     } else if (node->type == ND_STRING) {   //文字列リテラル
         char buf[20];
@@ -358,13 +396,12 @@ static int gen(Node*node) {
         return gen(node->rhs); //代入
     } else if (node->type == ND_LOCAL_VAR ||
                node->type == ND_GLOBAL_VAR) {//変数参照
-        comment("%s_VAR:%s(%s)\n", node->type==ND_LOCAL_VAR?"LOCAL":"GLOBAL", node->name, get_type_str(node->tp));
-        gen_lval(node);
         if (node->tp->type==ARRAY) {
             //アドレスをそのまま返す
+            comment("%s_VAR:%s(%s)\n", node->type==ND_LOCAL_VAR?"LOCAL":"GLOBAL", node->name, get_type_str(node->tp));
+            gen_lval(node);
         } else {
-            printf("  pop rax\n");  //rhsのアドレス=戻り値
-            gen_read_reg("rax", "rax", node->tp, NULL);
+            gen_read_var(node, "rax");
             printf("  push rax\n");
         }
     } else if (node->type == ND_FUNC_CALL) {//関数コール
@@ -488,18 +525,14 @@ static int gen(Node*node) {
         printf("  push rax\n");
     } else if (node->type == '=') {         //代入(ND_ASSIGN)
         comment("'='\n");
-        gen_lval(node->lhs);    //スタックトップにアドレス設定
-        if (node->lhs->tp->type==ARRAY) {   //ローカル変数の初期値
-            //ここに到達するのはローカル変数の初期化のはず
+        if (node->lhs->tp->type==ARRAY) {   //ローカル変数の配列の初期値
+            //ここに到達するのはローカル変数の配列の初期化のはず
+            gen_lval(node->lhs);
             gen_array_init(node);
             return 0;
         } else {
-            printf("  push 0\t#for RSP alignment+\n");
             gen(node->rhs);
-            printf("  pop rax\n");  //rhsの値
-            printf("  pop rdi\t#for RSP alignment-\n");
-            printf("  pop rdi\n");  //lhsのアドレス
-            gen_write_reg("rdi", "rax", node->tp, NULL);
+            gen_write_var(node->lhs, "rax");
             printf("  push rax\n");
         }
     } else if (node->type == ND_PLUS_ASSIGN ||

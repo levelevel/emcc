@@ -21,7 +21,6 @@ https://www.sigbus.info/compilerbook/
 - 関数の戻り値のvoid（int扱いでもたぶんOK）
 - グローバル変数のextern宣言
 - 関数の宣言（引数の情報は使わない：たぶんOK）
-- コンマリストによる複数変数の定義・宣言
 - **構造体の実装**
   - .
   - ->
