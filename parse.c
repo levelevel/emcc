@@ -5,10 +5,10 @@
 //現在のトークンの型が引数と一致しているか
 #define token_type() (tokens[token_pos]->type)
 #define token_is(_tp) (token_type()==(_tp))
-#define token_is_type() (TK_CHAR<=token_type() && token_type()<=TK_UNSIGNED)
+#define token_is_type() (TK_CHAR<=token_type() && token_type()<=TK_CONST)
 #define next_token_type() (tokens[token_pos+1]->type)
 #define next_token_is(_tp) (next_token_type()==(_tp))
-#define next_token_is_type() (TK_CHAR<=next_token_type() && next_token_type()<=TK_UNSIGNED)
+#define next_token_is_type() (TK_CHAR<=next_token_type() && next_token_type()<=TK_CONST)
 
 //トークンの種類を定義
 typedef struct {
@@ -62,6 +62,13 @@ TokenDef TokenLst2[] = {
     {"long",     4, TK_LONG},
     {"signed",   6, TK_SIGNED},
     {"unsigned", 8, TK_UNSIGNED},
+//  {"auto",     4, TK_AUTO},
+//  {"register", 8, TK_REGISTER},
+    {"static",   6, TK_STATIC},
+    {"extern",   6, TK_EXTERN},
+//  {"volatile", 8, TK_VOLATILE},
+//  {"restrict", 8, TK_RESTRICT},
+    {"const",    5, TK_CONST},
     {"return",   6, TK_RETURN},
     {"if",       2, TK_IF},
     {"else",     4, TK_ELSE},
@@ -324,12 +331,16 @@ static Node *new_node_num(long val, char *input) {
 //未登録の変数であれば登録する
 static void regist_var_def(Node *node) {
     char *name = node->name;
-    if (cur_funcdef) {  //関数内であればローカル変数
+    if (cur_funcdef && !type_is_extern(node->tp)) {  //関数内かつexternでなければローカル変数
         if (map_get(cur_funcdef->ident_map, name, NULL)==0) {
             Vardef *vardef = calloc(1, sizeof(Vardef));
             vardef->name = name;
             vardef->node = node;
-            vardef->offset = get_var_offset(node->tp);
+            if (type_is_static(node->tp)) {
+                vardef->offset = global_index++;
+            } else {
+                vardef->offset = get_var_offset(node->tp);
+            }
             node->type = ND_LOCAL_VAR_DEF;
             map_put(cur_funcdef->ident_map, name, vardef);
         } else {
@@ -475,8 +486,13 @@ static Node *new_node_list(Node *item, char *input) {
     array_def   = "[" expr? "]" ( "[" expr "]" )*
     type_ptr    = type_spec pointer*
     pointer     = ( "*" )*
-    type_spec   =  "signed" | "unsigned" | "typeof" "(" ident ")" |
-                   "char" | "short" | "int" | "long" ) type_spec
+    type_spec   = "typeof" "(" ident ")"
+                | type_speccifier type_spec*
+                | strage_class_specifier type_spec*
+                | type_qualifier type_spec*
+    type_speccifier = "char" | "short" | "int" | "long" | "signed" | "unsigned"
+    strage_class_specifier = "static" | "extern"
+    type_qualifier = "const"
     func_arg    = type_ptr ident ( "," func_arg )
     expr        = assign ( "," assign )* 
     assign      = tri_cond ( "=" assign | "+=" assign | "-=" assign )*
@@ -687,6 +703,7 @@ static Node *var_def1(Type *simple_tp, Type *tp, char *name) {
 
     //初期値: rhsに初期値を設定する
     if (consume('=')) {
+        if (type_is_extern(tp)) error_at(input, "extern変数は初期化できません");
         //node->rhsに変数=初期値の形のノードを設定する。->そのまま初期値設定のコード生成に用いる
         rhs = initializer();
         long val;
@@ -715,7 +732,8 @@ static Node *var_def1(Type *simple_tp, Type *tp, char *name) {
     if (rhs) node->rhs = new_node('=', new_node_var(name, input), rhs, tp, input);
 
     //初期値のないサイズ未定義のARRAYはエラー
-    if (node->tp->type==ARRAY && node->tp->array_size<0 &&
+    //externの場合はOK
+    if (node->tp->type==ARRAY && node->tp->array_size<0 && !type_is_extern(node->tp) &&
         (node->rhs==NULL || node->rhs->type!='='))
         error_at(input_str(), "配列のサイズが未定義です");
 
@@ -735,7 +753,12 @@ static Node *var_def1(Type *simple_tp, Type *tp, char *name) {
         }
     }
 
-    //fprintf(stderr, "vardef: %s %s\n", get_type_str(node->tp), name);
+    if (node->type==ND_LOCAL_VAR_DEF && type_is_static(node->tp)) {
+        char *name = node->name;
+        //ローカルstatic変数は初期値を外してreturnする。初期化はvarderのリストから実施される。
+        node = new_node(ND_LOCAL_VAR_DEF, NULL, NULL, node->tp, node->input);
+        node->name = name;
+    }
     return node;
 }
 
@@ -840,23 +863,19 @@ static Type *type_spec(void) {
     char *input;
     Typ type = 0;
     int is_unsigned = 0;
-    int signed_cnt = 0;
-    int unsigned_cnt = 0;
+
     int char_cnt = 0;
     int short_cnt = 0;
     int int_cnt = 0;
     int long_cnt = 0;
+    int signed_cnt = 0;
+    int unsigned_cnt = 0;
+    int static_cnt = 0;
+    int extern_cnt = 0;
 
     while (1) {
         input = input_str();
-        if (consume(TK_SIGNED)) {
-            if (unsigned_cnt) error_at(input, "型指定が不正です\n");
-            signed_cnt++;
-        } else if (consume(TK_UNSIGNED)) {
-            if (signed_cnt) error_at(input, "型指定が不正です\n");
-            unsigned_cnt++;
-            is_unsigned = 1;
-        } else if (consume(TK_CHAR)) {
+        if (consume(TK_CHAR)) {
             if (type) error_at(input, "型指定が不正です\n");
             type = CHAR;
             char_cnt++;
@@ -873,17 +892,34 @@ static Type *type_spec(void) {
             else if (type && type!=INT) error_at(input, "型指定が不正です\n");
             else type = LONG;
             long_cnt++;
+        } else if (consume(TK_SIGNED)) {
+            if (unsigned_cnt) error_at(input, "型指定が不正です\n");
+            signed_cnt++;
+        } else if (consume(TK_UNSIGNED)) {
+            if (signed_cnt) error_at(input, "型指定が不正です\n");
+            unsigned_cnt++;
+            is_unsigned = 1;
+        } else if (consume(TK_STATIC)) {
+            if (static_cnt) error_at(input, "型指定が不正です\n");
+            static_cnt++;
+        } else if (consume(TK_EXTERN)) {
+            if (extern_cnt) error_at(input, "型指定が不正です\n");
+            extern_cnt++;
         } else {
             if (!type && (signed_cnt || unsigned_cnt)) type = INT;
             if (!type) error_at(input_str(), "型名がありません\n");
             break;
         }
-        if (signed_cnt>1 || unsigned_cnt>1 || char_cnt>1 || 
-            short_cnt>1 || int_cnt>1 || long_cnt>2 )
-            error_at(input, "型指定が不正です\n");
+        if (char_cnt>1 || short_cnt>1 || int_cnt>1 || long_cnt>2 ||
+            signed_cnt>1 || unsigned_cnt>1 || 
+            static_cnt>1 || extern_cnt>1 ||
+            (static_cnt && extern_cnt))
+            error_at(input, "型指定が重複しています\n");
     }
 
     tp = new_type(type, is_unsigned);
+    if (static_cnt) tp->is_static = 1;
+    if (extern_cnt) tp->is_extern = 1;
     return tp;
 }
 
@@ -1313,6 +1349,11 @@ int node_is_const_or_address(Node *node, long *valp, Node **varp) {
         if (valp) *valp = 0;
         return 1;
     }
+    if (node->type==ND_GLOBAL_VAR && node->tp->type==ARRAY) {
+        if (varp) *varp = new_node(ND_ADDRESS, NULL, node, node->tp->ptr_of, node->input);
+        if (valp) *valp = 0;
+        return 1;
+    }
     if (node->type==ND_LIST) {
         Node **nodes = (Node**)node->lst->data;
         if (node->lst->len==1)
@@ -1360,4 +1401,16 @@ int node_is_const_or_address(Node *node, long *valp, Node **varp) {
     }
     if (valp) *valp = val;
     return 1;
+}
+
+// static char*p; のような宣言ではPTRにはis_staticが設定されず、
+// charだけに設定されているのでcharのところまで見に行く
+int type_is_static(Type *tp) {
+    if (tp->ptr_of) return type_is_static(tp->ptr_of);
+    return tp->is_static;
+}
+
+int type_is_extern(Type *tp) {
+    if (tp->ptr_of) return type_is_extern(tp->ptr_of);
+    return tp->is_extern;
 }

@@ -32,6 +32,13 @@ typedef enum {
     TK_TYPEOF,      //typeof（非標準）
     TK_SIGNED,      //signed
     TK_UNSIGNED,    //unsigned
+//  TK_AUTO,
+//  TK_REGISTER,
+    TK_STATIC,
+    TK_EXTERN,
+//  TK_VOLATILE,
+//  TK_RESTRICT,
+    TK_CONST,
     TK_INC,         // ++
     TK_DEC,         // --
     TK_EQ,          // ==
@@ -75,7 +82,7 @@ typedef enum {
     ND_GT    = '>',
     ND_XOR   = '^',
     ND_OR    = '|',
-    ND_NUM   = 256, //整数のノードの型
+    ND_NUM,         //整数のノードの型
     ND_STRING,
     ND_LOCAL_VAR,   //ローカル変数の参照
     ND_GLOBAL_VAR,  //グローバル変数の参照
@@ -120,9 +127,11 @@ typedef enum {
 typedef struct _Type Type;
 struct _Type {
     Typ type;
-    char is_unsigned; //unsigned型
+    char is_unsigned;   //unsigned型
+    char is_extern;
+    char is_static;
     Type *ptr_of;
-    long array_size;  //typeがARRAYの場合の配列サイズ。未定義の場合は-1
+    long array_size;    //typeがARRAYの場合の配列サイズ。未定義の場合は-1
 };
 
 typedef struct _Node Node;
@@ -143,7 +152,8 @@ struct _Node {
 typedef struct {
     char *name;     //変数名
     Node *node;     //ノード（型情報、初期値、ローカル・グローバルなどもここから取得する）
-    int offset;     //ベースポインタからのoffset
+    int offset;     //auto変数：ベースポインタからのoffset
+                    //static変数：識別用index（global_index）
 } Vardef;
 
 typedef struct {
@@ -201,6 +211,9 @@ EXTERN Map *func_map;       //key=name, value=Funcdef
 //プログラム（関数定義）の管理
 EXTERN Map *funcdef_map;    //key=name, value=Funcdef
 
+//ユニークなIDを生成するためのindex
+EXTERN int global_index;
+
 // parse.c
 long size_of(const Type *tp);
 int align_of(const Type *tp);
@@ -209,6 +222,8 @@ void dump_tokens(void);
 void program(void);
 int node_is_const(Node *node, long *val);
 int node_is_const_or_address(Node *node, long *valp, Node **varp);
+int type_is_static(Type *tp);
+int type_is_extern(Type *tp);
 
 // codegen.c
 void gen_program(void);

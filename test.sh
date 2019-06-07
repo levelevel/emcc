@@ -15,10 +15,11 @@ cnt=0
 
 test_src() {
   src=$1
+  src2=./test_src/extern.c
   EXE2=tmp/test_src
-  rm -f $EXE2
+  rm -f $EXE2 $EXE2.log
 
-  gcc $src -o $EXE2 > $EXE2.gcc.log 2>&1
+  gcc -g $src $src2 -o $EXE2 > $EXE2.gcc.log 2>&1
   ./$EXE2          >> $EXE2.gcc.log
   if [ $? -eq 0 ]; then
     echo "gcc TEST OK    : $src"
@@ -29,13 +30,14 @@ test_src() {
   fi
 
   cpp $CFLAGS $src | grep -v "^#" > $EXE2.c
-  ./9cc $EXE.c 2>&1 > $EXE2.s | tee -a $EXE2.log | grep "9cc:" > $EXE2.err
+  ./9cc $src2 > ${EXE2}e.s
+  ./9cc $EXE2.c 2>&1 > $EXE2.s | tee -a $EXE2.log | grep "9cc:" > $EXE2.err
   if [ $? -eq 0 ]; then
     cat $EXE2.log
     exit 1
   fi
 
-  gcc $AFLAGS -o $EXE2 $EXE2.s
+  gcc $AFLAGS -o $EXE2 $EXE2.s ${EXE2}e.s
   
   ./$EXE2 >> $EXE2.log
   if [ $? -eq 0 ]; then

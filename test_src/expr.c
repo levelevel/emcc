@@ -10,7 +10,7 @@
 
 #define TEST(func) if(!func()) {printf("Error at %s:%d:%s\n",__FILE__,__LINE__,#func);exit(1);} else {printf("  OK: %s\n",#func);}
 
-int f42() {42; ;;;;;}
+static int f42() {42; ;;;;;}
 int addsub1(){
     int a=10, b=3, c=a+b*(-2), d=a/b, e=a%b;
     return c==4 && d==3 && e==1;
@@ -129,8 +129,8 @@ int for1() {
     }
     return a==4 && b==1;
 }
-    int gtri_x;
-    int gtri_a = 1?2:gtri_x;
+    static int gtri_x;
+    static int gtri_a = 1?2:gtri_x;
 int tri_cond() {
     int a,b;
     a = 1?10:20;
@@ -350,23 +350,24 @@ int array1l() {
 }
 int af2(int *a){return a[0]+a[1]+a[2];}
 int array2() {
-    int a[4]={1,2,3,4};
-    return af2(a)==6;
+    int a[4]={1,2,3,4}, *p=a, *q=&a[2];
+    return af2(a)==6 && p[1]==2, *q==3;
 }
 char af2c(char *a){return a[0]+a[1]+a[2];}
 int array2c() {
-    char a[4]={1,2,3,4};
-    return af2c(a)==6;
+    char a[4]={1,2,3,4}, *p=a, *q=&a[2];
+    return af2(a)==6 && p[1]==2, *q==3;
 }
 short af2s(short *a){return a[0]+a[1]+a[2];}
 int array2s() {
-    short a[4]={1,2,3,4};
+    short a[4]={1,2,3,4}, *p=a, *q=&a[2];
+    return af2(a)==6 && p[1]==2, *q==3;
     return af2s(a)==6;
 }
 long af2l(long *a){return a[0]+a[1]+a[2];}
 int array2l() {
-    long a[4]={1,2,3,4};
-    return af2l(a)==6;
+    long a[4]={1,2,3,4}, *p=a, *q=&a[2];
+    return af2(a)==6 && p[1]==2, *q==3;
 }
 int array3() {
     int a[4][5], *p=a, b[4][5][6], *q=b;
@@ -707,7 +708,7 @@ int overflow() {
     return 1;
 }
 
-int integer_def() {
+static int integer_def() {
     short int si;
     long int li;
     long long int lli;
@@ -733,6 +734,58 @@ int integer_def() {
     return 1;
 }
 
+// extern
+// - 関数外の変数、関数：宣言しない
+// - 関数内の変数：宣言しない。スタック確保しない。
+// - 初期化はできない。
+// static
+// - 関数外の変数、関数：global宣言しない
+// - 関数内の変数：基本はグローバル変数と同じだが、ローカルスコープなので
+//                名前が重複しないようにする(%s.%03d)。スタック確保しない。
+extern char  g_extern_c;
+extern short g_extern_s;
+extern int   g_extern_i;
+extern long  g_extern_l;
+
+static char  g_static_c=2;
+static short g_static_s=3;
+static int   g_static_i=4;
+static long  g_static_l=0;
+
+static int ext1() {
+    g_extern_s = 5;
+    return
+        g_extern_c==1 && g_extern_s==5 && g_extern_i==3 && g_extern_l==4 &&
+        g_static_c==2 && g_static_s==3 && g_static_i==4 && g_static_l==0;
+}
+static int ext2() {
+    extern char *g_extern_pc, g_extern_ac6[];
+    extern int  *g_extern_pi, g_extern_ai4[];
+    extern long *g_extern_pl, g_extern_al4[];
+
+    static char  g_static_c=1;
+    static short g_static_s=2;
+    static int   g_static_i=3;
+    static long  g_static_l=4;
+
+    return
+        g_extern_pc[1]=='B' &&
+        g_extern_pi[1]==10 &&
+        g_extern_pl[1]==2 &&
+        g_extern_ac6[2]=='C' &&
+        g_extern_ai4[2]==20 &&
+        g_extern_al4[2]==3 &&
+        ++g_static_c==2;
+        g_static_s==2;
+        g_static_i==3;
+        g_static_l==4;
+}
+static int ext() {
+    TEST(ext1);
+    TEST(ext2);
+    return 1;
+}
+
 int main() {
     TEST(addsub);
     TEST(eq_rel);
@@ -749,5 +802,6 @@ int main() {
     TEST(scope);
     TEST(overflow);
     TEST(integer_def);
+    TEST(ext);
     return 0;
 }
