@@ -464,36 +464,43 @@ static Node *new_node_list(Node *item, char *input) {
 }
 
 /*  文法：
-    program     = top_item*
-    top_item    = function | var_def ";"
-    function    = type_ptr ident "(" func_arg* ")" "{" stmt* "}"
-    stmt        = expr ";"
-                | var_def ";"
+- A.2.4 External Definitions
+    translation_unit        = external_declaration*
+    external_declaration    = function_definition | declaration
+    function_definition     = declaration_specifiers declarator "(" func_arg* ")" compound_statement
+- A.2.2 Declarations
+    declaration             = declaration_specifiers init_declarator ( "," init_declarator )* ";"
+    declaration_specifiers  = "typeof" "(" identifier ")"
+                            | type_specifier         declaration_specifiers*
+                            | strage_class_specifier declaration_specifiers*
+                            | type_qualifier         declaration_specifiers*
+    init_declarator         = declarator ( "=" initializer )?
+    strage_class_specifier  = "static" | "extern"
+    type_specifier          = "char" | "short" | "int" | "long" | "signed" | "unsigned"
+    type_qualifier          = "const"
+    declarator              = pointer* direct_declarator
+    direct_declarator       = identifier | "(" declarator ")"
+                            = direct_declarator "[" assign? "]"
+    initializer             = assign
+                            | "{" init_list "}"
+                            | "{" init_list "," "}"
+    init_list               = initializer
+                            | init_list "," initializer
+    array_def   = "[" expr? "]" ( "[" expr "]" )*
+    type_ptr    = declaration_specifiers pointer*
+    pointer     = ( "*" )*
+    func_arg    = type_ptr identifier ( "," func_arg )
+- A.2.3 Statements
+    statement   = compound_statement
+                | declaration
                 | return" expr ";"
                 | "if" "(" expr ")" ( "else" expr )?
                 | "while" "(" expr ")"
-                | "for" "(" expr? ";" expr? ";" expr? ")" stmt
+                | "for" "(" expr? ";" expr? ";" expr? ")" statement
                 | "break"
                 | "continue"
-                | "{" expr* "}"
-    var_def     = type_spec var_def1 ( "," var_def1 )*
-    var_def1    = pointer* ident array_def? ( "=" initializer )?
-    initializer = assign
-                | "{" init_list "}"
-                | "{" init_list "," "}"
-    init_list   = initializer
-                | init_list "," initializer
-    array_def   = "[" expr? "]" ( "[" expr "]" )*
-    type_ptr    = type_spec pointer*
-    pointer     = ( "*" )*
-    type_spec   = "typeof" "(" ident ")"
-                | type_speccifier type_spec*
-                | strage_class_specifier type_spec*
-                | type_qualifier type_spec*
-    type_speccifier = "char" | "short" | "int" | "long" | "signed" | "unsigned"
-    strage_class_specifier = "static" | "extern"
-    type_qualifier = "const"
-    func_arg    = type_ptr ident ( "," func_arg )
+    compound_statement      = "{" eclaration | statement* "}"
+- A.2.1 Expressions
     expr        = assign ( "," assign )* 
     assign      = tri_cond ( "=" assign | "+=" assign | "-=" assign )*
     tri_cond    = logical_or "?" expr ":" tri_cond
@@ -506,31 +513,34 @@ static Node *new_node_list(Node *item, char *input) {
     relational  = add ( "<" add | "<=" add | ">" add | ">=" add )*
     add         = mul ( "+" mul | "-" mul )*
     mul         = unary ( "*" unary | "/" unary | "%" unary )*
-    unary       = ( "+" | "-" |  "!" | "*" | "&" ) unary
-                | ( "++" | "--" )? post_unary
+    unary       = post_unary
+                | ( "+" | "-" |  "!" | "*" | "&" ) unary
+                | ( "++" | "--" )? unary
                 | "sizeof" unary
                 | "sizeof" "(" type_ptr array_def? ")"
                 | "_Alignof" "(" type_ptr array_def? ")"
-    post_unary  = term ( "++" | "--" | "[" expr "]")
+    post_unary  = term ( "++" | "--" | "[" expr "]")?
     term        = num
                 | string
-                | ident
-                | ident "(" expr? ")"   //関数コール
+                | identifier
+                | identifier "(" expr? ")"   //関数コール
                 |  "(" expr ")"
 */
-static Node *top_item(void);
-static Node *function(Type *tp, char *name);
-static Node *stmt(void);
-static Node *var_def(Type *tp, char *name);
-static Node *var_def1(Type *simple_tp, Type *tp, char *name);
+static Node *external_declaration(void);
+static Node *function_definition(Type *tp, char *name);
+static Node *declaration(Type *tp, char *name);
+static Node *init_declarator(Type *decl_spec, Type *tp, char *name);
+static Type *declarator(Type *decl_spec, Type *tp, char **name);
+static Type *direct_declarator(Type *tp, char **name);
 static Node *initializer(void);
 static Node *init_list(void);
 static Type *type_ptr(void);
 static Type *pointer(Type *tp);
-static Type *type_spec(void);
+static Type *declaration_specifiers(void);
 static Type *array_def(Type *tp);
 static Node *func_arg(void);
-static Node *empty_or_expr(void);
+static Node *statement(void);
+static Node *compound_statement(void);
 static Node *expr(void);
 static Node *assign(void);
 static Node *tri_cond(void);
@@ -547,25 +557,33 @@ static Node *unary(void);
 static Node *post_unary(void);
 static Node *term(void); 
 
-void program(void) {
+void translation_unit(void) {
     while (!token_is(TK_EOF)) {
-        top_item();
+        external_declaration();
         cur_funcdef = NULL;
     }
 }
 
-static Node *top_item(void) {
+//    external_declaration    = function_definition | declaration
+//    function_definition     = declaration_specifiers declarator "(" func_arg* ")" "{" statement* "}"
+//    declaration             = declaration_specifiers init_declarator ( "," init_declarator )* ";"
+static Node *external_declaration(void) {
     Node *node;
     Type *tp;
     char *name;
+
+    // 関数定義：int * foo (){}
+    // 変数定義：int * ptr ;
+    //                    ^ここまで読まないと区別がつかない
     if (token_is_type()) {
-        tp = type_ptr();
+        tp = declaration_specifiers();
+        tp = pointer(tp);
         if (!consume_ident(&name)) error_at(input_str(), "型名の後に識別名がありません");
         if (consume('(')) {
-            node = function(tp, name);
+            node = function_definition(tp, name);
         } else {
-            node = var_def(tp, name);
-            if (!consume(';')) error_at(input_str(), "; がありません");
+            node = declaration(tp, name);
+            //if (!consume(';')) error_at(input_str(), "; がありません");
         }
     } else {
         error_at(input_str(), "関数・変数の定義がありません");
@@ -574,132 +592,61 @@ static Node *top_item(void) {
 }
 
 //関数の定義: lhs=引数(ND_LIST)、rhs=ブロック(ND_BLOCK)
-//    function    = type_ptr indent "(" func_arg* ")" "{" stmt* "}"
-static Node *function(Type *tp, char *name) {
+//    function_definition     = declaration_specifiers declarator "(" func_arg* ")" "{" statement* "}"
+static Node *function_definition(Type *tp, char *name) {
     Node *node;
     char *input = input_str();
-    // typeと関数前と"("まで処理済み
+    // "("まで処理済み
     node = new_node_func_def(name, tp, input);
     node->lhs = func_arg();
     if (!consume(')')) error_at(input_str(), "関数定義の閉じカッコがありません");
-    if (!consume('{')) error_at(input_str(), "関数定義の { がありません");
-
-    node->rhs = new_node_block(input_str());
-    while (!consume('}')) {
-        vec_push(node->rhs->lst, stmt());
-    }
+    node->rhs = compound_statement();
 
     return node;
 }
 
-static Node *stmt(void) {
+//    declaration             = declaration_specifiers init_declarator ( "," init_declarator )* ";"
+//    init_declarator         = declarator ( "=" initializer )?
+//    declarator              = pointer* identifier array_def?
+//declaration_specifiers, pointer, identifierまで先読み済み
+static Node *declaration(Type *tp, char *name) {
     Node *node;
-    char *input = input_str();
-    if (token_is_type()) {         //型名 ident（変数定義）
-        node = var_def(NULL, NULL);
-    } else if (consume(TK_RETURN)) {
-        node = expr();
-        node = new_node(ND_RETURN, node, NULL, node->tp, input);
-    } else if (consume(TK_IF)) {    //if(A)B else C
-        Node *node_A, *node_B;
-        if (!consume('(')) error_at(input_str(), "ifの後に開きカッコがありません");
-        node_A = expr();
-        if (!consume(')')) error_at(input_str(), "ifの開きカッコに対応する閉じカッコがありません");
-        input = input_str();
-        node_B = stmt();
-        node = new_node(0, node_A, node_B, NULL, input); //lhs
-        input = input_str();
-        if (consume(TK_ELSE)) {
-            node = new_node(ND_IF, node, stmt(), NULL, input);
-        } else {
-            node = new_node(ND_IF, node, NULL, NULL, input);
-        }
-        return node;
-    } else if (consume(TK_WHILE)) {
-        if (!consume('(')) error_at(input_str(), "whileの後に開きカッコがありません");
-        node = expr();
-        if (!consume(')')) error_at(input_str(), "whileの開きカッコに対応する閉じカッコがありません");
-        node = new_node(ND_WHILE, node, stmt(), NULL, input);
-        return node;
-    } else if (consume(TK_FOR)) {   //for(A;B;C)D
-        Node *node1, *node2;
-        if (!consume('(')) error_at(input_str(), "forの後に開きカッコがありません");
-        node1 = empty_or_expr();   //A
-        if (!consume(';')) error_at(input_str(), "forの1個目の;がありません");
-        node2 = empty_or_expr();   //B
-        if (!consume(';')) error_at(input_str(), "forの2個目の;がありません");
-        node = new_node(0, node1, node2, NULL, input);       //A,B
-        node1 = empty_or_expr();   //C
-        if (!consume(')')) error_at(input_str(), "forの開きカッコに対応する閉じカッコがありません");
-        node2 = new_node(0, node1, stmt(), NULL, input);     //C,D
-        node = new_node(ND_FOR, node, node2, NULL, input);   //(A,B),(C,D)
-        return node;
-    } else if (consume(TK_BREAK)) {     //break
-        node = new_node(ND_BREAK, NULL, NULL, NULL, input);
-    } else if (consume(TK_CONTINUE)) {  //continue
-        node = new_node(ND_CONTINUE, NULL, NULL, NULL, input);
-    } else if (consume('{')) {      //{ ブロック }
-        node = new_node_block(input_str());
-        while (!consume('}')) {
-            vec_push(node->lst, stmt());
-        }
-        return node;
-    } else {
-        node = empty_or_expr();
-    }
-
-    if (!consume(';')) {
-        error_at(input_str(), ";'でないトークンです");
-    }
-    return node;
-}
-
-//    var_def     = type_spec var_def1 ( "," var_def1 )*
-static Node *var_def(Type *tp, char *name) {
-    Node *node, *last_node;
-    Type *simple_tp;
+    Type *decl_spec;
 
     if (tp==NULL) {
-        //type_ptrと名前を先読みしていなければsimple_typeを読む
-        simple_tp = type_spec();
+        //declaration_specifiers, pointer, identifierを先読みしていなければdecl_specを読む
+        decl_spec = declaration_specifiers();
     } else {
-        //ポインタを含まないsimple_typeを取り出す
-        simple_tp = tp;
-        while (simple_tp->ptr_of) simple_tp = simple_tp->ptr_of;
+        // 変数定義：int * ptr [5], *idx, ...;
+        //                   ^ここまで先読み済みであるので、ポインタを含まないdecl_spec（int）を取り出す
+        decl_spec = tp;
+        while (decl_spec->ptr_of) decl_spec = decl_spec->ptr_of;
     }
 
-    node = var_def1(simple_tp, tp, name);
+    node = init_declarator(decl_spec, tp, name);
 
     if (consume(',')) {
+        Node *last_node;
         node = new_node_list(node, node->input);
         Vector *lists = node->lst;
-        vec_push(lists, last_node=var_def1(simple_tp, NULL, NULL));
+        vec_push(lists, last_node=init_declarator(decl_spec, NULL, NULL));
         while (consume(',')) {
-            vec_push(lists, last_node=var_def1(simple_tp, NULL, NULL));
+            vec_push(lists, last_node=init_declarator(decl_spec, NULL, NULL));
         }
-    } else {
-        return node;
+        node->tp = last_node->tp;
     }
-    node->tp = last_node->tp;
+    if (!consume(';')) error_at(input_str(), "; がありません");
     return node;
 }
 
-//    var_def1    = pointer* ident array_def? ( "=" initializer )?
-static Node *var_def1(Type *simple_tp, Type *tp, char *name) {
+//    init_declarator         = declarator ( "=" initializer )?
+//    declarator              = pointer* identifier array_def?
+//declaration_specifiers, pointer, identifierまで先読みの可能性あり
+static Node *init_declarator(Type *decl_spec, Type *tp, char *name) {
     Node *node, *rhs=NULL;
     char *input = input_str();
 
-    if (tp==NULL) {
-        //type_ptrと名前を先読みしていなければポインタ部と名前を読む
-        tp = simple_tp;
-        while (consume('*')) {
-            tp = new_type_ptr(tp);
-        }
-        if (!consume_ident(&name)) error_at(input_str(), "型名の後に変数名がありません");
-    }
-
-    //配列
-    if (token_is('[')) tp = array_def(tp);
+    tp = declarator(decl_spec, tp, &name);
 
     //初期値: rhsに初期値を設定する
     if (consume('=')) {
@@ -760,6 +707,33 @@ static Node *var_def1(Type *simple_tp, Type *tp, char *name) {
         node->name = name;
     }
     return node;
+}
+
+//    declarator              = pointer* direct_declarator
+//    direct_declarator       = identifier | "(" declarator ")"
+//                            = direct_declarator "[" assign? "]"
+//declaration_specifiers, pointer, identifierまで先読み済みの可能性あり
+static Type *declarator(Type *decl_spec, Type *tp, char **name) {
+    if (tp==NULL) {
+        tp = pointer(decl_spec);
+        *name = NULL;
+    }
+    tp = direct_declarator(tp, name);
+
+    return tp;
+}
+
+static Type *direct_declarator(Type *tp, char **name) {
+    if (*name == NULL) {
+        if (consume('(')) {
+            tp = declarator(tp, NULL, name);
+            if (!consume(')')) error_at(input_str(), "閉じかっこがありません");
+        } else {
+            if (!consume_ident(name)) error_at(input_str(), "型名の後に識別名がありません");
+        }
+    }
+    if (token_is('[')) tp = array_def(tp);
+    return tp;
 }
 
 //    initializer = assign
@@ -831,9 +805,9 @@ static Type *array_def(Type *tp) {
     return ret_tp;
 }
 
-//    type_ptr    = type_spec pointer*
+//    type_ptr    = declaration_specifiers pointer*
 static Type *type_ptr(void) {
-    Type *tp = type_spec();
+    Type *tp = declaration_specifiers();
     tp = pointer(tp);
 
     return tp;
@@ -847,7 +821,7 @@ static Type *pointer(Type *tp) {
     return tp;
 }
 
-static Type *type_spec(void) {
+static Type *declaration_specifiers(void) {
     Type *tp;
 
     if (consume(TK_TYPEOF)) {
@@ -923,7 +897,7 @@ static Type *type_spec(void) {
     return tp;
 }
 
-//    func_arg    = type_ptr ident ( "," func_arg )
+//    func_arg    = type_ptr identifier ( "," func_arg )
 static Node *func_arg(void) {
     Node *node = new_node_list(NULL, input_str());
     Type *tp;
@@ -944,11 +918,93 @@ static Node *func_arg(void) {
     return node;
 }
 
-//コンマリスト（左結合）
-// ';'、')'でないトークンまで読んで、空文(ND_EMPTY)または式(expr)を作成する
-static Node *empty_or_expr(void) {
-    if (token_is(';') || token_is(')')) return new_node_empty(input_str());
-    return expr();
+static Node *statement(void) {
+    Node *node;
+    char *input = input_str();
+
+    if (token_is('{')) {
+        return compound_statement();    //{ ブロック }
+    } else if (consume(';')) {
+        return new_node_empty(input_str());
+    } else if (consume(TK_RETURN)) {
+        node = expr();
+        node = new_node(ND_RETURN, node, NULL, node->tp, input);
+    } else if (consume(TK_IF)) {    //if(A)B else C
+        Node *node_A, *node_B;
+        if (!consume('(')) error_at(input_str(), "ifの後に開きカッコがありません");
+        node_A = expr();
+        if (!consume(')')) error_at(input_str(), "ifの開きカッコに対応する閉じカッコがありません");
+        input = input_str();
+        node_B = statement();
+        node = new_node(0, node_A, node_B, NULL, input); //lhs
+        input = input_str();
+        if (consume(TK_ELSE)) {
+            node = new_node(ND_IF, node, statement(), NULL, input);
+        } else {
+            node = new_node(ND_IF, node, NULL, NULL, input);
+        }
+        return node;
+    } else if (consume(TK_WHILE)) {
+        if (!consume('(')) error_at(input_str(), "whileの後に開きカッコがありません");
+        node = expr();
+        if (!consume(')')) error_at(input_str(), "whileの開きカッコに対応する閉じカッコがありません");
+        node = new_node(ND_WHILE, node, statement(), NULL, input);
+        return node;
+    } else if (consume(TK_FOR)) {   //for(A;B;C)D
+        Node *node1, *node2;
+        if (!consume('(')) error_at(input_str(), "forの後に開きカッコがありません");
+        if (consume(';')) {
+            node1 = new_node_empty(input_str());
+        } else {
+            node1 = expr();         //A
+            if (!consume(';')) error_at(input_str(), "forの1個目の;がありません");
+        }
+        if (consume(';')) {
+            node2 = new_node_empty(input_str());
+        } else {
+            node2 = expr();         //B
+            if (!consume(';')) error_at(input_str(), "forの2個目の;がありません");
+        }
+        node = new_node(0, node1, node2, NULL, input);       //A,B
+        if (consume(')')) {
+            node1 = new_node_empty(input_str());
+        } else {
+            node1 = expr();         //C
+            if (!consume(')')) error_at(input_str(), "forの開きカッコに対応する閉じカッコがありません");
+        }
+        node2 = new_node(0, node1, statement(), NULL, input);     //C,D
+        node = new_node(ND_FOR, node, node2, NULL, input);   //(A,B),(C,D)
+        return node;
+    } else if (consume(TK_BREAK)) {     //break
+        node = new_node(ND_BREAK, NULL, NULL, NULL, input);
+    } else if (consume(TK_CONTINUE)) {  //continue
+        node = new_node(ND_CONTINUE, NULL, NULL, NULL, input);
+    } else {
+        node = expr();
+    }
+
+    if (!consume(';')) {
+        error_at(input_str(), ";でないトークンです");
+    }
+    return node;
+}
+
+static Node *compound_statement(void) {
+    Node *node;
+
+    if (!consume('{')) error_at(input_str(), "{がありません");
+
+    node = new_node_block(input_str());
+    while (!consume('}')) {
+        Node *block;
+        if (token_is_type()) {
+            block = declaration(NULL, NULL);
+        } else {
+            block = statement();
+        }
+        vec_push(node->lst, block);
+    }
+    return node;
 }
 
 //expr：単なる式またはそのコンマリスト（左結合）
@@ -1173,8 +1229,12 @@ static Node *mul(void) {
 }
 
 //前置単項演算子（右結合）
-//    unary       = ( "+" | "-" |  "!" ) unary
-//                | ( "++" | "--" | "*" | "&" )? post_unary
+//    unary       = post_unary
+//                | ( "+" | "-" |  "!" | "*" | "&" ) unary
+//                | ( "++" | "--" )? unary
+//                | "sizeof" unary
+//                | "sizeof"   "(" type_ptr array_def? ")"
+//                | "_Alignof" "(" type_ptr array_def? ")"
 static Node *unary(void) {
     Node *node;
     char *input = input_str();
@@ -1186,10 +1246,10 @@ static Node *unary(void) {
     } else if (consume('!')) {
         node = new_node('!', NULL, unary(), new_type(INT, 0), input);
     } else if (consume(TK_INC)) {
-        node = post_unary();
+        node = unary();
         node = new_node(ND_INC_PRE, NULL, node, node->tp, input);
     } else if (consume(TK_DEC)) {
-        node = post_unary();
+        node = unary();
         node = new_node(ND_DEC_PRE, NULL, node, node->tp, input);
     } else if (consume('*')) {
         node = unary();
@@ -1230,7 +1290,7 @@ static Node *unary(void) {
 }
 
 //後置単項演算子（左結合）
-//    post_unary  = term ( "++" | "--" )
+//    post_unary  = term ( "++" | "--" | "[" expr "]")?
 static Node *post_unary(void) {
     Node *node = term();
     for (;;) {

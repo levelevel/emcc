@@ -62,7 +62,7 @@ int main(int argc, char*argv[])
     funcdef_map = new_map();
     global_vardef_map = new_map();
     global_index = 0;
-    program();
+    translation_unit();
 
     // 抽象構文木を下りながらコード生成
     gen_program();

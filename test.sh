@@ -118,7 +118,7 @@ try $ER "int main(int a+1){}"
 try $ER "int main(int a,){}"
 try $ER "a;"
 try $ER "int a; int a;"
-try $ER "int (a);"
+#try $ER "int (a);"   #direct_declaratorの正しい実装によりOKとなった
 try $ER "int &a;"
 try $ER "int +a;"
 try $ER "1++;"
@@ -145,6 +145,9 @@ try $ER "int a[4]; a=1;"
 try $ER "char *argv[];"
 try $ER "char *argv[0];"
 try $ER "int a; char *argv[a];"
+try $ER "ststic ststic int a\;"
+try $ER "extern extern int a\;"
+try $ER "extern ststic int a\;"
 
 #多次元配列
 try $ER "int a[][3]={{1,2,3},{11,12,13}; return a[1][2]}"

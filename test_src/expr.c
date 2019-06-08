@@ -786,6 +786,13 @@ static int ext() {
     return 1;
 }
 
+static int declarate() {
+    int (i)=1;
+    char *(*c);
+    int *(*(j));
+    return 1;
+}
+
 int main() {
     TEST(addsub);
     TEST(eq_rel);
@@ -803,5 +810,6 @@ int main() {
     TEST(overflow);
     TEST(integer_def);
     TEST(ext);
+    TEST(declarate);
     return 0;
 }

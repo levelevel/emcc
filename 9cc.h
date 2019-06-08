@@ -219,7 +219,7 @@ long size_of(const Type *tp);
 int align_of(const Type *tp);
 void tokenize(char *p);
 void dump_tokens(void);
-void program(void);
+void translation_unit(void);
 int node_is_const(Node *node, long *val);
 int node_is_const_or_address(Node *node, long *valp, Node **varp);
 int type_is_static(Type *tp);
