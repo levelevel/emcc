@@ -5,10 +5,10 @@
 //現在のトークンの型が引数と一致しているか
 #define token_type() (tokens[token_pos]->type)
 #define token_is(_tp) (token_type()==(_tp))
-#define token_is_type() (TK_CHAR<=token_type() && token_type()<=TK_CONST)
+#define token_is_type_spec() (TK_CHAR<=token_type() && token_type()<=TK_EXTERN)
 #define next_token_type() (tokens[token_pos+1]->type)
 #define next_token_is(_tp) (next_token_type()==(_tp))
-#define next_token_is_type() (TK_CHAR<=next_token_type() && next_token_type()<=TK_CONST)
+#define next_token_is_type_spec() (TK_CHAR<=next_token_type() && next_token_type()<=TK_EXTERN)
 
 //トークンの種類を定義
 typedef struct {
@@ -488,7 +488,12 @@ static Node *new_node_list(Node *item, char *input) {
                             | init_list "," initializer
     array_def   = "[" expr? "]" ( "[" expr "]" )*
     type_ptr    = declaration_specifiers pointer*
-    pointer     = ( "*" )*
+    pointer                 = ( "*" )*
+    type_name               = type_specifier abstruct_declarator*
+                            | type_qualifier abstruct_declarator*
+    abstruct_declarator     = pointer? direct_abstruct_declarator
+    direct_abstruct_declarator = "(" abstruct_declarator ")"
+                            | direct_abstruct_declarator "[" assign "]"
     func_arg    = type_ptr identifier ( "," func_arg )
 - A.2.3 Statements
     statement   = compound_statement
@@ -536,9 +541,13 @@ static Node *initializer(void);
 static Node *init_list(void);
 static Type *type_ptr(void);
 static Type *pointer(Type *tp);
+static Type *type_name(void);
+static Type *abstruct_declarator(Type *tp);
+static Type *direct_abstruct_declarator(Type *tp);
 static Type *declaration_specifiers(void);
 static Type *array_def(Type *tp);
 static Node *func_arg(void);
+
 static Node *statement(void);
 static Node *compound_statement(void);
 static Node *expr(void);
@@ -575,7 +584,7 @@ static Node *external_declaration(void) {
     // 関数定義：int * foo (){}
     // 変数定義：int * ptr ;
     //                    ^ここまで読まないと区別がつかない
-    if (token_is_type()) {
+    if (token_is_type_spec()) {
         tp = declaration_specifiers();
         tp = pointer(tp);
         if (!consume_ident(&name)) error_at(input_str(), "型名の後に識別名がありません");
@@ -821,6 +830,35 @@ static Type *pointer(Type *tp) {
     return tp;
 }
 
+//    type_name               = ( type_specifier | type_qualifier )+ abstruct_declarator*
+//    abstruct_declarator     = pointer? direct_abstruct_declarator
+//    direct_abstruct_declarator = "(" abstruct_declarator ")"
+//                            | direct_abstruct_declarator "[" assign "]"
+static Type *type_name(void) {
+    Type *tp = declaration_specifiers();
+    if (tp->is_static) error_at(input_str(), "staticは指定できません");
+    if (tp->is_extern) error_at(input_str(), "externは指定できません");
+    tp = abstruct_declarator(tp);
+    return tp;
+}
+static Type *abstruct_declarator(Type *tp) {
+    tp = pointer(tp);
+    tp = direct_abstruct_declarator(tp);
+    return tp;
+}
+static Type *direct_abstruct_declarator(Type *tp) {
+    if (consume('(')){
+        tp = abstruct_declarator(tp);
+        if (!consume(')')) error_at(input_str(), "閉じかっこがありません");
+    }
+    if (token_is('[')) tp = array_def(tp);
+    return tp;
+}
+
+//    declaration_specifiers  = "typeof" "(" identifier ")"
+//                            | type_specifier         declaration_specifiers*
+//                            | strage_class_specifier declaration_specifiers*
+//                            | type_qualifier         declaration_specifiers*
 static Type *declaration_specifiers(void) {
     Type *tp;
 
@@ -902,7 +940,7 @@ static Node *func_arg(void) {
     Node *node = new_node_list(NULL, input_str());
     Type *tp;
     char *name;
-    if (!token_is_type()) return node; //空のリスト
+    if (!token_is_type_spec()) return node; //空のリスト
     for (;;) {
         char *input = input_str();
         //C言語仕様上型名は省略可能（デフォルトはint）
@@ -997,7 +1035,7 @@ static Node *compound_statement(void) {
     node = new_node_block(input_str());
     while (!consume('}')) {
         Node *block;
-        if (token_is_type()) {
+        if (token_is_type_spec()) {
             block = declaration(NULL, NULL);
         } else {
             block = statement();
@@ -1262,10 +1300,9 @@ static Node *unary(void) {
     } else if (consume(TK_SIZEOF)) {
         Type *tp;
         if (token_is('(')) {
-            if (next_token_is_type()) {
+            if (next_token_is_type_spec()) {
                 consume('(');
-                tp = type_ptr();
-                if (token_is('[')) tp = array_def(tp);
+                tp = type_name();
                 if (!consume(')')) error_at(input_str(), "開きカッコに対応する閉じカッコがありません");
             } else {
                 node = unary();
@@ -1279,8 +1316,7 @@ static Node *unary(void) {
     } else if (consume(TK_ALIGNOF)) {
         Type *tp;
         if (!consume('(')) error_at(input_str(), "開きカッコがありません");
-        tp = type_ptr();
-        if (token_is('[')) tp = array_def(tp);
+        tp = type_name();
         if (!consume(')')) error_at(input_str(), "開きカッコに対応する閉じカッコがありません");
         node = new_node_num(align_of(tp), input);
     } else {

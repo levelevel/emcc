@@ -32,13 +32,13 @@ typedef enum {
     TK_TYPEOF,      //typeof（非標準）
     TK_SIGNED,      //signed
     TK_UNSIGNED,    //unsigned
+//  TK_VOLATILE,
+//  TK_RESTRICT,
+    TK_CONST,
 //  TK_AUTO,
 //  TK_REGISTER,
     TK_STATIC,
     TK_EXTERN,
-//  TK_VOLATILE,
-//  TK_RESTRICT,
-    TK_CONST,
     TK_INC,         // ++
     TK_DEC,         // --
     TK_EQ,          // ==

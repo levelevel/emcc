@@ -521,7 +521,7 @@ int size_of1() {
         sizeof(n)==4 && sizeof(&n)==8 && sizeof(p)==8 &&
         sizeof(a)==4*8 && sizeof(a[0])==4 &&
         sizeof(a2)==4*2*3 && sizeof(a2[0])==4*3 && sizeof(a2[0][1])==4 &&
-        sizeof(int)==4 && sizeof(int*)==8 &&
+        sizeof(int)==4 && sizeof(int*)==8 && sizeof(int(*(*)))==8 &&
         sizeof(unsigned int)==4 && sizeof(signed int)==4 &&
         sizeof(int[5])==4*5 && sizeof(int*[3])==8*3 &&
         sizeof(int[5][2])==4*5*2 && sizeof(int*[3][2])==8*3*2 &&
@@ -533,7 +533,7 @@ int size_of1c() {
         sizeof(n)==1 && sizeof(&n)==8 && sizeof(p)==8 &&
         sizeof(a)==1*8 && sizeof(a[0])==1 &&
         sizeof(a2)==1*2*3 && sizeof(a2[0])==1*3 && sizeof(a2[0][1])==1 &&
-        sizeof(char)==1 && sizeof(char*)==8 &&
+        sizeof(char)==1 && sizeof(char*)==8 && sizeof(char(*(*)))==8 &&
         sizeof(unsigned char)==1 && sizeof(signed char)==1 &&
         sizeof(char[5])==1*5 && sizeof(char*[3])==8*3 &&
         sizeof(char[5][2])==1*5*2 && sizeof(char*[3][2])==8*3*2 &&
@@ -545,7 +545,7 @@ int size_of1s() {
         sizeof(n)==2 && sizeof(&n)==8 && sizeof(p)==8 &&
         sizeof(a)==2*8 && sizeof(a[0])==2 &&
         sizeof(a2)==2*2*3 && sizeof(a2[0])==2*3 && sizeof(a2[0][1])==2 &&
-        sizeof(short)==2 && sizeof(short*)==8 &&
+        sizeof(short)==2 && sizeof(short*)==8 && sizeof(short(*(*)))==8 &&
         sizeof(unsigned short)==2 && sizeof(signed short)==2 &&
         sizeof(short[5])==2*5 && sizeof(short*[3])==8*3 &&
         sizeof(short[5][2])==2*5*2 && sizeof(short*[3][2])==8*3*2 &&
@@ -557,7 +557,7 @@ int size_of1l() {
         sizeof(n)==8 && sizeof(&n)==8 && sizeof(p)==8 &&
         sizeof(a)==8*8 && sizeof(a[0])==8 &&
         sizeof(a2)==8*2*3 && sizeof(a2[0])==8*3 && sizeof(a2[0][1])==8 &&
-        sizeof(long)==8 && sizeof(long*)==8 &&
+        sizeof(long)==8 && sizeof(long*)==8 && sizeof(long(*(*)))==8 &&
         sizeof(unsigned long)==8 && sizeof(signed long)==8 &&
         sizeof(long[5])==8*5 && sizeof(long*[3])==8*3 &&
         sizeof(long[5][2])==8*5*2 && sizeof(long*[3][2])==8*3*2 &&
