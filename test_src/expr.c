@@ -1,11 +1,10 @@
 #ifdef _9cc
-#define static
-#define const
-#define void
+//#define void
 #else
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdarg.h>
 #endif
 
 #define TEST(func) if(!func()) {printf("Error at %s:%d:%s\n",__FILE__,__LINE__,#func);exit(1);} else {printf("  OK: %s\n",#func);}
@@ -232,16 +231,20 @@ int incdec() {
     return 1;
 }
 
-int add(int a, int b){return a+b;}
-int add3(int a, int b, int c){return a+b+c;}
-int fact(int a) {
+static int add(int a, int b){return a+b;}
+static int add3(int a, int b, int c){return a+b+c;}
+static int fact(int a) {
     if (a==0) return 0;
     else return a + fact(a-1);
 }
-int fib(int a) {
+static int fib(int a) {
     if (a==0) return 0;
     else if (a==1) return 1;
     else return fib(a-1) + fib(a-2);
+}
+static int stdarg(int x, ...)
+{
+    return x;
 }
 int func() {
     return
@@ -752,21 +755,16 @@ static short g_static_s=3;
 static int   g_static_i=4;
 static long  g_static_l=0;
 
-static int ext1() {
+static int extern1() {
     g_extern_s = 5;
     return
         g_extern_c==1 && g_extern_s==5 && g_extern_i==3 && g_extern_l==4 &&
         g_static_c==2 && g_static_s==3 && g_static_i==4 && g_static_l==0;
 }
-static int ext2() {
+static int extern2() {
     extern char *g_extern_pc, g_extern_ac6[];
     extern int  *g_extern_pi, g_extern_ai4[];
     extern long *g_extern_pl, g_extern_al4[];
-
-    static char  g_static_c=1;
-    static short g_static_s=2;
-    static int   g_static_i=3;
-    static long  g_static_l=4;
 
     return
         g_extern_pc[1]=='B' &&
@@ -774,15 +772,29 @@ static int ext2() {
         g_extern_pl[1]==2 &&
         g_extern_ac6[2]=='C' &&
         g_extern_ai4[2]==20 &&
-        g_extern_al4[2]==3 &&
-        ++g_static_c==2;
-        g_static_s==2;
-        g_static_i==3;
-        g_static_l==4;
+        g_extern_al4[2]==3;
+}
+static int static1() {
+    static char  g_static_c=1;
+    static short g_static_s=2;
+    static int   g_static_i=3;
+    static long  g_static_l=4;
+
+    g_static_c --;
+    g_static_s -= 1;
+    g_static_i ++;
+    g_static_l += 1;
+
+    return
+        ++g_static_c==1 &&
+        ++g_static_s==2 &&
+        --g_static_i==3 &&
+        --g_static_l==4;
 }
 static int ext() {
-    TEST(ext1);
-    TEST(ext2);
+    TEST(extern1);
+    TEST(extern2);
+    TEST(static1);
     return 1;
 }
 

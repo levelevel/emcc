@@ -30,7 +30,6 @@ https://www.sigbus.info/compilerbook/
 - 型キャスト
 - プリプロセッサを通す
 - セルフホスト用に最低限のヘッダファイルを用意する
-- 可変長引数を使用した関数定義（詳細不明）
 - ブロック内ローカル変数：for(int i;;)の対応も
 
 ## 無視する構文要素
@@ -53,3 +52,10 @@ https://www.sigbus.info/compilerbook/
 - 文字列リテラルの途中に明示的な'\0'があると以降が無視される。
 - ローカル変数の初期値として文字列リテラルを指定すると.dataにコピーが作られ、実行時にそこからコピーする動作になっている。
 
+## [Cの仕様書](http://port70.net/~nsz/c/c11/n1570.html#A)を読むときのメモ
+
+- `xxx_list` は `xxx` をカンマ `,` で並べたもので、BNFでは `xxx ( , xxx)*` で記載している。
+- `xxx` から先頭の `pointer*` をなくしたものが `direct_xxx`。
+例： `declarator = pointer* direct_declarator`
+- `declarator` と　`abstract_declarator` の違いは前者には `identifier` を含むが、後者は含まないこと。
+例： `int foo(int x, int y);` と `int foo(int, int);`

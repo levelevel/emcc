@@ -58,6 +58,7 @@ typedef enum {
     TK_CONTINUE,    //continue
     TK_SIZEOF,      //sizeof
     TK_ALIGNOF,     //_Alignof (C11)
+    TK_3DOTS,       // ...
     TK_EOF,         //入力の終わり
 } TKtype;
 
@@ -108,10 +109,11 @@ typedef enum {
     ND_FOR,
     ND_BREAK,
     ND_CONTINUE,
-    ND_BLOCK,       //{...}
+    ND_BLOCK,       //{ }
     ND_LIST,        //コンマリスト
     ND_FUNC_CALL,   //関数コール
     ND_FUNC_DEF,    //関数定義
+    ND_VARARGS,     //...
     ND_EMPTY,       //空のノード
 } NDtype;
 

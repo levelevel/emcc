@@ -76,7 +76,7 @@ const char* get_type_str(const Type *tp) {
     for (p=tp; p->type==ARRAY; p=p->ptr_of) {
         char tmp[20];
         if (p->array_size>=0) sprintf(tmp, "[%ld]", p->array_size);
-        else                  sprintf(tmp ,"[]]");
+        else                  sprintf(tmp ,"[]");
         strcat(buf, tmp);
     }
     char *ret = malloc(strlen(buf)+1);
@@ -89,13 +89,17 @@ const char* get_func_args_str(const Node *node) {
     char buf[1024];
     assert(node->type==ND_LIST);
     int size = node->lst->len;
-    Node **ident_nodes = (Node**)node->lst->data;
+    Node **arg_nodes = (Node**)node->lst->data;
     int len = 0;
     buf[0] = 0;
     for (int i=0; i<size; i++) {
-        len += sprintf(buf+len, "%s %s", 
-            get_type_str(ident_nodes[i]->tp), ident_nodes[i]->name);
-        if (i<size-1) len += sprintf(buf+len, ",");
+        if (arg_nodes[i]->type==ND_VARARGS) {
+            len += sprintf(buf+len, "...");
+        } else {
+            len += sprintf(buf+len, "%s %s", 
+                get_type_str(arg_nodes[i]->tp), arg_nodes[i]->name);
+        }
+        if (i<size-1) len += sprintf(buf+len, ", ");
     }
     char *ret = malloc(strlen(buf)+1);
     strcpy(ret, buf);

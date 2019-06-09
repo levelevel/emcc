@@ -314,15 +314,18 @@ static void gen_lval(Node*node) {
     if (node->type == ND_LOCAL_VAR) {   //ローカル変数
         Vardef *vardef;
         map_get(cur_funcdef->ident_map, node->name, (void**)&vardef);
-        comment("LVALUE:%s\n", node->name);
-        printf("  mov rax, rbp\n");
-        printf("  sub rax, %d\n", vardef->offset);  //ローカル変数のアドレス
+        comment("LVALUE:%s (LOCAL:%s)\n", node->name, get_type_str(node->tp));
+        if (type_is_static(node->tp)) {
+            printf("  lea rax, %s.%03d\n", vardef->name, vardef->offset);
+        } else {
+            printf("  lea rax, [rbp-%d]\n", vardef->offset);
+        }
         printf("  push rax\n");
     } else if (node->type == ND_GLOBAL_VAR) {   //グローバル変数
         Vardef *vardef;
         map_get(global_vardef_map, node->name, (void**)&vardef);
-        comment("LVALUE:%s\n", node->name);
-        printf("  lea rax, %s PTR %s\n", ptr_name_of_type(vardef->node->tp) ,vardef->name);
+        comment("LVALUE:%s (GLOBAL:%s)\n", node->name, get_type_str(node->tp));
+        printf("  lea rax, %s\n", vardef->name);
         printf("  push rax\n");
     } else if (node->type == ND_INDIRECT) {
         comment("LVALUE:*var\n");
@@ -341,9 +344,7 @@ static void gen_read_var(Node *node, const char *reg) {
         Vardef *vardef;
         char buf[20];
         map_get(cur_funcdef->ident_map, node->name, (void**)&vardef);
-        if (type_is_extern(node->tp)) {
-            sprintf(buf, "%s", node->name);
-        } else if (type_is_static(node->tp)) {
+        if (type_is_static(node->tp)) {
             sprintf(buf, "%s.%03d", node->name, vardef->offset);
         } else {
             sprintf(buf, "rbp-%d", vardef->offset);  //rbp-ローカル変数のoffset
@@ -930,15 +931,20 @@ void gen_program(void) {
 
         // 引数をスタックのローカル変数領域にコピー
         int size = funcdef[i]->node->lhs->lst->len;
-        Node **ident_nodes = (Node**)funcdef[i]->node->lhs->lst->data;
+        Node **arg_nodes = (Node**)funcdef[i]->node->lhs->lst->data;
         if (size) {
+            char buf[128];
             assert(size<=6);
             printf("  mov rax, rbp\n");
             for (int j=0; j < size; j++) {
-                char buf[128];
-                printf("  sub rax, %ld\n", size_of(ident_nodes[j]->tp));
-                sprintf(buf, "arg:%s %s", get_type_str(ident_nodes[j]->tp) ,ident_nodes[j]->name);
-                gen_write_reg("rax", arg_regs[j], ident_nodes[j]->tp, buf);
+                Node *arg = arg_nodes[j];
+                if (arg->type==ND_VARARGS) {  //...（可変引数）
+                    ; 
+                } else {
+                    printf("  sub rax, %ld\n", size_of(arg->tp));
+                    sprintf(buf, "arg:%s %s", get_type_str(arg->tp) ,arg->name);
+                    gen_write_reg("rax", arg_regs[j], arg->tp, buf);
+                }
             }
         }
 

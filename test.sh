@@ -148,8 +148,10 @@ try $ER "int a; char *argv[a];"
 try $ER "ststic ststic int a;"
 try $ER "extern extern int a;"
 try $ER "extern ststic int a;"
+try $ER "static extern func(){} int main(){}"
 try $ER "sizeof(static int);"
 try $ER "sizeof(extern int);"
+try $ER "int main(int argc, ..., char *argv[]){}"
 
 #多次元配列
 try $ER "int a[][3]={{1,2,3},{11,12,13}; return a[1][2]}"

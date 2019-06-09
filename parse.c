@@ -29,6 +29,7 @@ TokenDef TokenLst1[] = {
     {"||", 2, TK_LOR},
     {"+=", 2, TK_PLUS_ASSIGN},
     {"-=", 2, TK_MINUS_ASSIGN},
+    {"...",3, TK_3DOTS},
     {"!",  1, '!'},
     {"%",  1, '%'},
     {"&",  1, '&'},
@@ -240,7 +241,9 @@ long size_of(const Type *tp) {
     case LONG:     return sizeof(long);
     case LONGLONG: return sizeof(long long);
     case PTR:      return sizeof(void*);
-    case ARRAY:    return tp->array_size * size_of(tp->ptr_of);
+    case ARRAY:
+        if (tp->array_size<0) return sizeof(void*);
+        else return tp->array_size * size_of(tp->ptr_of);
     }
     _ERROR_;
     return -1;
@@ -467,7 +470,7 @@ static Node *new_node_list(Node *item, char *input) {
 - A.2.4 External Definitions
     translation_unit        = external_declaration*
     external_declaration    = function_definition | declaration
-    function_definition     = declaration_specifiers declarator "(" func_arg* ")" compound_statement
+    function_definition     = declaration_specifiers declarator compound_statement
 - A.2.2 Declarations
     declaration             = declaration_specifiers init_declarator ( "," init_declarator )* ";"
     declaration_specifiers  = "typeof" "(" identifier ")"
@@ -480,21 +483,23 @@ static Node *new_node_list(Node *item, char *input) {
     type_qualifier          = "const"
     declarator              = pointer* direct_declarator
     direct_declarator       = identifier | "(" declarator ")"
-                            = direct_declarator "[" assign? "]"
+                            | direct_declarator "[" assign? "]"
+                            | direct_declarator "(" parameter_type_list? ")"    //関数定義
+    parameter_type_list     = parameter_declaration ( "," parameter_declaration )* ( "," "..." )?
+    parameter_declaration   = declaration_specifiers ( declarator | abstruct_declarator )?
     initializer             = assign
                             | "{" init_list "}"
                             | "{" init_list "," "}"
     init_list               = initializer
                             | init_list "," initializer
     array_def   = "[" expr? "]" ( "[" expr "]" )*
-    type_ptr    = declaration_specifiers pointer*
     pointer                 = ( "*" )*
     type_name               = type_specifier abstruct_declarator*
                             | type_qualifier abstruct_declarator*
     abstruct_declarator     = pointer? direct_abstruct_declarator
     direct_abstruct_declarator = "(" abstruct_declarator ")"
-                            | direct_abstruct_declarator "[" assign "]"
-    func_arg    = type_ptr identifier ( "," func_arg )
+                            | direct_abstruct_declarator? "[" assign "]"
+                            | direct_abstruct_declarator? "(" parameter_type_list? ")"  //関数
 - A.2.3 Statements
     statement   = compound_statement
                 | declaration
@@ -522,8 +527,8 @@ static Node *new_node_list(Node *item, char *input) {
                 | ( "+" | "-" |  "!" | "*" | "&" ) unary
                 | ( "++" | "--" )? unary
                 | "sizeof" unary
-                | "sizeof" "(" type_ptr array_def? ")"
-                | "_Alignof" "(" type_ptr array_def? ")"
+                | "sizeof" "(" type_name ")"
+                | "_Alignof" "(" type_name ")"
     post_unary  = term ( "++" | "--" | "[" expr "]")?
     term        = num
                 | string
@@ -535,18 +540,18 @@ static Node *external_declaration(void);
 static Node *function_definition(Type *tp, char *name);
 static Node *declaration(Type *tp, char *name);
 static Node *init_declarator(Type *decl_spec, Type *tp, char *name);
-static Type *declarator(Type *decl_spec, Type *tp, char **name);
-static Type *direct_declarator(Type *tp, char **name);
+static Node *declarator(Type *decl_spec, Type *tp, char *name);
+static Node *direct_declarator(Type *tp, char *name);
+static Node *parameter_type_list(void);
+static Node *parameter_declaration(void);
 static Node *initializer(void);
 static Node *init_list(void);
-static Type *type_ptr(void);
 static Type *pointer(Type *tp);
 static Type *type_name(void);
 static Type *abstruct_declarator(Type *tp);
 static Type *direct_abstruct_declarator(Type *tp);
 static Type *declaration_specifiers(void);
 static Type *array_def(Type *tp);
-static Node *func_arg(void);
 
 static Node *statement(void);
 static Node *compound_statement(void);
@@ -574,21 +579,26 @@ void translation_unit(void) {
 }
 
 //    external_declaration    = function_definition | declaration
-//    function_definition     = declaration_specifiers declarator "(" func_arg* ")" "{" statement* "}"
+//    function_definition     = declaration_specifiers declarator compound_statement
 //    declaration             = declaration_specifiers init_declarator ( "," init_declarator )* ";"
 static Node *external_declaration(void) {
     Node *node;
     Type *tp;
     char *name;
 
+    //          <-> declaration_specifiers
+    //             <-> pointer? (declarator|init_declarator)
+    //                <-> identifier (declarator|init_declarator)
     // 関数定義：int * foo (){}
     // 変数定義：int * ptr ;
+    //          int   abc = 1;
+    //          int   ary [4];
     //                    ^ここまで読まないと区別がつかない
     if (token_is_type_spec()) {
         tp = declaration_specifiers();
         tp = pointer(tp);
         if (!consume_ident(&name)) error_at(input_str(), "型名の後に識別名がありません");
-        if (consume('(')) {
+        if (token_is('(')) {
             node = function_definition(tp, name);
         } else {
             node = declaration(tp, name);
@@ -601,14 +611,17 @@ static Node *external_declaration(void) {
 }
 
 //関数の定義: lhs=引数(ND_LIST)、rhs=ブロック(ND_BLOCK)
-//    function_definition     = declaration_specifiers declarator "(" func_arg* ")" "{" statement* "}"
+//    function_definition     = declaration_specifiers declarator compound_statement
 static Node *function_definition(Type *tp, char *name) {
-    Node *node;
+    Node *node, *tmp_node;
     char *input = input_str();
-    // "("まで処理済み
+    Type *decl_spec = tp;
+    assert(name!=NULL);
     node = new_node_func_def(name, tp, input);
-    node->lhs = func_arg();
-    if (!consume(')')) error_at(input_str(), "関数定義の閉じカッコがありません");
+    while (decl_spec->ptr_of) decl_spec = decl_spec->ptr_of;
+    tmp_node = declarator(decl_spec, tp, name);
+    node->lhs = tmp_node->lhs;
+    assert(node->tp == tmp_node->tp);
     node->rhs = compound_statement();
 
     return node;
@@ -626,7 +639,10 @@ static Node *declaration(Type *tp, char *name) {
         //declaration_specifiers, pointer, identifierを先読みしていなければdecl_specを読む
         decl_spec = declaration_specifiers();
     } else {
-        // 変数定義：int * ptr [5], *idx, ...;
+        // 関数定義：int * foo (){}
+        // 変数定義：int * ptr ;
+        //          int   abc = 1;
+        //          int   ary [4];
         //                   ^ここまで先読み済みであるので、ポインタを含まないdecl_spec（int）を取り出す
         decl_spec = tp;
         while (decl_spec->ptr_of) decl_spec = decl_spec->ptr_of;
@@ -655,7 +671,9 @@ static Node *init_declarator(Type *decl_spec, Type *tp, char *name) {
     Node *node, *rhs=NULL;
     char *input = input_str();
 
-    tp = declarator(decl_spec, tp, &name);
+    Node *tmp_node = declarator(decl_spec, tp, name);
+    tp   = tmp_node->tp;
+    name = tmp_node->name;
 
     //初期値: rhsに初期値を設定する
     if (consume('=')) {
@@ -721,28 +739,73 @@ static Node *init_declarator(Type *decl_spec, Type *tp, char *name) {
 //    declarator              = pointer* direct_declarator
 //    direct_declarator       = identifier | "(" declarator ")"
 //                            = direct_declarator "[" assign? "]"
+//                            | direct_abstruct_declarator? "(" parameter_type_list? ")"  //関数宣言
 //declaration_specifiers, pointer, identifierまで先読み済みの可能性あり
-static Type *declarator(Type *decl_spec, Type *tp, char **name) {
+//戻り値のnodeはname、lhs（関数の場合の引数）、tp以外未設定
+static Node *declarator(Type *decl_spec, Type *tp, char *name) {
+    Node *node;
     if (tp==NULL) {
         tp = pointer(decl_spec);
-        *name = NULL;
+        name = NULL;
     }
-    tp = direct_declarator(tp, name);
+    node = direct_declarator(tp, name);
 
-    return tp;
+    return node;
 }
-
-static Type *direct_declarator(Type *tp, char **name) {
-    if (*name == NULL) {
+static Node *direct_declarator(Type *tp, char *name) {
+    Node *node, *lhs=NULL;
+    if (name == NULL) {
         if (consume('(')) {
-            tp = declarator(tp, NULL, name);
+            node = declarator(tp, NULL, name);
+            tp   = node->tp;
+            name = node->name;
             if (!consume(')')) error_at(input_str(), "閉じかっこがありません");
         } else {
-            if (!consume_ident(name)) error_at(input_str(), "型名の後に識別名がありません");
+            if (!consume_ident(&name)) error_at(input_str(), "型名の後に識別名がありません");
         }
     }
+    if (consume('(')) { //関数定義確定
+        lhs = parameter_type_list();
+        if (!consume(')')) error_at(input_str(), "閉じかっこがありません");
+    }
     if (token_is('[')) tp = array_def(tp);
-    return tp;
+    node = new_node(0, lhs, NULL, tp, NULL);
+    node->name = name;
+    return node;
+}
+
+//    parameter_type_list     = parameter_declaration ( "," parameter_declaration )* ( "," "..." )?
+//    parameter_declaration   = declaration_specifiers ( declarator | abstruct_declarator )?
+static Node *parameter_type_list(void) {
+    Node *node = new_node_list(NULL, input_str());
+    Node *last_node;
+    char *vararg_ptr = NULL;
+    if (!token_is_type_spec()) return node; //空のリスト
+
+    vec_push(node->lst, last_node=parameter_declaration());
+    while (consume(',')) {
+        char *input = input_str();
+        if (token_is('}')){
+            break;
+        } else if (consume(TK_3DOTS)) { //...（可変長引数）
+            last_node = new_node(ND_VARARGS, NULL, NULL, NULL, input);
+            vararg_ptr = input;
+        } else {
+            last_node = parameter_declaration();
+            last_node->input = input;
+        }
+        vec_push(node->lst, last_node);
+    }
+    if (vararg_ptr && last_node->type!=ND_VARARGS)
+        error_at(vararg_ptr, "...の位置が不正です");
+    return node;
+}
+static Node *parameter_declaration(void) {
+    Node *node;
+    Type *tp = declaration_specifiers();
+    node = declarator(tp, NULL, NULL);
+    regist_var_def(node);
+    return node;
 }
 
 //    initializer = assign
@@ -814,14 +877,6 @@ static Type *array_def(Type *tp) {
     return ret_tp;
 }
 
-//    type_ptr    = declaration_specifiers pointer*
-static Type *type_ptr(void) {
-    Type *tp = declaration_specifiers();
-    tp = pointer(tp);
-
-    return tp;
-}
-
 static Type *pointer(Type *tp) {
     while (consume('*')) {
         tp = new_type_ptr(tp);
@@ -833,7 +888,8 @@ static Type *pointer(Type *tp) {
 //    type_name               = ( type_specifier | type_qualifier )+ abstruct_declarator*
 //    abstruct_declarator     = pointer? direct_abstruct_declarator
 //    direct_abstruct_declarator = "(" abstruct_declarator ")"
-//                            | direct_abstruct_declarator "[" assign "]"
+//                            | direct_abstruct_declarator? "[" assign "]"
+//                            | direct_abstruct_declarator? "(" parameter_type_list? ")"  //関数
 static Type *type_name(void) {
     Type *tp = declaration_specifiers();
     if (tp->is_static) error_at(input_str(), "staticは指定できません");
@@ -933,27 +989,6 @@ static Type *declaration_specifiers(void) {
     if (static_cnt) tp->is_static = 1;
     if (extern_cnt) tp->is_extern = 1;
     return tp;
-}
-
-//    func_arg    = type_ptr identifier ( "," func_arg )
-static Node *func_arg(void) {
-    Node *node = new_node_list(NULL, input_str());
-    Type *tp;
-    char *name;
-    if (!token_is_type_spec()) return node; //空のリスト
-    for (;;) {
-        char *input = input_str();
-        //C言語仕様上型名は省略可能（デフォルトはint）
-        tp = type_ptr();
-        if (!consume_ident(&name)) error_at(input_str(), "変数名がありません");
-        if (token_is('[')) {    //char *argv[]
-            tp = array_def(tp);
-            if (tp->type==ARRAY && tp->array_size<0) tp->type = PTR;
-        }
-        vec_push(node->lst, new_node_var_def(name, tp, input));
-        if (!consume(',')) break;
-    }
-    return node;
 }
 
 static Node *statement(void) {
@@ -1271,8 +1306,8 @@ static Node *mul(void) {
 //                | ( "+" | "-" |  "!" | "*" | "&" ) unary
 //                | ( "++" | "--" )? unary
 //                | "sizeof" unary
-//                | "sizeof"   "(" type_ptr array_def? ")"
-//                | "_Alignof" "(" type_ptr array_def? ")"
+//                | "sizeof"   "(" type_name ")"
+//                | "_Alignof" "(" type_name ")"
 static Node *unary(void) {
     Node *node;
     char *input = input_str();
