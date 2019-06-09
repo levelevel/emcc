@@ -184,6 +184,27 @@ char *get_byte_string(Node *node, int array_size, int data_size) {
     return byte_string;
 }
 
+//変数のアセンブラ上の名前を返す。
+//戻り値は関数内部の静的な領域を指していることがあり、コールする度に上書きされる。
+static char *get_asm_var_name(Node *node) {
+    static char buf[16];
+    char *ret = buf;
+    if (node->type==ND_LOCAL_VAR) {
+        Vardef *vardef;
+        map_get(cur_funcdef->ident_map, node->name, (void**)&vardef);
+        if (type_is_static(node->tp)) {
+            sprintf(buf, "%s.%03d", node->name, vardef->offset);
+        } else {
+            sprintf(buf, "rbp-%d", vardef->offset);
+        }
+    } else if (node->type==ND_GLOBAL_VAR) {
+        ret = node->name;
+    } else {
+        _NOT_YET_(node);
+    }
+    return ret;
+}
+
 static int gen(Node*node);
 
 //ローカル変数の配列の初期化。スタックトップに変数のアドレスが設定されている前提。
@@ -260,10 +281,10 @@ static void gen_array_init(Node *node) {
     }
 }
 
-//ローカル変数の配列の初期化
+//グローバル変数の配列の初期化
 static void gen_array_init_global(Node *node) {
     assert(node->type=='=');
-    assert(node->lhs->type==ND_GLOBAL_VAR);
+    assert(node->lhs->type==ND_GLOBAL_VAR || type_is_static(node->lhs->tp));
     assert(node->lhs->tp->type==ARRAY);
     int array_size  = node->lhs->tp->array_size;  //配列のサイズ
     int data_len;
@@ -312,14 +333,8 @@ static void gen_array_init_global(Node *node) {
 //式を左辺値として評価し、そのアドレスをPUSHする
 static void gen_lval(Node*node) {
     if (node->type == ND_LOCAL_VAR) {   //ローカル変数
-        Vardef *vardef;
-        map_get(cur_funcdef->ident_map, node->name, (void**)&vardef);
         comment("LVALUE:%s (LOCAL:%s)\n", node->name, get_type_str(node->tp));
-        if (type_is_static(node->tp)) {
-            printf("  lea rax, %s.%03d\n", vardef->name, vardef->offset);
-        } else {
-            printf("  lea rax, [rbp-%d]\n", vardef->offset);
-        }
+        printf("  lea rax, [%s]\n", get_asm_var_name(node));
         printf("  push rax\n");
     } else if (node->type == ND_GLOBAL_VAR) {   //グローバル変数
         Vardef *vardef;
@@ -340,16 +355,8 @@ static void gen_lval(Node*node) {
 static void gen_read_var(Node *node, const char *reg) {
     char cbuf[256];
     sprintf(cbuf, "%s(%s)", node->name, get_type_str(node->tp));
-    if (node->type==ND_LOCAL_VAR) {
-        Vardef *vardef;
-        char buf[20];
-        map_get(cur_funcdef->ident_map, node->name, (void**)&vardef);
-        if (type_is_static(node->tp)) {
-            sprintf(buf, "%s.%03d", node->name, vardef->offset);
-        } else {
-            sprintf(buf, "rbp-%d", vardef->offset);  //rbp-ローカル変数のoffset
-        }
-        gen_read_reg(reg, buf, node->tp, cbuf);
+    if (node->type==ND_LOCAL_VAR || node->type==ND_GLOBAL_VAR) {
+        gen_read_reg(reg, get_asm_var_name(node), node->tp, cbuf);
     } else {
         gen_lval(node);
         printf("  pop rax\n");  //rhsのアドレス=戻り値
@@ -363,18 +370,8 @@ static void gen_write_var(Node *node, char *reg) {
     char cbuf[256];
     sprintf(cbuf, "%s(%s)", node->name, get_type_str(node->tp));
     if (node->type==ND_LOCAL_VAR) {
-        Vardef *vardef;
-        char buf[20];
-        map_get(cur_funcdef->ident_map, node->name, (void**)&vardef);
-        if (type_is_extern(node->tp)) {
-            sprintf(buf, "%s", node->name);
-        } else if (type_is_static(node->tp)) {
-            sprintf(buf, "%s.%03d", node->name, vardef->offset);
-        } else {
-            sprintf(buf, "rbp-%d", vardef->offset);  //rbp-ローカル変数のoffset
-        }
         printf("  pop %s\n", reg);  //writeする値
-        gen_write_reg(buf, reg, node->tp, cbuf);
+        gen_write_reg(get_asm_var_name(node), reg, node->tp, cbuf);
     } else {
         gen_lval(node);
         printf("  pop rcx\n");  //変数のアドレス
@@ -810,8 +807,7 @@ static long get_single_val(Node *node) {
 //グローバル変数のコードを生成
 static void gen_global_var(Vardef *vardef) {
     Node *node = vardef->node;
-    assert(node->type == ND_GLOBAL_VAR_DEF || 
-          (node->type == ND_LOCAL_VAR_DEF && type_is_static(node->tp)));
+    assert(node->type == ND_GLOBAL_VAR_DEF || type_is_static(node->tp));
     if (type_is_extern(node->tp)) return;
     int size = size_of(node->tp);
     int align_size = align_of(node->tp);
@@ -843,7 +839,7 @@ static void gen_global_var(Vardef *vardef) {
             break;
         case PTR:
             if (rhs->type==ND_ADDRESS) {
-                printf("  .quad %s\n", rhs->rhs->name);
+                printf("  .quad %s\n", get_asm_var_name(rhs->rhs));
             } else if (rhs->type==ND_NUM || rhs->type==ND_LIST) {
                 printf("  .quad %ld\n", get_single_val(rhs));
             } else if (rhs->type=='+') {
@@ -905,8 +901,9 @@ void gen_program(void) {
     size = funcdef_map->vals->len;
     funcdef = (Funcdef**)funcdef_map->vals->data;
     for (int i=0; i < size; i++) {
-        vardefs = (Vardef**)funcdef[i]->ident_map->vals->data;
-        for (int j=0; j < funcdef[i]->ident_map->vals->len; j++) {
+        cur_funcdef = funcdef[i];
+        vardefs = (Vardef**)cur_funcdef->ident_map->vals->data;
+        for (int j=0; j < cur_funcdef->ident_map->vals->len; j++) {
             if (type_is_static(vardefs[j]->node->tp)) {
                 gen_global_var(vardefs[j]);
             }

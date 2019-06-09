@@ -350,14 +350,14 @@ static void regist_var_def(Node *node) {
             error_at(node->input, "'%s'はローカル変数の重複定義です", name);
         }
     } else {            //グローバル変数
+        node->type = ND_GLOBAL_VAR_DEF;
         if (map_get(global_vardef_map, name, NULL)==0) {
             Vardef *vardef = calloc(1, sizeof(Vardef));
             vardef->name = name;
             vardef->node = node;
-            node->type = ND_GLOBAL_VAR_DEF;
             map_put(global_vardef_map, name, vardef);
-        } else {
-            error_at(node->input, "'%s'はグローバルの重複定義です", name);
+        } else if (!type_is_extern(node->tp)) {
+            error_at(node->input, "'%s'はグローバル変数の重複定義です", name);
         }
     }
 }
@@ -712,7 +712,8 @@ static Node *init_declarator(Type *decl_spec, Type *tp, char *name) {
         error_at(input_str(), "配列のサイズが未定義です");
 
     //グローバルスカラー変数の初期値は定数または固定アドレスでなければならない
-    if (node->tp->type!=ARRAY && node->type==ND_GLOBAL_VAR_DEF && node->rhs &&
+    if ((node->type==ND_GLOBAL_VAR_DEF || type_is_static(node->tp)) && 
+        node->tp->type!=ARRAY && node->rhs &&
         node->rhs->rhs->type!=ND_STRING) {  //文字列リテラルはここではチェックしない
         long val;
         Node *var=NULL;
@@ -1475,12 +1476,14 @@ int node_is_const_or_address(Node *node, long *valp, Node **varp) {
     long val, val1, val2;
     Node *var1=NULL, *var2=NULL;
 
-    if (node->type==ND_ADDRESS && node->rhs->type==ND_GLOBAL_VAR) {
+    if (node->type==ND_ADDRESS &&
+        (node->rhs->type==ND_GLOBAL_VAR || type_is_static(node->rhs->tp))) {
         if (varp) *varp = node;
         if (valp) *valp = 0;
         return 1;
     }
-    if (node->type==ND_GLOBAL_VAR && node->tp->type==ARRAY) {
+    if ((node->type==ND_GLOBAL_VAR || type_is_static(node->tp))
+        && node->tp->type==ARRAY) {
         if (varp) *varp = new_node(ND_ADDRESS, NULL, node, node->tp->ptr_of, node->input);
         if (valp) *valp = 0;
         return 1;

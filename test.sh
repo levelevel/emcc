@@ -24,8 +24,9 @@ test_src() {
   if [ $? -eq 0 ]; then
     echo "gcc TEST OK    : $src"
   else
-    grep error $EXE2.gcc.log
+    egrep "error|9cc" $EXE2.gcc.log
     echo "gcc TEST FAIL! : $src"
+    echo "see more information: $EXE2.gcc.log"
     exit 1;
   fi
 

@@ -1,5 +1,9 @@
 #ifdef _9cc
 //#define void
+#define stdin  (__acrt_iob_func(0))
+#define stdout (__acrt_iob_func(1))
+#define stderr (__acrt_iob_func(2))
+
 #else
 #include <stdio.h>
 #include <stdlib.h>
@@ -242,9 +246,18 @@ static int fib(int a) {
     else if (a==1) return 1;
     else return fib(a-1) + fib(a-2);
 }
-static int stdarg(int x, ...)
-{
-    return x;
+static char* stdarg(char fmt, ...) {
+#ifdef _9cc
+    #define va_start __va_start
+    #define va_list char*
+#endif
+    static char buf[256];
+#if 0
+    va_list ap;
+    va_start(ap, fmt);
+    vsprintf(buf, fmt, ap);
+#endif
+    return buf;
 }
 int func() {
     return
@@ -400,6 +413,10 @@ int array3l() {
     return
         a[1] == a+1 && p[2*5+3]==10 && *(q+2*5*6+3*6+4)==20;
 }
+int sarray2() {
+//    static int a[4]={1,2,3,4}, *p=a, *q=&a[2];
+//    return af2(a)==6 && p[1]==2, *q==3;
+}
 int array() {
     TEST(array1);
     TEST(array1c);
@@ -413,6 +430,8 @@ int array() {
     TEST(array3c);
     TEST(array3s);
     TEST(array3l);
+
+//    TEST(sarray2);
     return 1;
 }
 
@@ -753,13 +772,13 @@ extern long  g_extern_l;
 static char  g_static_c=2;
 static short g_static_s=3;
 static int   g_static_i=4;
-static long  g_static_l=0;
+static long  g_static_l=5;
 
 static int extern1() {
     g_extern_s = 5;
     return
         g_extern_c==1 && g_extern_s==5 && g_extern_i==3 && g_extern_l==4 &&
-        g_static_c==2 && g_static_s==3 && g_static_i==4 && g_static_l==0;
+        g_static_c==2 && g_static_s==3 && g_static_i==4 && g_static_l==5;
 }
 static int extern2() {
     extern char *g_extern_pc, g_extern_ac6[];
@@ -773,6 +792,14 @@ static int extern2() {
         g_extern_ac6[2]=='C' &&
         g_extern_ai4[2]==20 &&
         g_extern_al4[2]==3;
+}
+static int extern3() {
+    extern char  g_static_c;
+    extern short g_static_s;
+    extern int   g_static_i;
+    extern long  g_static_l;
+    return
+        g_static_c==2 && g_static_s==3 && g_static_i==4 && g_static_l==5;
 }
 static int static1() {
     static char  g_static_c=1;
@@ -794,6 +821,7 @@ static int static1() {
 static int ext() {
     TEST(extern1);
     TEST(extern2);
+    TEST(extern3);
     TEST(static1);
     return 1;
 }
