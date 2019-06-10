@@ -5,10 +5,10 @@
 //現在のトークンの型が引数と一致しているか
 #define token_type() (tokens[token_pos]->type)
 #define token_is(_tp) (token_type()==(_tp))
-#define token_is_type_spec() (TK_CHAR<=token_type() && token_type()<=TK_EXTERN)
+#define token_is_type_spec() (TK_VOID<=token_type() && token_type()<=TK_EXTERN)
 #define next_token_type() (tokens[token_pos+1]->type)
 #define next_token_is(_tp) (next_token_type()==(_tp))
-#define next_token_is_type_spec() (TK_CHAR<=next_token_type() && next_token_type()<=TK_EXTERN)
+#define next_token_is_type_spec() (TK_VOID<=next_token_type() && next_token_type()<=TK_EXTERN)
 
 //トークンの種類を定義
 typedef struct {
@@ -57,6 +57,7 @@ TokenDef TokenLst1[] = {
 
 //トークンの終わりをis_alnum()で判定するもの
 TokenDef TokenLst2[] = {
+    {"void",     4, TK_VOID},
     {"char",     4, TK_CHAR},
     {"short",    5, TK_SHORT},
     {"int",      3, TK_INT},
@@ -235,6 +236,7 @@ static int consume_ident(char**name) {
 long size_of(const Type *tp) {
     assert(tp);
     switch (tp->type) {
+    case VOID:     return sizeof(void);
     case CHAR:     return sizeof(char);
     case SHORT:    return sizeof(short);
     case INT:      return sizeof(int);
@@ -256,6 +258,16 @@ int align_of(const Type *tp) {
     assert(tp);
     if (tp->type==ARRAY) return align_of(tp->ptr_of);
     return size_of(tp);
+}
+
+//strage classを外したTypeの複製を返す。
+static Type *get_typeof(Type *tp) {
+    Type *ret = malloc(sizeof(Type));
+    memcpy(ret, tp, sizeof(Type));
+    ret->is_static = 0;
+    ret->is_extern = 0;
+    if (tp->ptr_of) ret->ptr_of = get_typeof(tp->ptr_of);
+    return ret;
 }
 
 //ノードのタイプが等しいかどうかを判定する
@@ -479,14 +491,14 @@ static Node *new_node_list(Node *item, char *input) {
                             | type_qualifier         declaration_specifiers*
     init_declarator         = declarator ( "=" initializer )?
     strage_class_specifier  = "static" | "extern"
-    type_specifier          = "char" | "short" | "int" | "long" | "signed" | "unsigned"
+    type_specifier          = "void" | "char" | "short" | "int" | "long" | "signed" | "unsigned"
     type_qualifier          = "const"
-    declarator              = pointer* direct_declarator
+    declarator              = pointer? direct_declarator
     direct_declarator       = identifier | "(" declarator ")"
                             | direct_declarator "[" assign? "]"
-                            | direct_declarator "(" parameter_type_list? ")"    //関数定義
+                            | direct_declarator "(" parameter_type_list? ")"    //関数
     parameter_type_list     = parameter_declaration ( "," parameter_declaration )* ( "," "..." )?
-    parameter_declaration   = declaration_specifiers ( declarator | abstruct_declarator )?
+    parameter_declaration   = declaration_specifiers ( declarator | abstract_declarator )?
     initializer             = assign
                             | "{" init_list "}"
                             | "{" init_list "," "}"
@@ -494,12 +506,13 @@ static Node *new_node_list(Node *item, char *input) {
                             | init_list "," initializer
     array_def   = "[" expr? "]" ( "[" expr "]" )*
     pointer                 = ( "*" )*
-    type_name               = type_specifier abstruct_declarator*
-                            | type_qualifier abstruct_declarator*
-    abstruct_declarator     = pointer? direct_abstruct_declarator
-    direct_abstruct_declarator = "(" abstruct_declarator ")"
-                            | direct_abstruct_declarator? "[" assign "]"
-                            | direct_abstruct_declarator? "(" parameter_type_list? ")"  //関数
+    type_name               = "typeof" "(" identifier ")"
+                            | type_specifier abstract_declarator*
+                            | type_qualifier abstract_declarator*
+    abstract_declarator     = pointer? direct_abstract_declarator
+    direct_abstract_declarator = "(" abstract_declarator ")"
+                            | direct_abstract_declarator? "[" assign "]"
+                            | direct_abstract_declarator? "(" parameter_type_list? ")"  //関数
 - A.2.3 Statements
     statement   = compound_statement
                 | declaration
@@ -548,8 +561,8 @@ static Node *initializer(void);
 static Node *init_list(void);
 static Type *pointer(Type *tp);
 static Type *type_name(void);
-static Type *abstruct_declarator(Type *tp);
-static Type *direct_abstruct_declarator(Type *tp);
+static Type *abstract_declarator(Type *tp);
+static Type *direct_abstract_declarator(Type *tp);
 static Type *declaration_specifiers(void);
 static Type *array_def(Type *tp);
 
@@ -585,11 +598,12 @@ static Node *external_declaration(void) {
     Node *node;
     Type *tp;
     char *name;
-
     //          <-> declaration_specifiers
-    //             <-> pointer? (declarator|init_declarator)
+    //             <-> pointer* (declarator|init_declarator)
     //                <-> identifier (declarator|init_declarator)
-    // 関数定義：int * foo (){}
+    // 関数定義：int * foo (int a){
+    // 関数宣言：int * foo (int a);
+    //          int * foo (int);
     // 変数定義：int * ptr ;
     //          int   abc = 1;
     //          int   ary [4];
@@ -740,7 +754,7 @@ static Node *init_declarator(Type *decl_spec, Type *tp, char *name) {
 //    declarator              = pointer* direct_declarator
 //    direct_declarator       = identifier | "(" declarator ")"
 //                            = direct_declarator "[" assign? "]"
-//                            | direct_abstruct_declarator? "(" parameter_type_list? ")"  //関数宣言
+//                            | direct_abstract_declarator? "(" parameter_type_list? ")"  //関数宣言
 //declaration_specifiers, pointer, identifierまで先読み済みの可能性あり
 //戻り値のnodeはname、lhs（関数の場合の引数）、tp以外未設定
 static Node *declarator(Type *decl_spec, Type *tp, char *name) {
@@ -768,7 +782,10 @@ static Node *direct_declarator(Type *tp, char *name) {
     if (consume('(')) { //関数定義確定
         lhs = parameter_type_list();
         if (!consume(')')) error_at(input_str(), "閉じかっこがありません");
+    } else if (tp->type==VOID) {
+        error_at(input_str(), "不正なvoid指定です"); 
     }
+    
     if (token_is('[')) tp = array_def(tp);
     node = new_node(0, lhs, NULL, tp, NULL);
     node->name = name;
@@ -776,7 +793,7 @@ static Node *direct_declarator(Type *tp, char *name) {
 }
 
 //    parameter_type_list     = parameter_declaration ( "," parameter_declaration )* ( "," "..." )?
-//    parameter_declaration   = declaration_specifiers ( declarator | abstruct_declarator )?
+//    parameter_declaration   = declaration_specifiers ( declarator | abstract_declarator )?
 static Node *parameter_type_list(void) {
     Node *node = new_node_list(NULL, input_str());
     Node *last_node;
@@ -886,26 +903,28 @@ static Type *pointer(Type *tp) {
     return tp;
 }
 
-//    type_name               = ( type_specifier | type_qualifier )+ abstruct_declarator*
-//    abstruct_declarator     = pointer? direct_abstruct_declarator
-//    direct_abstruct_declarator = "(" abstruct_declarator ")"
-//                            | direct_abstruct_declarator? "[" assign "]"
-//                            | direct_abstruct_declarator? "(" parameter_type_list? ")"  //関数
+//    type_name               = "typeof" "(" identifier ")"
+//                            | type_specifier abstract_declarator*
+//                            | type_qualifier abstract_declarator*
+//    abstract_declarator     = pointer? direct_abstract_declarator
+//    direct_abstract_declarator = "(" abstract_declarator ")"
+//                            | direct_abstract_declarator? "[" assign "]"
+//                            | direct_abstract_declarator? "(" parameter_type_list? ")"  //関数
 static Type *type_name(void) {
     Type *tp = declaration_specifiers();
     if (tp->is_static) error_at(input_str(), "staticは指定できません");
     if (tp->is_extern) error_at(input_str(), "externは指定できません");
-    tp = abstruct_declarator(tp);
+    tp = abstract_declarator(tp);
     return tp;
 }
-static Type *abstruct_declarator(Type *tp) {
+static Type *abstract_declarator(Type *tp) {
     tp = pointer(tp);
-    tp = direct_abstruct_declarator(tp);
+    tp = direct_abstract_declarator(tp);
     return tp;
 }
-static Type *direct_abstruct_declarator(Type *tp) {
+static Type *direct_abstract_declarator(Type *tp) {
     if (consume('(')){
-        tp = abstruct_declarator(tp);
+        tp = abstract_declarator(tp);
         if (!consume(')')) error_at(input_str(), "閉じかっこがありません");
     }
     if (token_is('[')) tp = array_def(tp);
@@ -924,71 +943,59 @@ static Type *declaration_specifiers(void) {
         char *name;
         if (!consume_ident(&name)) error_at(input_str(), "識別子がありません");
         Node *node = new_node_var(name, NULL);
-        tp = node->tp;
+        tp = get_typeof(node->tp);
         if (!consume(')')) error_at(input_str(), "typeofの後に閉じカッコがありません");
     	return tp;
     }
 
     char *input;
     Typ type = 0;
-    int is_unsigned = 0;
-
-    int char_cnt = 0;
-    int short_cnt = 0;
-    int int_cnt = 0;
-    int long_cnt = 0;
-    int signed_cnt = 0;
-    int unsigned_cnt = 0;
-    int static_cnt = 0;
-    int extern_cnt = 0;
+    int is_unsigned = -1;
+    int is_static = -1; //0:extern
 
     while (1) {
         input = input_str();
-        if (consume(TK_CHAR)) {
+        if (consume(TK_VOID)) {
+            if (type) error_at(input, "型指定が不正です\n");
+            type = VOID;
+        } else if (consume(TK_CHAR)) {
             if (type) error_at(input, "型指定が不正です\n");
             type = CHAR;
-            char_cnt++;
         } else if (consume(TK_SHORT)) {
             if (type && type!=INT) error_at(input, "型指定が不正です\n");
             type = SHORT;
-            short_cnt++;
         } else if (consume(TK_INT)) {
             if (type && type!=SHORT && type!=LONG && type!=LONGLONG) error_at(input, "型指定が不正です\n");
             type = INT;
-            int_cnt++;
         } else if (consume(TK_LONG)) {
             if (type==LONG) type = LONGLONG;
             else if (type && type!=INT) error_at(input, "型指定が不正です\n");
             else type = LONG;
-            long_cnt++;
         } else if (consume(TK_SIGNED)) {
-            if (unsigned_cnt) error_at(input, "型指定が不正です\n");
-            signed_cnt++;
+            if (is_unsigned>=0) error_at(input, "型指定が不正です\n");
+            is_unsigned = 1;
         } else if (consume(TK_UNSIGNED)) {
-            if (signed_cnt) error_at(input, "型指定が不正です\n");
-            unsigned_cnt++;
+            if (is_unsigned>=0) error_at(input, "型指定が不正です\n");
             is_unsigned = 1;
         } else if (consume(TK_STATIC)) {
-            if (static_cnt) error_at(input, "型指定が不正です\n");
-            static_cnt++;
+            if (is_static>=0) error_at(input, "型指定が不正です\n");
+            is_static = 1;
         } else if (consume(TK_EXTERN)) {
-            if (extern_cnt) error_at(input, "型指定が不正です\n");
-            extern_cnt++;
+            if (is_static>=0) error_at(input, "型指定が不正です\n");
+            is_static = 0;
         } else {
-            if (!type && (signed_cnt || unsigned_cnt)) type = INT;
-            if (!type) error_at(input_str(), "型名がありません\n");
+            if (!type && is_unsigned>=0) type = INT;
+            if (!type) error_at(input, "型名がありません\n");
             break;
         }
-        if (char_cnt>1 || short_cnt>1 || int_cnt>1 || long_cnt>2 ||
-            signed_cnt>1 || unsigned_cnt>1 || 
-            static_cnt>1 || extern_cnt>1 ||
-            (static_cnt && extern_cnt))
-            error_at(input, "型指定が重複しています\n");
+        if (type==VOID && is_unsigned>=0)
+            error_at(input, "void型の指定が不正です\n");
     }
 
+    if (is_unsigned<0) is_unsigned = 0;
     tp = new_type(type, is_unsigned);
-    if (static_cnt) tp->is_static = 1;
-    if (extern_cnt) tp->is_extern = 1;
+    if (is_static==1) tp->is_static = 1;
+    if (is_static==0) tp->is_extern = 1;
     return tp;
 }
 

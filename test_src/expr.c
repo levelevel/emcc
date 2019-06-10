@@ -259,7 +259,12 @@ static char* stdarg(char fmt, ...) {
 #endif
     return buf;
 }
+//void void_func(void) {
+void void_func() {
+    ;
+}
 int func() {
+    void_func();
     return
         fact(10) == 55 &&
         fib(10) == 55;
@@ -597,6 +602,16 @@ int size_of1ll() {
         sizeof(long long[5][2])==8*5*2 && sizeof(long long*[3][2])==8*3*2 &&
         sizeof(1)==4 && sizeof(1==1)==4 && sizeof(n=1)==8;
 }
+int size_of1v() {
+    void *p, *a[2*4], *a2[2][3];
+    return
+        sizeof(p)==8 &&
+        sizeof(a)==8*8 && sizeof(a[0])==8 &&
+        sizeof(a2)==8*2*3 && sizeof(a2[0])==8*3 && sizeof(a2[0][1])==8 &&
+        sizeof(void)==1 && sizeof(void*)==8 && sizeof(void(*(*)))==8 &&
+        sizeof(char*[3])==8*3 &&
+        sizeof(char*[5][2])==8*5*2 && sizeof(char*[3][2])==8*3*2;
+}
 int size_of2() {
     return
         _Alignof(char)==1            && _Alignof(char*)==8 &&
@@ -620,6 +635,7 @@ int size_of() {
     TEST(size_of1s);
     TEST(size_of1l);
     TEST(size_of1ll);
+    TEST(size_of1v);
     TEST(size_of2);
     return 1;
 }
@@ -631,13 +647,15 @@ int type_of() {
     long  l; typeof(l) l2;
     long long ll; typeof(ll) ll2;
     char *p; typeof(p) p2;
+    static int si;
     return
         sizeof(c) == sizeof(c2) &&
         sizeof(s) == sizeof(s2) &&
         sizeof(i) == sizeof(i2) &&
         sizeof(l) == sizeof(l2) &&
         sizeof(ll) == sizeof(ll2) &&
-        sizeof(p) == sizeof(p2);
+        sizeof(p) == sizeof(p2) &&
+        sizeof(typeof(si))==4;
 }
 
     int sc_x=0, sc_y=0;

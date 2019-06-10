@@ -25,6 +25,7 @@ typedef enum {
     TK_NUM = 256,   //整数トークン
     TK_STRING,      //文字列
     TK_IDENT,       //識別子
+    TK_VOID,        //void
     TK_CHAR,        //char
     TK_SHORT,       //short
     TK_INT,         //int
@@ -118,7 +119,8 @@ typedef enum {
 } NDtype;
 
 typedef enum {
-    CHAR = 1,
+    VOID = 1,
+    CHAR,
     SHORT,
     INT,
     LONG,

@@ -16,10 +16,7 @@ https://www.sigbus.info/compilerbook/
 - case文
 - goto（多重ループから抜けるために使っているけど、コードを書き直してもよい）
 - enum
-- void型のポインタ
-- 関数の戻り値のvoid（int扱いでもたぶんOK）
-- グローバル変数のextern宣言
-- 関数の宣言（引数の情報は使わない：たぶんOK）
+- 関数の宣言
 - **構造体の実装**
   - .
   - ->
@@ -36,15 +33,15 @@ https://www.sigbus.info/compilerbook/
 
 コードで使用しているが、影響がない（少ない）のでコンパイル時に読み飛ばすもの。
 
-- 関数宣言
-- 引数リストのvoid
 - 関数の引数の型チェック
 - 関数の戻り値の型チェック（常に64bitで返せは問題ないはず）
 
 ## その他、制限事項・バグなど
 
+- 関数宣言
+- 引数リストのvoid
 - ポインタ同士の減算（差分）
-- トップレベルに空の ; があるとエラーになる。
+- トップレベルに空の ; があるとエラーになる（構文規則的になぜOKなのか不明）。
 - ブロックコメントの終了判定が雑
 - ローカル配列のサイズが定数でないケースは未実装。
 - 関数の引数は型も個数もチェックしていない。
@@ -54,7 +51,7 @@ https://www.sigbus.info/compilerbook/
 
 ## [Cの仕様書](http://port70.net/~nsz/c/c11/n1570.html#A)を読むときのメモ
 
-- `xxx_list` は `xxx` をカンマ `,` で並べたもので、BNFでは `xxx ( , xxx)*` で記載している。
+- `xxx_list` は `xxx` をカンマ `,` で並べたもので、9ccのBNFでは `xxx ( , xxx)*` で記載している。
 - `xxx` から先頭の `pointer*` をなくしたものが `direct_xxx`。
 例： `declarator = pointer* direct_declarator`
 - `declarator` と　`abstract_declarator` の違いは前者には `identifier` を含むが、後者は含まないこと。
