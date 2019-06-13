@@ -221,16 +221,54 @@ EXTERN Map *funcdef_map;    //key=name, value=Funcdef
 //ユニークなIDを生成するためのindex
 EXTERN int global_index;
 
-// parse.c
-long size_of(const Type *tp);
-int align_of(const Type *tp);
+//現在のトークン（エラー箇所）の入力文字列
+#define input_str() (tokens[token_pos]->input)
+//現在のトークンの型が引数と一致しているか
+#define token_type() (tokens[token_pos]->type)
+#define token_is(_tp) (token_type()==(_tp))
+#define token_is_type_spec() (TK_VOID<=token_type() && token_type()<=TK_EXTERN)
+#define next_token_type() (tokens[token_pos+1]->type)
+#define next_token_is(_tp) (next_token_type()==(_tp))
+#define next_token_is_type_spec() (TK_VOID<=next_token_type() && next_token_type()<=TK_EXTERN)
+
+// tokenize.c
 void tokenize(char *p);
 void dump_tokens(void);
-void translation_unit(void);
+
+// parse_util.c
+long size_of(const Type *tp);
+int align_of(const Type *tp);
 int node_is_const(Node *node, long *val);
 int node_is_const_or_address(Node *node, long *valp, Node **varp);
 int type_is_static(Type *tp);
 int type_is_extern(Type *tp);
+
+#ifdef _PARSE_C_
+int consume(TKtype type);
+int consume_ident(char**name);
+Type *get_typeof(Type *tp);
+int node_type_eq(const Type *tp1, const Type *tp2);
+int get_var_offset(const Type *tp);
+Funcdef *new_funcdef(void);
+Type *new_type_ptr(Type*ptr);
+Type *new_type_array(Type*ptr, size_t size);
+Type *new_type(int type, int is_unsigned);
+Node *new_node(int type, Node *lhs, Node *rhs, Type *tp, char *input);
+Node *new_node(int type, Node *lhs, Node *rhs, Type *tp, char *input);
+Node *new_node_num(long val, char *input);
+void regist_var_def(Node *node);
+Node *new_node_var_def(char *name, Type*tp, char *input);
+Node *new_node_string(char *string, char *input);
+Node *new_node_var(char *name, char *input);
+Node *new_node_func_call(char *name, char *input);
+Node *new_node_func_def(char *name, Type *tp, char *input);
+Node *new_node_empty(char *input);
+Node *new_node_block(char *input);
+Node *new_node_list(Node *item, char *input);
+#endif
+
+// parse.c
+void translation_unit(void);
 
 // codegen.c
 void gen_program(void);
