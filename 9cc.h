@@ -126,7 +126,9 @@ typedef enum {
     LONG,
     LONGLONG,
     PTR,
-    ARRAY
+    ARRAY,
+    CONST,          //一時的なデータ構造でのみ使用し、必ずptr_ofを持つ。
+                    //親をconstで修飾する。親がいないときは型を修飾する。
 } Typ;
 typedef struct _Type Type;
 struct _Type {
@@ -134,6 +136,7 @@ struct _Type {
     char is_unsigned;   //unsigned型
     char is_extern;
     char is_static;
+    char is_const;
     Type *ptr_of;
     long array_size;    //typeがARRAYの場合の配列サイズ。未定義の場合は-1
 };

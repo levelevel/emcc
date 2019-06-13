@@ -242,6 +242,7 @@ long size_of(const Type *tp) {
     case INT:      return sizeof(int);
     case LONG:     return sizeof(long);
     case LONGLONG: return sizeof(long long);
+    case CONST:    assert(0);
     case PTR:      return sizeof(void*);
     case ARRAY:
         if (tp->array_size<0) return sizeof(void*);
@@ -486,11 +487,11 @@ static Node *new_node_list(Node *item, char *input) {
 - A.2.2 Declarations
     declaration             = declaration_specifiers init_declarator ( "," init_declarator )* ";"
     declaration_specifiers  = "typeof" "(" identifier ")"
-                            | type_specifier         declaration_specifiers*
-                            | strage_class_specifier declaration_specifiers*
-                            | type_qualifier         declaration_specifiers*
+                            | type_specifier          declaration_specifiers*
+                            | storage_class_specifier declaration_specifiers*
+                            | type_qualifier          declaration_specifiers*
     init_declarator         = declarator ( "=" initializer )?
-    strage_class_specifier  = "static" | "extern"
+    storage_class_specifier  = "static" | "extern"
     type_specifier          = "void" | "char" | "short" | "int" | "long" | "signed" | "unsigned"
     type_qualifier          = "const"
     declarator              = pointer? direct_declarator
@@ -505,7 +506,7 @@ static Node *new_node_list(Node *item, char *input) {
     init_list               = initializer
                             | init_list "," initializer
     array_def   = "[" expr? "]" ( "[" expr "]" )*
-    pointer                 = ( "*" )*
+    pointer                 = ( "*" type_qualifier* )*
     type_name               = "typeof" "(" identifier ")"
                             | type_specifier abstract_declarator*
                             | type_qualifier abstract_declarator*
@@ -522,7 +523,7 @@ static Node *new_node_list(Node *item, char *input) {
                 | "for" "(" expr? ";" expr? ";" expr? ")" statement
                 | "break"
                 | "continue"
-    compound_statement      = "{" eclaration | statement* "}"
+    compound_statement      = "{" declaration | statement* "}"
 - A.2.1 Expressions
     expr        = assign ( "," assign )* 
     assign      = tri_cond ( "=" assign | "+=" assign | "-=" assign )*
@@ -895,9 +896,23 @@ static Type *array_def(Type *tp) {
     return ret_tp;
 }
 
+//    pointer                 = ( "*" type_qualifier* )*
 static Type *pointer(Type *tp) {
+    int is_const = 0;
+    if (tp->type==CONST) {
+        is_const = 1;
+        tp = tp->ptr_of;
+    }
     while (consume('*')) {
         tp = new_type_ptr(tp);
+        if (is_const) tp->is_const = 1;
+        is_const = 0;
+        while (consume(TK_CONST)) is_const = 1;
+    }
+    if (is_const) {
+        Type *tmp = tp;
+        while (tmp->ptr_of) tmp = tmp->ptr_of;
+        tmp->is_const = 1;       
     }
 
     return tp;
@@ -933,7 +948,7 @@ static Type *direct_abstract_declarator(Type *tp) {
 
 //    declaration_specifiers  = "typeof" "(" identifier ")"
 //                            | type_specifier         declaration_specifiers*
-//                            | strage_class_specifier declaration_specifiers*
+//                            | storage_class_specifier declaration_specifiers*
 //                            | type_qualifier         declaration_specifiers*
 static Type *declaration_specifiers(void) {
     Type *tp;
@@ -952,6 +967,8 @@ static Type *declaration_specifiers(void) {
     Typ type = 0;
     int is_unsigned = -1;
     int is_static = -1; //0:extern
+    int pre_const = 0;  //型の前にconstがある：const int
+    int post_const = 0; //型の後にconstがある：int const
 
     while (1) {
         input = input_str();
@@ -978,11 +995,14 @@ static Type *declaration_specifiers(void) {
             if (is_unsigned>=0) error_at(input, "型指定が不正です\n");
             is_unsigned = 1;
         } else if (consume(TK_STATIC)) {
-            if (is_static>=0) error_at(input, "型指定が不正です\n");
+            if (is_static>=0) error_at(input, "strage classが重複しています\n");
             is_static = 1;
         } else if (consume(TK_EXTERN)) {
-            if (is_static>=0) error_at(input, "型指定が不正です\n");
+            if (is_static>=0) error_at(input, "strage classが重複しています\n");
             is_static = 0;
+        } else if (consume(TK_CONST)) {
+            if (type == 0) pre_const = 1;
+            else           post_const = 1;
         } else {
             if (!type && is_unsigned>=0) type = INT;
             if (!type) error_at(input, "型名がありません\n");
@@ -996,6 +1016,12 @@ static Type *declaration_specifiers(void) {
     tp = new_type(type, is_unsigned);
     if (is_static==1) tp->is_static = 1;
     if (is_static==0) tp->is_extern = 1;
+    if (pre_const)    tp->is_const = 1;
+    if (post_const) {
+        Type *tmp = tp;
+        tp = new_type(CONST, 0);
+        tp->ptr_of = tmp;
+    }
     return tp;
 }
 

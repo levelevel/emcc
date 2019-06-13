@@ -46,7 +46,7 @@ int map_get(const Map *map, char *key, void**val) {
 }
 
 // ダンプ関数 ----------------------------------------
-static char *TypeStr[] = {"Nul", "void", "char", "short", "int", "long", "long long", "*", "["};
+static char *TypeStr[] = {"Nul", "void", "char", "short", "int", "long", "long long", "*", "[", "CONST"};
 
 //bufに対して型を表す文字列を生成する
 static void type_str(char *buf, const Type *tp) {
@@ -54,6 +54,7 @@ static void type_str(char *buf, const Type *tp) {
     if (tp->is_extern) strcat(buf, "extern ");
     if (tp->is_static) strcat(buf, "static ");
     if (tp->is_unsigned) strcat(buf, "unsigned ");
+    if (tp->is_const) strcat(buf, " const ");
     strcat(buf, TypeStr[tp->type]);
     if (tp->type==ARRAY) {
         char tmp[20];

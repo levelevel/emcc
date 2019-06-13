@@ -612,6 +612,17 @@ int size_of1v() {
         sizeof(char*[3])==8*3 &&
         sizeof(char*[5][2])==8*5*2 && sizeof(char*[3][2])==8*3*2;
 }
+int size_of1C() {
+    const int n, *p, a[2*4], a2[2][3];
+    return
+        sizeof(n)==4 && sizeof(&n)==8 && sizeof(p)==8 &&
+        sizeof(a)==4*8 && sizeof(a[0])==4 &&
+        sizeof(a2)==4*2*3 && sizeof(a2[0])==4*3 && sizeof(a2[0][1])==4 &&
+        sizeof(const int)==4 && sizeof(const int*)==8 && sizeof(const int(*(*)))==8 &&
+        sizeof(unsigned const int)==4 && sizeof(const signed int)==4 &&
+        sizeof(const int[5])==4*5 && sizeof(const int*[3])==8*3 &&
+        sizeof(const int[5][2])==4*5*2 && sizeof(int const*[3][2])==8*3*2;
+}
 int size_of2() {
     return
         _Alignof(char)==1            && _Alignof(char*)==8 &&
@@ -636,6 +647,7 @@ int size_of() {
     TEST(size_of1l);
     TEST(size_of1ll);
     TEST(size_of1v);
+    TEST(size_of1C);
     TEST(size_of2);
     return 1;
 }
@@ -836,11 +848,21 @@ static int static1() {
         --g_static_i==3 &&
         --g_static_l==4;
 }
+const int const1() {
+    const int i;
+    int const j;
+    const int *ip;
+    int const *jp;
+    const int const *const kp;
+    const const int const ccic;
+    return 1; 
+}
 static int ext() {
     TEST(extern1);
     TEST(extern2);
     TEST(extern3);
     TEST(static1);
+    TEST(const1);
     return 1;
 }
 
