@@ -33,13 +33,13 @@ typedef enum {
     TK_TYPEOF,      //typeof（非標準）
     TK_SIGNED,      //signed
     TK_UNSIGNED,    //unsigned
-//  TK_VOLATILE,
-//  TK_RESTRICT,
-    TK_CONST,
-//  TK_AUTO,
-//  TK_REGISTER,
-    TK_STATIC,
-    TK_EXTERN,
+//  TK_VOLATILE,    //type_qualifier
+//  TK_RESTRICT,    //type_qualifier
+    TK_CONST,       //type_qualifier
+    TK_AUTO,        //storage_class
+    TK_REGISTER,    //storage_class
+    TK_STATIC,      //storage_class
+    TK_EXTERN,      //storage_class
     TK_INC,         // ++
     TK_DEC,         // --
     TK_EQ,          // ==
@@ -133,15 +133,22 @@ typedef enum {
                     //親をconstで修飾する。親がいないときは型を修飾する。
 } Typ;
 
+typedef enum {
+    SC_UNDEF,
+    SC_AUTO,
+    SC_REGISTER,
+    SC_STATIC,
+    SC_EXTERN,
+} StorageClass;
+
 typedef struct _Type Type;
 typedef struct _Node Node;
 
 struct _Type {
     Typ type;
     char is_unsigned;   //unsigned型
-    char is_extern;
-    char is_static;
     char is_const;
+    StorageClass sclass;
     Type *ptr_of;
     Node *node;         //typeがFUNCの場合のND_FUNC_DEFのノード
     long array_size;    //typeがARRAYの場合の配列サイズ。未定義の場合は-1

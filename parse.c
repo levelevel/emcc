@@ -475,8 +475,7 @@ static Type *pointer(Type *tp) {
 //                            | direct_abstract_declarator? "(" parameter_type_list? ")"  //関数
 static Type *type_name(void) {
     Type *tp = declaration_specifiers();
-    if (tp->is_static) error_at(input_str(), "staticは指定できません");
-    if (tp->is_extern) error_at(input_str(), "externは指定できません");
+    if (tp->sclass!=SC_UNDEF) error_at(input_str(), "storage classは指定できません");
     tp = abstract_declarator(tp);
     return tp;
 }
@@ -513,8 +512,8 @@ static Type *declaration_specifiers(void) {
 
     char *input;
     Typ type = 0;
+    StorageClass sclass = SC_UNDEF;
     int is_unsigned = -1;
-    int is_static = -1; //0:extern
     int pre_const = 0;  //型の前にconstがある：const int
     int post_const = 0; //型の後にconstがある：int const
 
@@ -542,12 +541,18 @@ static Type *declaration_specifiers(void) {
         } else if (consume(TK_UNSIGNED)) {
             if (is_unsigned>=0) error_at(input, "型指定が不正です\n");
             is_unsigned = 1;
+        } else if (consume(TK_AUTO)) {
+            if (sclass) error_at(input, "strage classが重複しています\n");
+            sclass = SC_AUTO;
+        } else if (consume(TK_REGISTER)) {
+            if (sclass) error_at(input, "strage classが重複しています\n");
+            sclass = SC_REGISTER;
         } else if (consume(TK_STATIC)) {
-            if (is_static>=0) error_at(input, "strage classが重複しています\n");
-            is_static = 1;
+            if (sclass) error_at(input, "strage classが重複しています\n");
+            sclass = SC_STATIC;
         } else if (consume(TK_EXTERN)) {
-            if (is_static>=0) error_at(input, "strage classが重複しています\n");
-            is_static = 0;
+            if (sclass) error_at(input, "strage classが重複しています\n");
+            sclass = SC_EXTERN;
         } else if (consume(TK_CONST)) {
             if (type == 0) pre_const = 1;
             else           post_const = 1;
@@ -562,9 +567,8 @@ static Type *declaration_specifiers(void) {
 
     if (is_unsigned<0) is_unsigned = 0;
     tp = new_type(type, is_unsigned);
-    if (is_static==1) tp->is_static = 1;
-    if (is_static==0) tp->is_extern = 1;
-    if (pre_const)    tp->is_const = 1;
+    tp->sclass = sclass;
+    if (pre_const) tp->is_const = 1;
     if (post_const) {
         Type *tmp = tp;
         tp = new_type(CONST, 0);

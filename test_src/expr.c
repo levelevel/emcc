@@ -886,6 +886,27 @@ static int static1() {
         --g_static_i==3 &&
         --g_static_l==4;
 }
+static int static2() {
+    int i, ret;
+    for (i=10;i;i--) {
+        static int cnt=0;       //初期化は1回だけ
+        cnt++;
+        ret = cnt;
+    }
+    return ret==10;
+}
+static int auto1() {
+    auto char  auto_c=1;
+    auto short auto_s=2;
+    auto int   auto_i=3;
+    auto long  auto_l=4;
+    register char  register_c=1;
+    register short register_s=2;
+    register int   register_i=3;
+    register long  register_l=4;
+
+    return 1;
+}
 const int const1() {
     const int i;
     int const j;
@@ -900,6 +921,8 @@ static int ext() {
     TEST(extern2);
     TEST(extern3);
     TEST(static1);
+    TEST(static2);
+    TEST(auto1);
     TEST(const1);
     return 1;
 }

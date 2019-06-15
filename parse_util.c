@@ -145,16 +145,16 @@ int node_is_const_or_address(Node *node, long *valp, Node **varp) {
     return 1;
 }
 
-// static char*p; のような宣言ではPTRにはis_staticが設定されず、
+// static char*p; のような宣言ではPTRにはsclassが設定されず、
 // charだけに設定されているのでcharのところまで見に行く
 int type_is_static(Type *tp) {
     if (tp->ptr_of) return type_is_static(tp->ptr_of);
-    return tp->is_static;
+    return tp->sclass==SC_STATIC;
 }
 
 int type_is_extern(Type *tp) {
     if (tp->ptr_of) return type_is_extern(tp->ptr_of);
-    return tp->is_extern;
+    return tp->sclass==SC_EXTERN;
 }
 
 // ==================================================
@@ -181,8 +181,7 @@ int consume_ident(char**name) {
 Type *get_typeof(Type *tp) {
     Type *ret = malloc(sizeof(Type));
     memcpy(ret, tp, sizeof(Type));
-    ret->is_static = 0;
-    ret->is_extern = 0;
+    ret->sclass = SC_UNDEF;
     if (tp->ptr_of) ret->ptr_of = get_typeof(tp->ptr_of);
     return ret;
 }
