@@ -35,7 +35,7 @@
                             | type_qualifier abstract_declarator*
     abstract_declarator     = pointer? direct_abstract_declarator
     direct_abstract_declarator = "(" abstract_declarator ")"
-                            | direct_abstract_declarator? "[" assign "]"
+                            | direct_abstract_declarator? "[" assign? "]"
                             | direct_abstract_declarator? "(" parameter_type_list? ")"  //関数
 - A.2.3 Statements
     statement   = compound_statement
@@ -132,11 +132,16 @@ static Node *external_declaration(void) {
     //          int   abc = 1;
     //          int   ary [4];
     //                    ^ここまで読まないと区別がつかない
+    // ネスト：　int * ( )
+    //                ^ここでdeclarationが確定
     if (token_is_type_spec()) {
         tp = declaration_specifiers();
         tp = pointer(tp);
-        if (!consume_ident(&name)) error_at(input_str(), "型名の後に識別名がありません");
-        if (token_is('(')) {
+        if (token_is('(')) {    //int * ()
+            node = declaration(tp, NULL);
+        } else if (!consume_ident(&name)) {
+            error_at(input_str(), "型名の後に識別名がありません");
+        } else if (token_is('(')) {
             node = function_definition(tp, name);
         } else {
             node = declaration(tp, name);
@@ -149,25 +154,30 @@ static Node *external_declaration(void) {
 }
 
 //関数の定義: lhs=引数(ND_LIST)、rhs=ブロック(ND_BLOCK)
+//トップレベルにある関数定義もここで処理する。
 //    function_definition     = declaration_specifiers declarator compound_statement
 static Node *function_definition(Type *tp, char *name) {
-    Node *node, *tmp_node;
-    char *input = input_str();
+    Node *node;
     Type *decl_spec = tp;
     assert(name!=NULL);
-    node = new_node_func_def(name, tp, input);
     while (decl_spec->ptr_of) decl_spec = decl_spec->ptr_of;
-    tmp_node = declarator(decl_spec, tp, name);
-    node->lhs = tmp_node->lhs;
-    assert(node->tp == tmp_node->tp);
-    node->rhs = compound_statement();
+    node = declarator(decl_spec, tp, name);
+    if (token_is('{')) {
+        check_funcargs(node->lhs, 1);   //引数リストの妥当性を確認（定義モード）
+        node->rhs = compound_statement();
+        map_put(funcdef_map, node->name, cur_funcdef);
+    } else {
+        consume(';');
+        check_funcargs(node->lhs, 0);   //引数リストの妥当性を確認（宣言モード）
+        node->type = ND_FUNC_DECL;
+    }
 
     return node;
 }
 
 //    declaration             = declaration_specifiers init_declarator ( "," init_declarator )* ";"
 //    init_declarator         = declarator ( "=" initializer )?
-//    declarator              = pointer* identifier array_def?
+//    declarator              = pointer? direct_declarator
 //declaration_specifiers, pointer, identifierまで先読み済み
 static Node *declaration(Type *tp, char *name) {
     Node *node;
@@ -182,6 +192,8 @@ static Node *declaration(Type *tp, char *name) {
         //          int   abc = 1;
         //          int   ary [4];
         //                   ^ここまで先読み済みであるので、ポインタを含まないdecl_spec（int）を取り出す
+        // int * ( *x )
+        //       ^ここまで先読み済み
         decl_spec = tp;
         while (decl_spec->ptr_of) decl_spec = decl_spec->ptr_of;
     }
@@ -203,7 +215,7 @@ static Node *declaration(Type *tp, char *name) {
 }
 
 //    init_declarator         = declarator ( "=" initializer )?
-//    declarator              = pointer* identifier array_def?
+//    declarator              = pointer? direct_declarator
 //declaration_specifiers, pointer, identifierまで先読みの可能性あり
 static Node *init_declarator(Type *decl_spec, Type *tp, char *name) {
     Node *node, *rhs=NULL;
@@ -293,6 +305,7 @@ static Node *declarator(Type *decl_spec, Type *tp, char *name) {
 }
 static Node *direct_declarator(Type *tp, char *name) {
     Node *node, *lhs=NULL;
+    char *input = input_str();
     if (name == NULL) {
         if (consume('(')) {
             node = declarator(tp, NULL, name);
@@ -303,16 +316,21 @@ static Node *direct_declarator(Type *tp, char *name) {
             if (!consume_ident(&name)) error_at(input_str(), "型名の後に識別名がありません");
         }
     }
-    if (consume('(')) { //関数定義確定
-        lhs = parameter_type_list();
+    if (consume('(')) { //関数定義・宣言確定
+        Funcdef *org_funcdef = cur_funcdef;
+        node = new_node_func_def(name, tp, input);
+        node->lhs = parameter_type_list();
         if (!consume(')')) error_at(input_str(), "閉じかっこがありません");
+        if (org_funcdef) cur_funcdef = org_funcdef;
+        return node;
     } else if (tp->type==VOID) {
         error_at(input_str(), "不正なvoid指定です"); 
     }
     
     if (token_is('[')) tp = array_def(tp);
-    node = new_node(0, lhs, NULL, tp, NULL);
+    node = new_node(ND_LOCAL_VAR_DEF, lhs, NULL, tp, NULL);
     node->name = name;
+    node->input = input;
     return node;
 }
 
@@ -344,9 +362,16 @@ static Node *parameter_type_list(void) {
 }
 static Node *parameter_declaration(void) {
     Node *node;
+    char *name, *input = input_str();
     Type *tp = declaration_specifiers();
-    node = declarator(tp, NULL, NULL);
-    regist_var_def(node);
+    tp = pointer(tp);
+    if (consume_ident(&name)) {
+        node = declarator(tp, tp, name);
+        regist_var_def(node);
+    } else {
+        tp = abstract_declarator(tp);
+        node = new_node_var_def(NULL, tp, input);
+    }
     return node;
 }
 

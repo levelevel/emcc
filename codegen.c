@@ -190,7 +190,7 @@ static char *get_asm_var_name(Node *node) {
     static char buf[16];
     char *ret = buf;
     if (node->type==ND_LOCAL_VAR) {
-        Vardef *vardef;
+        Symdef *vardef;
         map_get(cur_funcdef->ident_map, node->name, (void**)&vardef);
         if (type_is_static(node->tp)) {
             sprintf(buf, "%s.%03d", node->name, vardef->offset);
@@ -337,8 +337,8 @@ static void gen_lval(Node*node) {
         printf("  lea rax, [%s]\n", get_asm_var_name(node));
         printf("  push rax\n");
     } else if (node->type == ND_GLOBAL_VAR) {   //グローバル変数
-        Vardef *vardef;
-        map_get(global_vardef_map, node->name, (void**)&vardef);
+        Symdef *vardef;
+        map_get(global_symdef_map, node->name, (void**)&vardef);
         comment("LVALUE:%s (GLOBAL:%s)\n", node->name, get_type_str(node->tp));
         printf("  lea rax, %s\n", vardef->name);
         printf("  push rax\n");
@@ -804,9 +804,16 @@ static long get_single_val(Node *node) {
     return val;
 }
 
-//グローバル変数のコードを生成
-static void gen_global_var(Vardef *vardef) {
+//グローバルシンボルのコードを生成
+static void gen_global_var(Symdef *vardef) {
     Node *node = vardef->node;
+
+    if (node->type==ND_FUNC_DEF || node->type==ND_FUNC_DECL) {
+        if (!type_is_static(node->tp))
+            printf(".global %s\n", node->name);
+        return;
+    }
+
     assert(node->type == ND_GLOBAL_VAR_DEF || type_is_static(node->tp));
     if (type_is_extern(node->tp)) return;
     int size = size_of(node->tp);
@@ -872,42 +879,34 @@ void gen_program(void) {
 
     // アセンブリのヘッダ部分を出力
     printf(".intel_syntax noprefix\n");
-    size = func_map->keys->len;
+    printf(".section .data\n");
 
-    //グローバルシンボル（関数）
-    Funcdef **funcdef = (Funcdef**)func_map->vals->data;
+    //グローバル変数
+    size = global_symdef_map->vals->len;
+    Symdef **symdefs = (Symdef**)global_symdef_map->vals->data;
     for (int i=0; i<size; i++) {
-        if (!type_is_static(funcdef[i]->tp))
-            printf(".global %s\n", funcdef[i]->name);
+        gen_global_var(symdefs[i]);
     }
 
-    printf(".section .data\n");
+    //ローカルstatic変数
+    size = funcdef_map->vals->len;
+    Funcdef **funcdef = (Funcdef**)funcdef_map->vals->data;
+    for (int i=0; i < size; i++) {
+        cur_funcdef = funcdef[i];
+        symdefs = (Symdef**)cur_funcdef->ident_map->vals->data;
+        for (int j=0; j < cur_funcdef->ident_map->vals->len; j++) {
+            if (type_is_static(symdefs[j]->node->tp)) {
+                gen_global_var(symdefs[j]);
+            }
+        }
+    }
+
     //文字列リテラル
     size = string_vec->len;
     char **strs = (char**)string_vec->data;
     for (int i=0; i<size; i++) {
         printf(".LC%03d:\n", i);
         printf("   .string \"%s\"\n", strs[i]);
-    }
-
-    //グローバル変数
-    size = global_vardef_map->vals->len;
-    Vardef **vardefs = (Vardef**)global_vardef_map->vals->data;
-    for (int i=0; i<size; i++) {
-        gen_global_var(vardefs[i]);
-    }
-
-    //ローカルstatic変数
-    size = funcdef_map->vals->len;
-    funcdef = (Funcdef**)funcdef_map->vals->data;
-    for (int i=0; i < size; i++) {
-        cur_funcdef = funcdef[i];
-        vardefs = (Vardef**)cur_funcdef->ident_map->vals->data;
-        for (int j=0; j < cur_funcdef->ident_map->vals->len; j++) {
-            if (type_is_static(vardefs[j]->node->tp)) {
-                gen_global_var(vardefs[j]);
-            }
-        }
     }
 
     // 関数ごとに、抽象構文木を下りながらコード生成
@@ -929,7 +928,7 @@ void gen_program(void) {
         // 引数をスタックのローカル変数領域にコピー
         int size = funcdef[i]->node->lhs->lst->len;
         Node **arg_nodes = (Node**)funcdef[i]->node->lhs->lst->data;
-        if (size) {
+        if (size && arg_nodes[0]->tp->type!=VOID) {
             char buf[128];
             assert(size<=6);
             printf("  mov rax, rbp\n");

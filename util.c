@@ -51,10 +51,10 @@ static char *TypeStr[] = {"Nul", "void", "char", "short", "int", "long", "long l
 //bufに対して型を表す文字列を生成する
 static void type_str(char *buf, const Type *tp) {
     if (tp->ptr_of) type_str(buf, tp->ptr_of);
-    if (tp->is_extern) strcat(buf, "extern ");
-    if (tp->is_static) strcat(buf, "static ");
+    if (tp->is_extern)   strcat(buf, "extern ");
+    if (tp->is_static)   strcat(buf, "static ");
     if (tp->is_unsigned) strcat(buf, "unsigned ");
-    if (tp->is_const) strcat(buf, " const ");
+    if (tp->is_const)    strcat(buf, " const ");
     strcat(buf, TypeStr[tp->type]);
     if (tp->type==ARRAY) {
         char tmp[20];
@@ -97,8 +97,9 @@ const char* get_func_args_str(const Node *node) {
         if (arg_nodes[i]->type==ND_VARARGS) {
             len += sprintf(buf+len, "...");
         } else {
-            len += sprintf(buf+len, "%s %s", 
-                get_type_str(arg_nodes[i]->tp), arg_nodes[i]->name);
+            len += sprintf(buf+len, "%s", get_type_str(arg_nodes[i]->tp));
+            if (arg_nodes[i]->name)
+                len += sprintf(buf+len, " %s", arg_nodes[i]->name);
         }
         if (i<size-1) len += sprintf(buf+len, ", ");
     }
@@ -110,6 +111,7 @@ const char* get_func_args_str(const Node *node) {
 // エラーの起きた場所を報告するための関数
 static void message_at(const char*loc, const char *level) {
     // locが含まれている行の開始地点と終了地点を取得
+    if (loc==NULL) loc = "(null)";
     const char *line = loc;
     while (user_input < line && line[-1] != '\n') line--;
 

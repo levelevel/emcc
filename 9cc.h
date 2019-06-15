@@ -102,8 +102,8 @@ typedef enum {
     ND_TRI_COND,    // A ? B : C（三項演算子）
     ND_PLUS_ASSIGN, // +=
     ND_MINUS_ASSIGN,// -=
-    ND_LOCAL_VAR_DEF,   //ローカル変数の定義
-    ND_GLOBAL_VAR_DEF,  //グローバル変数の定義
+    ND_LOCAL_VAR_DEF,   //ローカル変数の定義・宣言
+    ND_GLOBAL_VAR_DEF,  //グローバル変数の定義・宣言
     ND_RETURN,
     ND_IF,
     ND_WHILE,
@@ -114,6 +114,7 @@ typedef enum {
     ND_LIST,        //コンマリスト
     ND_FUNC_CALL,   //関数コール
     ND_FUNC_DEF,    //関数定義
+    ND_FUNC_DECL,   //関数宣言
     ND_VARARGS,     //...
     ND_EMPTY,       //空のノード
 } NDtype;
@@ -127,10 +128,14 @@ typedef enum {
     LONGLONG,
     PTR,
     ARRAY,
+    FUNC,           //関数
     CONST,          //一時的なデータ構造でのみ使用し、必ずptr_ofを持つ。
                     //親をconstで修飾する。親がいないときは型を修飾する。
 } Typ;
+
 typedef struct _Type Type;
+typedef struct _Node Node;
+
 struct _Type {
     Typ type;
     char is_unsigned;   //unsigned型
@@ -138,10 +143,10 @@ struct _Type {
     char is_static;
     char is_const;
     Type *ptr_of;
+    Node *node;         //typeがFUNCの場合のND_FUNC_DEFのノード
     long array_size;    //typeがARRAYの場合の配列サイズ。未定義の場合は-1
 };
 
-typedef struct _Node Node;
 struct _Node {
     NDtype type;    //nodeの型：演算子、ND_INDENTなど
     long val;       //typeがND_NUMの場合の値
@@ -156,18 +161,19 @@ struct _Node {
     char *input;    //トークン文字列（エラーメッセージ用）。Token.inputと同じ。
 };
 
+//シンボルの管理
 typedef struct {
-    char *name;     //変数名
+    char *name;     //名前（変数名・関数名）
     Node *node;     //ノード（型情報、初期値、ローカル・グローバルなどもここから取得する）
     int offset;     //auto変数：ベースポインタからのoffset
                     //static変数：識別用index（global_index）
-} Vardef;
+} Symdef;
 
 typedef struct {
     char *name;     //関数名
     Node *node;     //ND_FUNC_DEFのnode
     Type *tp;       //関数の型情報
-    Map *ident_map; //ローカル変数：key=name, val=Vardef
+    Map *ident_map; //ローカル変数：key=name, val=Symdef
     int var_stack_size; //ローカル変数のために必要となるスタックサイズ（offset）
 } Funcdef;
 
@@ -205,15 +211,11 @@ EXTERN Vector *continue_stack;  //value=文字列
 //文字列リテラル
 EXTERN Vector *string_vec;      //value=文字列リテラル
 
-//グローバル変数
-EXTERN Map *global_vardef_map;     //key=name, value=Vardef
+//グローバルシンボル
+EXTERN Map *global_symdef_map;  //key=name, value=Symdef
 
 //現在の関数定義
 EXTERN Funcdef *cur_funcdef;
-
-//識別子（関数コール）の管理
-//プログラム内で定義された関数と、外部関数の両方を含む
-EXTERN Map *func_map;       //key=name, value=Funcdef
 
 //プログラム（関数定義）の管理
 EXTERN Map *funcdef_map;    //key=name, value=Funcdef
@@ -247,6 +249,7 @@ int type_is_extern(Type *tp);
 int consume(TKtype type);
 int consume_ident(char**name);
 Type *get_typeof(Type *tp);
+void check_funcargs(Node *node, int def_mode);
 int node_type_eq(const Type *tp1, const Type *tp2);
 int get_var_offset(const Type *tp);
 Funcdef *new_funcdef(void);

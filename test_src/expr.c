@@ -3,7 +3,13 @@
 #define stdin  (__acrt_iob_func(0))
 #define stdout (__acrt_iob_func(1))
 #define stderr (__acrt_iob_func(2))
-
+#define size_t long
+int printf(const char *format, ...);
+void exit(int status);
+char *strcpy(char *dest, const char *src);
+int strcmp(const char *s1, const char *s2);
+int strncmp(const char *s1, const char *s2, size_t n);
+size_t strlen(const char *s);
 #else
 #include <stdio.h>
 #include <stdlib.h>
@@ -259,12 +265,44 @@ static char* stdarg(char fmt, ...) {
 #endif
     return buf;
 }
-//void void_func(void) {
-void void_func() {
+
+void void_func(void);
+void void_func(void) {
     ;
 }
+void *void_funcp(void*);
+void *void_funcp(void*p) {
+    return p;
+}
+
+short funcdecl1s(short s);
+static char *funcdecl1c(char *cp);
+extern long funcdecl1l(long l, char*cp, ...); 
+static int funcdecl1();
+static int funcdecl1() {
+    int funcdecl1();
+    int funcdelc1i(int i);
+    int funcdelc1cp(char *cp);
+    int funcdelc1icp(int i, char*cp);
+    return 1;
+}
+
+short funcdecl2s(short);
+static char *funcdecl2c(char);
+extern long funcdecl2l(long, char*, ...); 
+static int funcdecl2();
+static int funcdecl2() {
+    int funcdecl2();
+    int funcdelc2i(int);
+    int funcdelc2cp(char);
+    int funcdelc2icp(int, char*);
+    return 1;
+}
+
 int func() {
     void_func();
+    TEST(funcdecl1);
+    TEST(funcdecl2);
     return
         fact(10) == 55 &&
         fib(10) == 55;

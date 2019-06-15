@@ -58,9 +58,9 @@ int main(int argc, char*argv[])
     break_stack = new_vector();
     continue_stack = new_vector();
     string_vec = new_vector();
-    func_map = new_map();
+    //func_map = new_map();
     funcdef_map = new_map();
-    global_vardef_map = new_map();
+    global_symdef_map = new_map();
     global_index = 0;
     translation_unit();
 
