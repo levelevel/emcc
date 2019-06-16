@@ -55,8 +55,8 @@ int main(int argc, char*argv[])
 
     tokens = (Token**)token_vec->data;
     token_pos = 0;
-    break_stack = new_vector();
-    continue_stack = new_vector();
+    break_stack = new_stack();
+    continue_stack = new_stack();
     string_vec = new_vector();
     //func_map = new_map();
     funcdef_map = new_map();

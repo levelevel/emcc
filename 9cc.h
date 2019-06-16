@@ -211,9 +211,6 @@ EXTERN int token_pos;   //tokensの現在位置
 EXTERN Vector *break_stack;     //value=文字列
 //continue時のジャンプ先のラベルを示すスタック
 EXTERN Vector *continue_stack;  //value=文字列
-#define stack_push(vec, elem) vec_push(vec, elem)
-#define stack_pop(vec) ((vec)->len--)
-#define stack_get(vec) vec_get(vec, vec->len - 1)
 
 //文字列リテラル
 EXTERN Vector *string_vec;      //value=文字列リテラル
@@ -290,7 +287,13 @@ void *vec_get(Vector *vec, int idx);
 
 Map *new_map(void);
 void map_put(Map *map, char *key, void *val);
-int map_get(const Map *map, char *key, void**val);
+int  map_get(const Map *map, char *key, void**val);
+
+#define Stack Vector    //後でtypedefに書き換える
+Stack *new_stack(void);
+int   stack_push(Stack *stack, void*elem);
+void *stack_pop(Stack *stack);
+void *stack_get(Stack *stack);
 
 const char* get_type_str(const Type *tp);
 const char* get_func_args_str(const Node *node);

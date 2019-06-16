@@ -45,6 +45,32 @@ int map_get(const Map *map, char *key, void**val) {
     return 0;
 }
 
+//スタック -------------------------------------------
+Stack *new_stack(void) {
+    return (Stack*)new_vector();
+}
+
+int stack_push(Stack *stack, void*elem) {
+    vec_push(stack, elem);
+    return stack->len;
+}
+
+void *stack_pop(Stack *stack) {
+    if (stack->len>0) {
+        return stack->data[--stack->len];
+    }
+    assert(0);
+    return NULL;
+}
+
+void *stack_get(Stack *stack) {
+    if (stack->len>0) {
+        return stack->data[stack->len-1];
+    }
+    assert(0);
+    return 0;
+}
+
 // ダンプ関数 ----------------------------------------
 static const char *TypeStr[] = {"Nul", "void", "char", "short", "int", "long", "long long", "*", "[", "CONST"};
 static const char *SClassStr[] = {"", "auto ", "register ", "static ", "extern "};

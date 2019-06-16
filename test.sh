@@ -170,6 +170,8 @@ try $WR "int a = func();"
 try $ER "int func(){} int func(){} int main(){}"
 try $ER "int func     int func(){} int main(){}"
 try $ER "int func(){} int func     int main(){}"
+try $ER "break;"
+try $ER "continue;"
 
 #多次元配列
 try $ER "int a[][3]={{1,2,3},{11,12,13}; return a[1][2]}"

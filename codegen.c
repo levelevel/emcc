@@ -511,11 +511,15 @@ static int gen(Node*node) {
         stack_pop(continue_stack);
         return 0;
     } else if (node->type == ND_BREAK) {    //break
-        char *label = (char*)stack_get(break_stack);
+        char *label;
+        if (break_stack->len==0) error_at(node->input,"ここではbreakを使用できません");
+        label = (char*)stack_get(break_stack);
         printf("  jmp %s\t# break\n", label);
         return 0;
     } else if (node->type == ND_CONTINUE) { //continue
-        char *label = (char*)stack_get(continue_stack);
+        char *label;
+        if (continue_stack->len==0) error_at(node->input,"ここではcontinueを使用できません");
+        label = (char*)stack_get(continue_stack);
         printf("  jmp %s\t# continue\n", label);
         return 0;
     } else if (node->type == ND_TRI_COND) { //A ? B * C（三項演算）
