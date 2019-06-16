@@ -407,26 +407,25 @@ int array1l() {
     return
         a==&a && a[0]==2 && *(a+1)==4 && a[2]==8 && (1,2)[1+a]==16;
 }
-int af2(int *a){return a[0]+a[1]+a[2];}
+static int af2(int *a){return a[0]+a[1]+a[2];}
 int array2() {
     int a[4]={1,2,3,4}, *p=a, *q=&a[2];
     return af2(a)==6 && p[1]==2, *q==3;
 }
-char af2c(char *a){return a[0]+a[1]+a[2];}
+static char af2c(char *a){return a[0]+a[1]+a[2];}
 int array2c() {
     char a[4]={1,2,3,4}, *p=a, *q=&a[2];
-    return af2(a)==6 && p[1]==2, *q==3;
+    return af2c(a)==6 && p[1]==2, *q==3;
 }
-short af2s(short *a){return a[0]+a[1]+a[2];}
+static short af2s(short *a){return a[0]+a[1]+a[2];}
 int array2s() {
     short a[4]={1,2,3,4}, *p=a, *q=&a[2];
-    return af2(a)==6 && p[1]==2, *q==3;
-    return af2s(a)==6;
+    return af2s(a)==6 && p[1]==2, *q==3;
 }
-long af2l(long *a){return a[0]+a[1]+a[2];}
+static long af2l(long *a){return a[0]+a[1]+a[2];}
 int array2l() {
     long a[4]={1,2,3,4}, *p=a, *q=&a[2];
-    return af2(a)==6 && p[1]==2, *q==3;
+    return af2l(a)==6 && p[1]==2, *q==3;
 }
 int array3() {
     int a[4][5], *p=a, b[4][5][6], *q=b;
@@ -709,11 +708,47 @@ int type_of() {
 }
 
     int sc_x=0, sc_y=0;
-int scope() {
+static int scope1(void) {
     int sc_x; 
     sc_x=1;
     sc_y=2;
     return sc_x+sc_y==3;
+}
+static int scope2(void) {
+    int a=1, a2;
+    static int sa=2, sa2;
+    if (1) {
+        int a; a=10;
+        static int sa; sa=20;
+        a2 = a;
+        sa2 = sa;
+    }
+    return
+        a==1 && sa==2 && a2==10 && sa2==20;
+}
+static int scope3(void) {
+    int a=1, a2;
+    static int sa=2, sa2;
+    {
+        int a; a=10;
+        static int sa; sa=20;
+        a2 = a;
+        sa2 = sa;
+        {
+            int a=100;
+            static int sa; sa=200;
+            a2 = a;
+            sa2 = sa;
+        }
+    }
+    return
+        a==1 && sa==2 && a2==100 && sa2==200;
+}
+static int scope(void) {
+    TEST(scope1);
+    TEST(scope2);
+    TEST(scope3);
+    return 1;
 }
 
 int overflow1() {
@@ -887,6 +922,11 @@ static int static1() {
         --g_static_l==4;
 }
 static int static2() {
+    static char  g_static_c=11;
+    static short g_static_s=22;
+    static int   g_static_i=33;
+    static long  g_static_l=44;
+
     int i, ret;
     for (i=10;i;i--) {
         static int cnt=0;       //初期化は1回だけ
@@ -894,6 +934,18 @@ static int static2() {
         ret = cnt;
     }
     return ret==10;
+}
+static int static3() {
+    int a1,a2;
+    {
+        static int a=1;
+        a1 = a;
+    }
+    {
+        static int a=2;
+        a2 = a;
+    }
+    return a1!=a2;
 }
 static int auto1() {
     auto char  auto_c=1;
@@ -922,6 +974,7 @@ static int ext() {
     TEST(extern3);
     TEST(static1);
     TEST(static2);
+    TEST(static3);
     TEST(auto1);
     TEST(const1);
     return 1;
@@ -952,5 +1005,6 @@ int main() {
     TEST(integer_def);
     TEST(ext);
     TEST(declarate);
+    //printf("%s:%d func=%s\n",__FILE__, __LINE__, __func__);
     return 0;
 }

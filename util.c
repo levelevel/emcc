@@ -50,11 +50,13 @@ Stack *new_stack(void) {
     return (Stack*)new_vector();
 }
 
+//スタックトップにpushする。
 int stack_push(Stack *stack, void*elem) {
     vec_push(stack, elem);
     return stack->len;
 }
 
+//スタックトップをpopする。
 void *stack_pop(Stack *stack) {
     if (stack->len>0) {
         return stack->data[--stack->len];
@@ -63,12 +65,10 @@ void *stack_pop(Stack *stack) {
     return NULL;
 }
 
-void *stack_get(Stack *stack) {
-    if (stack->len>0) {
-        return stack->data[stack->len-1];
-    }
-    assert(0);
-    return 0;
+//スタックトップの要素を取り出す。スタックは変化しない。
+void *stack_get(Stack *stack, int idx) {
+    assert (idx < stack->len);
+    return stack->data[idx];
 }
 
 // ダンプ関数 ----------------------------------------

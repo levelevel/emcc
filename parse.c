@@ -162,11 +162,12 @@ static Node *function_definition(Type *tp, char *name) {
     assert(name!=NULL);
     while (decl_spec->ptr_of) decl_spec = decl_spec->ptr_of;
     node = declarator(decl_spec, tp, name);
-    if (token_is('{')) {
+    if (token_is('{')) {    //関数定義
         check_funcargs(node->lhs, 1);   //引数リストの妥当性を確認（定義モード）
         node->rhs = compound_statement();
         map_put(funcdef_map, node->name, cur_funcdef);
-    } else {
+        stack_pop(symbol_stack);
+    } else {                //関数宣言
         consume(';');
         check_funcargs(node->lhs, 0);   //引数リストの妥当性を確認（宣言モード）
         node->type = ND_FUNC_DECL;
@@ -308,9 +309,9 @@ static Node *direct_declarator(Type *tp, char *name) {
     char *input = input_str();
     if (name == NULL) {
         if (consume('(')) {
-            node = declarator(tp, NULL, name);
-            tp   = node->tp;
-            name = node->name;
+            Node *tmp_node = declarator(tp, NULL, name);
+            tp   = tmp_node->tp;
+            name = tmp_node->name;
             if (!consume(')')) error_at(input_str(), "閉じかっこがありません");
         } else {
             if (!consume_ident(&name)) error_at(input_str(), "型名の後に識別名がありません");
@@ -650,10 +651,10 @@ static Node *statement(void) {
 
 static Node *compound_statement(void) {
     Node *node;
-
-    if (!consume('{')) error_at(input_str(), "{がありません");
+    assert (consume('{'));
 
     node = new_node_block(input_str());
+    stack_push(symbol_stack, new_map());
     while (!consume('}')) {
         Node *block;
         if (token_is_type_spec()) {
@@ -663,6 +664,7 @@ static Node *compound_statement(void) {
         }
         vec_push(node->lst, block);
     }
+    stack_pop(symbol_stack);
     return node;
 }
 

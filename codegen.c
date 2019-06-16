@@ -190,12 +190,10 @@ static char *get_asm_var_name(Node *node) {
     static char buf[16];
     char *ret = buf;
     if (node->type==ND_LOCAL_VAR) {
-        Symdef *vardef;
-        map_get(cur_funcdef->ident_map, node->name, (void**)&vardef);
         if (type_is_static(node->tp)) {
-            sprintf(buf, "%s.%03d", node->name, vardef->offset);
+            sprintf(buf, "%s.%03d", node->name, node->offset);
         } else {
-            sprintf(buf, "rbp-%d", vardef->offset);
+            sprintf(buf, "rbp-%d", node->offset);
         }
     } else if (node->type==ND_GLOBAL_VAR) {
         ret = node->name;
@@ -337,10 +335,8 @@ static void gen_lval(Node*node) {
         printf("  lea rax, [%s]\n", get_asm_var_name(node));
         printf("  push rax\n");
     } else if (node->type == ND_GLOBAL_VAR) {   //グローバル変数
-        Symdef *vardef;
-        map_get(global_symdef_map, node->name, (void**)&vardef);
         comment("LVALUE:%s (GLOBAL:%s)\n", node->name, get_type_str(node->tp));
-        printf("  lea rax, %s\n", vardef->name);
+        printf("  lea rax, %s\n", node->name);
         printf("  push rax\n");
     } else if (node->type == ND_INDIRECT) {
         comment("LVALUE:*var\n");
@@ -513,13 +509,13 @@ static int gen(Node*node) {
     } else if (node->type == ND_BREAK) {    //break
         char *label;
         if (break_stack->len==0) error_at(node->input,"ここではbreakを使用できません");
-        label = (char*)stack_get(break_stack);
+        label = (char*)stack_top(break_stack);
         printf("  jmp %s\t# break\n", label);
         return 0;
     } else if (node->type == ND_CONTINUE) { //continue
         char *label;
         if (continue_stack->len==0) error_at(node->input,"ここではcontinueを使用できません");
-        label = (char*)stack_get(continue_stack);
+        label = (char*)stack_top(continue_stack);
         printf("  jmp %s\t# continue\n", label);
         return 0;
     } else if (node->type == ND_TRI_COND) { //A ? B * C（三項演算）
@@ -809,9 +805,7 @@ static long get_single_val(Node *node) {
 }
 
 //グローバルシンボルのコードを生成
-static void gen_global_var(Symdef *vardef) {
-    Node *node = vardef->node;
-
+static void gen_global_var(Node *node) {
     if (node->type==ND_FUNC_DEF || node->type==ND_FUNC_DECL) {
         if (!type_is_static(node->tp))
             printf(".global %s\n", node->name);
@@ -827,7 +821,7 @@ static void gen_global_var(Symdef *vardef) {
         printf(".global %s\n", node->name);
     if (align_size > 1) printf(".align %d\n", align_size);
     if (node->type == ND_LOCAL_VAR_DEF && type_is_static(node->tp)) {
-        printf("%s.%03d:\t# %s\n", node->name, vardef->offset, get_type_str(node->tp));
+        printf("%s.%03d:\t# %s\n", node->name, node->offset, get_type_str(node->tp));
     } else {
         printf("%s:\t# %s\n", node->name, get_type_str(node->tp));
     }
@@ -886,23 +880,17 @@ void gen_program(void) {
     printf(".section .data\n");
 
     //グローバル変数
-    size = global_symdef_map->vals->len;
-    Symdef **symdefs = (Symdef**)global_symdef_map->vals->data;
+    size = global_symbol_map->vals->len;
+    Node **nodes = (Node**)global_symbol_map->vals->data;
     for (int i=0; i<size; i++) {
-        gen_global_var(symdefs[i]);
+        gen_global_var(nodes[i]);
     }
 
     //ローカルstatic変数
-    size = funcdef_map->vals->len;
-    Funcdef **funcdef = (Funcdef**)funcdef_map->vals->data;
+    size = static_var_vec->len;
+    nodes = (Node**)static_var_vec->data;
     for (int i=0; i < size; i++) {
-        cur_funcdef = funcdef[i];
-        symdefs = (Symdef**)cur_funcdef->ident_map->vals->data;
-        for (int j=0; j < cur_funcdef->ident_map->vals->len; j++) {
-            if (type_is_static(symdefs[j]->node->tp)) {
-                gen_global_var(symdefs[j]);
-            }
-        }
+        gen_global_var(nodes[i]);
     }
 
     //文字列リテラル
@@ -915,7 +903,7 @@ void gen_program(void) {
 
     // 関数ごとに、抽象構文木を下りながらコード生成
     printf(".section .text\n");
-    funcdef = (Funcdef**)funcdef_map->vals->data;
+    Funcdef **funcdef = (Funcdef**)funcdef_map->vals->data;
     for (int i=0; i < funcdef_map->keys->len; i++) {
         assert(funcdef[i]->node->type==ND_FUNC_DEF);
         cur_funcdef = funcdef[i];

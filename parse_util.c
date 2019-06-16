@@ -280,27 +280,26 @@ Node *new_node_num(long val, char *input) {
 void regist_var_def(Node *node) {
     char *name = node->name;
     if (cur_funcdef && !type_is_extern(node->tp)) {  //関数内かつexternでなければローカル変数
-        if (map_get(cur_funcdef->ident_map, name, NULL)==0) {
-            Symdef *symdef = calloc(1, sizeof(Symdef));
-            symdef->name = name;
-            symdef->node = node;
+        Map *symbol_map = stack_top(symbol_stack); 
+        if (map_get(symbol_map, name, NULL)==0) {
             if (type_is_static(node->tp)) {
-                symdef->offset = global_index++;
+                node->offset = global_index++;
             } else {
-                symdef->offset = get_var_offset(node->tp);
+                node->offset = get_var_offset(node->tp);
             }
             node->type = ND_LOCAL_VAR_DEF;
-            map_put(cur_funcdef->ident_map, name, symdef);
+            map_put(symbol_map, name, node);
+
+            if (type_is_static(node->tp)) {
+                vec_push(static_var_vec, node);
+            }
         } else {
             error_at(node->input, "'%s'はローカル変数の重複定義です", name);
         }
     } else {            //グローバル変数
         if (node->type==0) node->type = ND_GLOBAL_VAR_DEF;
-        if (map_get(global_symdef_map, name, NULL)==0) {
-            Symdef *symdef = calloc(1, sizeof(Symdef));
-            symdef->name = name;
-            symdef->node = node;
-            map_put(global_symdef_map, name, symdef);
+        if (map_get(global_symbol_map, name, NULL)==0) {
+            map_put(global_symbol_map, name, node);
         } else if (!type_is_extern(node->tp)) {
             error_at(node->input, "'%s'はグローバル変数の重複定義です", name);
         }
@@ -327,32 +326,41 @@ Node *new_node_string(char *string, char *input) {
 
 //抽象構文木の生成（識別子：ローカル変数・グローバル変数）
 Node *new_node_var(char *name, char *input) {
-    Node *node;
-    NDtype type;
-    Symdef *symdef;
+    Node *node, *var_def;
+    NDtype type = 0;
 
-    //定義済みの変数であるかをチェック
-    if (cur_funcdef && map_get(cur_funcdef->ident_map, name, (void**)&symdef)!=0) {
-        type = ND_LOCAL_VAR;
-    } else if (map_get(global_symdef_map, name, (void**)&symdef)!=0) {
-        type = ND_GLOBAL_VAR;
-    } else {
-        error_at(tokens[token_pos-1]->input, "'%s'は未定義の変数です", name);
+    //定義済みの変数であるかをススコープの内側からチェック
+    for (int i=symbol_stack->len-1; i>=0; i--) {
+        Map *symbol_map = (Map*)stack_get(symbol_stack, i);
+        if (map_get(symbol_map, name, (void**)&var_def)!=0) {
+            if (var_def->type==ND_LOCAL_VAR_DEF) {
+                type = ND_LOCAL_VAR;
+                break;
+            } else if (var_def->type==ND_GLOBAL_VAR_DEF) {
+                type = ND_GLOBAL_VAR;
+                break;
+            } else {
+                assert(0);
+            }
+        }
     }
+    if (type==0)
+        error_at(tokens[token_pos-1]->input, "'%s'は未定義の変数です", name);
 
-    node = new_node(type, NULL, NULL, symdef->node->tp, input);
+    node = new_node(type, NULL, NULL, var_def->tp, input);
     node->name = name;
+    node->offset = var_def->offset;
 
     return node;
 }
 
 //抽象構文木の生成（関数コール）
 Node *new_node_func_call(char *name, char *input) {
-    Symdef *symdef = NULL;
-    if (map_get(global_symdef_map, name, (void**)&symdef)==0) {
+    Node *node, *func_def = NULL;
+    if (map_get(global_symbol_map, name, (void**)&func_def)==0) {
         warning_at(input, "未宣言の関数コールです。");
     }
-    Node *node = new_node(ND_FUNC_CALL, NULL, NULL, symdef?symdef->node->tp:new_type(INT, 0), input);
+    node = new_node(ND_FUNC_CALL, NULL, NULL, func_def?func_def->tp:new_type(INT, 0), input);
 
     node->name = name;
 //  node->lhs    //引数リスト
@@ -371,17 +379,15 @@ Node *new_node_func_def(char *name, Type *tp, char *input) {
     cur_funcdef->tp = tp;
     cur_funcdef->node = node;
     cur_funcdef->name = node->name;
+    stack_push(symbol_stack, cur_funcdef->ident_map);   //popはfunction_definition()で行う
 
-    //関数を登録する
-    Symdef *symdef;
-    if (map_get(global_symdef_map, name, (void**)&symdef)==0)  {
-        symdef = calloc(1, sizeof(Symdef));
-        symdef->name = name;
-        symdef->node = node;
-        map_put(global_symdef_map, name, symdef);
-    } else if (symdef->node->type==ND_FUNC_DEF) {
+    //関数をシンボルとして登録する
+    Node *def_node;
+    if (map_get(global_symbol_map, name, (void**)&def_node)==0)  {
+        map_put(global_symbol_map, name, node);
+    } else if (def_node->type==ND_FUNC_DEF) {
         error_at(input, "関数が再定義されています");
-    } else if (symdef->node->type==ND_GLOBAL_VAR_DEF) {
+    } else if (def_node->type==ND_GLOBAL_VAR_DEF) {
         error_at(input, "'%s'は異なる種類のシンボルとして再定義されています", name);
     }
     return node;

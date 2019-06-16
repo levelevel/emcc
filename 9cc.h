@@ -166,21 +166,17 @@ struct _Node {
     Type *tp;       //型情報：typeがND_NUM、ND_IDENT、ND_FUNC_DEFの場合の場合は
                     //トークナイズ時に設定。それ以外は評価時に設定。
     char *input;    //トークン文字列（エラーメッセージ用）。Token.inputと同じ。
-};
-
-//シンボルの管理
-typedef struct {
-    char *name;     //名前（変数名・関数名）
-    Node *node;     //ノード（型情報、初期値、ローカル・グローバルなどもここから取得する）
     int offset;     //auto変数：ベースポインタからのoffset
                     //static変数：識別用index（global_index）
-} Symdef;
+};
+
+#define Stack Vector    //後でtypedefに書き換える
 
 typedef struct {
     char *name;     //関数名
     Node *node;     //ND_FUNC_DEFのnode
     Type *tp;       //関数の型情報
-    Map *ident_map; //ローカル変数：key=name, val=Symdef
+    Map *ident_map; //ローカル変数：key=name, val=Node
     int var_stack_size; //ローカル変数のために必要となるスタックサイズ（offset）
 } Funcdef;
 
@@ -215,8 +211,14 @@ EXTERN Vector *continue_stack;  //value=文字列
 //文字列リテラル
 EXTERN Vector *string_vec;      //value=文字列リテラル
 
+//staticシンボル
+EXTERN Vector *static_var_vec;  //value=node
+
 //グローバルシンボル
-EXTERN Map *global_symdef_map;  //key=name, value=Symdef
+EXTERN Map *global_symbol_map;  //key=name, value=Node
+
+//スコープごとのシンボルの管理（グローバルシンボル(cur_funcdef->ident_map)→関数のローカルシンボル→ブロックのシンボル→...）
+EXTERN Stack *symbol_stack;     //value=node
 
 //現在の関数定義
 EXTERN Funcdef *cur_funcdef;
@@ -289,11 +291,11 @@ Map *new_map(void);
 void map_put(Map *map, char *key, void *val);
 int  map_get(const Map *map, char *key, void**val);
 
-#define Stack Vector    //後でtypedefに書き換える
 Stack *new_stack(void);
 int   stack_push(Stack *stack, void*elem);
 void *stack_pop(Stack *stack);
-void *stack_get(Stack *stack);
+void *stack_get(Stack *stack, int idx);
+#define stack_top(stack) stack_get(stack,stack->len-1)
 
 const char* get_type_str(const Type *tp);
 const char* get_func_args_str(const Node *node);

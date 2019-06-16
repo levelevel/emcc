@@ -55,12 +55,16 @@ int main(int argc, char*argv[])
 
     tokens = (Token**)token_vec->data;
     token_pos = 0;
+    
     break_stack = new_stack();
     continue_stack = new_stack();
+    
     string_vec = new_vector();
-    //func_map = new_map();
+    static_var_vec = new_vector();
+    global_symbol_map = new_map();
+    symbol_stack = new_stack();
+    stack_push(symbol_stack, global_symbol_map);
     funcdef_map = new_map();
-    global_symdef_map = new_map();
     global_index = 0;
     translation_unit();
 
