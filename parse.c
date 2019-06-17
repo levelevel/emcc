@@ -19,38 +19,40 @@
     type_qualifier          = "const"
     declarator              = pointer? direct_declarator
     direct_declarator       = identifier | "(" declarator ")"
-                            | direct_declarator "[" assign? "]"
+                            | direct_declarator "[" assignment? "]"
                             | direct_declarator "(" parameter_type_list? ")"    //関数
     parameter_type_list     = parameter_declaration ( "," parameter_declaration )* ( "," "..." )?
     parameter_declaration   = declaration_specifiers ( declarator | abstract_declarator )?
-    initializer             = assign
+    initializer             = assignment
                             | "{" init_list "}"
                             | "{" init_list "," "}"
     init_list               = initializer
                             | init_list "," initializer
-    array_def   = "[" expr? "]" ( "[" expr "]" )*
+    array_def               = "[" expression? "]" ( "[" expression "]" )*
     pointer                 = ( "*" type_qualifier* )*
     type_name               = "typeof" "(" identifier ")"
                             | type_specifier abstract_declarator*
                             | type_qualifier abstract_declarator*
     abstract_declarator     = pointer? direct_abstract_declarator
     direct_abstract_declarator = "(" abstract_declarator ")"
-                            | direct_abstract_declarator? "[" assign? "]"
+                            | direct_abstract_declarator? "[" assignment? "]"
                             | direct_abstract_declarator? "(" parameter_type_list? ")"  //関数
 - A.2.3 Statements
-    statement   = compound_statement
-                | declaration
-                | return" expr ";"
-                | "if" "(" expr ")" ( "else" expr )?
-                | "while" "(" expr ")"
-                | "for" "(" expr? ";" expr? ";" expr? ")" statement
-                | "break"
-                | "continue"
+    statement               = compound_statement
+                            | declaration
+                            | return" expression ";"
+                            | "if" "(" expression ")" ( "else" expression )?
+                            | "while" "(" expression ")"
+                            | "for" "(" expression? ";" expression? ";" expression? ")" statement
+                            | "for" "(" declaration     expression? ";" expression? ")" statement
+                            | "break"
+                            | "continue"
     compound_statement      = "{" declaration | statement* "}"
 - A.2.1 Expressions
-    expr        = assign ( "," assign )* 
-    assign      = tri_cond ( "=" assign | "+=" assign | "-=" assign )*
-    tri_cond    = logical_or "?" expr ":" tri_cond
+    expression              = assignment ( "," assignment )*
+    constant_expression     = tri_cond
+    assignment              = tri_cond ( "=" assignment | "+=" assignment | "-=" assignment )*
+    tri_cond    = logical_or ( "?" expression ":" tri_cond )?
     logical_or  = logical_and ( "||" logical_and )*
     logical_and = bitwise_or ( "&&" bitwise_or )*
     bitwise_or  = ex_or ( "&" ex_or )*
@@ -66,12 +68,12 @@
                 | "sizeof" unary
                 | "sizeof" "(" type_name ")"
                 | "_Alignof" "(" type_name ")"
-    post_unary  = term ( "++" | "--" | "[" expr "]")?
+    post_unary  = term ( "++" | "--" | "[" expression "]")?
     term        = num
                 | string
                 | identifier
-                | identifier "(" expr? ")"   //関数コール
-                |  "(" expr ")"
+                | identifier "(" expression? ")"   //関数コール
+                |  "(" expression ")"
 */
 static Node *external_declaration(void);
 static Node *function_definition(Type *tp, char *name);
@@ -92,8 +94,8 @@ static Type *array_def(Type *tp);
 
 static Node *statement(void);
 static Node *compound_statement(void);
-static Node *expr(void);
-static Node *assign(void);
+static Node *expression(void);
+static Node *assignment(void);
 static Node *tri_cond(void);
 static Node *equality(void);
 static Node *logical_or(void);
@@ -290,7 +292,7 @@ static Node *init_declarator(Type *decl_spec, Type *tp, char *name) {
 
 //    declarator              = pointer* direct_declarator
 //    direct_declarator       = identifier | "(" declarator ")"
-//                            = direct_declarator "[" assign? "]"
+//                            = direct_declarator "[" assignment? "]"
 //                            | direct_abstract_declarator? "(" parameter_type_list? ")"  //関数宣言
 //declaration_specifiers, pointer, identifierまで先読み済みの可能性あり
 //戻り値のnodeはname、lhs（関数の場合の引数）、tp以外未設定
@@ -376,7 +378,7 @@ static Node *parameter_declaration(void) {
     return node;
 }
 
-//    initializer = assign
+//    initializer = assignment
 //                | "{" init_list "}"
 //                | "{" init_list "," "}"
 static Node *initializer(void) {
@@ -387,7 +389,7 @@ static Node *initializer(void) {
         consume(',');
         if (!consume('}')) error_at(input_str(),"初期化式の閉じカッコ } がありません");
     } else {
-        node = assign();
+        node = assignment();
     }
     return node;
 }
@@ -407,7 +409,7 @@ static Node *init_list(void) {
     return node;
 }
 
-//    array_def   = "[" assign? "]"
+//    array_def   = "[" assignment? "]"
 static Type *array_def(Type *tp) {
     Type *ret_tp = tp;
     // int *a[10][2][3]
@@ -416,7 +418,7 @@ static Type *array_def(Type *tp) {
             tp = new_type_array(tp, -1);    //最初だけ省略できる（初期化が必要）
         } else {
             char *input = input_str();
-            Node *node = expr();
+            Node *node = expression();
             long val;
             if (!node_is_const(node, &val)) error_at(input, "配列サイズが定数ではありません");
             if (val==0) error_at(input, "配列のサイズが0です");
@@ -429,7 +431,7 @@ static Type *array_def(Type *tp) {
 
     while (consume('[')) {
         char *input = input_str();
-        Node *node = expr();
+        Node *node = expression();
         long val;
         if (!node_is_const(node, &val)) error_at(input, "配列サイズが定数ではありません");
         if (val==0) error_at(input, "配列のサイズが0です");
@@ -472,7 +474,7 @@ static Type *pointer(Type *tp) {
 //                            | type_qualifier abstract_declarator*
 //    abstract_declarator     = pointer? direct_abstract_declarator
 //    direct_abstract_declarator = "(" abstract_declarator ")"
-//                            | direct_abstract_declarator? "[" assign "]"
+//                            | direct_abstract_declarator? "[" assignment "]"
 //                            | direct_abstract_declarator? "(" parameter_type_list? ")"  //関数
 static Type *type_name(void) {
     Type *tp = declaration_specifiers();
@@ -587,12 +589,12 @@ static Node *statement(void) {
     } else if (consume(';')) {
         return new_node_empty(input_str());
     } else if (consume(TK_RETURN)) {
-        node = expr();
+        node = expression();
         node = new_node(ND_RETURN, node, NULL, node->tp, input);
     } else if (consume(TK_IF)) {    //if(A)B else C
         Node *node_A, *node_B;
         if (!consume('(')) error_at(input_str(), "ifの後に開きカッコがありません");
-        node_A = expr();
+        node_A = expression();
         if (!consume(')')) error_at(input_str(), "ifの開きカッコに対応する閉じカッコがありません");
         input = input_str();
         node_B = statement();
@@ -606,41 +608,45 @@ static Node *statement(void) {
         return node;
     } else if (consume(TK_WHILE)) {
         if (!consume('(')) error_at(input_str(), "whileの後に開きカッコがありません");
-        node = expr();
+        node = expression();
         if (!consume(')')) error_at(input_str(), "whileの開きカッコに対応する閉じカッコがありません");
         node = new_node(ND_WHILE, node, statement(), NULL, input);
         return node;
     } else if (consume(TK_FOR)) {   //for(A;B;C)D
         Node *node1, *node2;
+        stack_push(symbol_stack, new_map());
         if (!consume('(')) error_at(input_str(), "forの後に開きカッコがありません");
         if (consume(';')) {
             node1 = new_node_empty(input_str());
+        } else if (token_is_type_spec()) {
+            node1 = declaration(NULL, NULL);
         } else {
-            node1 = expr();         //A
+            node1 = expression();         //A
             if (!consume(';')) error_at(input_str(), "forの1個目の;がありません");
         }
         if (consume(';')) {
             node2 = new_node_empty(input_str());
         } else {
-            node2 = expr();         //B
+            node2 = expression();         //B
             if (!consume(';')) error_at(input_str(), "forの2個目の;がありません");
         }
         node = new_node(0, node1, node2, NULL, input);       //A,B
         if (consume(')')) {
             node1 = new_node_empty(input_str());
         } else {
-            node1 = expr();         //C
+            node1 = expression();         //C
             if (!consume(')')) error_at(input_str(), "forの開きカッコに対応する閉じカッコがありません");
         }
         node2 = new_node(0, node1, statement(), NULL, input);     //C,D
         node = new_node(ND_FOR, node, node2, NULL, input);   //(A,B),(C,D)
+        stack_pop(symbol_stack);
         return node;
     } else if (consume(TK_BREAK)) {     //break
         node = new_node(ND_BREAK, NULL, NULL, NULL, input);
     } else if (consume(TK_CONTINUE)) {  //continue
         node = new_node(ND_CONTINUE, NULL, NULL, NULL, input);
     } else {
-        node = expr();
+        node = expression();
     }
 
     if (!consume(';')) {
@@ -670,17 +676,17 @@ static Node *compound_statement(void) {
 
 //expr：単なる式またはそのコンマリスト（左結合）
 //リストであればリスト(ND_LIST)を作成する
-//    expr        = assign ( "," assign )* 
-static Node *expr(void) {
+//    expression        = assignment ( "," assignment )* 
+static Node *expression(void) {
     char *input = input_str();
-    Node *node = assign();
+    Node *node = assignment();
     Node *last_node = node;
     if (consume(',')) {
         node = new_node_list(node, input);
         Vector *lists = node->lst;
-        vec_push(lists, last_node=assign());
+        vec_push(lists, last_node=assignment());
         while (consume(',')) {
-            vec_push(lists, last_node=assign());
+            vec_push(lists, last_node=assignment());
         }
     } else {
         return node;
@@ -690,12 +696,12 @@ static Node *expr(void) {
 }
 
 //代入（右結合）
-static Node *assign(void) {
+static Node *assignment(void) {
     Node *node = tri_cond(), *rhs;
     char *input = input_str();
     if (consume('=')) {
         if (node->tp->type==ARRAY) error_at(node->input, "左辺値ではありません");
-        rhs = assign(); 
+        rhs = assignment(); 
         if (!(rhs->type==ND_NUM && rhs->val==0) &&  //右辺が0の場合は無条件にOK
             !node_type_eq(node->tp, rhs->tp))
             warning_at(input, "=の左右の型(%s:%s)が異なります", 
@@ -703,13 +709,13 @@ static Node *assign(void) {
         node = new_node('=', node, rhs, node->tp, input); //ND_ASIGN
     } else if (consume(TK_PLUS_ASSIGN)) { //+=
         if (node->tp->type==ARRAY) error_at(node->input, "左辺値ではありません");
-        rhs = assign(); 
+        rhs = assignment(); 
         if (node_is_ptr(node) && node_is_ptr(rhs))
             error_at(node->input, "ポインタ同士の加算です");
         node = new_node(ND_PLUS_ASSIGN, node, rhs, node->tp, input);
     } else if (consume(TK_MINUS_ASSIGN)) { //-=
         if (node->tp->type==ARRAY) error_at(node->input, "左辺値ではありません");
-        rhs = assign(); 
+        rhs = assignment(); 
         if node_is_ptr(rhs)
             error_at(node->input, "ポインタによる減算です");
         node = new_node(ND_MINUS_ASSIGN, node, rhs, node->tp, input);
@@ -718,12 +724,12 @@ static Node *assign(void) {
 }
 
 //三項演算子（右結合）
-//    tri_cond    = logical_or "?" expr ":" tri_cond
+//    tri_cond    = logical_or "?" expression ":" tri_cond
 static Node *tri_cond(void) {
     Node *node = logical_or(), *sub_node, *lhs, *rhs;
     char *input = input_str();
     if (consume('?')) {
-        lhs = expr();
+        lhs = expression();
         if (!consume(':'))
             error_at(node->input, "三項演算に : がありません");
         rhs = tri_cond();
@@ -949,7 +955,7 @@ static Node *unary(void) {
 }
 
 //後置単項演算子（左結合）
-//    post_unary  = term ( "++" | "--" | "[" expr "]")?
+//    post_unary  = term ( "++" | "--" | "[" expression "]")?
 static Node *post_unary(void) {
     Node *node = term();
     for (;;) {
@@ -963,7 +969,7 @@ static Node *post_unary(void) {
             // a[3] => *(a+3)
             // a[3][2] => *(*(a+3)+2)
             input = input_str();
-            Node *rhs = expr();
+            Node *rhs = expression();
             node = new_node('+', node, rhs, tp ,input);
             tp = node->tp->ptr_of ? node->tp->ptr_of : rhs->tp->ptr_of;
             if (tp==NULL) error_at(input_str(), "ここでは配列を指定できません");
@@ -984,7 +990,7 @@ static Node *term(void) {
     char *name;
     char *input = input_str();
     if (consume('(')) {
-        node = expr();
+        node = expression();
         if (!consume(')')) {
             error_at(input_str(), "開きカッコに対応する閉じカッコがありません");
         }
@@ -996,7 +1002,7 @@ static Node *term(void) {
         if (consume('(')) { //関数コール
             node = new_node_func_call(name, input);
             if (consume(')')) return node;
-            node->lhs = expr();
+            node->lhs = expression();
             if (node->lhs->type != ND_LIST) {
                 node->lhs = new_node_list(node->lhs, input);
             }

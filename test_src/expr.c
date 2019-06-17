@@ -122,6 +122,7 @@ int while1() {
     while (i<=10) {sum = sum + i; i++;}
     return a==0 && sum==55;
 }
+
 int for1() {
     int a, b, i, j;
     for (i=0; i<5; i++) a=i;
@@ -138,6 +139,17 @@ int for1() {
     }
     return a==4 && b==1;
 }
+int for2() {
+    int i=5;
+    int n1=i, n2, n3;
+    for (int i=0;i<=10;i++) {
+        n2 = i;
+        int i = 20;
+        n3 = i;
+    }
+    return n1==5 && n2==10 && n3==20;
+}
+
     static int gtri_x;
     static int gtri_a = 1?2:gtri_x;
 int tri_cond() {
@@ -152,9 +164,8 @@ int loop() {
     if(0);
     if(0) while(0) if(1) while(0);
 
-    int i;
     int sum1 = 0;
-    for (i=10;i>0;i--) {sum1=sum1+i;}
+    for (int i=10;i>0;i--) {sum1=sum1+i;}
 
     int d=0; if(0) d=1; else d=2;
     int e=0; if(0) {e=1;} else if (1) {e=2;} else {e=3;}

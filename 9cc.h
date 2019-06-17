@@ -143,6 +143,7 @@ typedef enum {
 
 typedef struct _Type Type;
 typedef struct _Node Node;
+typedef Vector Stack;
 
 struct _Type {
     Typ type;
@@ -169,8 +170,6 @@ struct _Node {
     int offset;     //auto変数：ベースポインタからのoffset
                     //static変数：識別用index（global_index）
 };
-
-#define Stack Vector    //後でtypedefに書き換える
 
 typedef struct {
     char *name;     //関数名
@@ -226,7 +225,7 @@ EXTERN Funcdef *cur_funcdef;
 //プログラム（関数定義）の管理
 EXTERN Map *funcdef_map;    //key=name, value=Funcdef
 
-//ユニークなIDを生成するためのindex
+//static変数用のユニークなIDを生成するためのindex
 EXTERN int global_index;
 
 //現在のトークン（エラー箇所）の入力文字列

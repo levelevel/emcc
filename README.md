@@ -19,7 +19,6 @@ https://www.sigbus.info/compilerbook/
 - typedef
 - enum
 - 型キャスト
-- for(int i;;)
 - \による文字のエスケープ
 - case文
 - goto（多重ループから抜けるために使っているけど、コードを書き直してもよい）
