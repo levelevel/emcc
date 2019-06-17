@@ -28,7 +28,8 @@
                             | "{" init_list "," "}"
     init_list               = initializer
                             | init_list "," initializer
-    array_def               = "[" expression? "]" ( "[" expression "]" )*
+    //配列のサイズは定数の場合のみサポートする
+    array_def               = "[" constant_expression? "]" ( "[" constant_expression "]" )*
     pointer                 = ( "*" type_qualifier* )*
     type_name               = "typeof" "(" identifier ")"
                             | type_specifier abstract_declarator*
@@ -95,6 +96,7 @@ static Type *array_def(Type *tp);
 static Node *statement(void);
 static Node *compound_statement(void);
 static Node *expression(void);
+static Node *constant_expression(void);
 static Node *assignment(void);
 static Node *tri_cond(void);
 static Node *equality(void);
@@ -409,20 +411,21 @@ static Node *init_list(void) {
     return node;
 }
 
-//    array_def   = "[" assignment? "]"
+//    配列のサイズは定数の場合のみサポートする
+//    array_def               = "[" constant_expression? "]" ( "[" constant_expression "]" )*
 static Type *array_def(Type *tp) {
+    Node *node;
     Type *ret_tp = tp;
+    char *input;
     // int *a[10][2][3]
     if (consume('[')) {
         if (consume(']')) { //char *argv[];
             tp = new_type_array(tp, -1);    //最初だけ省略できる（初期化が必要）
         } else {
-            char *input = input_str();
-            Node *node = expression();
-            long val;
-            if (!node_is_const(node, &val)) error_at(input, "配列サイズが定数ではありません");
-            if (val==0) error_at(input, "配列のサイズが0です");
-            tp = new_type_array(tp, val);
+            input = input_str();
+            node = constant_expression();
+            if (node->val==0) error_at(input, "配列のサイズが0です");
+            tp = new_type_array(tp, node->val);
             if (!consume(']')) error_at(input_str(), "配列サイズの閉じかっこ ] がありません"); 
         }
         ret_tp = tp;
@@ -430,12 +433,10 @@ static Type *array_def(Type *tp) {
     }
 
     while (consume('[')) {
-        char *input = input_str();
-        Node *node = expression();
-        long val;
-        if (!node_is_const(node, &val)) error_at(input, "配列サイズが定数ではありません");
-        if (val==0) error_at(input, "配列のサイズが0です");
-        tp->ptr_of = new_type_array(tp->ptr_of, val);
+        input = input_str();
+        node = constant_expression();
+        if (node->val==0) error_at(input, "配列のサイズが0です");
+        tp->ptr_of = new_type_array(tp->ptr_of, node->val);
         tp = tp->ptr_of;
         if (!consume(']')) error_at(input_str(), "配列サイズの閉じかっこ ] がありません"); 
         // ARRAYのリストの最後に挿入してゆく
@@ -693,6 +694,16 @@ static Node *expression(void) {
     }
     node->tp = last_node->tp;
     return node;
+}
+
+//    constant_expression     = tri_cond
+static Node *constant_expression(void) {
+    char *input = input_str();
+    Node *node = tri_cond();
+    long val;
+    if (!node_is_const(node, &val))
+        error_at(node->input, "定数式が必要です");
+    return new_node_num(val, input);
 }
 
 //代入（右結合）
