@@ -14,7 +14,7 @@
                             | storage_class_specifier declaration_specifiers*
                             | type_qualifier          declaration_specifiers*
     init_declarator         = declarator ( "=" initializer )?
-    storage_class_specifier  = "static" | "extern"
+    storage_class_specifier = "static" | "extern"
     type_specifier          = "void" | "char" | "short" | "int" | "long" | "signed" | "unsigned"
     type_qualifier          = "const"
     declarator              = pointer? direct_declarator
@@ -62,9 +62,11 @@
     equality    = relational ( "==" relational | "!=" relational )*
     relational  = add ( "<" add | "<=" add | ">" add | ">=" add )*
     add         = mul ( "+" mul | "-" mul )*
-    mul         = unary ( "*" unary | "/" unary | "%" unary )*
+    mul         = cast ( "*" cast | "/" cast | "%" cast )*
+    cast        = unary
+                | "(" type_name ")" cast
     unary       = post_unary
-                | ( "+" | "-" |  "!" | "*" | "&" ) unary
+                | ( "+" | "-" |  "!" | "*" | "&" ) cast
                 | ( "++" | "--" )? unary
                 | "sizeof" unary
                 | "sizeof" "(" type_name ")"
@@ -107,7 +109,8 @@ static Node *ex_or(void);
 static Node *bitwise_and(void);
 static Node *relational(void);
 static Node *add(void);
-static Node *mul(void); 
+static Node *mul(void);
+static Node *cast(void);
 static Node *unary(void);
 static Node *post_unary(void);
 static Node *term(void); 
@@ -541,7 +544,7 @@ static Type *declaration_specifiers(void) {
             else type = LONG;
         } else if (consume(TK_SIGNED)) {
             if (is_unsigned>=0) error_at(input, "型指定が不正です\n");
-            is_unsigned = 1;
+            is_unsigned = 0;
         } else if (consume(TK_UNSIGNED)) {
             if (is_unsigned>=0) error_at(input, "型指定が不正です\n");
             is_unsigned = 1;
@@ -888,17 +891,17 @@ static Node *add(void) {
 }
 
 //乗除算、剰余（左結合）
-//    mul         = unary ( "*" unary | "/" unary | "%" unary )*
+//    mul         = cast ( "*" cast | "/" cast | "%" cast )*
 static Node *mul(void) {
-    Node *node = unary();
+    Node *node = cast();
     for (;;) {
         char *input = input_str();
         if (consume('*')) {
-            node = new_node('*', node, unary(), node->tp, input);
+            node = new_node('*', node, cast(), node->tp, input);
         } else if (consume('/')) {
-            node = new_node('/', node, unary(), node->tp, input);
+            node = new_node('/', node, cast(), node->tp, input);
         } else if (consume('%')) {
-            node = new_node('%', node, unary(), node->tp, input);
+            node = new_node('%', node, cast(), node->tp, input);
         } else {
             break;
         }
@@ -906,9 +909,28 @@ static Node *mul(void) {
     return node;
 }
 
+//キャスト（右結合）
+//    cast        = unary
+//                | "(" type_name ")" cast
+static Node *cast(void) {
+    Node *node;
+    Type *tp;
+    char *input = input_str();
+    if (token_is('(') && next_token_is_type_spec()) {
+        consume('(');
+        tp = type_name();
+        if (!consume(')'))
+            error_at(input_str(), "キャストの閉じかっこがありません");
+        node = new_node(ND_CAST, NULL, cast(), tp, input);
+    } else {
+        node = unary();
+    }
+    return node;
+}
+
 //前置単項演算子（右結合）
 //    unary       = post_unary
-//                | ( "+" | "-" |  "!" | "*" | "&" ) unary
+//                | ( "+" | "-" |  "!" | "*" | "&" ) cast
 //                | ( "++" | "--" )? unary
 //                | "sizeof" unary
 //                | "sizeof"   "(" type_name ")"
@@ -917,12 +939,12 @@ static Node *unary(void) {
     Node *node;
     char *input = input_str();
     if (consume('+')) {
-        node = unary();
+        node = cast();
     } else if (consume('-')) {
-        node = unary();
+        node = cast();
         node = new_node('-', new_node_num(0, input), node, node->tp, input);
     } else if (consume('!')) {
-        node = new_node('!', NULL, unary(), new_type(INT, 0), input);
+        node = new_node('!', NULL, cast(), new_type(INT, 0), input);
     } else if (consume(TK_INC)) {
         node = unary();
         node = new_node(ND_INC_PRE, NULL, node, node->tp, input);
@@ -930,12 +952,12 @@ static Node *unary(void) {
         node = unary();
         node = new_node(ND_DEC_PRE, NULL, node, node->tp, input);
     } else if (consume('*')) {
-        node = unary();
+        node = cast();
         if (!node_is_ptr(node)) 
             error_at(node->input, "'*'は非ポインタ型(%s)を参照しています", get_type_str(node->tp));
         node = new_node(ND_INDIRECT, NULL, node, node->tp->ptr_of, input);
     } else if (consume('&')) {
-        node = unary();
+        node = cast();
         node = new_node(ND_ADDRESS, NULL, node, new_type_ptr(node->tp), input);
     } else if (consume(TK_SIZEOF)) {
         Type *tp;

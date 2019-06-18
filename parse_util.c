@@ -35,11 +35,6 @@ int align_of(const Type *tp) {
 }
 
 int node_is_const(Node *node, long *valp) {
-    /*代入は副作用を伴うので定数とはみなさない。
-    if (node->type == '=') {
-        return node_is_const(node->rhs, val);   //厳密にはlhsへの型変換を考慮すべき？
-    }*/
-
     long val, val1, val2;
 
     if (node->type==ND_TRI_COND) {
@@ -51,6 +46,8 @@ int node_is_const(Node *node, long *valp) {
         }
         if (valp) *valp = val;
         return 1;
+    } else if (node->type==ND_CAST) {
+        return node_is_const(node->rhs, valp);
     }
 
     if (node->lhs && !node_is_const(node->lhs, &val1)) return 0;
@@ -79,7 +76,7 @@ int node_is_const(Node *node, long *valp) {
     return 1;
 }
 
-//nodeがアドレス+定数の形式になっているかどうかを調べる。varpにND_ADDRESS(&var)のノード、valpに定数を返す
+//nodeが定数またはアドレス+定数の形式になっているかどうかを調べる。varpにND_ADDRESS(&var)のノード、valpに定数を返す
 int node_is_const_or_address(Node *node, long *valp, Node **varp) {
     long val, val1, val2;
     Node *var1=NULL, *var2=NULL;
@@ -101,6 +98,19 @@ int node_is_const_or_address(Node *node, long *valp, Node **varp) {
         if (node->lst->len==1)
             return node_is_const_or_address(nodes[0], valp, varp);
         return 0;
+    }
+
+    if (node->type==ND_TRI_COND) {
+        if (!node_is_const_or_address(node->lhs, &val, varp)) return 0;
+        if (val) {
+            if (!node_is_const_or_address(node->rhs->lhs, &val, varp)) return 0;
+        } else {
+            if (!node_is_const_or_address(node->rhs->rhs, &val, varp)) return 0;
+        }
+        if (valp) *valp = val;
+        return 1;
+    } else if (node->type==ND_CAST) {
+        return node_is_const_or_address(node->rhs, valp, varp);
     }
 
     if (node->lhs && !node_is_const_or_address(node->lhs, &val1, &var1)) return 0;

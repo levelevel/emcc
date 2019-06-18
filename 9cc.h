@@ -88,6 +88,7 @@ typedef enum {
     ND_STRING,
     ND_LOCAL_VAR,   //ローカル変数の参照
     ND_GLOBAL_VAR,  //グローバル変数の参照
+    ND_CAST,        //キャスト
     ND_INC,         // a++
     ND_DEC,         // a--
     ND_INC_PRE,     // ++a

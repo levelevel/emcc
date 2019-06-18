@@ -360,7 +360,7 @@ int pointer5() {
     int **p=0;
     p++;
     ++p;
-    return p-1 == sizeof(int*);
+    return (long)(p-1) == sizeof(int*);
 }
 int pointer6() {
     int *p=0;
@@ -369,7 +369,7 @@ int pointer6() {
     p = p+1;
     p--;
     --p;
-    return 1+p == sizeof(int)*2;
+    return (long)(1+p) == sizeof(int)*2;
 }
 int pointer() {
     TEST(pointer1);
@@ -389,7 +389,7 @@ int array1() {
     *(a+2) = 8;
     a[3]   = 16;
     return
-        a==&a && a[0]==2 && *(a+1)==4 && a[2]==8 && (1,2)[1+a]==16;
+        (long)a==(long)&a && a[0]==2 && *(a+1)==4 && a[2]==8 && (1,2)[1+a]==16;
 }
 int array1c() {
     char a[4];
@@ -398,7 +398,7 @@ int array1c() {
     *(a+2) = 8;
     a[3]   = 16;
     return
-        a==&a && a[0]==2 && *(a+1)==4 && a[2]==8 && (1,2)[1+a]==16;
+        (long)a==(long)&a && a[0]==2 && *(a+1)==4 && a[2]==8 && (1,2)[1+a]==16;
 }
 int array1s() {
     short a[4];
@@ -407,7 +407,7 @@ int array1s() {
     *(a+2) = 8;
     a[3]   = 16;
     return
-        a==&a && a[0]==2 && *(a+1)==4 && a[2]==8 && (1,2)[1+a]==16;
+        (long)a==(long)&a && a[0]==2 && *(a+1)==4 && a[2]==8 && (1,2)[1+a]==16;
 }
 int array1l() {
     long a[4];
@@ -416,7 +416,7 @@ int array1l() {
     *(a+2) = 8;
     a[3]   = 16;
     return
-        a==&a && a[0]==2 && *(a+1)==4 && a[2]==8 && (1,2)[1+a]==16;
+        (long)a==(long)&a && a[0]==2 && *(a+1)==4 && a[2]==8 && (1,2)[1+a]==16;
 }
 static int af2(int *a){return a[0]+a[1]+a[2];}
 int array2() {
@@ -439,32 +439,32 @@ int array2l() {
     return af2l(a)==6 && p[1]==2, *q==3;
 }
 int array3() {
-    int a[4][5], *p=a, b[4][5][6], *q=b;
+    int a[4][5], *p=(int*)a, b[4][5][6], *q=(int*)b;
     a[2][3] = 10;
     b[2][3][4] = 20;
     return
-        a[1] == a+1 && p[2*5+3]==10 && *(q+2*5*6+3*6+4)==20;
+        (long)a[1] == (long)(a+1) && p[2*5+3]==10 && *(q+2*5*6+3*6+4)==20;
 }
 int array3c() {
-    char a[4][5], *p=a, b[4][5][6], *q=b;
+    char a[4][5], *p=(char*)a, b[4][5][6], *q=(char*)b;
     a[2][3] = 10;
     b[2][3][4] = 20;
     return
-        a[1] == a+1 && p[2*5+3]==10 && *(q+2*5*6+3*6+4)==20;
+        (long)a[1] == (long)(a+1) && p[2*5+3]==10 && *(q+2*5*6+3*6+4)==20;
 }
 int array3s() {
-    short a[4][5], *p=a, b[4][5][6], *q=b;
+    short a[4][5], *p=(short*)a, b[4][5][6], *q=(short*)b;
     a[2][3] = 10;
     b[2][3][4] = 20;
     return
-        a[1] == a+1 && p[2*5+3]==10 && *(q+2*5*6+3*6+4)==20;
+        (long)a[1] == (long)(a+1) && p[2*5+3]==10 && *(q+2*5*6+3*6+4)==20;
 }
 int array3l() {
-    long a[4][5], *p=a, b[4][5][6], *q=b;
+    long a[4][5], *p=(long*)a, b[4][5][6], *q=(long*)b;
     a[2][3] = 10;
     b[2][3][4] = 20;
     return
-        a[1] == a+1 && p[2*5+3]==10 && *(q+2*5*6+3*6+4)==20;
+        (long)a[1] == (long)(a+1) && p[2*5+3]==10 && *(q+2*5*6+3*6+4)==20;
 }
 int sarray2() {
 //    static int a[4]={1,2,3,4}, *p=a, *q=&a[2];
@@ -559,13 +559,13 @@ int init1g() {
         strcmp(i1g_s1,i1g_s2)==0;
 }
 int  i2g_x, *i2g_p = 2 + &i2g_x - 1;
-char i2g_c, *i2g_ac[3] = {0,&i2g_c+1,3,4};    //初期値多い
-int  i2g_i, *i2g_ai[5] = {0,&i2g_i+1,3,4};    //初期値足りない分は0
+char i2g_c, *i2g_ac[3] = {0,&i2g_c+1,(char*)3,(char*)4};    //初期値多い
+int  i2g_i, *i2g_ai[5] = {0,&i2g_i+1,(int*) 3,(int*) 4};    //初期値足りない分は0
 int init2g() {
     return 
         &i2g_x+1 == i2g_p && i2g_x==0 &&
-        i2g_ac[1]==&i2g_c+1 && i2g_ac[2]==3 &&
-        i2g_ai[1]==&i2g_i+1 && i2g_ai[2]==3 && i2g_ai[4]==0;
+        i2g_ac[1]==&i2g_c+1 && i2g_ac[2]==(char*)3 &&
+        i2g_ai[1]==&i2g_i+1 && i2g_ai[2]==(int*)3 && i2g_ai[4]==0;
 }
 int init() {
     TEST(init1);
@@ -576,12 +576,12 @@ int init() {
 
 int align1() {
     char c1; int i; char c2; int*p;
-    unsigned long ui = &i, up = &p;
+    unsigned long ui = (unsigned long)&i, up = (unsigned long)&p;
     return ui%4==0 && up%8==0;
 }
     char ag1_c1; int ag1_i; char ag1_c2; char*ag1_p;
 int align1g() {
-    unsigned long ui = &ag1_i, up = &ag1_p;
+    unsigned long ui = (unsigned long)&ag1_i, up = (unsigned long)&ag1_p;
     return ui%4==0 && up%8==0;
 }
 int align() {
@@ -998,6 +998,15 @@ static int declarate() {
     return 1;
 }
 
+static int cast(void) {
+    char c1[]={1,2,3,4};
+    char c2[]={0,0,0,0};
+    *(int*)&c2 = 0x05040302;
+    return
+        *(int*)c1==0x04030201 &&
+        c2[0]==2 && c2[3]==5;
+}
+
 int main() {
     TEST(addsub);
     TEST(eq_rel);
@@ -1016,6 +1025,7 @@ int main() {
     TEST(integer_def);
     TEST(ext);
     TEST(declarate);
+    TEST(cast);
     //printf("%s:%d func=%s\n",__FILE__, __LINE__, __func__);
     return 0;
 }

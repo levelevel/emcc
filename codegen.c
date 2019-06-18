@@ -341,6 +341,9 @@ static void gen_lval(Node*node) {
     } else if (node->type == ND_INDIRECT) {
         comment("LVALUE:*var\n");
         gen(node->rhs);     //rhsのアドレスを生成する
+    } else if (node->type == ND_CAST) {
+        comment("LVALUE (%s)var\n", get_type_str(node->tp));
+        gen_lval(node->rhs);
     } else {
         error_at(node->input, "アドレスを生成できません");
     }
@@ -649,6 +652,9 @@ static int gen(Node*node) {
         printf("  sete al\n");
         printf("  movzb rax, al\n");
         printf("  push rax\n");
+    } else if (node->type == ND_CAST) {     //キャスト
+        comment("CAST (%s)%s\n", get_type_str(node->tp), get_type_str(node->rhs->tp));
+        gen(node->rhs);
     } else {                                //2項演算子
         Node *lhs = node->lhs;
         Node *rhs = node->rhs;

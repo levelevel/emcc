@@ -177,8 +177,6 @@ void warning_at(const char*loc, const char*fmt, ...){
     va_start(ap, fmt);
     vfprintf(stderr, fmt, ap);
     fprintf(stderr, "\n");
-
-    exit(1);
   }
 
 // エラーと警告を報告するための関数 --------------------------
