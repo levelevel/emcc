@@ -371,6 +371,10 @@ int pointer6() {
     --p;
     return (long)(1+p) == sizeof(int)*2;
 }
+int pointer7() {
+    int a, *p=&a, *q=&a+5;
+    return p+5==q && q-p==5;
+}
 int pointer() {
     TEST(pointer1);
     TEST(pointer1g);
@@ -379,6 +383,7 @@ int pointer() {
     TEST(pointer4);
     TEST(pointer5);
     TEST(pointer6);
+    TEST(pointer7);
     return 1;
 }
 

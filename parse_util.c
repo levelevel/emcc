@@ -214,6 +214,14 @@ void check_funcargs(Node *node, int def_mode) {
 }
 
 //ノードのタイプが等しいかどうかを判定する
+int type_eq(const Type *tp1, const Type *tp2) {
+    if (tp1->type != tp2->type) return 0;
+    if (tp1->is_unsigned != tp2->is_unsigned) return 0;
+    if (tp1->ptr_of) return type_eq(tp1->ptr_of, tp2->ptr_of);
+    return 1;
+}
+
+//ノードのタイプが等しいかどうかを判定する
 int node_type_eq(const Type *tp1, const Type *tp2) {
     if ((tp1->type==PTR && tp2->type==ARRAY) ||
         (type_is_integer(tp1) && type_is_integer(tp2))) {

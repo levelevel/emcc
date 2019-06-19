@@ -158,18 +158,19 @@ struct _Type {
 
 struct _Node {
     NDtype type;    //nodeの型：演算子、ND_INDENTなど
+    int offset;     //auto変数：ベースポインタからのoffset
+                    //static変数：識別用index（global_index）
     long val;       //typeがND_NUMの場合の値
                     //typeがND_STRINGの場合のstring_vecのインデックス
     Node *lhs;
     Node *rhs;
     Vector *lst;    //typeがND_BLOCKの場合のstmtのリスト
                     //typeがND_LISTの場合のasignのリスト
-    char *name;     //typeがND_IDENTの場合の変数名
+    char *name;     //typeがND_LOCAL|GLOBAL_VAR[_DEF]の場合の変数名
+                    //typeがND_FUNC_CALL|DEF|DECLの場合の関数名
     Type *tp;       //型情報：typeがND_NUM、ND_IDENT、ND_FUNC_DEFの場合の場合は
                     //トークナイズ時に設定。それ以外は評価時に設定。
     char *input;    //トークン文字列（エラーメッセージ用）。Token.inputと同じ。
-    int offset;     //auto変数：ベースポインタからのoffset
-                    //static変数：識別用index（global_index）
 };
 
 typedef struct {
@@ -189,7 +190,7 @@ typedef struct {
 //アサーション
 #define COMPILE_ERROR 0
 #define _ERROR_ assert(COMPILE_ERROR)
-#define _NOT_YET_(node) error_at((node)->input, "未実装です（%s:%d）",__FILE__,__LINE__) 
+#define _NOT_YET_(node) error_at((node)->input, "未実装です（%s:%d in %s）",__FILE__,__LINE__,__func__) 
 
 //グローバル変数 ----------------------------------------
 #ifndef EXTERN
@@ -256,6 +257,7 @@ int consume(TKtype type);
 int consume_ident(char**name);
 Type *get_typeof(Type *tp);
 void check_funcargs(Node *node, int def_mode);
+int type_eq(const Type *tp1, const Type *tp2);
 int node_type_eq(const Type *tp1, const Type *tp2);
 int get_var_offset(const Type *tp);
 Funcdef *new_funcdef(void);

@@ -65,6 +65,21 @@ static void gen_mul_reg(char *reg_name, int val) {
     }
 }
 
+// レジスタを1/val倍する。rdx,rdiは保存しない。
+static void gen_div_reg(char *reg_name, int val) {
+    int shift = shift_size(val);
+    if (shift>0) {
+        printf("  shr %s, %d\t# %s / %d\n", reg_name, shift, reg_name, val);
+    } else {
+        printf("  mov rdx, 0\n");
+        printf("  mov %s, %d\n", reg_name, val);
+        printf("  div %s\n", reg_name);
+        if (strcmp(reg_name, "rax")!=0) {
+            printf("  mov %s, rax\n", reg_name);
+        }
+    }
+}
+
 //型に応じたデータ型名を返す。例：intならDWORD
 static char* ptr_name_of_type(const Type *tp) {
     if (tp->type==ARRAY) tp = tp->ptr_of;
@@ -768,11 +783,15 @@ static int gen(Node*node) {
             break;
         case '-':   //rax(lhs)-rdi(rhs)
             comment("'-' %s %s\n", get_type_str(lhs->tp), get_type_str(rhs->tp));
-            assert(!node_is_ptr(rhs));
-            if (node_is_ptr(lhs)) {
-                gen_mul_reg("rdi", size_of(lhs->tp->ptr_of));
+            if (node_is_ptr(lhs) && node_is_ptr(rhs)) {
+                printf("  sub rax, rdi\n");
+                gen_div_reg("rax", size_of(lhs->tp->ptr_of));
+            } else {
+                if (node_is_ptr(lhs)) {
+                    gen_mul_reg("rdi", size_of(lhs->tp->ptr_of));
+                }
+                printf("  sub rax, rdi\n");
             }
-            printf("  sub rax, rdi\n");
             break;
         case '*':   //rax*rdi -> rdx:rax
             comment("'*'\n");

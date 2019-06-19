@@ -3,11 +3,11 @@
 #include "9cc.h"
 
 /*  文法：
-- A.2.4 External Definitions
+- A.2.4 External Definitions  http://port70.net/~nsz/c/c11/n1570.html#A.2.4
     translation_unit        = external_declaration*
     external_declaration    = function_definition | declaration
     function_definition     = declaration_specifiers declarator compound_statement
-- A.2.2 Declarations
+- A.2.2 Declarations          http://port70.net/~nsz/c/c11/n1570.html#A.2.2
     declaration             = declaration_specifiers init_declarator ( "," init_declarator )* ";"
     declaration_specifiers  = "typeof" "(" identifier ")"
                             | type_specifier          declaration_specifiers*
@@ -38,7 +38,7 @@
     direct_abstract_declarator = "(" abstract_declarator ")"
                             | direct_abstract_declarator? "[" assignment? "]"
                             | direct_abstract_declarator? "(" parameter_type_list? ")"  //関数
-- A.2.3 Statements
+- A.2.3 Statements            http://port70.net/~nsz/c/c11/n1570.html#A.2.3
     statement               = compound_statement
                             | declaration
                             | return" expression ";"
@@ -730,7 +730,7 @@ static Node *assignment(void) {
     } else if (consume(TK_MINUS_ASSIGN)) { //-=
         if (node->tp->type==ARRAY) error_at(node->input, "左辺値ではありません");
         rhs = assignment(); 
-        if node_is_ptr(rhs)
+        if (node_is_ptr(rhs)) 
             error_at(node->input, "ポインタによる減算です");
         node = new_node(ND_MINUS_ASSIGN, node, rhs, node->tp, input);
     }
@@ -880,8 +880,13 @@ static Node *add(void) {
             node = new_node('+', node, rhs, tp, input);
         } else if (consume('-')) {
             rhs = mul();
-            if (node_is_ptr(rhs))
-                error_at(input, "ポインタによる減算です");
+            if (node_is_ptr(node) && node_is_ptr(rhs)) {
+                if (!type_eq(node->tp, rhs->tp)) 
+                    error_at(node->input, "異なるタイプのポインタによる減算です: %s vs %s",
+                        get_type_str(node->tp), get_type_str(rhs->tp));
+            } else if (!node_is_ptr(node)  && node_is_ptr(rhs)) {
+                error_at(node->input, "ポインタによる減算です");
+            }
             node = new_node('-', node, rhs, rhs->tp, input);
         } else {
             break;
