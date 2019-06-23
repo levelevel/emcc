@@ -17,7 +17,7 @@ size_t strlen(const char *s);
 #include <stdarg.h>
 #endif
 
-#define TEST(func) if(!func()) {printf("Error at %s:%d:%s\n",__FILE__,__LINE__,#func);exit(1);} else {printf("  OK: %s\n",#func);}
+#define TEST(f) if(!f()) {printf("Error at %s:%d:%s\n",__FILE__,__LINE__,#f);exit(1);} else {printf("  OK: %s\n",#f);}
 
 static int f42() {42; ;;;;;}
 int addsub1(){
@@ -310,10 +310,51 @@ static int funcdecl2() {
     return 1;
 }
 
-int func() {
+static int fp1_add(int a, int b) { return a+b; }
+static int funcp1(void) {
+    int (*fp)(int, int);
+    fp = fp1_add;
+    return fp(1,2)==3;
+}
+
+static int fp1g_add(int a, int b) { return a+b; }
+static int (*fp1g)(int, int);
+static int funcp1g(void) {
+    fp1g = fp1g_add;
+    return fp1g(2,3)==5;
+}
+
+extern long fp2_add(long a, long b);    //実体はextern.cで定義
+static int funcp2(void) {
+    long (*fp)(long, long);
+    fp = fp2_add;
+    return fp(11,12)==23;
+}
+
+static int *fp3_inc(int *a){(*a)++; return a;}    //*aを++して、aを返す
+static int funcp3(void) {
+    int *(*fp)(int *a) = &fp3_inc;
+    int x=1;
+    return *fp(&x)==2 && x==2;
+}
+
+static char *fp4_str(void){static char str[]="ABC"; return str;}
+static int funcp4(void) {
+    char *(*fp)(void) = fp4_str;
+    return
+        strcmp(fp(),"ABC")==0 &&
+        *fp()=='A' && fp()[1]=='B' && fp4_str()[2]=='C';
+}
+
+static int func() {
     void_func();
     TEST(funcdecl1);
     TEST(funcdecl2);
+    TEST(funcp1);
+    TEST(funcp1g);
+    TEST(funcp2);
+    TEST(funcp3);
+    TEST(funcp4);
     return
         fact(10) == 55 &&
         fib(10) == 55;

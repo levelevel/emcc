@@ -30,12 +30,12 @@ Map *new_map(void) {
     return map;
 }
 
-void map_put(Map *map, char *key, void *val) {
-    vec_push(map->keys, key);
+void map_put(Map *map, const char *key, void *val) {
+    vec_push(map->keys, (void*)key);
     vec_push(map->vals, val);
 }
 
-int map_get(const Map *map, char *key, void**val) {
+int map_get(const Map *map, const char *key, void**val) {
     for (int i=map->keys->len-1; i>=0; i--) {
         if (strcmp(map->keys->data[i], key)==0) {
             if (val) *val = map->vals->data[i];
@@ -72,12 +72,31 @@ void *stack_get(Stack *stack, int idx) {
 }
 
 // ダンプ関数 ----------------------------------------
-static const char *TypeStr[] = {"Nul", "void", "char", "short", "int", "long", "long long", "*", "[", "CONST"};
+static const char *TypeStr[] = {"Nul", "void", "char", "short", "int", "long", "long long", "*", "[", "func(", "CONST"};
 static const char *SClassStr[] = {"", "auto ", "register ", "static ", "extern "};
 
-//bufに対して型を表す文字列を生成する
-static void type_str(char *buf, const Type *tp) {
-    if (tp->ptr_of) type_str(buf, tp->ptr_of);
+//bufに対してTypeをダンプする
+static void dump_type(char *buf, const Type *tp) {
+    const char *str = TypeStr[tp->type];
+    if (tp->is_unsigned) strcat(buf, "unsigned ");
+    if (tp->is_const)    strcat(buf, "const ");
+    if (*buf && *str!='*' && *str!='[') strcat(buf, " ");
+    strcat(buf, str);
+    if (tp->type==ARRAY) {
+        char tmp[20];
+        if (tp->array_size>=0) sprintf(tmp, "%ld]", tp->array_size);
+        else                   sprintf(tmp ,"]");
+        strcat(buf, tmp);
+    } else if (tp->type==FUNC) {
+        if (tp->node) strcat(buf, get_func_args_str(tp->node->lhs));
+        strcat(buf, ")");
+    }
+    if (tp->ptr_of) dump_type(buf, tp->ptr_of);
+}
+
+//bufに対して型を表す文字列をCの文法で生成する
+static void print_type(char *buf, const Type *tp) {
+    if (tp->ptr_of) print_type(buf, tp->ptr_of);
     strcat(buf, SClassStr[tp->sclass]);
     if (tp->is_unsigned) strcat(buf, "unsigned ");
     if (tp->is_const)    strcat(buf, "const ");
@@ -90,16 +109,21 @@ static void type_str(char *buf, const Type *tp) {
     }
 }
 
-// 型を表す文字列を返す。文字列はmallocされている。
-const char* get_type_str(const Type *tp) {
+// 型を表す文字列をCの文法表記で返す。文字列はmallocされている。
+char *get_type_str(const Type *tp) {
     char buf[1024];
     const Type *p;
     if (tp==NULL) return "null";
     buf[0] = 0;
-    //ARRAY[10]->array[2]->PTR->INT
+    //ARRAY[10]->ARRAY[2]->PTR->INT
     //ARRAY以外を深さ優先で先に処理する
     for (p=tp; p->type==ARRAY; p=p->ptr_of);
-    type_str(buf, p);
+    if (1) {
+        dump_type(buf, p);
+    } else {
+        print_type(buf, p);
+    }
+    //strcat(buf, ")");
     for (p=tp; p->type==ARRAY; p=p->ptr_of) {
         char tmp[20];
         if (p->array_size>=0) sprintf(tmp, "[%ld]", p->array_size);
@@ -111,8 +135,8 @@ const char* get_type_str(const Type *tp) {
     return ret;
 }
 
-// 関数の引数リストを表す文字列を返す。文字列はmallocされている。
-const char* get_func_args_str(const Node *node) {
+// 関数の引数リストを表す文字列をCの文法表記で返す。文字列はmallocされている。
+char *get_func_args_str(const Node *node) {
     char buf[1024];
     assert(node->type==ND_LIST);
     int size = node->lst->len;
@@ -132,6 +156,76 @@ const char* get_func_args_str(const Node *node) {
     char *ret = malloc(strlen(buf)+1);
     strcpy(ret, buf);
     return ret;
+}
+
+static const char *get_NDtype_str(NDtype type) {
+    #define NDTYPE_STR(t,val) if (t==val) return #val
+    NDTYPE_STR(type,ND_UNDEF);
+    NDTYPE_STR(type,ND_NOT);
+    NDTYPE_STR(type,ND_MOD);
+    NDTYPE_STR(type,ND_AND);
+    NDTYPE_STR(type,ND_MUL);
+    NDTYPE_STR(type,ND_PLUS);
+    NDTYPE_STR(type,ND_MINUS);
+    NDTYPE_STR(type,ND_DIV);
+    NDTYPE_STR(type,ND_LT);
+    NDTYPE_STR(type,ND_ASIGN);
+    NDTYPE_STR(type,ND_GT);
+    NDTYPE_STR(type,ND_XOR);
+    NDTYPE_STR(type,ND_OR);
+    NDTYPE_STR(type,ND_NUM);
+    NDTYPE_STR(type,ND_STRING);
+    NDTYPE_STR(type,ND_LOCAL_VAR);
+    NDTYPE_STR(type,ND_GLOBAL_VAR);
+    NDTYPE_STR(type,ND_CAST);
+    NDTYPE_STR(type,ND_INC);
+    NDTYPE_STR(type,ND_DEC);
+    NDTYPE_STR(type,ND_INC_PRE);
+    NDTYPE_STR(type,ND_DEC_PRE);
+    NDTYPE_STR(type,ND_INDIRECT);
+    NDTYPE_STR(type,ND_ADDRESS);
+    NDTYPE_STR(type,ND_EQ);
+    NDTYPE_STR(type,ND_NE);
+    NDTYPE_STR(type,ND_LE);
+    NDTYPE_STR(type,ND_LAND);
+    NDTYPE_STR(type,ND_LOR);
+    NDTYPE_STR(type,ND_TRI_COND);
+    NDTYPE_STR(type,ND_PLUS_ASSIGN);
+    NDTYPE_STR(type,ND_MINUS_ASSIGN);
+    NDTYPE_STR(type,ND_LOCAL_VAR_DEF);
+    NDTYPE_STR(type,ND_GLOBAL_VAR_DEF);
+    NDTYPE_STR(type,ND_RETURN);
+    NDTYPE_STR(type,ND_IF);
+    NDTYPE_STR(type,ND_WHILE);
+    NDTYPE_STR(type,ND_FOR);
+    NDTYPE_STR(type,ND_BREAK);
+    NDTYPE_STR(type,ND_CONTINUE);
+    NDTYPE_STR(type,ND_BLOCK);
+    NDTYPE_STR(type,ND_LIST);
+    NDTYPE_STR(type,ND_FUNC_CALL);
+    NDTYPE_STR(type,ND_FUNC_DEF);
+    NDTYPE_STR(type,ND_FUNC_DECL);
+    NDTYPE_STR(type,ND_VARARGS);
+    NDTYPE_STR(type,ND_EMPTY);
+    return "ND_???";
+}
+
+static void dump_node_indent(FILE *fp, const Node *node, const char *str, int indent) {
+    fprintf(fp, "%*s", indent, "");
+    if (str) fprintf(fp, "%s:", str);
+    fprintf(fp, "Node[%p]:type=%s, name=%s, tp=%s, offset=%d, val=%ld", 
+        node,
+        get_NDtype_str(node->type),
+        node->name?node->name:"",
+        get_type_str(node->tp),
+        node->offset, node->val);
+    fprintf(fp, "\n");
+    if (node->lhs) dump_node_indent(fp, node->lhs, "lhs=", indent+2);
+    if (node->rhs) dump_node_indent(fp, node->rhs, "rhs=", indent+2);
+}
+
+void dump_node(const Node *node, const char *str) {
+    dump_node_indent(stderr, node, str, 2);
 }
 
 // エラーの起きた場所を報告するための関数

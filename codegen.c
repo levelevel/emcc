@@ -136,6 +136,7 @@ static char* write_command_of_type(const Type *tp) {
     case LONGLONG: return "mov";
     case PTR:      return "mov";
     case ARRAY:    return "mov";
+    case FUNC:     return "mov";
     default: _ERROR_;
     }
     return NULL;
@@ -155,6 +156,7 @@ static char* read_command_of_type(const Type *tp) {
         return "mov";
     case PTR:
     case ARRAY:
+    case FUNC:
         return "mov";
     default: _ERROR_;
     }
@@ -174,6 +176,8 @@ static void gen_write_reg(const char*dst, const char*src, const Type *tp, const 
 static void gen_read_reg(const char*dst, const char*src, const Type *tp, const char* comment) {
     if (tp->type==INT && tp->is_unsigned) {
         printf("  mov %s, DWORD PTR [%s]", reg_name_of_type(dst, tp), src);
+    } else if (tp->type==FUNC) {
+        printf("  mov %s, OFFSET FLAT:%s", dst, src);
     } else {
         printf("  %s %s, %s PTR [%s]", read_command_of_type(tp), dst, ptr_name_of_type(tp), src);
     }
@@ -413,8 +417,10 @@ static int gen(Node*node) {
         sprintf(buf, ".LC%03ld", node->val);
         printf("  lea rax, BYTE PTR %s\n", buf);
         printf("  push rax\n");             //文字列リテラルのアドレスを返す
-    } else if  (node->type == ND_EMPTY ||   //空文
-                node->type == ND_GLOBAL_VAR_DEF) {//グローバル(extern)変数定義
+    } else if  (node->type == ND_EMPTY ||           //空文
+                node->type == ND_GLOBAL_VAR_DEF||   //グローバル(extern)変数定義
+                node->type == ND_FUNC_DEF ||        //関数定義
+                node->type == ND_FUNC_DECL) {       //関数宣言
         return 0;
     } else if (node->type == ND_LOCAL_VAR_DEF) {  //ローカル変数定義
         if (node->rhs==NULL) return 0;
@@ -430,9 +436,9 @@ static int gen(Node*node) {
             printf("  push rax\n");
         }
     } else if (node->type == ND_FUNC_CALL) {//関数コール
-        comment("CALL:%s\n", node->name);
-        if (node->lhs) {
-            int i;
+        int i=0;
+        comment("CALL:%s\t%s\n", node->name, get_type_str(node->tp));
+        if (node->lhs) {    //引数
             assert(node->lhs->type==ND_LIST);
             Vector *lists = node->lhs->lst;
             Node **nodes = (Node**)lists->data;
@@ -440,12 +446,22 @@ static int gen(Node*node) {
                 comment("ARGLIST[%d]\n", i);
                 gen(nodes[i]);  //スタックトップに引数がセットされる
             }
+        }
+        if (node->rhs->tp->type==FUNC) {
             for (; i; i--) {
                 printf("  pop %s\n", arg_regs[i-1]);
             }
+            printf("  mov al, 0\n");
+            printf("  call %s\n", node->name);
+        } else {
+            gen(node->rhs);
+            printf("  pop rbx\n");
+            for (; i; i--) {
+                printf("  pop %s\n", arg_regs[i-1]);
+            }
+            printf("  mov al, 0\n");
+            printf("  call rbx\n");
         }
-        printf("  mov al, 0\n");
-        printf("  call %s\n", node->name);
         printf("  push rax\n");
     } else if (node->type == ND_RETURN) {   //return
         comment("RETURN\n");

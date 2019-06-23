@@ -19,7 +19,8 @@ long size_of(const Type *tp) {
         if (tp->array_size<0) return sizeof(void*);
         else return tp->array_size * size_of(tp->ptr_of);
     case FUNC:     return sizeof(void*);
-    case CONST:    assert(0);
+    default:    //CONST,NEST
+        assert(0);
     }
     _ERROR_;
     return -1;
@@ -213,7 +214,7 @@ void check_funcargs(Node *node, int def_mode) {
     }
 }
 
-//ノードのタイプが等しいかどうかを判定する
+//タイプが等しいかどうかを判定する（storage classは無視。constも今は無視）
 int type_eq(const Type *tp1, const Type *tp2) {
     if (tp1->type != tp2->type) return 0;
     if (tp1->is_unsigned != tp2->is_unsigned) return 0;
@@ -221,11 +222,14 @@ int type_eq(const Type *tp1, const Type *tp2) {
     return 1;
 }
 
-//ノードのタイプが等しいかどうかを判定する
+//node1=node2の代入の観点で型の一致を判定する
 int node_type_eq(const Type *tp1, const Type *tp2) {
     if ((tp1->type==PTR && tp2->type==ARRAY) ||
         (type_is_integer(tp1) && type_is_integer(tp2))) {
-        ;   //一致とみなす（tp1=tp2の代入前提）
+        ;
+    } else if (tp1->type==PTR && tp1->ptr_of->type==FUNC &&
+               tp2->type==FUNC) {   //関数ポインタに対する関数名の代入
+        tp1 = tp1->ptr_of;
     } else {
         if (tp1->type != tp2->type) return 0;
     }  
@@ -255,6 +259,13 @@ Funcdef *new_funcdef(void) {
 Type *new_type_ptr(Type*ptr) {
     Type *tp = calloc(1, sizeof(Type));
     tp->type = PTR;
+    tp->ptr_of = ptr;
+    return tp;
+}
+
+Type *new_type_func(Type*ptr) {
+    Type *tp = calloc(1, sizeof(Type));
+    tp->type = FUNC;
     tp->ptr_of = ptr;
     return tp;
 }
@@ -305,7 +316,7 @@ void regist_var_def(Node *node) {
             } else {
                 node->offset = get_var_offset(node->tp);
             }
-            node->type = ND_LOCAL_VAR_DEF;
+            if (node->type==ND_UNDEF) node->type = ND_LOCAL_VAR_DEF;
             map_put(symbol_map, name, node);
 
             if (type_is_static(node->tp)) {
@@ -315,7 +326,7 @@ void regist_var_def(Node *node) {
             error_at(node->input, "'%s'はローカル変数の重複定義です", name);
         }
     } else {            //グローバル変数
-        if (node->type==0) node->type = ND_GLOBAL_VAR_DEF;
+        if (node->type==ND_UNDEF) node->type = ND_GLOBAL_VAR_DEF;
         if (map_get(global_symbol_map, name, NULL)==0) {
             map_put(global_symbol_map, name, node);
         } else if (!type_is_extern(node->tp)) {
@@ -326,7 +337,7 @@ void regist_var_def(Node *node) {
 
 //抽象構文木の生成（変数定義）
 Node *new_node_var_def(char *name, Type*tp, char *input) {
-    Node *node = new_node(0, NULL, NULL, tp, input);
+    Node *node = new_node(ND_UNDEF, NULL, NULL, tp, input);
     node->name = name;
     if (name) regist_var_def(node);
     return node;
@@ -342,46 +353,85 @@ Node *new_node_string(char *string, char *input) {
     return node;
 }
 
+//identをスコープの内側から検索してNodeを返す
+static Node *search_symbol(const char *name) {
+    Node *node = NULL;
+    for (int i=symbol_stack->len-1; i>=0; i--) {
+        Map *symbol_map = (Map*)stack_get(symbol_stack, i);
+        if (map_get(symbol_map, name, (void**)&node)!=0) {
+            return node;
+        }
+    }
+    return NULL;
+}
+
 //抽象構文木の生成（識別子：ローカル変数・グローバル変数）
 Node *new_node_var(char *name, char *input) {
     Node *node, *var_def;
-    NDtype type = 0;
+    NDtype type;
 
-    //定義済みの変数であるかをススコープの内側からチェック
-    for (int i=symbol_stack->len-1; i>=0; i--) {
-        Map *symbol_map = (Map*)stack_get(symbol_stack, i);
-        if (map_get(symbol_map, name, (void**)&var_def)!=0) {
-            if (var_def->type==ND_LOCAL_VAR_DEF) {
-                type = ND_LOCAL_VAR;
-                break;
-            } else if (var_def->type==ND_GLOBAL_VAR_DEF) {
-                type = ND_GLOBAL_VAR;
-                break;
-            } else {
-                assert(0);
-            }
+    //定義済みの変数であるかをスコープの内側からチェック
+    var_def = search_symbol(name);
+    if (var_def) {
+        switch (var_def->type) {
+        case ND_LOCAL_VAR_DEF:
+            type = ND_LOCAL_VAR;
+            break;
+        case ND_GLOBAL_VAR_DEF:
+        case ND_FUNC_DEF:       
+        case ND_FUNC_DECL:
+            type = ND_GLOBAL_VAR;
+            break;
+        default:
+            assert(0);
         }
-    }
-    if (type==0)
+    } else {
         error_at(tokens[token_pos-1]->input, "'%s'は未定義の変数です", name);
+    }
 
     node = new_node(type, NULL, NULL, var_def->tp, input);
     node->name = name;
     node->offset = var_def->offset;
+    //dump_node(node, __func__);
 
     return node;
 }
 
 //抽象構文木の生成（関数コール）
 Node *new_node_func_call(char *name, char *input) {
-    Node *node, *func_def = NULL;
-    if (map_get(global_symbol_map, name, (void**)&func_def)==0) {
+    Node *node, *func_node;
+    Type *tp;
+    func_node = search_symbol(name);
+    if (func_node) {
+        switch (func_node->type) {
+        case ND_LOCAL_VAR_DEF:  //関数ポインタ
+        case ND_GLOBAL_VAR_DEF: //関数ポインタ
+            assert(func_node->tp->type==PTR && func_node->tp->ptr_of->type==FUNC);
+            node = new_node(func_node->type==ND_LOCAL_VAR_DEF?ND_LOCAL_VAR:ND_GLOBAL_VAR,
+                            NULL, NULL, func_node->tp, func_node->input);
+            node->name = name;
+            node->offset = func_node->offset;
+            func_node = node;
+            // PTR->FUNC->int
+            //            ^---ここを指す
+            tp = func_node->tp->ptr_of->ptr_of;
+            break;
+        case ND_FUNC_DEF:       
+        case ND_FUNC_DECL:
+            assert(func_node->tp->type==FUNC);
+            tp = func_node->tp->ptr_of;
+            break;
+        default:
+            error_at(input, "不正な関数コールです。");
+        }
+    } else {
         warning_at(input, "未宣言の関数コールです。");
+        tp = new_type(INT, 0);
     }
-    node = new_node(ND_FUNC_CALL, NULL, NULL, func_def?func_def->tp:new_type(INT, 0), input);
-
+    node = new_node(ND_FUNC_CALL, NULL, func_node, tp, input);
     node->name = name;
-//  node->lhs    //引数リスト
+//  node->lhs   //引数リスト
+//  node->rhs   //コール先を示すノード
 
     return node;
 }

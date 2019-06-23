@@ -72,6 +72,7 @@ typedef struct {
 
 //抽象構文木 ----------------------------------------
 typedef enum {
+    ND_UNDEF = 0,
     ND_NOT   = '!',
     ND_MOD   = '%',
     ND_AND   = '&',
@@ -130,8 +131,9 @@ typedef enum {
     PTR,
     ARRAY,
     FUNC,           //関数
-    CONST,          //一時的なデータ構造でのみ使用し、必ずptr_ofを持つ。
+    CONST,          //const処理の一時的なデータ構造でのみ使用し、必ずptr_ofを持つ。
                     //親をconstで修飾する。親がいないときは型を修飾する。
+    NEST,           //ネスト下型宣言処理の一時的なデータ構造でのみ使用する。他のメンバーは未使用。
 } Typ;
 
 typedef enum {
@@ -164,12 +166,11 @@ struct _Node {
                     //typeがND_STRINGの場合のstring_vecのインデックス
     Node *lhs;
     Node *rhs;
-    Vector *lst;    //typeがND_BLOCKの場合のstmtのリスト
-                    //typeがND_LISTの場合のasignのリスト
+    Vector *lst;    //typeがND_BLOCKの場合のstatementのリスト
+                    //typeがND_LISTの場合のassignmentのリスト
     char *name;     //typeがND_LOCAL|GLOBAL_VAR[_DEF]の場合の変数名
                     //typeがND_FUNC_CALL|DEF|DECLの場合の関数名
-    Type *tp;       //型情報：typeがND_NUM、ND_IDENT、ND_FUNC_DEFの場合の場合は
-                    //トークナイズ時に設定。それ以外は評価時に設定。
+    Type *tp;       //型情報
     char *input;    //トークン文字列（エラーメッセージ用）。Token.inputと同じ。
 };
 
@@ -184,8 +185,9 @@ typedef struct {
 //型がinteger型であるか
 #define type_is_integer(_tp) (CHAR<=(_tp)->type && (_tp)->type<=LONGLONG)
 
-//ノードがポインタ（PTR||ARRAY）であるか
-#define node_is_ptr(_node) ((_node)->tp->type==PTR || (_node)->tp->type==ARRAY)
+//型・ノードがポインタ型（PTR||ARRAY）であるか
+#define type_is_ptr(_tp) ((_tp)->type==PTR || (_tp)->type==ARRAY)
+#define node_is_ptr(_node) type_is_ptr((_node)->tp)
 
 //アサーション
 #define COMPILE_ERROR 0
@@ -262,6 +264,7 @@ int node_type_eq(const Type *tp1, const Type *tp2);
 int get_var_offset(const Type *tp);
 Funcdef *new_funcdef(void);
 Type *new_type_ptr(Type*ptr);
+Type *new_type_func(Type*ptr);
 Type *new_type_array(Type*ptr, size_t size);
 Type *new_type(int type, int is_unsigned);
 Node *new_node(int type, Node *lhs, Node *rhs, Type *tp, char *input);
@@ -290,8 +293,8 @@ void vec_push(Vector *vec, void *elem);
 void *vec_get(Vector *vec, int idx);
 
 Map *new_map(void);
-void map_put(Map *map, char *key, void *val);
-int  map_get(const Map *map, char *key, void**val);
+void map_put(Map *map, const char *key, void *val);
+int  map_get(const Map *map, const char *key, void**val);
 
 Stack *new_stack(void);
 int   stack_push(Stack *stack, void*elem);
@@ -299,8 +302,9 @@ void *stack_pop(Stack *stack);
 void *stack_get(Stack *stack, int idx);
 #define stack_top(stack) stack_get(stack,stack->len-1)
 
-const char* get_type_str(const Type *tp);
-const char* get_func_args_str(const Node *node);
+char* get_type_str(const Type *tp);
+char* get_func_args_str(const Node *node);
+void dump_node(const Node *node, const char *str);
 
 EXTERN char *filename;
 EXTERN char *user_input;

@@ -1,5 +1,6 @@
 #!/bin/bash
 set -u
+ulimit -c unlimited
 
 EXE=tmp/test
 AFLAGS="-g -no-pie"
@@ -170,6 +171,8 @@ try $WR "int a = func();"
 try $ER "int func(){} int func(){} int main(){}"
 try $ER "int func     int func(){} int main(){}"
 try $ER "int func(){} int func     int main(){}"
+try $ER "int func(); *func();"
+try $ER "int func(); int (*fp)()=func; *fp();"
 try $ER "break;"
 try $ER "continue;"
 

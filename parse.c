@@ -154,6 +154,8 @@ static Node *external_declaration(void) {
             node = declaration(tp, name);
             //if (!consume(';')) error_at(input_str(), "; がありません");
         }
+    } else if (consume(';')) {
+        //仕様書に記載はない？が、空の ; を読み飛ばす。
     } else {
         error_at(input_str(), "関数・変数の定義がありません");
     }
@@ -229,9 +231,9 @@ static Node *init_declarator(Type *decl_spec, Type *tp, char *name) {
     Node *node, *rhs=NULL;
     char *input = input_str();
 
-    Node *tmp_node = declarator(decl_spec, tp, name);
-    tp   = tmp_node->tp;
-    name = tmp_node->name;
+    node = declarator(decl_spec, tp, name);
+    tp   = node->tp;
+    name = node->name;
 
     //初期値: rhsに初期値を設定する
     if (consume('=')) {
@@ -260,7 +262,7 @@ static Node *init_declarator(Type *decl_spec, Type *tp, char *name) {
         }
     }
 
-    node = new_node_var_def(name, tp, input); //ND_(LOCAL|GLOBAL)_VAR_DEF
+    regist_var_def(node);   //ND_UNDEF -> ND_(LOCAL|GLOBAL)_VAR_DEFに確定する。ND_FUNC_DECLはそのまま
     if (rhs) node->rhs = new_node('=', new_node_var(name, input), rhs, tp, input);
 
     //初期値のないサイズ未定義のARRAYはエラー
@@ -313,12 +315,13 @@ static Node *declarator(Type *decl_spec, Type *tp, char *name) {
 }
 static Node *direct_declarator(Type *tp, char *name) {
     Node *node, *lhs=NULL;
+    Type *nest_tp=NULL;
     char *input = input_str();
     if (name == NULL) {
         if (consume('(')) {
-            Node *tmp_node = declarator(tp, NULL, name);
-            tp   = tmp_node->tp;
-            name = tmp_node->name;
+            node = declarator(new_type(NEST, 0), NULL, name);
+            nest_tp = node->tp;
+            name = node->name;
             if (!consume(')')) error_at(input_str(), "閉じかっこがありません");
         } else {
             if (!consume_ident(&name)) error_at(input_str(), "型名の後に識別名がありません");
@@ -326,17 +329,30 @@ static Node *direct_declarator(Type *tp, char *name) {
     }
     if (consume('(')) { //関数定義・宣言確定
         Funcdef *org_funcdef = cur_funcdef;
-        node = new_node_func_def(name, tp, input);
-        node->lhs = parameter_type_list();
+        tp = new_type_func(tp);
+        if (nest_tp) {
+            node->lhs = parameter_type_list();
+            if (nest_tp->type==PTR && nest_tp->ptr_of->type==NEST) {
+                nest_tp->ptr_of = tp;
+                node->tp = tp = nest_tp;
+            } else {
+                assert(0);
+            }
+        } else {
+            node = new_node_func_def(name, tp, input);
+            node->lhs = parameter_type_list();
+            if (org_funcdef) cur_funcdef = org_funcdef;
+        }
+        tp->node = node;
         if (!consume(')')) error_at(input_str(), "閉じかっこがありません");
-        if (org_funcdef) cur_funcdef = org_funcdef;
+        //dump_node(node, __func__);
         return node;
     } else if (tp->type==VOID) {
         error_at(input_str(), "不正なvoid指定です"); 
     }
     
     if (token_is('[')) tp = array_def(tp);
-    node = new_node(ND_LOCAL_VAR_DEF, lhs, NULL, tp, NULL);
+    node = new_node(ND_UNDEF, lhs, NULL, tp, NULL);
     node->name = name;
     node->input = input;
     return node;
@@ -602,7 +618,7 @@ static Node *statement(void) {
         if (!consume(')')) error_at(input_str(), "ifの開きカッコに対応する閉じカッコがありません");
         input = input_str();
         node_B = statement();
-        node = new_node(0, node_A, node_B, NULL, input); //lhs
+        node = new_node(ND_UNDEF, node_A, node_B, NULL, input); //lhs
         input = input_str();
         if (consume(TK_ELSE)) {
             node = new_node(ND_IF, node, statement(), NULL, input);
@@ -634,14 +650,14 @@ static Node *statement(void) {
             node2 = expression();         //B
             if (!consume(';')) error_at(input_str(), "forの2個目の;がありません");
         }
-        node = new_node(0, node1, node2, NULL, input);       //A,B
+        node = new_node(ND_UNDEF, node1, node2, NULL, input);       //A,B
         if (consume(')')) {
             node1 = new_node_empty(input_str());
         } else {
             node1 = expression();         //C
             if (!consume(')')) error_at(input_str(), "forの開きカッコに対応する閉じカッコがありません");
         }
-        node2 = new_node(0, node1, statement(), NULL, input);     //C,D
+        node2 = new_node(ND_UNDEF, node1, statement(), NULL, input);     //C,D
         node = new_node(ND_FOR, node, node2, NULL, input);   //(A,B),(C,D)
         stack_pop(symbol_stack);
         return node;
@@ -747,7 +763,7 @@ static Node *tri_cond(void) {
         if (!consume(':'))
             error_at(node->input, "三項演算に : がありません");
         rhs = tri_cond();
-        sub_node = new_node(0, lhs, rhs, lhs->tp, input);
+        sub_node = new_node(ND_UNDEF, lhs, rhs, lhs->tp, input);
         node = new_node(ND_TRI_COND, node, sub_node, lhs->tp, node->input);
     }
     return node;
@@ -958,7 +974,7 @@ static Node *unary(void) {
         node = new_node(ND_DEC_PRE, NULL, node, node->tp, input);
     } else if (consume('*')) {
         node = cast();
-        if (!node_is_ptr(node)) 
+        if (!type_is_ptr(node->tp))
             error_at(node->input, "'*'は非ポインタ型(%s)を参照しています", get_type_str(node->tp));
         node = new_node(ND_INDIRECT, NULL, node, node->tp->ptr_of, input);
     } else if (consume('&')) {

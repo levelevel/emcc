@@ -17,3 +17,5 @@ long g_extern_al4[] = {1,2,3,4};
 char *g_extern_pc = g_extern_ac6;
 int  *g_extern_pi = g_extern_ai4;
 long *g_extern_pl = (long*)&g_extern_al4;
+
+long fp2_add(long a, long b) {return a+b;}
