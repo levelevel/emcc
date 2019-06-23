@@ -159,55 +159,57 @@ char *get_func_args_str(const Node *node) {
 }
 
 static const char *get_NDtype_str(NDtype type) {
-    #define NDTYPE_STR(t,val) if (t==val) return #val
-    NDTYPE_STR(type,ND_UNDEF);
-    NDTYPE_STR(type,ND_NOT);
-    NDTYPE_STR(type,ND_MOD);
-    NDTYPE_STR(type,ND_AND);
-    NDTYPE_STR(type,ND_MUL);
-    NDTYPE_STR(type,ND_PLUS);
-    NDTYPE_STR(type,ND_MINUS);
-    NDTYPE_STR(type,ND_DIV);
-    NDTYPE_STR(type,ND_LT);
-    NDTYPE_STR(type,ND_ASIGN);
-    NDTYPE_STR(type,ND_GT);
-    NDTYPE_STR(type,ND_XOR);
-    NDTYPE_STR(type,ND_OR);
-    NDTYPE_STR(type,ND_NUM);
-    NDTYPE_STR(type,ND_STRING);
-    NDTYPE_STR(type,ND_LOCAL_VAR);
-    NDTYPE_STR(type,ND_GLOBAL_VAR);
-    NDTYPE_STR(type,ND_CAST);
-    NDTYPE_STR(type,ND_INC);
-    NDTYPE_STR(type,ND_DEC);
-    NDTYPE_STR(type,ND_INC_PRE);
-    NDTYPE_STR(type,ND_DEC_PRE);
-    NDTYPE_STR(type,ND_INDIRECT);
-    NDTYPE_STR(type,ND_ADDRESS);
-    NDTYPE_STR(type,ND_EQ);
-    NDTYPE_STR(type,ND_NE);
-    NDTYPE_STR(type,ND_LE);
-    NDTYPE_STR(type,ND_LAND);
-    NDTYPE_STR(type,ND_LOR);
-    NDTYPE_STR(type,ND_TRI_COND);
-    NDTYPE_STR(type,ND_PLUS_ASSIGN);
-    NDTYPE_STR(type,ND_MINUS_ASSIGN);
-    NDTYPE_STR(type,ND_LOCAL_VAR_DEF);
-    NDTYPE_STR(type,ND_GLOBAL_VAR_DEF);
-    NDTYPE_STR(type,ND_RETURN);
-    NDTYPE_STR(type,ND_IF);
-    NDTYPE_STR(type,ND_WHILE);
-    NDTYPE_STR(type,ND_FOR);
-    NDTYPE_STR(type,ND_BREAK);
-    NDTYPE_STR(type,ND_CONTINUE);
-    NDTYPE_STR(type,ND_BLOCK);
-    NDTYPE_STR(type,ND_LIST);
-    NDTYPE_STR(type,ND_FUNC_CALL);
-    NDTYPE_STR(type,ND_FUNC_DEF);
-    NDTYPE_STR(type,ND_FUNC_DECL);
-    NDTYPE_STR(type,ND_VARARGS);
-    NDTYPE_STR(type,ND_EMPTY);
-    return "ND_???";
+    #define NDTYPE_CASE(val) case val: return #val
+    switch (type) {
+    NDTYPE_CASE(ND_UNDEF);
+    NDTYPE_CASE(ND_NOT);
+    NDTYPE_CASE(ND_MOD);
+    NDTYPE_CASE(ND_AND);
+    NDTYPE_CASE(ND_MUL);
+    NDTYPE_CASE(ND_PLUS);
+    NDTYPE_CASE(ND_MINUS);
+    NDTYPE_CASE(ND_DIV);
+    NDTYPE_CASE(ND_LT);
+    NDTYPE_CASE(ND_ASSIGN);
+    NDTYPE_CASE(ND_GT);
+    NDTYPE_CASE(ND_XOR);
+    NDTYPE_CASE(ND_OR);
+    NDTYPE_CASE(ND_NUM);
+    NDTYPE_CASE(ND_STRING);
+    NDTYPE_CASE(ND_LOCAL_VAR);
+    NDTYPE_CASE(ND_GLOBAL_VAR);
+    NDTYPE_CASE(ND_CAST);
+    NDTYPE_CASE(ND_INC);
+    NDTYPE_CASE(ND_DEC);
+    NDTYPE_CASE(ND_INC_PRE);
+    NDTYPE_CASE(ND_DEC_PRE);
+    NDTYPE_CASE(ND_INDIRECT);
+    NDTYPE_CASE(ND_ADDRESS);
+    NDTYPE_CASE(ND_EQ);
+    NDTYPE_CASE(ND_NE);
+    NDTYPE_CASE(ND_LE);
+    NDTYPE_CASE(ND_LAND);
+    NDTYPE_CASE(ND_LOR);
+    NDTYPE_CASE(ND_TRI_COND);
+    NDTYPE_CASE(ND_PLUS_ASSIGN);
+    NDTYPE_CASE(ND_MINUS_ASSIGN);
+    NDTYPE_CASE(ND_LOCAL_VAR_DEF);
+    NDTYPE_CASE(ND_GLOBAL_VAR_DEF);
+    NDTYPE_CASE(ND_RETURN);
+    NDTYPE_CASE(ND_IF);
+    NDTYPE_CASE(ND_WHILE);
+    NDTYPE_CASE(ND_FOR);
+    NDTYPE_CASE(ND_BREAK);
+    NDTYPE_CASE(ND_CONTINUE);
+    NDTYPE_CASE(ND_BLOCK);
+    NDTYPE_CASE(ND_LIST);
+    NDTYPE_CASE(ND_FUNC_CALL);
+    NDTYPE_CASE(ND_FUNC_DEF);
+    NDTYPE_CASE(ND_FUNC_DECL);
+    NDTYPE_CASE(ND_VARARGS);
+    NDTYPE_CASE(ND_EMPTY);
+    default: return "ND_???";
+    }
 }
 
 static void dump_node_indent(FILE *fp, const Node *node, const char *str, int indent) {

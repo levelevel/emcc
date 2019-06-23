@@ -16,8 +16,8 @@ static char *regs[][4] = {
     {"r9b", "r9w", "r9d", "r9"  },
     {"r10b","r10w","r10d","r10" },
     {"r11b","r11w","r11d","r11" },
-    {"bpl",  "bp", "ebp", "rbp" },
-    {"spl",  "sp", "esp", "rsp" },
+    {"bpl", "bp",  "ebp", "rbp" },
+    {"spl", "sp",  "esp", "rsp" },
     {NULL,  NULL,  NULL,  NULL },
 };
 
@@ -34,13 +34,13 @@ static void comment(const char*fmt, ...) {
 //乗算をシフトで実現できるときのシフト量
 static int shift_size(int val) {
     switch (val) {
-        case 1: return 0;
-        case 2: return 1;
-        case 4: return 2;
-        case 8: return 3;
-        case 16: return 4;
-        case 32: return 5;
-        case 64: return 6;
+        case   1: return 0;
+        case   2: return 1;
+        case   4: return 2;
+        case   8: return 3;
+        case  16: return 4;
+        case  32: return 5;
+        case  64: return 6;
         case 128: return 7;
         case 256: return 8;
     }
@@ -223,6 +223,7 @@ static char *get_asm_var_name(Node *node) {
 }
 
 static int gen(Node*node);
+static void gen_op2(Node *node);
 
 //ローカル変数の配列の初期化。スタックトップに変数のアドレスが設定されている前提。
 static void gen_array_init(Node *node) {
@@ -404,29 +405,33 @@ static int label_cnt = 0;   //ラベル識別用カウンタ
 //結果をスタックに積んだ場合は1、そうでない場合は0を返す
 static int gen(Node*node) {
     int ret;
+    char buf[20];
+    char *label;
     assert(node!=NULL);
-    if (node->type == ND_NUM) {             //数値
+    switch (node->type) {
+    case ND_NUM:            //数値
         if (node->tp->type==LONG) {
             printf("  mov rax, %ld\t# 0x%lx (%s)\n", node->val, node->val, get_type_str(node->tp));
             printf("  push rax\n");
         } else {
             printf("  push %d\t# 0x%lx (%s)\n", (int)node->val, node->val, get_type_str(node->tp));
         }
-    } else if (node->type == ND_STRING) {   //文字列リテラル
-        char buf[20];
+        break;
+    case ND_STRING:         //文字列リテラル
         sprintf(buf, ".LC%03ld", node->val);
         printf("  lea rax, BYTE PTR %s\n", buf);
         printf("  push rax\n");             //文字列リテラルのアドレスを返す
-    } else if  (node->type == ND_EMPTY ||           //空文
-                node->type == ND_GLOBAL_VAR_DEF||   //グローバル(extern)変数定義
-                node->type == ND_FUNC_DEF ||        //関数定義
-                node->type == ND_FUNC_DECL) {       //関数宣言
+        break;
+    case ND_EMPTY:          //空文
+    case ND_GLOBAL_VAR_DEF: //グローバル(extern)変数定義
+    case ND_FUNC_DEF:       //関数定義
+    case ND_FUNC_DECL:      //関数宣言
         return 0;
-    } else if (node->type == ND_LOCAL_VAR_DEF) {  //ローカル変数定義
+    case ND_LOCAL_VAR_DEF:  //ローカル変数定義
         if (node->rhs==NULL) return 0;
-        return gen(node->rhs); //代入
-    } else if (node->type == ND_LOCAL_VAR ||
-               node->type == ND_GLOBAL_VAR) {//変数参照
+        return gen(node->rhs);  //代入
+    case ND_LOCAL_VAR:
+    case ND_GLOBAL_VAR:     //変数参照
         if (node->tp->type==ARRAY) {
             //アドレスをそのまま返す
             comment("%s_VAR:%s(%s)\n", node->type==ND_LOCAL_VAR?"LOCAL":"GLOBAL", node->name, get_type_str(node->tp));
@@ -435,7 +440,9 @@ static int gen(Node*node) {
             gen_read_var(node, "rax");
             printf("  push rax\n");
         }
-    } else if (node->type == ND_FUNC_CALL) {//関数コール
+        break;
+    case ND_FUNC_CALL:      //関数コール
+    {
         int i=0;
         comment("CALL:%s\t%s\n", node->name, get_type_str(node->tp));
         if (node->lhs) {    //引数
@@ -463,7 +470,13 @@ static int gen(Node*node) {
             printf("  call rbx\n");
         }
         printf("  push rax\n");
-    } else if (node->type == ND_RETURN) {   //return
+        break;
+    }
+    case ND_CAST:           //キャスト
+        comment("CAST (%s)%s\n", get_type_str(node->tp), get_type_str(node->rhs->tp));
+        gen(node->rhs);
+        break;
+    case ND_RETURN:         //return
         comment("RETURN\n");
         gen(node->lhs);
         printf("  pop rax\t# RETURN VALUE\n");
@@ -471,7 +484,8 @@ static int gen(Node*node) {
         printf("  pop rbp\n");
         printf("  ret\n");
         return 0;
-    } else if (node->type == ND_IF) {       //if (A) B [else C]
+    case ND_IF:             //if (A) B [else C]
+    {
         int cnt = label_cnt++;
         comment("IF(A) B [else C]\n");
         ret = gen(node->lhs->lhs); //A
@@ -493,7 +507,9 @@ static int gen(Node*node) {
         }
         printf(".LIfEnd%03d:\n", cnt);
         return 0;
-    } else if (node->type == ND_WHILE) {    //while (A) B
+    }
+    case ND_WHILE:          //while (A) B
+    {
         int cnt = label_cnt++;
         char b_label[20]; sprintf(b_label, ".LWhileEnd%03d",  cnt); stack_push(break_stack, b_label);
         char c_label[20]; sprintf(c_label, ".LWhileBody%03d", cnt); stack_push(continue_stack, c_label);
@@ -511,7 +527,9 @@ static int gen(Node*node) {
         stack_pop(break_stack);
         stack_pop(continue_stack);
         return 0;
-    } else if (node->type == ND_FOR) {      //for (A;B;C) D
+    }
+    case ND_FOR:            //for (A;B;C) D
+    {
         int cnt = label_cnt++;
         char b_label[20]; sprintf(b_label, ".LForEnd%03d",  cnt); stack_push(break_stack, b_label);
         char c_label[20]; sprintf(c_label, ".LForNext%03d", cnt); stack_push(continue_stack, c_label);
@@ -540,31 +558,19 @@ static int gen(Node*node) {
         stack_pop(break_stack);
         stack_pop(continue_stack);
         return 0;
-    } else if (node->type == ND_BREAK) {    //break
-        char *label;
+    }
+    case ND_BREAK:          //break
         if (break_stack->len==0) error_at(node->input,"ここではbreakを使用できません");
         label = (char*)stack_top(break_stack);
         printf("  jmp %s\t# break\n", label);
         return 0;
-    } else if (node->type == ND_CONTINUE) { //continue
-        char *label;
+    case ND_CONTINUE:       //continue
         if (continue_stack->len==0) error_at(node->input,"ここではcontinueを使用できません");
         label = (char*)stack_top(continue_stack);
         printf("  jmp %s\t# continue\n", label);
         return 0;
-    } else if (node->type == ND_TRI_COND) { //A ? B * C（三項演算）
-        int cnt = label_cnt++;
-        comment("A ? B : C\n");
-        gen(node->lhs);         //A
-        printf("  pop rax\n");
-        printf("  cmp rax, 0\n");
-        printf("  je .LTriFalse%03d\n", cnt);
-        gen(node->rhs->lhs);    //B
-        printf("  jmp .LTriEnd%03d\n", cnt);
-        printf(".LTriFalse%03d:\n", cnt);
-        gen(node->rhs->rhs);    //C
-        printf(".LTriEnd%03d:\n", cnt);
-    } else if (node->type == ND_BLOCK) {    //{ ブロック }
+    case ND_BLOCK:          //{ ブロック }
+    {
         Vector *blocks = node->lst;
         Node **nodes = (Node**)blocks->data;
         for (int i=0; i < blocks->len; i++) {
@@ -572,7 +578,9 @@ static int gen(Node*node) {
             if (gen(nodes[i])) printf("  pop rax\n");
         }
         return 0;
-    } else if (node->type == ND_LIST) {     //コンマリスト
+    }
+    case ND_LIST:           //コンマリスト
+    {
         Vector *lists = node->lst;
         Node **nodes = (Node**)lists->data;
         for (int i=0; i < lists->len; i++) {
@@ -580,7 +588,9 @@ static int gen(Node*node) {
             if (gen(nodes[i])) printf("  pop rax\n");
         }
         printf("  push rax\n");
-    } else if (node->type == '=') {         //代入(ND_ASSIGN)
+        break;
+    }
+    case ND_ASSIGN:         //代入('=')
         comment("'='\n");
         if (node->lhs->tp->type==ARRAY) {   //ローカル変数の配列の初期値
             //ここに到達するのはローカル変数の配列の初期化のはず
@@ -592,8 +602,9 @@ static int gen(Node*node) {
             gen_write_var(node->lhs, "rax");
             printf("  push rax\n");
         }
-    } else if (node->type == ND_PLUS_ASSIGN ||
-               node->type == ND_MINUS_ASSIGN) {  //+=/-=
+        break;
+    case ND_PLUS_ASSIGN:    //+=
+    case ND_MINUS_ASSIGN:   //-=
         comment("'A+=B'\n");
         gen_lval(node->lhs);
         printf("  mov rdi, QWORD PTR [rsp]\n");  //lhsのアドレス
@@ -614,7 +625,8 @@ static int gen(Node*node) {
         printf("  pop rdi\n");  //lhsのアドレス
         gen_write_reg("rdi", "rax", node->lhs->tp, NULL);
         printf("  push rax\n"); //戻り値
-    } else if (node->type == ND_INDIRECT) { //*a（間接参照）
+        break;
+    case ND_INDIRECT:       //*a（間接参照）
         comment("'*A'\n");
         gen(node->rhs);
         if (node->tp->type==ARRAY) {
@@ -624,10 +636,12 @@ static int gen(Node*node) {
             gen_read_reg("rax", "rax", node->tp, NULL);
             printf("  push rax\n");
         }
-    } else if (node->type == ND_ADDRESS) { //&a（アドレス演算子）
+        break;
+    case ND_ADDRESS:        //&a（アドレス演算子）
         comment("'&A'\n");
         gen_lval(node->rhs);
-    } else if (node->type == ND_INC_PRE) {  //++a
+        break;
+    case ND_INC_PRE:        //++a
         comment("'++A'\n");
         gen_lval(node->rhs);
         printf("  pop rdi\n");  //rhsのアドレス
@@ -639,7 +653,8 @@ static int gen(Node*node) {
         }
         gen_write_reg("rdi", "rax", node->rhs->tp, NULL);
         printf("  push rax\n"); //戻り値
-    } else if (node->type == ND_DEC_PRE) {  //--a
+        break;
+    case ND_DEC_PRE:        //--a
         comment("'--A'\n");
         gen_lval(node->rhs);
         printf("  pop rdi\n");  //rhsのアドレス
@@ -651,7 +666,8 @@ static int gen(Node*node) {
         }
         gen_write_reg("rdi", "rax", node->rhs->tp, NULL);
         printf("  push rax\n"); //戻り値
-    } else if (node->type == ND_INC) {      //a++
+        break;
+    case ND_INC:            //a++
         comment("'A++'\n");
         gen_lval(node->lhs);
         printf("  pop rdi\n");  //lhsのアドレス
@@ -663,7 +679,8 @@ static int gen(Node*node) {
             printf("  inc rax\n");
         }
         gen_write_reg("rdi", "rax", node->lhs->tp, NULL);
-    } else if (node->type == ND_DEC) {      //a--
+        break;
+    case ND_DEC:            //a--
         comment("'A--'\n");
         gen_lval(node->lhs);
         printf("  pop rdi\n");  //lhsのアドレス
@@ -675,7 +692,8 @@ static int gen(Node*node) {
             printf("  dec rax\n");
         }
         gen_write_reg("rdi", "rax", node->lhs->tp, NULL);
-    } else if (node->type == '!') {         //否定
+        break;
+    case ND_NOT:            //否定('!')
         comment("'!'\n");
         gen(node->rhs);
         printf("  pop rax\n");
@@ -683,154 +701,163 @@ static int gen(Node*node) {
         printf("  sete al\n");
         printf("  movzb rax, al\n");
         printf("  push rax\n");
-    } else if (node->type == ND_CAST) {     //キャスト
-        comment("CAST (%s)%s\n", get_type_str(node->tp), get_type_str(node->rhs->tp));
-        gen(node->rhs);
-    } else {                                //2項演算子
-        Node *lhs = node->lhs;
-        Node *rhs = node->rhs;
-        //lhsとrhsを処理して結果をPUSHする
-        assert(lhs!=NULL);
-        assert(rhs!=NULL);
-        gen(lhs);
-        gen(rhs);
-
-        //それらをPOPして、演算する
-        printf("  pop rdi\n");  //rhs
-        printf("  pop rax\n");  //lhs
-
-        int size1 = size_of(lhs->tp);
-        int size2 = size_of(rhs->tp);
-        char *reg1, *reg2;
-        if (size1>4 || size2>4) {
-            reg1 = "rax";
-            reg2 = "rdi"; 
-        } else {
-            reg1 = "eax";
-            reg2 = "edi"; 
-        }
-
-        switch((int)node->type) {
-        case ND_LOR: //"||"
-        {
-            int cnt = label_cnt++;
-            comment("'||'\n");
-            printf("  cmp rax, 0\n");   //lhs
-            printf("  jne .LTrue%03d\n", cnt);
-            printf("  cmp rdi, 0\n");   //rhs
-            printf("  jne .LTrue%03d\n", cnt);
-            printf("  mov rax, 0\n");   //False
-            printf("  jmp .LEnd%03d\n", cnt);
-            printf(".LTrue%03d:\n", cnt);
-            printf("  mov rax, 1\n");   //True
-            printf(".LEnd%03d:\n", cnt);
-            break;
-        }
-        case ND_LAND: //"&&"
-        {
-            int cnt = label_cnt++;
-            comment("'&&'\n");
-            printf("  cmp rax, 0\n");   //lhs
-            printf("  je .LFalse%03d\n", cnt);
-            printf("  cmp rdi, 0\n");   //rhs
-            printf("  je .LFalse%03d\n", cnt);
-            printf("  mov rax, 1\n");   //True
-            printf("  jmp .LEnd%03d\n", cnt);
-            printf(".LFalse%03d:\n", cnt);
-            printf("  mov rax, 0\n");   //False
-            printf(".LEnd%03d:\n", cnt);
-            break;
-        }
-        case '|':
-        {
-            printf("  or rax, rdi\t # |\n");
-            break;
-        }
-        case '^':
-        {
-            printf("  xor rax, rdi\t # ^\n");
-            break;
-        }
-        case '&':
-        {
-            printf("  and rax, rdi\t # &\n");
-            break;
-        }
-        case ND_EQ: //"=="
-            comment("'=='\n");
-            printf("  cmp %s, %s\n", reg1, reg2);
-            printf("  sete al\n");
-            printf("  movzb rax, al\n");
-            break;
-        case ND_NE: //"!="
-            comment("'!='\n");
-            printf("  cmp %s, %s\n", reg1, reg2);
-            printf("  setne al\n");
-            printf("  movzb rax, al\n");
-            break;
-        case '<':   //'>'もここで対応（構文木作成時に左右入れ替えてある）
-            comment("'<' or '>'\n");
-            printf("  cmp %s, %s\n", reg1, reg2);
-            if (lhs->tp->is_unsigned || rhs->tp->is_unsigned) {
-                printf("  setb al\n");
-            } else {
-                printf("  setl al\n");
-            }
-            printf("  movzb rax, al\n");
-            break;
-        case ND_LE: //"<="、">="もここで対応（構文木作成時に左右入れ替えてある）
-            comment("'<=' or '>='\n");
-            printf("  cmp %s, %s\n", reg1, reg2);
-            if (lhs->tp->is_unsigned || rhs->tp->is_unsigned) {
-                printf("  setbe al\n");
-            } else {
-                printf("  setle al\n");
-            }
-            printf("  movzb rax, al\n");
-            break;
-        case '+':   //rax(lhs)+rdi(rhs)
-            comment("'+' %s %s\n", get_type_str(lhs->tp), get_type_str(rhs->tp));
-            if (node_is_ptr(lhs)) {
-                gen_mul_reg("rdi", size_of(lhs->tp->ptr_of));
-            } else if (node_is_ptr(rhs)) {
-                gen_mul_reg("rax", size_of(rhs->tp->ptr_of));
-            }
-            printf("  add rax, rdi\n");
-            break;
-        case '-':   //rax(lhs)-rdi(rhs)
-            comment("'-' %s %s\n", get_type_str(lhs->tp), get_type_str(rhs->tp));
-            if (node_is_ptr(lhs) && node_is_ptr(rhs)) {
-                printf("  sub rax, rdi\n");
-                gen_div_reg("rax", size_of(lhs->tp->ptr_of));
-            } else {
-                if (node_is_ptr(lhs)) {
-                    gen_mul_reg("rdi", size_of(lhs->tp->ptr_of));
-                }
-                printf("  sub rax, rdi\n");
-            }
-            break;
-        case '*':   //rax*rdi -> rdx:rax
-            comment("'*'\n");
-            printf("  imul rdi\n");
-            break;
-        case '/':   //rdx:rax(lhs) / rdi(rhs) -> rax（商）, rdx（余り）
-            comment("'/'\n");
-            printf("  mov rdx, 0\n");
-            printf("  div rdi\n");
-            break;
-        case '%':   //rdx:rax / rdi -> rax（商）, rdx（余り）
-            comment("'%%'\n");
-            printf("  cqo\n");
-            printf("  idiv rdi\n");
-            printf("  mov rax, rdx\n");
-            break;
-        default:
-            _NOT_YET_(node);
-        }
-
-        printf("  push rax\n");
+        break;
+    case ND_TRI_COND:       //A ? B * C（三項演算）
+    {
+        int cnt = label_cnt++;
+        comment("A ? B : C\n");
+        gen(node->lhs);         //A
+        printf("  pop rax\n");
+        printf("  cmp rax, 0\n");
+        printf("  je .LTriFalse%03d\n", cnt);
+        gen(node->rhs->lhs);    //B
+        printf("  jmp .LTriEnd%03d\n", cnt);
+        printf(".LTriFalse%03d:\n", cnt);
+        gen(node->rhs->rhs);    //C
+        printf(".LTriEnd%03d:\n", cnt);
+        break;
+    }
+    default:                //2項演算子
+        gen_op2(node);
     }
     return 1;   //結果をスタックに積んでいる
+}
+
+//２項演算子の処理
+static void gen_op2(Node *node) {
+    int cnt;
+    Node *lhs = node->lhs;
+    Node *rhs = node->rhs;
+    //lhsとrhsを処理して結果をPUSHする
+    assert(lhs!=NULL);
+    assert(rhs!=NULL);
+    gen(lhs);
+    gen(rhs);
+
+    //それらをPOPして、演算する
+    printf("  pop rdi\n");  //rhs
+    printf("  pop rax\n");  //lhs
+
+    int size1 = size_of(lhs->tp);
+    int size2 = size_of(rhs->tp);
+    char *reg1, *reg2;
+    if (size1>4 || size2>4) {
+        reg1 = "rax";
+        reg2 = "rdi"; 
+    } else {
+        reg1 = "eax";
+        reg2 = "edi"; 
+    }
+
+    switch(node->type) {
+    case ND_LOR:    //"||"
+        cnt = label_cnt++;
+        comment("'||'\n");
+        printf("  cmp rax, 0\n");   //lhs
+        printf("  jne .LTrue%03d\n", cnt);
+        printf("  cmp rdi, 0\n");   //rhs
+        printf("  jne .LTrue%03d\n", cnt);
+        printf("  mov rax, 0\n");   //False
+        printf("  jmp .LEnd%03d\n", cnt);
+        printf(".LTrue%03d:\n", cnt);
+        printf("  mov rax, 1\n");   //True
+        printf(".LEnd%03d:\n", cnt);
+        break;
+    case ND_LAND:   //"&&"
+        cnt = label_cnt++;
+        comment("'&&'\n");
+        printf("  cmp rax, 0\n");   //lhs
+        printf("  je .LFalse%03d\n", cnt);
+        printf("  cmp rdi, 0\n");   //rhs
+        printf("  je .LFalse%03d\n", cnt);
+        printf("  mov rax, 1\n");   //True
+        printf("  jmp .LEnd%03d\n", cnt);
+        printf(".LFalse%03d:\n", cnt);
+        printf("  mov rax, 0\n");   //False
+        printf(".LEnd%03d:\n", cnt);
+        break;
+    case ND_OR:     //'|'
+        printf("  or rax, rdi\t # |\n");
+        break;
+    case ND_XOR:    //'^'
+        printf("  xor rax, rdi\t # ^\n");
+        break;
+    case ND_AND:    //'&'
+        printf("  and rax, rdi\t # &\n");
+        break;
+    case ND_EQ:     //"=="
+        comment("'=='\n");
+        printf("  cmp %s, %s\n", reg1, reg2);
+        printf("  sete al\n");
+        printf("  movzb rax, al\n");
+        break;
+    case ND_NE:     //"!="
+        comment("'!='\n");
+        printf("  cmp %s, %s\n", reg1, reg2);
+        printf("  setne al\n");
+        printf("  movzb rax, al\n");
+        break;
+    case ND_LT:     //'<': ND_GT('>')もここで対応（構文木作成時に左右入れ替えてある）
+        comment("'<' or '>'\n");
+        printf("  cmp %s, %s\n", reg1, reg2);
+        if (lhs->tp->is_unsigned || rhs->tp->is_unsigned) {
+            printf("  setb al\n");
+        } else {
+            printf("  setl al\n");
+        }
+        printf("  movzb rax, al\n");
+        break;
+    case ND_LE:     //"<=": ND_GE(">=")もここで対応（構文木作成時に左右入れ替えてある）
+        comment("'<=' or '>='\n");
+        printf("  cmp %s, %s\n", reg1, reg2);
+        if (lhs->tp->is_unsigned || rhs->tp->is_unsigned) {
+            printf("  setbe al\n");
+        } else {
+            printf("  setle al\n");
+        }
+        printf("  movzb rax, al\n");
+        break;
+    case ND_PLUS:   //'+': rax(lhs)+rdi(rhs)
+        comment("'+' %s %s\n", get_type_str(lhs->tp), get_type_str(rhs->tp));
+        if (node_is_ptr(lhs)) {
+            gen_mul_reg("rdi", size_of(lhs->tp->ptr_of));
+        } else if (node_is_ptr(rhs)) {
+            gen_mul_reg("rax", size_of(rhs->tp->ptr_of));
+        }
+        printf("  add rax, rdi\n");
+        break;
+    case ND_MINUS:  //'-': rax(lhs)-rdi(rhs)
+        comment("'-' %s %s\n", get_type_str(lhs->tp), get_type_str(rhs->tp));
+        if (node_is_ptr(lhs) && node_is_ptr(rhs)) {
+            printf("  sub rax, rdi\n");
+            gen_div_reg("rax", size_of(lhs->tp->ptr_of));
+        } else {
+            if (node_is_ptr(lhs)) {
+                gen_mul_reg("rdi", size_of(lhs->tp->ptr_of));
+            }
+            printf("  sub rax, rdi\n");
+        }
+        break;
+    case ND_MUL:    //'*': rax*rdi -> rdx:rax
+        comment("'*'\n");
+        printf("  imul rdi\n");
+        break;
+    case ND_DIV:    //'/': rdx:rax(lhs) / rdi(rhs) -> rax（商）, rdx（余り）
+        comment("'/'\n");
+        printf("  mov rdx, 0\n");
+        printf("  div rdi\n");
+        break;
+    case ND_MOD:    //'%': rdx:rax / rdi -> rax（商）, rdx（余り）
+        comment("'%%'\n");
+        printf("  cqo\n");
+        printf("  idiv rdi\n");
+        printf("  mov rax, rdx\n");
+        break;
+    default:
+        _NOT_YET_(node);
+    }
+
+    printf("  push rax\n");
 }
 
 static long get_single_val(Node *node) {

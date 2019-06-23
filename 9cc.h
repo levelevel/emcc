@@ -81,7 +81,7 @@ typedef enum {
     ND_MINUS = '-',
     ND_DIV   = '/',
     ND_LT    = '<',
-    ND_ASIGN = '=',
+    ND_ASSIGN= '=',
     ND_GT    = '>',
     ND_XOR   = '^',
     ND_OR    = '|',
@@ -133,7 +133,7 @@ typedef enum {
     FUNC,           //関数
     CONST,          //const処理の一時的なデータ構造でのみ使用し、必ずptr_ofを持つ。
                     //親をconstで修飾する。親がいないときは型を修飾する。
-    NEST,           //ネスト下型宣言処理の一時的なデータ構造でのみ使用する。他のメンバーは未使用。
+    NEST,           //ネストした型宣言処理の一時的なデータ構造でのみ使用する。他のメンバーは未使用。
 } Typ;
 
 typedef enum {
