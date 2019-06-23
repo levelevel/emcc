@@ -310,6 +310,14 @@ static int funcdecl2() {
     return 1;
 }
 
+static int funcdecl3() {
+    fd3_func(); //未定義の関数
+    return 1;
+}
+int fd3_func() {
+    return 1;
+}
+
 static int fp1_add(int a, int b) { return a+b; }
 static int funcp1(void) {
     int (*fp)(int, int);
@@ -346,15 +354,36 @@ static int funcp4(void) {
         *fp()=='A' && fp()[1]=='B' && fp4_str()[2]=='C';
 }
 
+static int fp5_func(void){return 10;}
+static int funcp5(void) {
+    int (*fp)(void) = fp5_func;
+    int (**fpp)(void) = &fp;
+    return
+        fp()==10 && 
+        (fp)()==10 &&
+//        (*fp)()==10 &&
+        1;
+}
+
 static int func() {
     void_func();
     TEST(funcdecl1);
     TEST(funcdecl2);
+    TEST(funcdecl3);
     TEST(funcp1);
     TEST(funcp1g);
     TEST(funcp2);
     TEST(funcp3);
     TEST(funcp4);
+    TEST(funcp5);
+    //int (**x)[2];
+    //int (**x)();
+    //int *(*x)[];
+    //int (*x)[][];
+    //int (*x[])[];
+    //int (*x[])();
+    //int (*x())[];
+    //int (*x())();
     return
         fact(10) == 55 &&
         fib(10) == 55;

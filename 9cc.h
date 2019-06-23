@@ -87,6 +87,7 @@ typedef enum {
     ND_OR    = '|',
     ND_NUM,         //整数のノードの型
     ND_STRING,
+    ND_IDENT,       //IDENT:中間的なタイプであり、最終的にND_LOCAL_VARなどに置き換わる
     ND_LOCAL_VAR,   //ローカル変数の参照
     ND_GLOBAL_VAR,  //グローバル変数の参照
     ND_CAST,        //キャスト

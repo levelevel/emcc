@@ -19,11 +19,11 @@
     type_qualifier          = "const"
     declarator              = pointer? direct_declarator
     direct_declarator       = identifier | "(" declarator ")"
-                            | direct_declarator "[" assignment? "]"
+                            | direct_declarator "[" assignment_expression? "]"
                             | direct_declarator "(" parameter_type_list? ")"    //関数
     parameter_type_list     = parameter_declaration ( "," parameter_declaration )* ( "," "..." )?
     parameter_declaration   = declaration_specifiers ( declarator | abstract_declarator )?
-    initializer             = assignment
+    initializer             = assignment_expression
                             | "{" init_list "}"
                             | "{" init_list "," "}"
     init_list               = initializer
@@ -36,7 +36,7 @@
                             | type_qualifier abstract_declarator*
     abstract_declarator     = pointer? direct_abstract_declarator
     direct_abstract_declarator = "(" abstract_declarator ")"
-                            | direct_abstract_declarator? "[" assignment? "]"
+                            | direct_abstract_declarator? "[" assignment_expression? "]"
                             | direct_abstract_declarator? "(" parameter_type_list? ")"  //関数
 - A.2.3 Statements            http://port70.net/~nsz/c/c11/n1570.html#A.2.3
     statement               = compound_statement
@@ -50,9 +50,10 @@
                             | "continue"
     compound_statement      = "{" declaration | statement* "}"
 - A.2.1 Expressions
-    expression              = assignment ( "," assignment )*
+    expression              = assignment_expression ( "," assignment_expression )*
     constant_expression     = tri_cond
-    assignment              = tri_cond ( "=" assignment | "+=" assignment | "-=" assignment )*
+    assignment_expression   = tri_cond
+                            | unary_expression ( "=" | "+=" | "-=" ) assignment_expression
     tri_cond    = logical_or ( "?" expression ":" tri_cond )?
     logical_or  = logical_and ( "||" logical_and )*
     logical_and = bitwise_or ( "&&" bitwise_or )*
@@ -62,21 +63,24 @@
     equality    = relational ( "==" relational | "!=" relational )*
     relational  = add ( "<" add | "<=" add | ">" add | ">=" add )*
     add         = mul ( "+" mul | "-" mul )*
-    mul         = cast ( "*" cast | "/" cast | "%" cast )*
-    cast        = unary
-                | "(" type_name ")" cast
-    unary       = post_unary
-                | ( "+" | "-" |  "!" | "*" | "&" ) cast
-                | ( "++" | "--" )? unary
-                | "sizeof" unary
-                | "sizeof" "(" type_name ")"
-                | "_Alignof" "(" type_name ")"
-    post_unary  = term ( "++" | "--" | "[" expression "]")?
-    term        = num
-                | string
-                | identifier
-                | identifier "(" expression? ")"   //関数コール
-                |  "(" expression ")"
+    mul         = cast_expression ( "*" cast_expression | "/" cast_expression | "%" cast_expression )*
+    cast_expression         = unary_expression
+                            | "(" type_name ")" cast_expression
+    unary_expression        = postfix_expression
+                            | ( "+" | "-" |  "!" | "*" | "&" ) cast_expression
+                            | ( "++" | "--" )? unary_expression
+                            | "sizeof" unary_expression
+                            | "sizeof" "(" type_name ")"
+                            | "_Alignof" "(" type_name ")"
+    postfix_expression      = primary_expression 
+                            | primary_expression "[" expression "]"
+                            | primary_expression "(" assignment_expression? ( "," assignment_expression )* ")"
+                            | primary_expression "++"
+                            | primary_expression "--"
+    primary_expression      = num
+                            | string
+                            | identifier
+                            |  "(" expression ")"
 */
 static Node *external_declaration(void);
 static Node *function_definition(Type *tp, char *name);
@@ -99,7 +103,7 @@ static Node *statement(void);
 static Node *compound_statement(void);
 static Node *expression(void);
 static Node *constant_expression(void);
-static Node *assignment(void);
+static Node *assignment_expression(void);
 static Node *tri_cond(void);
 static Node *equality(void);
 static Node *logical_or(void);
@@ -110,10 +114,10 @@ static Node *bitwise_and(void);
 static Node *relational(void);
 static Node *add(void);
 static Node *mul(void);
-static Node *cast(void);
-static Node *unary(void);
-static Node *post_unary(void);
-static Node *term(void); 
+static Node *cast_expression(void);
+static Node *unary_expression(void);
+static Node *postfix_expression(void);
+static Node *primary_expression(void); 
 
 void translation_unit(void) {
     while (!token_is(TK_EOF)) {
@@ -299,7 +303,7 @@ static Node *init_declarator(Type *decl_spec, Type *tp, char *name) {
 
 //    declarator              = pointer* direct_declarator
 //    direct_declarator       = identifier | "(" declarator ")"
-//                            = direct_declarator "[" assignment? "]"
+//                            = direct_declarator "[" assignment_expression? "]"
 //                            | direct_abstract_declarator? "(" parameter_type_list? ")"  //関数宣言
 //declaration_specifiers, pointer, identifierまで先読み済みの可能性あり
 //戻り値のnodeはname、lhs（関数の場合の引数）、tp以外未設定
@@ -332,12 +336,20 @@ static Node *direct_declarator(Type *tp, char *name) {
         tp = new_type_func(tp);
         if (nest_tp) {
             node->lhs = parameter_type_list();
-            if (nest_tp->type==PTR && nest_tp->ptr_of->type==NEST) {
-                nest_tp->ptr_of = tp;
-                node->tp = tp = nest_tp;
-            } else {
-                assert(0);
+            Type *p = nest_tp;
+            for (;;) {
+                if (p->type==PTR) {
+                    if (p->ptr_of->type==NEST) {
+                        p->ptr_of = tp;
+                        break;
+                    } else if (p->ptr_of->type==PTR) {
+                        p = p->ptr_of;
+                    } else {
+                        assert(0);
+                    }
+                }
             }
+            node->tp = tp = nest_tp;
         } else {
             node = new_node_func_def(name, tp, input);
             node->lhs = parameter_type_list();
@@ -399,7 +411,7 @@ static Node *parameter_declaration(void) {
     return node;
 }
 
-//    initializer = assignment
+//    initializer = assignment_expression
 //                | "{" init_list "}"
 //                | "{" init_list "," "}"
 static Node *initializer(void) {
@@ -410,7 +422,7 @@ static Node *initializer(void) {
         consume(',');
         if (!consume('}')) error_at(input_str(),"初期化式の閉じカッコ } がありません");
     } else {
-        node = assignment();
+        node = assignment_expression();
     }
     return node;
 }
@@ -494,7 +506,7 @@ static Type *pointer(Type *tp) {
 //                            | type_qualifier abstract_declarator*
 //    abstract_declarator     = pointer? direct_abstract_declarator
 //    direct_abstract_declarator = "(" abstract_declarator ")"
-//                            | direct_abstract_declarator? "[" assignment "]"
+//                            | direct_abstract_declarator? "[" assignment_expression "]"
 //                            | direct_abstract_declarator? "(" parameter_type_list? ")"  //関数
 static Type *type_name(void) {
     Type *tp = declaration_specifiers();
@@ -696,17 +708,17 @@ static Node *compound_statement(void) {
 
 //expr：単なる式またはそのコンマリスト（左結合）
 //リストであればリスト(ND_LIST)を作成する
-//    expression        = assignment ( "," assignment )* 
+//    expression        = assignment_expression ( "," assignment_expression )* 
 static Node *expression(void) {
     char *input = input_str();
-    Node *node = assignment();
+    Node *node = assignment_expression();
     Node *last_node = node;
     if (consume(',')) {
         node = new_node_list(node, input);
         Vector *lists = node->lst;
-        vec_push(lists, last_node=assignment());
+        vec_push(lists, last_node=assignment_expression());
         while (consume(',')) {
-            vec_push(lists, last_node=assignment());
+            vec_push(lists, last_node=assignment_expression());
         }
     } else {
         return node;
@@ -726,26 +738,42 @@ static Node *constant_expression(void) {
 }
 
 //代入（右結合）
-static Node *assignment(void) {
+//    assignment_expression   = tri_cond
+//                            | unary_expression ( "=" | "+=" | "-=" ) assignment_expression
+static Node *assignment_expression(void) {
     Node *node = tri_cond(), *rhs;
+    int is_lvalue = 1;
+    switch (node->type) {
+    case ND_INC_PRE:
+    case ND_DEC_PRE:
+    case ND_INDIRECT:
+    case ND_INC:
+    case ND_DEC:
+    case ND_LOCAL_VAR:
+    case ND_GLOBAL_VAR:
+        is_lvalue = 1;
+        break;
+    default:
+        is_lvalue = 0;
+    }
     char *input = input_str();
     if (consume('=')) {
-        if (node->tp->type==ARRAY) error_at(node->input, "左辺値ではありません");
-        rhs = assignment(); 
+        if (!is_lvalue || node->tp->type==ARRAY) error_at(node->input, "左辺値ではありません");
+        rhs = assignment_expression(); 
         if (!(rhs->type==ND_NUM && rhs->val==0) &&  //右辺が0の場合は無条件にOK
             !node_type_eq(node->tp, rhs->tp))
             warning_at(input, "=の左右の型(%s:%s)が異なります", 
                 get_type_str(node->tp), get_type_str(rhs->tp));
         node = new_node('=', node, rhs, node->tp, input); //ND_ASIGN
     } else if (consume(TK_PLUS_ASSIGN)) { //+=
-        if (node->tp->type==ARRAY) error_at(node->input, "左辺値ではありません");
-        rhs = assignment(); 
+        if (!is_lvalue || node->tp->type==ARRAY) error_at(node->input, "左辺値ではありません");
+        rhs = assignment_expression(); 
         if (node_is_ptr(node) && node_is_ptr(rhs))
             error_at(node->input, "ポインタ同士の加算です");
         node = new_node(ND_PLUS_ASSIGN, node, rhs, node->tp, input);
     } else if (consume(TK_MINUS_ASSIGN)) { //-=
-        if (node->tp->type==ARRAY) error_at(node->input, "左辺値ではありません");
-        rhs = assignment(); 
+        if (!is_lvalue || node->tp->type==ARRAY) error_at(node->input, "左辺値ではありません");
+        rhs = assignment_expression(); 
         if (node_is_ptr(rhs)) 
             error_at(node->input, "ポインタによる減算です");
         node = new_node(ND_MINUS_ASSIGN, node, rhs, node->tp, input);
@@ -912,17 +940,17 @@ static Node *add(void) {
 }
 
 //乗除算、剰余（左結合）
-//    mul         = cast ( "*" cast | "/" cast | "%" cast )*
+//    mul         = cast_expression ( "*" cast_expression | "/" cast_expression | "%" cast_expression )*
 static Node *mul(void) {
-    Node *node = cast();
+    Node *node = cast_expression();
     for (;;) {
         char *input = input_str();
         if (consume('*')) {
-            node = new_node('*', node, cast(), node->tp, input);
+            node = new_node('*', node, cast_expression(), node->tp, input);
         } else if (consume('/')) {
-            node = new_node('/', node, cast(), node->tp, input);
+            node = new_node('/', node, cast_expression(), node->tp, input);
         } else if (consume('%')) {
-            node = new_node('%', node, cast(), node->tp, input);
+            node = new_node('%', node, cast_expression(), node->tp, input);
         } else {
             break;
         }
@@ -931,9 +959,9 @@ static Node *mul(void) {
 }
 
 //キャスト（右結合）
-//    cast        = unary
-//                | "(" type_name ")" cast
-static Node *cast(void) {
+//    cast_expression         = unary_expression
+//                            | "(" type_name ")" cast_expression
+static Node *cast_expression(void) {
     Node *node;
     Type *tp;
     char *input = input_str();
@@ -942,43 +970,43 @@ static Node *cast(void) {
         tp = type_name();
         if (!consume(')'))
             error_at(input_str(), "キャストの閉じかっこがありません");
-        node = new_node(ND_CAST, NULL, cast(), tp, input);
+        node = new_node(ND_CAST, NULL, cast_expression(), tp, input);
     } else {
-        node = unary();
+        node = unary_expression();
     }
     return node;
 }
 
 //前置単項演算子（右結合）
-//    unary       = post_unary
-//                | ( "+" | "-" |  "!" | "*" | "&" ) cast
-//                | ( "++" | "--" )? unary
-//                | "sizeof" unary
-//                | "sizeof"   "(" type_name ")"
-//                | "_Alignof" "(" type_name ")"
-static Node *unary(void) {
+//    unary_expression        = postfix_expression
+//                            | ( "+" | "-" |  "!" | "*" | "&" ) cast_expression
+//                            | ( "++" | "--" )? unary_expression
+//                            | "sizeof" unary_expression
+//                            | "sizeof"   "(" type_name ")"
+//                            | "_Alignof" "(" type_name ")"
+static Node *unary_expression(void) {
     Node *node;
     char *input = input_str();
     if (consume('+')) {
-        node = cast();
+        node = cast_expression();
     } else if (consume('-')) {
-        node = cast();
+        node = cast_expression();
         node = new_node('-', new_node_num(0, input), node, node->tp, input);
     } else if (consume('!')) {
-        node = new_node('!', NULL, cast(), new_type(INT, 0), input);
+        node = new_node('!', NULL, cast_expression(), new_type(INT, 0), input);
     } else if (consume(TK_INC)) {
-        node = unary();
+        node = unary_expression();
         node = new_node(ND_INC_PRE, NULL, node, node->tp, input);
     } else if (consume(TK_DEC)) {
-        node = unary();
+        node = unary_expression();
         node = new_node(ND_DEC_PRE, NULL, node, node->tp, input);
     } else if (consume('*')) {
-        node = cast();
+        node = cast_expression();
         if (!type_is_ptr(node->tp))
             error_at(node->input, "'*'は非ポインタ型(%s)を参照しています", get_type_str(node->tp));
         node = new_node(ND_INDIRECT, NULL, node, node->tp->ptr_of, input);
     } else if (consume('&')) {
-        node = cast();
+        node = cast_expression();
         node = new_node(ND_ADDRESS, NULL, node, new_type_ptr(node->tp), input);
     } else if (consume(TK_SIZEOF)) {
         Type *tp;
@@ -988,11 +1016,11 @@ static Node *unary(void) {
                 tp = type_name();
                 if (!consume(')')) error_at(input_str(), "開きカッコに対応する閉じカッコがありません");
             } else {
-                node = unary();
+                node = unary_expression();
                 tp = node->tp;
             }
         } else {
-            node = unary();
+            node = unary_expression();
             tp = node->tp;
         }
         node = new_node_num(size_of(tp), input);
@@ -1003,15 +1031,19 @@ static Node *unary(void) {
         if (!consume(')')) error_at(input_str(), "開きカッコに対応する閉じカッコがありません");
         node = new_node_num(align_of(tp), input);
     } else {
-        node = post_unary();
+        node = postfix_expression();
     }
     return node;
 }
 
 //後置単項演算子（左結合）
-//    post_unary  = term ( "++" | "--" | "[" expression "]")?
-static Node *post_unary(void) {
-    Node *node = term();
+//    postfix_expression      = primary_expression 
+//                            | primary_expression "[" expression "]"
+//                            | primary_expression "(" assignment_expression? ( "," assignment_expression )* ")"
+//                            | primary_expression "++"
+//                            | primary_expression "--"
+static Node *postfix_expression(void) {
+    Node *node = primary_expression();
     for (;;) {
         char *input = input_str();
         Type *tp = node->tp;
@@ -1031,6 +1063,23 @@ static Node *post_unary(void) {
             if (!consume(']')) {
                 error_at(input_str(), "配列の開きカッコに対応する閉じカッコがありません");
             }
+        } else if (consume('(')) {  //関数コール
+            //dump_node(node, "func");
+            #define node_is_func(node) ((node)->tp->type==FUNC||((node)->tp->type==PTR &&(node)->tp->ptr_of->type==FUNC))
+            if (node->type!=ND_IDENT && !node_is_func(node))
+                error_at(input, "%sに対して関数コールできません", get_type_str(node->tp));
+            node = new_node_func_call(node->name, node->input);
+            if (!consume(')')) { 
+                node->lhs = expression();
+                if (node->lhs->type != ND_LIST) {
+                    node->lhs = new_node_list(node->lhs, input);
+                }
+                if (!consume(')')) {
+                    error_at(input_str(), "関数コールの開きカッコに対応する閉じカッコがありません");
+                }
+            }
+        } else if (node->type==ND_IDENT) {
+            error_at(node->input, "'%s'は未定義の変数です", node->name);
         } else {
             break;
         }
@@ -1038,8 +1087,8 @@ static Node *post_unary(void) {
     return node;
 }
 
-//終端記号：数値、識別子（変数、関数）、カッコ
-static Node *term(void) {
+//終端記号：数値、識別子、カッコ
+static Node *primary_expression(void) {
     Node *node;
     char *name;
     char *input = input_str();
@@ -1053,19 +1102,8 @@ static Node *term(void) {
     } else if (consume(TK_STRING)) {
         node = new_node_string(tokens[token_pos-1]->str, input);
     } else if (consume_ident(&name)) {
-        if (consume('(')) { //関数コール
-            node = new_node_func_call(name, input);
-            if (consume(')')) return node;
-            node->lhs = expression();
-            if (node->lhs->type != ND_LIST) {
-                node->lhs = new_node_list(node->lhs, input);
-            }
-            if (!consume(')')) {
-                error_at(input_str(), "関数コールの開きカッコに対応する閉じカッコがありません");
-            }
-        } else {
-            node = new_node_var(name, input);
-        }
+        //すでに出現済みであればその参照に決まる(ND_LOCAL_VAR/ND_GLOBAL_VARなど)
+        node = new_node_var(name, input);
     } else {
         error_at(input, "終端記号でないトークンです");
     }

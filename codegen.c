@@ -454,13 +454,14 @@ static int gen(Node*node) {
                 gen(nodes[i]);  //スタックトップに引数がセットされる
             }
         }
-        if (node->rhs->tp->type==FUNC) {
+        if (node->rhs==NULL ||          //未定義の関数のコール
+            node->rhs->tp->type==FUNC) {//定義済み関数のコール
             for (; i; i--) {
                 printf("  pop %s\n", arg_regs[i-1]);
             }
             printf("  mov al, 0\n");
             printf("  call %s\n", node->name);
-        } else {
+        } else {                        //関数ポインタのコール
             gen(node->rhs);
             printf("  pop rbx\n");
             for (; i; i--) {

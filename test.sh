@@ -33,7 +33,7 @@ test_src() {
 
   cpp $CFLAGS $src | grep -v "^#" > $EXE2.c
   ./9cc $src2 > ${EXE2}e.s
-  ./9cc $EXE2.c 2>&1 > $EXE2.s | tee -a $EXE2.log | grep "9cc:" > $EXE2.err
+  ./9cc $EXE2.c 2>&1 > $EXE2.s | tee -a $EXE2.log | grep "9cc:Error" > $EXE2.err
   if [ $? -eq 0 ]; then
     cat $EXE2.log
     exit 1
@@ -173,8 +173,25 @@ try $ER "int func     int func(){} int main(){}"
 try $ER "int func(){} int func     int main(){}"
 try $ER "int func(); *func();"
 try $ER "int func(); int (*fp)()=func; *fp();"
+try $ER "int func(); func()();"
+try $ER "int func(); func()[];"
+try $ER "int a; a();"
+try $ER "int a; int main(){a();}"
 try $ER "break;"
 try $ER "continue;"
+#LVALUE
+try $ER "int a,b; (1?a:b)=0;"
+try $ER "int a; a||1=0;"
+try $ER "int a; a&&1=0;"
+try $ER "int a; a^1=0;"
+try $ER "int a; a|1=0;"
+try $ER "int a; a&1=0;"
+try $ER "int a; a==1=0;"
+try $ER "int a; a>1=0;"
+#try $ER "int a; a>>1=0;"
+try $ER "int a; a+1+=0;"
+try $ER "int a; a*1-=0;"
+try $ER "int *a; (char*)a=0;"
 
 #多次元配列
 try $ER "int a[][3]={{1,2,3},{11,12,13}; return a[1][2]}"

@@ -176,6 +176,7 @@ static const char *get_NDtype_str(NDtype type) {
     NDTYPE_CASE(ND_OR);
     NDTYPE_CASE(ND_NUM);
     NDTYPE_CASE(ND_STRING);
+    NDTYPE_CASE(ND_IDENT);
     NDTYPE_CASE(ND_LOCAL_VAR);
     NDTYPE_CASE(ND_GLOBAL_VAR);
     NDTYPE_CASE(ND_CAST);

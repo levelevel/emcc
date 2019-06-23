@@ -369,6 +369,8 @@ static Node *search_symbol(const char *name) {
 Node *new_node_var(char *name, char *input) {
     Node *node, *var_def;
     NDtype type;
+    Type *tp;
+    long offset;
 
     //定義済みの変数であるかをスコープの内側からチェック
     var_def = search_symbol(name);
@@ -385,13 +387,17 @@ Node *new_node_var(char *name, char *input) {
         default:
             assert(0);
         }
+        tp = var_def->tp;
+        offset = var_def->offset;
     } else {
-        error_at(tokens[token_pos-1]->input, "'%s'は未定義の変数です", name);
+        type = ND_IDENT;
+        tp = NULL;
+        offset = 0;
     }
 
-    node = new_node(type, NULL, NULL, var_def->tp, input);
+    node = new_node(type, NULL, NULL, tp, input);
     node->name = name;
-    node->offset = var_def->offset;
+    node->offset = offset;
     //dump_node(node, __func__);
 
     return node;
@@ -406,7 +412,8 @@ Node *new_node_func_call(char *name, char *input) {
         switch (func_node->type) {
         case ND_LOCAL_VAR_DEF:  //関数ポインタ
         case ND_GLOBAL_VAR_DEF: //関数ポインタ
-            assert(func_node->tp->type==PTR && func_node->tp->ptr_of->type==FUNC);
+            if (func_node->tp->type!=PTR || func_node->tp->ptr_of->type!=FUNC)
+                error_at(input, "%sは関数ではありません", name);
             node = new_node(func_node->type==ND_LOCAL_VAR_DEF?ND_LOCAL_VAR:ND_GLOBAL_VAR,
                             NULL, NULL, func_node->tp, func_node->input);
             node->name = name;
