@@ -703,6 +703,13 @@ static int gen(Node*node) {
         printf("  movzb rax, al\n");
         printf("  push rax\n");
         break;
+    case ND_BNOT:           //ビット反転('~')
+        comment("'~'\n");
+        gen(node->rhs);
+        printf("  pop rax\n");
+        printf("  not rax\n");
+        printf("  push rax\n");
+        break;
     case ND_TRI_COND:       //A ? B * C（三項演算）
     {
         int cnt = label_cnt++;
@@ -817,6 +824,16 @@ static void gen_op2(Node *node) {
             printf("  setle al\n");
         }
         printf("  movzb rax, al\n");
+        break;
+    case ND_SHIFTL:
+        comment("'<<'\n");
+        printf("  mov rcx, rdi\n");
+        printf("  sal rax, cl\n");
+        break;
+    case ND_SHIFTR:
+        comment("'<<'\n");
+        printf("  mov rcx, rdi\n");
+        printf("  sar rax, cl\n");
         break;
     case ND_PLUS:   //'+': rax(lhs)+rdi(rhs)
         comment("'+' %s %s\n", get_type_str(lhs->tp), get_type_str(rhs->tp));

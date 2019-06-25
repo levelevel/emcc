@@ -51,23 +51,24 @@
     compound_statement      = "{" declaration | statement* "}"
 - A.2.1 Expressions
     expression              = assignment_expression ( "," assignment_expression )*
-    constant_expression     = tri_cond
-    assignment_expression   = tri_cond
+    constant_expression     = conditional_expression
+    assignment_expression   = conditional_expression
                             | unary_expression ( "=" | "+=" | "-=" ) assignment_expression
-    tri_cond    = logical_or ( "?" expression ":" tri_cond )?
-    logical_or  = logical_and ( "||" logical_and )*
-    logical_and = bitwise_or ( "&&" bitwise_or )*
-    bitwise_or  = ex_or ( "&" ex_or )*
-    ex_or       = bitwise_and ( "^" bitwise_and )*
-    bitwise_and = equality ( "&" equality )*
-    equality    = relational ( "==" relational | "!=" relational )*
-    relational  = add ( "<" add | "<=" add | ">" add | ">=" add )*
-    add         = mul ( "+" mul | "-" mul )*
-    mul         = cast_expression ( "*" cast_expression | "/" cast_expression | "%" cast_expression )*
+    conditional_expression  = logical_OR_expression ( "?" expression ":" conditional_expression )?
+    logical_OR_expression   = logical_AND_expression ( "||" logical_AND_expression )*
+    logical_AND_expression  = inclusive_OR_expression ( "&&" inclusive_OR_expression )*
+    inclusive_OR_expression = exclusive_OR_expression ( "&" exclusive_OR_expression )*
+    exclusive_OR_expression = AND_expression ( "^" AND_expression )*
+    AND_expression          = equality_expression ( "&" equality_expression )*
+    equality_expression     = relational_expression ( ( "==" | "!=" ) relational_expression )*
+    relational_expression   = shift_expression ( ( "<" | "<=" | ">" | ">=" ) shift_expression )*
+    shift_expression        = additive_expression ( ( "<<" | ">>" ) additive_expression )*
+    additive_expression     = multiplicative_expression ( ( "+" | "-" ) multiplicative_expression )*
+    multiplicative_expression = cast_expression ( ( "*" | "/" | "%" ) cast_expression )*
     cast_expression         = unary_expression
                             | "(" type_name ")" cast_expression
     unary_expression        = postfix_expression
-                            | ( "+" | "-" |  "!" | "*" | "&" ) cast_expression
+                            | ( "+" | "-" |  "!" | "~" | "*" | "&" ) cast_expression
                             | ( "++" | "--" )? unary_expression
                             | "sizeof" unary_expression
                             | "sizeof" "(" type_name ")"
@@ -104,16 +105,17 @@ static Node *compound_statement(void);
 static Node *expression(void);
 static Node *constant_expression(void);
 static Node *assignment_expression(void);
-static Node *tri_cond(void);
-static Node *equality(void);
-static Node *logical_or(void);
-static Node *logical_and(void);
-static Node *bitwise_or(void);
-static Node *ex_or(void);
-static Node *bitwise_and(void);
-static Node *relational(void);
-static Node *add(void);
-static Node *mul(void);
+static Node *conditional_expression(void);
+static Node *equality_expression(void);
+static Node *logical_OR_expression(void);
+static Node *logical_AND_expression(void);
+static Node *inclusive_OR_expression(void);
+static Node *exclusive_OR_expression(void);
+static Node *AND_expression(void);
+static Node *relational_expression(void);
+static Node *shift_expression(void);
+static Node *additive_expression(void);
+static Node *multiplicative_expression(void);
 static Node *cast_expression(void);
 static Node *unary_expression(void);
 static Node *postfix_expression(void);
@@ -727,10 +729,10 @@ static Node *expression(void) {
     return node;
 }
 
-//    constant_expression     = tri_cond
+//    constant_expression     = conditional_expression
 static Node *constant_expression(void) {
     char *input = input_str();
-    Node *node = tri_cond();
+    Node *node = conditional_expression();
     long val;
     if (!node_is_const(node, &val))
         error_at(node->input, "定数式が必要です");
@@ -738,10 +740,10 @@ static Node *constant_expression(void) {
 }
 
 //代入（右結合）
-//    assignment_expression   = tri_cond
+//    assignment_expression   = conditional_expression
 //                            | unary_expression ( "=" | "+=" | "-=" ) assignment_expression
 static Node *assignment_expression(void) {
-    Node *node = tri_cond(), *rhs;
+    Node *node = conditional_expression(), *rhs;
     int is_lvalue = 1;
     switch (node->type) {
     case ND_INC_PRE:
@@ -782,15 +784,15 @@ static Node *assignment_expression(void) {
 }
 
 //三項演算子（右結合）
-//    tri_cond    = logical_or "?" expression ":" tri_cond
-static Node *tri_cond(void) {
-    Node *node = logical_or(), *sub_node, *lhs, *rhs;
+//    conditional_expression    = logical_OR_expression "?" expression ":" conditional_expression
+static Node *conditional_expression(void) {
+    Node *node = logical_OR_expression(), *sub_node, *lhs, *rhs;
     char *input = input_str();
     if (consume('?')) {
         lhs = expression();
         if (!consume(':'))
             error_at(node->input, "三項演算に : がありません");
-        rhs = tri_cond();
+        rhs = conditional_expression();
         sub_node = new_node(ND_UNDEF, lhs, rhs, lhs->tp, input);
         node = new_node(ND_TRI_COND, node, sub_node, lhs->tp, node->input);
     }
@@ -798,13 +800,13 @@ static Node *tri_cond(void) {
 }
 
 //論理和（左結合）
-//    logical_or  = logical_and ( "||" logical_and )*
-static Node *logical_or(void) {
-    Node *node = logical_and();
+//    logical_OR_expression  = logical_AND_expression ( "||" logical_AND_expression )*
+static Node *logical_OR_expression(void) {
+    Node *node = logical_AND_expression();
     for (;;) {
         char *input = input_str();
         if (consume(TK_LOR)) {
-            node = new_node(ND_LOR, node, logical_and(), new_type(INT, 0), input);
+            node = new_node(ND_LOR, node, logical_AND_expression(), new_type(INT, 0), input);
         } else {
             break;
         }
@@ -813,13 +815,13 @@ static Node *logical_or(void) {
 }
 
 //論理積（左結合）
-//    logical_and = bitwise_or ( "&&" bitwise_or )*
-static Node *logical_and(void) {
-    Node *node = bitwise_or();
+//    logical_AND_expression = inclusive_OR_expression ( "&&" inclusive_OR_expression )*
+static Node *logical_AND_expression(void) {
+    Node *node = inclusive_OR_expression();
     for (;;) {
         char *input = input_str();
         if (consume(TK_LAND)) {
-            node = new_node(ND_LAND, node, bitwise_or(), new_type(INT, 0), input);
+            node = new_node(ND_LAND, node, inclusive_OR_expression(), new_type(INT, 0), input);
         } else {
             break;
         }
@@ -828,13 +830,16 @@ static Node *logical_and(void) {
 }
 
 //OR（左結合）
-//    bitwise_or = ex_or ( "|" ex_or )*
-static Node *bitwise_or(void) {
-    Node *node = ex_or();
+//    inclusive_OR_expression = exclusive_OR_expression ( "|" exclusive_OR_expression )*
+static Node *inclusive_OR_expression(void) {
+    Node *node = exclusive_OR_expression(), *rhs;
     for (;;) {
         char *input = input_str();
         if (consume('|')) {
-            node = new_node('|', node, ex_or(), new_type(INT, 0), input);
+            rhs = exclusive_OR_expression();
+            if (type_is_ptr(node->tp) || type_is_ptr(rhs->tp))
+                error_at(input, "ポインタに対するビット演算です");
+            node = new_node('|', node, rhs, new_type(INT, 0), input);
         } else {
             break;
         }
@@ -843,13 +848,16 @@ static Node *bitwise_or(void) {
 }
 
 //EX-OR（左結合）
-//    bitwise_or = bitwise_and ( "|" bitwise_and )*
-static Node *ex_or(void) {
-    Node *node = bitwise_and();
+//    inclusive_OR_expression = AND_expression ( "|" AND_expression )*
+static Node *exclusive_OR_expression(void) {
+    Node *node = AND_expression(), *rhs;
     for (;;) {
         char *input = input_str();
         if (consume('^')) {
-            node = new_node('^', node, bitwise_and(), new_type(INT, 0), input);
+            rhs = AND_expression();
+            if (type_is_ptr(node->tp) || type_is_ptr(rhs->tp))
+                error_at(input, "ポインタに対するビット演算です");
+            node = new_node('^', node, rhs, new_type(INT, 0), input);
         } else {
             break;
         }
@@ -858,13 +866,16 @@ static Node *ex_or(void) {
 }
 
 //AND（左結合）
-//    bitwise_and = equality ( "&" equality )*
-static Node *bitwise_and(void) {
-    Node *node = equality();
+//    AND_expression = equality_expression ( "&" equality_expression )*
+static Node *AND_expression(void) {
+    Node *node = equality_expression(), *rhs;
     for (;;) {
         char *input = input_str();
         if (consume('&')) {
-            node = new_node('&', node, equality(), new_type(INT, 0), input);
+            rhs = equality_expression();
+            if (type_is_ptr(node->tp) || type_is_ptr(rhs->tp))
+                error_at(input, "ポインタに対するビット演算です");
+            node = new_node('&', node, rhs, new_type(INT, 0), input);
         } else {
             break;
         }
@@ -873,15 +884,15 @@ static Node *bitwise_and(void) {
 }
 
 //等価演算（左結合）
-//    equality    = relational ( "==" relational | "!=" relational )*
-static Node *equality(void) {
-    Node *node = relational();
+//    equality_expression    = relational_expression ( "==" relational_expression | "!=" relational_expression )*
+static Node *equality_expression(void) {
+    Node *node = relational_expression();
     for (;;) {
         char *input = input_str();
         if (consume(TK_EQ)) {
-            node = new_node(ND_EQ, node, relational(), new_type(INT, 0), input);
+            node = new_node(ND_EQ, node, relational_expression(), new_type(INT, 0), input);
         } else if (consume(TK_NE)) {
-            node = new_node(ND_NE, node, relational(), new_type(INT, 0), input);
+            node = new_node(ND_NE, node, relational_expression(), new_type(INT, 0), input);
         } else {
             break;
         }
@@ -890,19 +901,41 @@ static Node *equality(void) {
 }
 
 //関係演算（左結合）
-//    relational  = add ( "<" add | "<=" add | ">" add | ">=" add )*
-static Node *relational(void) {
-    Node *node = add();
+//   relational_expression   = shift_expression ( ( "<" | "<=" | ">" | ">=" ) shift_expression )*
+static Node *relational_expression(void) {
+    Node *node = shift_expression();
     for (;;) {
         char *input = input_str();
         if (consume('<')) {
-            node = new_node('<',   node, add(), new_type(INT, 0), input);
+            node = new_node('<',   node, shift_expression(), new_type(INT, 0), input);
         } else if (consume(TK_LE)) {
-            node = new_node(ND_LE, node, add(), new_type(INT, 0), input);
+            node = new_node(ND_LE, node, shift_expression(), new_type(INT, 0), input);
         } else if (consume('>')) {
-            node = new_node('<',   add(), node, new_type(INT, 0), input);
+            node = new_node('<',   shift_expression(), node, new_type(INT, 0), input);
         } else if (consume(TK_GE)) {
-            node = new_node(ND_LE, add(), node, new_type(INT, 0), input);
+            node = new_node(ND_LE, shift_expression(), node, new_type(INT, 0), input);
+        } else {
+            break;
+        }
+    }
+    return node;
+}
+//sシフト（左結合）
+//    shift_expression        = additive_expression ( ( "<<" | ">>" ) additive_expression )*
+static Node *shift_expression(void) {
+    Node *node = additive_expression(), *rhs;
+    for (;;) {
+        char *input = input_str();
+        if (consume(TK_SHIFTL)) {
+            rhs = additive_expression();
+            if (node_is_ptr(node) || node_is_ptr(rhs))
+                error_at(node->input, "ポインタによるシフト演算です");
+            node = new_node(ND_SHIFTL, node, rhs, node->tp, input);
+        } else if (consume(TK_SHIFTR)) {
+            rhs = additive_expression();
+            if (node_is_ptr(node) || node_is_ptr(rhs))
+                error_at(node->input, "ポインタによるシフト演算です");
+            node = new_node(ND_SHIFTR, node, rhs, node->tp, input);
         } else {
             break;
         }
@@ -911,19 +944,19 @@ static Node *relational(void) {
 }
 
 //加減算（左結合）
-//    add         = mul ( "+" mul | "-" mul )*
-static Node *add(void) {
-    Node *node = mul(), *rhs;
+//    additive_expression         = multiplicative_expression ( "+" multiplicative_expression | "-" multiplicative_expression )*
+static Node *additive_expression(void) {
+    Node *node = multiplicative_expression(), *rhs;
     for (;;) {
         char *input = input_str();
         if (consume('+')) {
-            rhs = mul();
+            rhs = multiplicative_expression();
             if (node_is_ptr(node) && node_is_ptr(rhs))
                 error_at(node->input, "ポインタ同士の加算です");
             Type *tp = node_is_ptr(node) ? node->tp : rhs->tp;
             node = new_node('+', node, rhs, tp, input);
         } else if (consume('-')) {
-            rhs = mul();
+            rhs = multiplicative_expression();
             if (node_is_ptr(node) && node_is_ptr(rhs)) {
                 if (!type_eq(node->tp, rhs->tp)) 
                     error_at(node->input, "異なるタイプのポインタによる減算です: %s vs %s",
@@ -940,8 +973,8 @@ static Node *add(void) {
 }
 
 //乗除算、剰余（左結合）
-//    mul         = cast_expression ( "*" cast_expression | "/" cast_expression | "%" cast_expression )*
-static Node *mul(void) {
+//    multiplicative_expression = cast_expression ( ( "*" | "/" | "%" ) cast_expression )*
+static Node *multiplicative_expression(void) {
     Node *node = cast_expression();
     for (;;) {
         char *input = input_str();
@@ -979,7 +1012,7 @@ static Node *cast_expression(void) {
 
 //前置単項演算子（右結合）
 //    unary_expression        = postfix_expression
-//                            | ( "+" | "-" |  "!" | "*" | "&" ) cast_expression
+//                            | ( "+" | "-" |  "!" | "~" | "*" | "&") cast_expression
 //                            | ( "++" | "--" )? unary_expression
 //                            | "sizeof" unary_expression
 //                            | "sizeof"   "(" type_name ")"
@@ -994,6 +1027,11 @@ static Node *unary_expression(void) {
         node = new_node('-', new_node_num(0, input), node, node->tp, input);
     } else if (consume('!')) {
         node = new_node('!', NULL, cast_expression(), new_type(INT, 0), input);
+    } else if (consume('~')) {
+        node = cast_expression();
+        if (type_is_ptr(node->tp))
+            error_at(input, "ポインタに対するビット演算です");
+        node = new_node(ND_BNOT, NULL, node, node->tp, input);
     } else if (consume(TK_INC)) {
         node = unary_expression();
         node = new_node(ND_INC_PRE, NULL, node, node->tp, input);

@@ -48,6 +48,8 @@ typedef enum {
     TK_GE,          // >=
     TK_LAND,        // &&
     TK_LOR,         // ||
+    TK_SHIFTR,      // >>
+    TK_SHIFTL,      // <<
     TK_PLUS_ASSIGN, // +=
     TK_MINUS_ASSIGN,// -=
     TK_RETURN,      //return
@@ -85,6 +87,7 @@ typedef enum {
     ND_GT    = '>',
     ND_XOR   = '^',
     ND_OR    = '|',
+    ND_BNOT  = '~',
     ND_NUM,         //整数のノードの型
     ND_STRING,
     ND_IDENT,       //IDENT:中間的なタイプであり、最終的にND_LOCAL_VARなどに置き換わる
@@ -102,6 +105,8 @@ typedef enum {
     ND_LE,          // <=, >=
     ND_LAND,        // &&
     ND_LOR,         // ||
+    ND_SHIFTR,      // >>
+    ND_SHIFTL,      // <<
     ND_TRI_COND,    // A ? B : C（三項演算子）
     ND_PLUS_ASSIGN, // +=
     ND_MINUS_ASSIGN,// -=

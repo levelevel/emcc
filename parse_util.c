@@ -64,12 +64,15 @@ int node_is_const(Node *node, long *valp) {
     case ND_NE:   val = val1 != val2; break;
     case '<':     val = val1 <  val2; break;
     case ND_LE:   val = val1 <= val2; break;
+    case ND_SHIFTL: val = val1 << val2; break;
+    case ND_SHIFTR: val = val1 >> val2; break;
     case '+':     val = val1 +  val2; break;
     case '-':     val = val1 -  val2; break;
     case '*':     val = val1 *  val2; break;
     case '/':     val = val1 /  val2; break;
     case '%':     val = val1 %  val2; break;
     case '!':     val = !val1;        break;
+    case '~':     val = ~val1;        break;
     default:
         return 0;
     }
@@ -143,12 +146,15 @@ int node_is_const_or_address(Node *node, long *valp, Node **varp) {
     case ND_NE:   val = val1 != val2; break;
     case '<':     val = val1 <  val2; break;
     case ND_LE:   val = val1 <= val2; break;
+    case ND_SHIFTL: val = val1 << val2; break;
+    case ND_SHIFTR: val = val1 >> val2; break;
     case '+':     val = val1 +  val2; break;
     case '-':     val = val1 -  val2; break;
     case '*':     val = val1 *  val2; break;
     case '/':     val = val1 /  val2; break;
     case '%':     val = val1 %  val2; break;
     case '!':     val = !val1;        break;
+    case '~':     val = ~val1;        break;
     default:
         return 0;
     }

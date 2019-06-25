@@ -17,6 +17,8 @@ TokenDef TokenLst1[] = {
     {"<=", 2, TK_LE},
     {"&&", 2, TK_LAND},
     {"||", 2, TK_LOR},
+    {">>", 2, TK_SHIFTR},
+    {"<<", 2, TK_SHIFTL},
     {"+=", 2, TK_PLUS_ASSIGN},
     {"-=", 2, TK_MINUS_ASSIGN},
     {"...",3, TK_3DOTS},
@@ -42,6 +44,7 @@ TokenDef TokenLst1[] = {
     {"{",  1, '{'},
     {"|",  1, '|'},
     {"}",  1, '}'},
+    {"~",  1, '~'},
     {NULL, 0, 0}
 };
 
