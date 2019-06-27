@@ -59,6 +59,7 @@ try() {
 
   echo "=== test[$cnt] ================================" >> $EXE.log
   if [ $expected == $ER -o $expected == $WR ]; then
+    #ErrorまたはWorningが出力されるのが期待値
     ./9cc -s "$input" 2>&1 > $EXE.s | tee -a $EXE.log | grep "9cc:$expected" > $EXE.err
     if [ $? -eq 0 ]; then
       actual=$expected
@@ -205,6 +206,13 @@ try $ER "int*p; p^1;"
 try $ER "int*p; ~p;"
 try $ER "int*p; p>>1;"
 try $ER "int*p; p<<1;"
+
+try $WR "void main(){return 1;}"
+try $WR "int main(){return;}"
+try $WR "int main(){char*p=0; return p;}"
+try $ER "goto;"
+try $ER "goto L1;"
+try $ER "L1:; L1:;"
 
 #多次元配列
 try $ER "int a[][3]={{1,2,3},{11,12,13}; return a[1][2]}"

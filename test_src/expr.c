@@ -78,7 +78,7 @@ int addsub() {
     TEST(addsub_mix2);
     return 
 #ifdef _9cc
-        42 == f42();    //これはCの仕様とは異なる
+        42 == f42() &&    //これはCの仕様とは異なる
 #endif
         14 == 10 + 2 * 3 - 4/2 &&
         3  == (((2+4)*1)/2) &&
@@ -162,6 +162,17 @@ int tri_cond() {
     return
         a==10 && b==20 && gtri_a==2;
 }
+int goto1(void) {
+    int i=0, L1=2;
+    goto L1;
+    i=1;
+    {
+      L1:i++;
+      if (i>=10) goto L2;
+      goto L1;
+    }
+    L2: return i==10;
+}
 int loop() {
 
     if(0);
@@ -176,6 +187,7 @@ int loop() {
     TEST(while1);
     TEST(for1);
     TEST(tri_cond);
+    TEST(goto1);
     return d==2 && e==2 && sum1==55;
 }
 

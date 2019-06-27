@@ -477,10 +477,26 @@ static int gen(Node*node) {
         comment("CAST (%s)%s\n", get_type_str(node->tp), get_type_str(node->rhs->tp));
         gen(node->rhs);
         break;
+    case ND_LABEL:
+        printf(".L%s:\n", node->name);
+        return gen(node->rhs);
+    case ND_GOTO:
+    {
+        Node *tmp;
+        if (map_get(cur_funcdef->label_map, node->name, (void**)&tmp)!=0) {
+            if (tmp->type!=ND_LABEL) error_at(node->input, "ラベルが未定義です");
+        }
+        printf("  jmp .L%s\n", node->name);
+        return 0;
+    }
     case ND_RETURN:         //return
-        comment("RETURN\n");
-        gen(node->lhs);
-        printf("  pop rax\t# RETURN VALUE\n");
+        if (node->rhs) {
+            comment("RETURN (%s)\n", get_type_str(node->tp));
+            gen(node->rhs);
+            printf("  pop rax\t# RETURN VALUE\n");
+        } else {
+            comment("RETURN\n");
+        }
         printf("  mov rsp, rbp\n");
         printf("  pop rbp\n");
         printf("  ret\n");

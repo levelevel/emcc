@@ -75,13 +75,19 @@ void *stack_get(Stack *stack, int idx) {
 static const char *TypeStr[] = {"Nul", "void", "char", "short", "int", "long", "long long", "*", "[", "func(", "CONST"};
 static const char *SClassStr[] = {"", "auto ", "register ", "static ", "extern "};
 
+static void strcat_word(char *buf, const char *str) {
+    char last_char = 0;
+    int len;
+    last_char = ((len=strlen(buf))>0) ? buf[len] : 0; 
+    if (isalnum(last_char) && isalnum(*str)) strcat(buf, " ");
+    strcat(buf, str);
+}
 //bufに対してTypeをダンプする
 static void dump_type(char *buf, const Type *tp) {
     const char *str = TypeStr[tp->type];
-    if (tp->is_unsigned) strcat(buf, "unsigned ");
-    if (tp->is_const)    strcat(buf, "const ");
-    if (*buf && *str!='*' && *str!='[') strcat(buf, " ");
-    strcat(buf, str);
+    if (tp->is_unsigned) strcat_word(buf, "unsigned");
+    if (tp->is_const)    strcat_word(buf, "const");
+    strcat_word(buf, str);
     if (tp->type==ARRAY) {
         char tmp[20];
         if (tp->array_size>=0) sprintf(tmp, "%ld]", tp->array_size);
@@ -97,10 +103,10 @@ static void dump_type(char *buf, const Type *tp) {
 //bufに対して型を表す文字列をCの文法で生成する
 static void print_type(char *buf, const Type *tp) {
     if (tp->ptr_of) print_type(buf, tp->ptr_of);
-    strcat(buf, SClassStr[tp->sclass]);
-    if (tp->is_unsigned) strcat(buf, "unsigned ");
-    if (tp->is_const)    strcat(buf, "const ");
-    strcat(buf, TypeStr[tp->type]);
+    strcat_word(buf, SClassStr[tp->sclass]);
+    if (tp->is_unsigned) strcat_word(buf, "unsigned");
+    if (tp->is_const)    strcat_word(buf, "const");
+    strcat_word(buf, TypeStr[tp->type]);
     if (tp->type==ARRAY) {
         char tmp[20];
         if (tp->array_size>=0) sprintf(tmp, "%ld]", tp->array_size);

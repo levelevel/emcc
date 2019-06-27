@@ -39,16 +39,23 @@
                             | direct_abstract_declarator? "[" assignment_expression? "]"
                             | direct_abstract_declarator? "(" parameter_type_list? ")"  //関数
 - A.2.3 Statements            http://port70.net/~nsz/c/c11/n1570.html#A.2.3
-    statement               = compound_statement
-                            | declaration
-                            | return" expression ";"
-                            | "if" "(" expression ")" ( "else" expression )?
-                            | "while" "(" expression ")"
+    statement               = labeled_statement
+                            | compound_statement    // { ... }
+                            | expression? ";"       // expression_statement
+                            | "if" "(" expression ")" ( "else" expression )? statement
+                            | "switch" "(" expression ")" statement
+                            | "while" "(" expression ")" statement
                             | "for" "(" expression? ";" expression? ";" expression? ")" statement
                             | "for" "(" declaration     expression? ";" expression? ")" statement
-                            | "break"
-                            | "continue"
+                            | jump_statement
+    labeled_statement       = identifier ":" statement
+                            | "case" constant_statement ":" statement
+                            | "default" ":" statement
     compound_statement      = "{" declaration | statement* "}"
+    jump_statement          = "goto" identifier ";"
+                            | "continue" ";"
+                            | "break" ";"
+                            | "return" expression? ";"
 - A.2.1 Expressions
     expression              = assignment_expression ( "," assignment_expression )*
     constant_expression     = conditional_expression
@@ -182,6 +189,7 @@ static Node *function_definition(Type *tp, char *name) {
         node->rhs = compound_statement();
         map_put(funcdef_map, node->name, cur_funcdef);
         stack_pop(symbol_stack);
+        check_func_return(cur_funcdef);        //関数の戻り値を返しているかチェック
     } else {                //関数宣言
         consume(';');
         check_funcargs(node->lhs, 0);   //引数リストの妥当性を確認（宣言モード）
@@ -618,13 +626,30 @@ static Node *statement(void) {
     Node *node;
     char *input = input_str();
 
-    if (token_is('{')) {
+    // labeled_statement
+    if (token_is(TK_IDENT) && next_token_is(':')) {
+        char *name;
+        consume_ident(&name);
+        consume(':');
+        node = statement();
+        node = new_node(ND_LABEL, NULL, node, node->tp, input);
+        node->name = name;
+        regist_label(node);
+        return node;
+    } else if (consume(TK_CASE)) {
+        node = constant_expression();
+        if (!consume(':')) error_at(input, "caseの後の:がありません");
+        node = new_node(ND_CASE, node, statement(), node->tp, input);
+        return node;
+    } else if (consume(TK_DEFAULT)) {
+        if (!consume(':')) error_at(input, "defaultの後の:がありません");
+        node = statement();
+        node = new_node(ND_CASE, NULL, node, node->tp, input);
+        return node;
+    } else if (token_is('{')) {
         return compound_statement();    //{ ブロック }
-    } else if (consume(';')) {
-        return new_node_empty(input_str());
-    } else if (consume(TK_RETURN)) {
-        node = expression();
-        node = new_node(ND_RETURN, node, NULL, node->tp, input);
+
+    //select_statement
     } else if (consume(TK_IF)) {    //if(A)B else C
         Node *node_A, *node_B;
         if (!consume('(')) error_at(input_str(), "ifの後に開きカッコがありません");
@@ -640,13 +665,21 @@ static Node *statement(void) {
             node = new_node(ND_IF, node, NULL, NULL, input);
         }
         return node;
-    } else if (consume(TK_WHILE)) {
+    } else if (consume(TK_SWITCH)) {
+        if (!consume('(')) error_at(input_str(), "switchの後に開きカッコがありません");
+        node = expression();
+        if (!consume(')')) error_at(input_str(), "switchの開きカッコに対応する閉じカッコがありません");
+        node = new_node(ND_SWITCH, node, statement(), NULL, input);
+        return node;
+
+    //iteration_statement
+    } else if (consume(TK_WHILE)) { //while(A)B        lhs=A, rhs=B
         if (!consume('(')) error_at(input_str(), "whileの後に開きカッコがありません");
         node = expression();
         if (!consume(')')) error_at(input_str(), "whileの開きカッコに対応する閉じカッコがありません");
         node = new_node(ND_WHILE, node, statement(), NULL, input);
         return node;
-    } else if (consume(TK_FOR)) {   //for(A;B;C)D
+    } else if (consume(TK_FOR)) {   //for(A;B;C)D       lhs->lhs=A, lhs->rhs=B, rhs->lhs=C, rhs->rhs=D
         Node *node1, *node2;
         stack_push(symbol_stack, new_map());
         if (!consume('(')) error_at(input_str(), "forの後に開きカッコがありません");
@@ -675,10 +708,30 @@ static Node *statement(void) {
         node = new_node(ND_FOR, node, node2, NULL, input);   //(A,B),(C,D)
         stack_pop(symbol_stack);
         return node;
-    } else if (consume(TK_BREAK)) {     //break
-        node = new_node(ND_BREAK, NULL, NULL, NULL, input);
+
+    //jump_statement
+    } else if (consume(TK_GOTO)) {      //goto label;      name=label
+        char *name;
+        node = new_node(ND_GOTO, NULL, NULL, NULL, input);
+        if (!consume_ident(&name)) error_at(input_str(), "ラベルが必要です");
+        node->name = name;
+        regist_label(node);
     } else if (consume(TK_CONTINUE)) {  //continue
         node = new_node(ND_CONTINUE, NULL, NULL, NULL, input);
+    } else if (consume(TK_BREAK)) {     //break
+        node = new_node(ND_BREAK, NULL, NULL, NULL, input);
+    } else if (consume(TK_RETURN)) {
+        if (token_is(';')) {
+            node = new_node(ND_RETURN, NULL, NULL, NULL, input);
+        } else {
+            node = expression();
+            node = new_node(ND_RETURN, NULL, node, node->tp, input);
+        }
+        check_return(node); //戻り値の妥当性をチェック
+
+    //statement_expression
+    } else if (consume(';')) {
+        return new_node_empty(input_str());
     } else {
         node = expression();
     }
@@ -736,7 +789,9 @@ static Node *constant_expression(void) {
     long val;
     if (!node_is_const(node, &val))
         error_at(node->input, "定数式が必要です");
-    return new_node_num(val, input);
+    node = new_node(ND_NUM, NULL, node, node->tp, input);
+    node->val = val;
+    return node;
 }
 
 //代入（右結合）
@@ -763,7 +818,7 @@ static Node *assignment_expression(void) {
         if (!is_lvalue || node->tp->type==ARRAY) error_at(node->input, "左辺値ではありません");
         rhs = assignment_expression(); 
         if (!(rhs->type==ND_NUM && rhs->val==0) &&  //右辺が0の場合は無条件にOK
-            !node_type_eq(node->tp, rhs->tp))
+            !type_eq_assign(node->tp, rhs->tp))
             warning_at(input, "=の左右の型(%s:%s)が異なります", 
                 get_type_str(node->tp), get_type_str(rhs->tp));
         node = new_node('=', node, rhs, node->tp, input); //ND_ASIGN
@@ -920,7 +975,8 @@ static Node *relational_expression(void) {
     }
     return node;
 }
-//sシフト（左結合）
+
+//シフト（左結合）
 //    shift_expression        = additive_expression ( ( "<<" | ">>" ) additive_expression )*
 static Node *shift_expression(void) {
     Node *node = additive_expression(), *rhs;

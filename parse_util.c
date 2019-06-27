@@ -203,6 +203,37 @@ Type *get_typeof(Type *tp) {
     return ret;
 }
 
+//戻り値の妥当性をチェック
+void check_return(Node *node) {
+    assert(node->type==ND_RETURN);
+    assert(cur_funcdef);
+    assert(cur_funcdef->tp->type==FUNC);
+    Type *func_tp = cur_funcdef->tp->ptr_of;
+    Type *ret_tp = node->tp;
+    if (func_tp->type==VOID) {
+        if (ret_tp==NULL) return;
+        if (ret_tp->type==VOID) return;
+        warning_at(node->input, "void型関数が値を返しています");
+    } else if (ret_tp==NULL || ret_tp->type==VOID) {
+        warning_at(node->input, "非void関数%sが値を返していません", cur_funcdef->name);
+    } else if (!type_eq_assign(func_tp, ret_tp)) {
+        warning_at(node->input, "%s型の関数%sが%s型を返しています",
+            get_type_str(func_tp), cur_funcdef->name, get_type_str(ret_tp));
+    }
+}
+
+//関数が戻り値を返しているかをチェック（簡易版）
+void check_func_return(Funcdef *funcdef) {
+    Type *func_tp = cur_funcdef->tp->ptr_of;
+    if (func_tp->type==VOID) return;    //void関数が値を返す場合はreturn側でチェックする
+    Node **nodes = (Node**)funcdef->node->rhs->lst->data;
+    int len = funcdef->node->rhs->lst->len;
+    if (len==0 || nodes[len-1]->type!=ND_RETURN) {
+        warning_at(input_str()-1, "関数が戻り値を返していません");
+    }
+
+}
+
 //引数リスト(ND_LIST)の妥当性を確認
 //関数定義(def_mode=1)の場合は名前付き宣言(declaration)であることを確認
 void check_funcargs(Node *node, int def_mode) {
@@ -229,7 +260,7 @@ int type_eq(const Type *tp1, const Type *tp2) {
 }
 
 //node1=node2の代入の観点で型の一致を判定する
-int node_type_eq(const Type *tp1, const Type *tp2) {
+int type_eq_assign(const Type *tp1, const Type *tp2) {
     if ((tp1->type==PTR && tp2->type==ARRAY) ||
         (type_is_integer(tp1) && type_is_integer(tp2))) {
         ;
@@ -239,7 +270,7 @@ int node_type_eq(const Type *tp1, const Type *tp2) {
     } else {
         if (tp1->type != tp2->type) return 0;
     }  
-    if (tp1->ptr_of) return node_type_eq(tp1->ptr_of, tp2->ptr_of);
+    if (tp1->ptr_of) return type_eq_assign(tp1->ptr_of, tp2->ptr_of);
     return 1;
 }
 
@@ -258,6 +289,7 @@ Funcdef *new_funcdef(void) {
     Funcdef * funcdef;
     funcdef = calloc(1, sizeof(Funcdef));
     funcdef->ident_map = new_map();
+    funcdef->label_map = new_map();
     return funcdef;
 }
 
@@ -339,6 +371,18 @@ void regist_var_def(Node *node) {
             error_at(node->input, "'%s'はグローバル変数の重複定義です", name);
         }
     }
+}
+
+//ラベルを登録
+//ラベル定義より前にgotoが先にあった場合、gotoを登録する。その後ラベル定義があればそれで置き換える。
+//ラベル定義のないgotoはcodegen時にチェックする。
+void regist_label(Node *node) {
+    Node *tmp;
+    if (map_get(cur_funcdef->label_map, node->name, (void**)&tmp)!=0) {
+        if (node->type==ND_GOTO) return;
+        if (tmp->type==ND_LABEL) error_at(node->input, "ラベルが重複しています");
+    }
+    map_put(cur_funcdef->label_map, node->name, node);
 }
 
 //抽象構文木の生成（変数定義）

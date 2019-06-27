@@ -52,13 +52,17 @@ typedef enum {
     TK_SHIFTL,      // <<
     TK_PLUS_ASSIGN, // +=
     TK_MINUS_ASSIGN,// -=
+    TK_GOTO,        //goto
+    TK_CONTINUE,    //continue
+    TK_BREAK,       //break
     TK_RETURN,      //return
     TK_IF,          //if
     TK_ELSE,        //else
+    TK_SWITCH,
+    TK_CASE,
+    TK_DEFAULT,
     TK_WHILE,       //while
     TK_FOR,         //for
-    TK_BREAK,       //break
-    TK_CONTINUE,    //continue
     TK_SIZEOF,      //sizeof
     TK_ALIGNOF,     //_Alignof (C11)
     TK_3DOTS,       // ...
@@ -112,16 +116,21 @@ typedef enum {
     ND_MINUS_ASSIGN,// -=
     ND_LOCAL_VAR_DEF,   //ローカル変数の定義・宣言
     ND_GLOBAL_VAR_DEF,  //グローバル変数の定義・宣言
-    ND_RETURN,
-    ND_IF,
-    ND_WHILE,
-    ND_FOR,
-    ND_BREAK,
+    ND_IF,          // if(A)B else C    lhs->lhs=A, lhs->rhs=B, rhs=C
+    ND_SWITCH,      // switch(A)B       lhs=A, rhs=B
+    ND_LABEL,       // label:B          name=label, rhs=B
+    ND_CASE,        // case A:B;        lhs=A(constant), rhs=B
+    ND_DEFAULT,     // default:B        rhs=B
+    ND_WHILE,       // while(A)B        lhs=A, rhs=B
+    ND_FOR,         // for(A;B;C)D      lhs->lhs=A, lhs->rhs=B, rhs->lhs=C, rhs->rhs=D
+    ND_GOTO,        // goto label;      name=label
     ND_CONTINUE,
-    ND_BLOCK,       //{ }
+    ND_BREAK,
+    ND_RETURN,      // rhs=expression
+    ND_BLOCK,       //{ }               lst=ノード(declaration/statement)
     ND_LIST,        //コンマリスト
     ND_FUNC_CALL,   //関数コール
-    ND_FUNC_DEF,    //関数定義
+    ND_FUNC_DEF,    //関数定義          rhs=ブロック(ND_BLOCK)
     ND_FUNC_DECL,   //関数宣言
     ND_VARARGS,     //...
     ND_EMPTY,       //空のノード
@@ -183,8 +192,9 @@ struct _Node {
 typedef struct {
     char *name;     //関数名
     Node *node;     //ND_FUNC_DEFのnode
-    Type *tp;       //関数の型情報
+    Type *tp;       //関数の型(常にFUNC)
     Map *ident_map; //ローカル変数：key=name, val=Node
+    Map *label_map; //ラベル：key=name, val=Node
     int var_stack_size; //ローカル変数のために必要となるスタックサイズ（offset）
 } Funcdef;
 
@@ -226,7 +236,8 @@ EXTERN Vector *static_var_vec;  //value=node
 //グローバルシンボル
 EXTERN Map *global_symbol_map;  //key=name, value=Node
 
-//スコープごとのシンボルの管理（グローバルシンボル(cur_funcdef->ident_map)→関数のローカルシンボル→ブロックのシンボル→...）
+//スコープごとのシンボルの管理
+//（グローバルシンボル(global_symbol_map)→関数のローカルシンボル(cur_funcdef->ident_map)→ブロックのシンボル→...）
 EXTERN Stack *symbol_stack;     //value=node
 
 //現在の関数定義
@@ -264,9 +275,11 @@ int type_is_extern(Type *tp);
 int consume(TKtype type);
 int consume_ident(char**name);
 Type *get_typeof(Type *tp);
+void check_return(Node *node);
+void check_func_return(Funcdef *funcdef);
 void check_funcargs(Node *node, int def_mode);
 int type_eq(const Type *tp1, const Type *tp2);
-int node_type_eq(const Type *tp1, const Type *tp2);
+int type_eq_assign(const Type *tp1, const Type *tp2);
 int get_var_offset(const Type *tp);
 Funcdef *new_funcdef(void);
 Type *new_type_ptr(Type*ptr);
@@ -277,6 +290,7 @@ Node *new_node(int type, Node *lhs, Node *rhs, Type *tp, char *input);
 Node *new_node(int type, Node *lhs, Node *rhs, Type *tp, char *input);
 Node *new_node_num(long val, char *input);
 void regist_var_def(Node *node);
+void regist_label(Node *node);
 Node *new_node_var_def(char *name, Type*tp, char *input);
 Node *new_node_string(char *string, char *input);
 Node *new_node_var(char *name, char *input);
