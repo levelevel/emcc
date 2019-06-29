@@ -545,6 +545,26 @@ static int gen(Node*node) {
         stack_pop(continue_stack);
         return 0;
     }
+    case ND_DO:             //do A while(B));
+    {
+        int cnt = label_cnt++;
+        char b_label[20]; sprintf(b_label, ".LDoEnd%03d",   cnt); stack_push(break_stack, b_label);
+        char c_label[20]; sprintf(c_label, ".LDoWhile%03d", cnt); stack_push(continue_stack, c_label);
+        comment("DO A while(B)\n");
+        printf(".LDoBegin%03d:\n", cnt);
+        if (gen(node->lhs))     //A
+            printf("  pop rax\n");
+        printf(".LDoWhile%03d:\n", cnt);
+        ret = gen(node->rhs);   //B
+        assert(ret);
+        printf("  pop rax\n");
+        printf("  cmp rax, 0\n");
+        printf("  jne .LDoBegin%03d\n", cnt);
+        printf(".LDoEnd%03d:\n", cnt);
+        stack_pop(break_stack);
+        stack_pop(continue_stack);
+        return 0;
+    }
     case ND_FOR:            //for (A;B;C) D
     {
         int cnt = label_cnt++;

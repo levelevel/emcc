@@ -44,15 +44,17 @@
                             | expression? ";"       // expression_statement
                             | "if" "(" expression ")" ( "else" expression )? statement
                             | "switch" "(" expression ")" statement
-                            | "while" "(" expression ")" statement
+                            | iteration_statement
+                            | jump_statement
+        iteration_statement = "while" "(" expression ")" statement
+                            | "do" statement "while" "(" expression ")" ";"
                             | "for" "(" expression? ";" expression? ";" expression? ")" statement
                             | "for" "(" declaration     expression? ";" expression? ")" statement
-                            | jump_statement
-    labeled_statement       = identifier ":" statement
+        labeled_statement   = identifier ":" statement
                             | "case" constant_statement ":" statement
                             | "default" ":" statement
-    compound_statement      = "{" declaration | statement* "}"
-    jump_statement          = "goto" identifier ";"
+        compound_statement  = "{" declaration | statement* "}"
+        jump_statement      = "goto" identifier ";"
                             | "continue" ";"
                             | "break" ";"
                             | "return" expression? ";"
@@ -673,12 +675,18 @@ static Node *statement(void) {
         return node;
 
     //iteration_statement
-    } else if (consume(TK_WHILE)) { //while(A)B        lhs=A, rhs=B
+    } else if (consume(TK_WHILE)) { //while(A)B         lhs=A, rhs=B
         if (!consume('(')) error_at(input_str(), "whileの後に開きカッコがありません");
         node = expression();
         if (!consume(')')) error_at(input_str(), "whileの開きカッコに対応する閉じカッコがありません");
         node = new_node(ND_WHILE, node, statement(), NULL, input);
         return node;
+    } else if (consume(TK_DO)) {    //do A while(B);    lhs=A, rhs=B
+        node = statement();
+        if (!consume(TK_WHILE)) error_at(input_str(), "doに対応するwhileがありません");
+        if (!consume('(')) error_at(input_str(), "whileの後に開きカッコがありません");
+        node = new_node(ND_DO, node, expression(), NULL, input);
+        if (!consume(')')) error_at(input_str(), "whileの開きカッコに対応する閉じカッコがありません");
     } else if (consume(TK_FOR)) {   //for(A;B;C)D       lhs->lhs=A, lhs->rhs=B, rhs->lhs=C, rhs->rhs=D
         Node *node1, *node2;
         stack_push(symbol_stack, new_map());

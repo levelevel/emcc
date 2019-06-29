@@ -74,6 +74,7 @@ TokenDef TokenLst2[] = {
     {"case",     4, TK_CASE},
     {"default",  4, TK_DEFAULT},
     {"while",    5, TK_WHILE},
+    {"do",       2, TK_DO},
     {"for",      3, TK_FOR},
     {"sizeof",   6, TK_SIZEOF},
     {"typeof",   6, TK_TYPEOF},

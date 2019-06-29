@@ -62,6 +62,7 @@ typedef enum {
     TK_CASE,
     TK_DEFAULT,
     TK_WHILE,       //while
+    TK_DO,          //do
     TK_FOR,         //for
     TK_SIZEOF,      //sizeof
     TK_ALIGNOF,     //_Alignof (C11)
@@ -122,6 +123,7 @@ typedef enum {
     ND_CASE,        // case A:B;        lhs=A(constant), rhs=B
     ND_DEFAULT,     // default:B        rhs=B
     ND_WHILE,       // while(A)B        lhs=A, rhs=B
+    ND_DO,          // do A while(B);   lhs=A, rhs=B
     ND_FOR,         // for(A;B;C)D      lhs->lhs=A, lhs->rhs=B, rhs->lhs=C, rhs->rhs=D
     ND_GOTO,        // goto label;      name=label
     ND_CONTINUE,

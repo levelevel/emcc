@@ -126,6 +126,16 @@ int while1() {
     return a==0 && sum==55;
 }
 
+int do1() {
+    int a=3;
+    do a--; while (a); 
+    do {break;} while (1);
+    do ; while(0);
+    int i=0, sum=0;
+    do {sum += i; i++;} while (i<=10);
+    return a==0 && sum==55;
+}
+
 int for1() {
     int a, b, i, j;
     for (i=0; i<5; i++) a=i;
@@ -185,6 +195,7 @@ int loop() {
     int e=0; if(0) {e=1;} else if (1) {e=2;} else {e=3;}
 
     TEST(while1);
+    TEST(do1);
     TEST(for1);
     TEST(tri_cond);
     TEST(goto1);
