@@ -399,15 +399,16 @@ static void gen_write_var(Node *node, char *reg) {
     }
 }
 
-static int label_cnt = 0;   //ラベル識別用カウンタ
-
 //ステートメントを評価
 //結果をスタックに積んだ場合は1、そうでない場合は0を返す
 static int gen(Node*node) {
-    int ret;
+    int ret, cnt;
     char buf[20];
-    char *label;
+    char b_label[20];
+    char c_label[20];
+    char *org_break_label, *org_continue_label;;
     assert(node!=NULL);
+
     switch (node->type) {
     case ND_NUM:            //数値
         if (node->tp->type==LONG) {
@@ -480,6 +481,12 @@ static int gen(Node*node) {
     case ND_LABEL:
         printf(".L%s:\n", node->name);
         return gen(node->rhs);
+    case ND_CASE:
+    case ND_DEFAULT:
+        printf(".L%s.%03ld:\n", node->name, cur_switch->val);
+        return gen(node->rhs);
+        printf(".L%s.%03ld:\n", node->name, cur_switch->val);
+        return gen(node->rhs);
     case ND_GOTO:
     {
         Node *tmp;
@@ -502,8 +509,7 @@ static int gen(Node*node) {
         printf("  ret\n");
         return 0;
     case ND_IF:             //if (A) B [else C]
-    {
-        int cnt = label_cnt++;
+        cnt = ++global_index;
         comment("IF(A) B [else C]\n");
         ret = gen(node->lhs->lhs); //A
         assert(ret);
@@ -524,12 +530,45 @@ static int gen(Node*node) {
         }
         printf(".LIfEnd%03d:\n", cnt);
         return 0;
+    case ND_SWITCH:         //switch (A) B
+    {
+        cnt = ++global_index;
+        Node *org_cur_switch = cur_switch;
+        cur_switch = node;
+        node->val = cnt;
+        org_break_label = break_label;
+        sprintf(b_label, ".LSwitchEnd%03d",  cnt); break_label = b_label;
+        ret = gen(node->lhs); //A
+        assert(ret);
+        printf("  pop rax\n");
+        int size = map_len(node->map);
+        Node *case_node;
+        Node *default_node = NULL;
+        for (int i=0; i<size; i++) {
+            case_node = (Node*)map_data(node->map, i);
+            if (case_node->type==ND_CASE) {
+                printf("  cmp rax, %ld\n", case_node->val);
+                printf("  je .L%s.%03d\n", case_node->name, cnt);
+            } else {
+                default_node = case_node;
+            }
+        }
+        if (default_node) {
+            printf("  jmp .L%s.%03d\n", default_node->name, cnt);
+        }
+        if (gen(node->rhs)) //B
+            printf("  pop rax\n");
+        printf(".LSwitchEnd%03d:\n", cnt);
+        break_label = org_break_label;
+        cur_switch = org_cur_switch;
+        return 0;
     }
     case ND_WHILE:          //while (A) B
-    {
-        int cnt = label_cnt++;
-        char b_label[20]; sprintf(b_label, ".LWhileEnd%03d",  cnt); stack_push(break_stack, b_label);
-        char c_label[20]; sprintf(c_label, ".LWhileBody%03d", cnt); stack_push(continue_stack, c_label);
+        cnt = ++global_index;
+        org_break_label = break_label;
+        org_continue_label = continue_label;
+        sprintf(b_label, ".LWhileEnd%03d",  cnt); break_label = b_label;
+        sprintf(c_label, ".LWhileBody%03d", cnt); continue_label = c_label;
         comment("WHILE(A)B\n");
         printf(".LWhileBegin%03d:\n", cnt);
         ret = gen(node->lhs); //A
@@ -541,15 +580,15 @@ static int gen(Node*node) {
             printf("  pop rax\n");
         printf("  jmp .LWhileBegin%03d\n", cnt);
         printf(".LWhileEnd%03d:\n", cnt);
-        stack_pop(break_stack);
-        stack_pop(continue_stack);
+        break_label = org_break_label;
+        continue_label = org_continue_label;
         return 0;
-    }
     case ND_DO:             //do A while(B));
-    {
-        int cnt = label_cnt++;
-        char b_label[20]; sprintf(b_label, ".LDoEnd%03d",   cnt); stack_push(break_stack, b_label);
-        char c_label[20]; sprintf(c_label, ".LDoWhile%03d", cnt); stack_push(continue_stack, c_label);
+        cnt = ++global_index;
+        org_break_label = break_label;
+        org_continue_label = continue_label;
+        sprintf(b_label, ".LDoEnd%03d",   cnt); break_label = b_label;
+        sprintf(c_label, ".LDoWhile%03d", cnt); continue_label = c_label;
         comment("DO A while(B)\n");
         printf(".LDoBegin%03d:\n", cnt);
         if (gen(node->lhs))     //A
@@ -561,15 +600,15 @@ static int gen(Node*node) {
         printf("  cmp rax, 0\n");
         printf("  jne .LDoBegin%03d\n", cnt);
         printf(".LDoEnd%03d:\n", cnt);
-        stack_pop(break_stack);
-        stack_pop(continue_stack);
+        break_label = org_break_label;
+        continue_label = org_continue_label;
         return 0;
-    }
     case ND_FOR:            //for (A;B;C) D
-    {
-        int cnt = label_cnt++;
-        char b_label[20]; sprintf(b_label, ".LForEnd%03d",  cnt); stack_push(break_stack, b_label);
-        char c_label[20]; sprintf(c_label, ".LForNext%03d", cnt); stack_push(continue_stack, c_label);
+        cnt = ++global_index;
+        org_break_label = break_label;
+        org_continue_label = continue_label;
+        sprintf(b_label, ".LForEnd%03d",  cnt); break_label = b_label;
+        sprintf(c_label, ".LForNext%03d", cnt); continue_label = c_label;
         comment("FOR(A;B;C)D\n");
         if (gen(node->lhs->lhs))//A
             printf("  pop rax\n");
@@ -592,19 +631,16 @@ static int gen(Node*node) {
             printf("  pop rax\n");
         printf("  jmp .LForBegin%03d\n", cnt);
         printf(".LForEnd%03d:\n", cnt);
-        stack_pop(break_stack);
-        stack_pop(continue_stack);
+        break_label = org_break_label;
+        continue_label = org_continue_label;
         return 0;
-    }
     case ND_BREAK:          //break
-        if (break_stack->len==0) error_at(node->input,"ここではbreakを使用できません");
-        label = (char*)stack_top(break_stack);
-        printf("  jmp %s\t# break\n", label);
+        if (break_label==NULL) error_at(node->input,"ここではbreakを使用できません");
+        printf("  jmp %s\t# break\n", break_label);
         return 0;
     case ND_CONTINUE:       //continue
-        if (continue_stack->len==0) error_at(node->input,"ここではcontinueを使用できません");
-        label = (char*)stack_top(continue_stack);
-        printf("  jmp %s\t# continue\n", label);
+        if (continue_label==NULL) error_at(node->input,"ここではcontinueを使用できません");
+        printf("  jmp %s\t# continue\n", continue_label);
         return 0;
     case ND_BLOCK:          //{ ブロック }
     {
@@ -747,8 +783,7 @@ static int gen(Node*node) {
         printf("  push rax\n");
         break;
     case ND_TRI_COND:       //A ? B * C（三項演算）
-    {
-        int cnt = label_cnt++;
+        cnt = ++global_index;
         comment("A ? B : C\n");
         gen(node->lhs);         //A
         printf("  pop rax\n");
@@ -760,7 +795,6 @@ static int gen(Node*node) {
         gen(node->rhs->rhs);    //C
         printf(".LTriEnd%03d:\n", cnt);
         break;
-    }
     default:                //2項演算子
         gen_op2(node);
     }
@@ -795,7 +829,7 @@ static void gen_op2(Node *node) {
 
     switch(node->type) {
     case ND_LOR:    //"||"
-        cnt = label_cnt++;
+        cnt = ++global_index;
         comment("'||'\n");
         printf("  cmp rax, 0\n");   //lhs
         printf("  jne .LTrue%03d\n", cnt);
@@ -808,7 +842,7 @@ static void gen_op2(Node *node) {
         printf(".LEnd%03d:\n", cnt);
         break;
     case ND_LAND:   //"&&"
-        cnt = label_cnt++;
+        cnt = ++global_index;
         comment("'&&'\n");
         printf("  cmp rax, 0\n");   //lhs
         printf("  je .LFalse%03d\n", cnt);

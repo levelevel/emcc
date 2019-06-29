@@ -42,10 +42,11 @@
     statement               = labeled_statement
                             | compound_statement    // { ... }
                             | expression? ";"       // expression_statement
-                            | "if" "(" expression ")" ( "else" expression )? statement
-                            | "switch" "(" expression ")" statement
+                            | selection_statement
                             | iteration_statement
                             | jump_statement
+        selection_statement = "if" "(" expression ")" ( "else" expression )? statement
+                            | "switch" "(" expression ")" statement
         iteration_statement = "while" "(" expression ")" statement
                             | "do" statement "while" "(" expression ")" ";"
                             | "for" "(" expression? ";" expression? ";" expression? ")" statement
@@ -624,6 +625,25 @@ static Type *declaration_specifiers(void) {
     return tp;
 }
 
+//重複をチェックしてcase,defaultをcur_switch->mapに登録する。
+void regist_case(Node *node) {
+    if (cur_switch==NULL) error_at(node->input, "switch文の中ではありません");
+    char *name;
+    if (node->type==ND_DEFAULT) {
+        name = "Default";
+    } else {
+        char buf[64];
+        if (node->val>=0) sprintf(buf, "Case%ld", node->val);
+        else              sprintf(buf, "CaseM%ld", -node->val);
+        name = malloc(strlen(buf)+1);
+        strcpy(name, buf);
+    }
+    node->name = name;
+    if (map_get(cur_switch->map, name, NULL)!=0)
+        error_at(node->input, "%sは重複しています", name);
+    map_put(cur_switch->map, name, node);
+}
+
 static Node *statement(void) {
     Node *node;
     char *input = input_str();
@@ -642,17 +662,20 @@ static Node *statement(void) {
         node = constant_expression();
         if (!consume(':')) error_at(input, "caseの後の:がありません");
         node = new_node(ND_CASE, node, statement(), node->tp, input);
+        node->val = node->lhs->val;
+        regist_case(node);
         return node;
     } else if (consume(TK_DEFAULT)) {
         if (!consume(':')) error_at(input, "defaultの後の:がありません");
         node = statement();
-        node = new_node(ND_CASE, NULL, node, node->tp, input);
+        node = new_node(ND_DEFAULT, NULL, node, node->tp, input);
+        regist_case(node);
         return node;
     } else if (token_is('{')) {
         return compound_statement();    //{ ブロック }
 
-    //select_statement
-    } else if (consume(TK_IF)) {    //if(A)B else C
+    //selection_statement
+    } else if (consume(TK_IF)) {        //if(A)B else C
         Node *node_A, *node_B;
         if (!consume('(')) error_at(input_str(), "ifの後に開きカッコがありません");
         node_A = expression();
@@ -667,11 +690,16 @@ static Node *statement(void) {
             node = new_node(ND_IF, node, NULL, NULL, input);
         }
         return node;
-    } else if (consume(TK_SWITCH)) {
+    } else if (consume(TK_SWITCH)) {    //switch (A) B
         if (!consume('(')) error_at(input_str(), "switchの後に開きカッコがありません");
         node = expression();
         if (!consume(')')) error_at(input_str(), "switchの開きカッコに対応する閉じカッコがありません");
-        node = new_node(ND_SWITCH, node, statement(), NULL, input);
+        node = new_node(ND_SWITCH, node, NULL, NULL, input);
+        node->map = new_map();
+        Node *org_cur_switch = cur_switch;
+        cur_switch = node;
+        node->rhs = statement();
+        cur_switch = org_cur_switch;
         return node;
 
     //iteration_statement

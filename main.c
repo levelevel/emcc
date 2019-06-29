@@ -56,8 +56,8 @@ int main(int argc, char*argv[])
     tokens = (Token**)token_vec->data;
     token_pos = 0;
     
-    break_stack = new_stack();
-    continue_stack = new_stack();
+    break_label = NULL;
+    continue_label = NULL;
     
     string_vec = new_vector();
     static_var_vec = new_vector();
@@ -66,6 +66,7 @@ int main(int argc, char*argv[])
     stack_push(symbol_stack, global_symbol_map);
     funcdef_map = new_map();
     global_index = 0;
+    cur_switch = NULL;
     translation_unit();
 
     // 抽象構文木を下りながらコード生成

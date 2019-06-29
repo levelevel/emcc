@@ -213,6 +213,10 @@ try $WR "int main(){char*p=0; return p;}"
 try $ER "goto;"
 try $ER "goto L1;"
 try $ER "L1:; L1:;"
+try $ER "case 1: ;"
+try $ER "default 1: ;"
+try $ER "switch(1){case 1:; case 1:;}"
+try $ER "switch(1){default:; default:;}"
 
 #多次元配列
 try $ER "int a[][3]={{1,2,3},{11,12,13}; return a[1][2]}"

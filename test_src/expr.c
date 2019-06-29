@@ -183,8 +183,16 @@ int goto1(void) {
     }
     L2: return i==10;
 }
-int loop() {
+int iterate() {
+    TEST(while1);
+    TEST(do1);
+    TEST(for1);
+    TEST(tri_cond);
+    TEST(goto1);
+    return 1;
+}
 
+static int if1() {
     if(0);
     if(0) while(0) if(1) while(0);
 
@@ -194,15 +202,34 @@ int loop() {
     int d=0; if(0) d=1; else d=2;
     int e=0; if(0) {e=1;} else if (1) {e=2;} else {e=3;}
 
-    TEST(while1);
-    TEST(do1);
-    TEST(for1);
-    TEST(tri_cond);
-    TEST(goto1);
     return d==2 && e==2 && sum1==55;
 }
+static int case1() {
+    int x, y, z;
+    switch (1) {
+    case 1: x=1;
+        switch ('b') {
+        case 'a': x=11; break;
+        case 'b': y=12;
+            switch (3) {
+            case 1: x=11; break;
+            case 2: y=12; break;
+            default: z=23; break;
+            }
+            break;
+        }
+        break;
+    case 2: y=2; break;
+    }
+    return x==1 && y==12 && z==23;
+}
+static int selection(void) {
+    TEST(if1);
+    TEST(case1);
+    return 1;
+}
 
-int inc() {
+static int inc() {
     int a=1, b, c, x[]={1,2,3,4}, *px=&x[0];
     b = a++;
     c = ++b;
@@ -1112,7 +1139,8 @@ int main() {
     TEST(addsub);
     TEST(eq_rel);
     TEST(func);
-    TEST(loop);
+    TEST(iterate);
+    TEST(selection);
     TEST(incdec);
     TEST(pointer);
     TEST(array);

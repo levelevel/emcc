@@ -13,12 +13,16 @@ typedef struct {
     int capacity;
     int len;
 } Vector;
+#define vec_len(vec) (vec)->len
+#define vec_data(vec,i) ((vec)->data[i])
 
 //マップ --------------------------------------------
 typedef struct {
     Vector *keys;
     Vector *vals;
 } Map;
+#define map_len(map) vec_len((map)->vals)
+#define map_data(map,i) vec_data((map)->vals,i)
 
 //トークン ------------------------------------------
 typedef enum {
@@ -118,10 +122,10 @@ typedef enum {
     ND_LOCAL_VAR_DEF,   //ローカル変数の定義・宣言
     ND_GLOBAL_VAR_DEF,  //グローバル変数の定義・宣言
     ND_IF,          // if(A)B else C    lhs->lhs=A, lhs->rhs=B, rhs=C
-    ND_SWITCH,      // switch(A)B       lhs=A, rhs=B
+    ND_SWITCH,      // switch(A)B       lhs=A, rhs=B, lst=node(ND_CASE,ND_DEFAULT)
     ND_LABEL,       // label:B          name=label, rhs=B
-    ND_CASE,        // case A:B;        lhs=A(constant), rhs=B
-    ND_DEFAULT,     // default:B        rhs=B
+    ND_CASE,        // case A:B;        val=A(constant), lhs=A, rhs=B, name="case:%ld"
+    ND_DEFAULT,     // default:A        rhs=A, name="default"
     ND_WHILE,       // while(A)B        lhs=A, rhs=B
     ND_DO,          // do A while(B);   lhs=A, rhs=B
     ND_FOR,         // for(A;B;C)D      lhs->lhs=A, lhs->rhs=B, rhs->lhs=C, rhs->rhs=D
@@ -183,8 +187,11 @@ struct _Node {
                     //typeがND_STRINGの場合のstring_vecのインデックス
     Node *lhs;
     Node *rhs;
+    union {
     Vector *lst;    //typeがND_BLOCKの場合のstatementのリスト
                     //typeがND_LISTの場合のassignmentのリスト
+    Map *map;       //typeがND_SWITCHの場合のND_CASEのマップ: key=node->val, val=node(ND_CASE)
+    };
     char *name;     //typeがND_LOCAL|GLOBAL_VAR[_DEF]の場合の変数名
                     //typeがND_FUNC_CALL|DEF|DECLの場合の関数名
     Type *tp;       //型情報
@@ -224,10 +231,10 @@ EXTERN Vector *token_vec;
 EXTERN Token **tokens;  //token_vec->data;
 EXTERN int token_pos;   //tokensの現在位置
 
-//break時のジャンプ先のラベルを示すスタック
-EXTERN Vector *break_stack;     //value=文字列
-//continue時のジャンプ先のラベルを示すスタック
-EXTERN Vector *continue_stack;  //value=文字列
+//break時のジャンプ先のラベルを示す
+EXTERN char *break_label;
+//continue時のジャンプ先のラベルを示す
+EXTERN char *continue_label;
 
 //文字列リテラル
 EXTERN Vector *string_vec;      //value=文字列リテラル
@@ -248,8 +255,11 @@ EXTERN Funcdef *cur_funcdef;
 //プログラム（関数定義）の管理
 EXTERN Map *funcdef_map;    //key=name, value=Funcdef
 
-//static変数用のユニークなIDを生成するためのindex
+//ラベル・static変数のユニークなIDを生成するためのindex
 EXTERN int global_index;
+
+//現在処理中のswitch文: cur_switch->valをラベルの識別indexとして用いる
+EXTERN Node *cur_switch;
 
 //現在のトークン（エラー箇所）の入力文字列
 #define input_str() (tokens[token_pos]->input)
