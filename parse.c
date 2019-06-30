@@ -1264,15 +1264,16 @@ static Node *postfix_expression(void) {
 //終端記号：数値、識別子、カッコ
 static Node *primary_expression(void) {
     Node *node;
-    char *name;
+    long val;
+    char *name, *str;
     char *input = input_str();
     if (consume('(')) {
         node = expression();
         expect(')');
-    } else if (consume(TK_NUM)) {
-        node = new_node_num(tokens[token_pos-1]->val, input);
-    } else if (consume(TK_STRING)) {
-        node = new_node_string(tokens[token_pos-1]->str, input);
+    } else if (consume_num(&val)) {
+        node = new_node_num(val, input);
+    } else if (consume_string(&str)) {
+        node = new_node_string(str, input);
     } else if (consume_ident(&name)) {
         //すでに出現済みであればその参照に決まる(ND_LOCAL_VAR/ND_GLOBAL_VAR/ND_ENUMなど)
         node = new_node_ident(name, input);

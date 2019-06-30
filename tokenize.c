@@ -63,6 +63,7 @@ TokenDef TokenLst2[] = {
     {TK("register"), TK_REGISTER},
     {TK("static"),   TK_STATIC},
     {TK("extern"),   TK_EXTERN},
+    {TK("typedef"),  TK_TYPEDEF},
 //  {TK("volatile"), TK_VOLATILE},
 //  {TK("restrict"), TK_RESTRICT},
     {TK("const"),    TK_CONST},
@@ -212,4 +213,63 @@ void dump_tokens(void) {
             printf("%d: type='%d', val=%ld, input='%s'\n", i, tp->type, tp->val, tp->input);
         }
     }
+}
+
+// ==================================================
+// 以下はparse.cローカル
+
+//次のトークンが期待したものかどうかをチェックし、
+//期待したものの場合だけ入力を1トークン読み進めて真を返す
+int consume(TKtype type) {
+    if (tokens[token_pos]->type != type) return 0;
+    token_pos++;
+    return 1;
+}
+
+//次のトークンが数値(TK_NUM)かどうかをチェックし、
+//その場合は数値を取得し、入力を1トークン読み進めて真を返す
+int consume_num(long *valp) {
+    if (tokens[token_pos]->type != TK_NUM) return 0;
+    *valp = tokens[token_pos]->val;
+    token_pos++;
+    return 1;
+}
+
+//次のトークンが識別子(TK_STRING)かどうかをチェックし、
+//その場合はstrを取得し、入力を1トークン読み進めて真を返す
+int consume_string(char **str) {
+    if (tokens[token_pos]->type != TK_STRING) return 0;
+    *str = tokens[token_pos]->str;
+    token_pos++;
+    return 1;
+}
+
+//次のトークンが識別子(TK_IDENT)かどうかをチェックし、
+//その場合はnameを取得し、入力を1トークン読み進めて真を返す
+int consume_ident(char **name) {
+    if (tokens[token_pos]->type != TK_IDENT) return 0;
+    *name = tokens[token_pos]->str;
+    token_pos++;
+    return 1;
+}
+
+// 次のトークンが期待したものの場合、トークンを1つ読み進める。
+// それ以外の場合にはエラーを報告する。
+void expect(TKtype type) {
+    if (tokens[token_pos++]->type == type) return;
+    if (type<128) {
+        error_at(input_str(), "%cが期待されています", type);
+    } else {
+        error_at(input_str(), "%sが期待されています", get_NDtype_str(type));
+    }
+}
+
+//次のトークンが識別子(TK_IDENT)であればnameを取得し、トークンを1つ読み進める。
+// それ以外の場合にはエラーを報告する。
+void expect_ident(char**name, const char*str) {
+    if (tokens[token_pos]->type != TK_IDENT) {
+        error_at(input_str(), "識別子（%s）が期待されています", str);
+    }
+    *name = tokens[token_pos]->str;
+    token_pos++;
 }

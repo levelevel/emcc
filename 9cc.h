@@ -45,6 +45,7 @@ typedef enum {
     TK_REGISTER,    //storage_class
     TK_STATIC,      //storage_class
     TK_EXTERN,      //storage_class
+    TK_TYPEDEF,     //storage_class
     TK_INC,         // ++
     TK_DEC,         // --
     TK_EQ,          // ==
@@ -284,6 +285,15 @@ EXTERN Node *cur_switch;
 void tokenize(char *p);
 void dump_tokens(void);
 
+#ifdef _PARSE_C_
+int consume(TKtype type);
+int consume_num(long *valp);
+int consume_string(char **str);
+int consume_ident(char**name);
+void expect(TKtype type);
+void expect_ident(char**name, const char*str);
+#endif
+
 // parse_util.c
 long size_of(const Type *tp);
 int align_of(const Type *tp);
@@ -293,11 +303,6 @@ int type_is_static(Type *tp);
 int type_is_extern(Type *tp);
 
 #ifdef _PARSE_C_
-int consume(TKtype type);
-int consume_ident(char**name);
-void expect(TKtype type);
-void expect_ident(char**name, const char*str);
-
 void regist_var_def(Node *node);
 void regist_symbol(Node *node);
 void regist_tagname(Node *node);
