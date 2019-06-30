@@ -14,7 +14,6 @@ https://www.sigbus.info/compilerbook/
 - 関数の引数の型チェック
 - 多次元配列の初期化
 - \による文字のエスケープ
-- enum
 - typedef
 - **構造体の実装**
   - .

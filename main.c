@@ -50,23 +50,26 @@ int main(int argc, char*argv[])
     }
 
     // トークナイズしてパースする
-    token_vec = new_vector();
+    token_vec          = new_vector();
     tokenize(user_input);
 
-    tokens = (Token**)token_vec->data;
-    token_pos = 0;
+    tokens             = (Token**)token_vec->data;
+    token_pos          = 0;
     
-    break_label = NULL;
-    continue_label = NULL;
+    break_label        = NULL;
+    continue_label     = NULL;
     
-    string_vec = new_vector();
-    static_var_vec = new_vector();
-    global_symbol_map = new_map();
-    symbol_stack = new_stack();
-    stack_push(symbol_stack, global_symbol_map);
-    funcdef_map = new_map();
-    global_index = 0;
-    cur_switch = NULL;
+    string_vec         = new_vector();
+    static_var_vec     = new_vector();
+    global_symbol_map  = new_map();
+    global_tagname_map = new_map();
+    symbol_stack       = new_stack();
+    tagname_stack      = new_stack();
+    stack_push(symbol_stack,  global_symbol_map);
+    stack_push(tagname_stack, global_tagname_map);
+    funcdef_map        = new_map();
+    global_index       = 0;
+    cur_switch         = NULL;
     translation_unit();
 
     // 抽象構文木を下りながらコード生成

@@ -205,12 +205,13 @@ struct _Node {
 };
 
 typedef struct {
-    char *name;     //関数名
-    Node *node;     //ND_FUNC_DEFのnode
-    Type *tp;       //関数の型(常にFUNC)
-    Map *ident_map; //ローカル変数：key=name, val=Node
-    Map *label_map; //ラベル：key=name, val=Node
-    int var_stack_size; //ローカル変数のために必要となるスタックサイズ（offset）
+    char    *name;          //関数名
+    Node    *node;          //ND_FUNC_DEFのnode
+    Type    *tp;            //関数の型(常にFUNC)
+    Map     *symbol_map;    //通常の識別子：key=name, val=Node(ND_LOCAL_VAR_DEFなど)
+    Map     *tagname_map;   //タグ名：key=name, val=Node(ND_ENUN_DEFなど)
+    Map     *label_map;     //ラベル：key=name, val=Node(ND_LABEL)
+    int     var_stack_size; //ローカル変数のために必要となるスタックサイズ（offset）
 } Funcdef;
 
 //型がinteger型であるか
@@ -249,11 +250,13 @@ EXTERN Vector *string_vec;      //value=文字列リテラル
 EXTERN Vector *static_var_vec;  //value=node
 
 //グローバルシンボル
-EXTERN Map *global_symbol_map;  //key=name, value=Node
+EXTERN Map *global_symbol_map;  //通常の識別子：key=name, val=Node(ND_GLOBAL_VAR_DEFなど)
+EXTERN Map *global_tagname_map; //タグ名：key=name, val=Node(ND_ENUN_DEFなど)
 
 //スコープごとのシンボルの管理
 //（グローバルシンボル(global_symbol_map)→関数のローカルシンボル(cur_funcdef->ident_map)→ブロックのシンボル→...）
-EXTERN Stack *symbol_stack;     //value=node
+EXTERN Stack *symbol_stack;     //value=Map
+EXTERN Stack *tagname_stack;    //value=Map
 
 //現在の関数定義
 EXTERN Funcdef *cur_funcdef;
@@ -297,6 +300,7 @@ void expect_ident(char**name, const char*str);
 
 void regist_var_def(Node *node);
 void regist_symbol(Node *node);
+void regist_tagname(Node *node);
 void regist_label(Node *node);
 void regist_case(Node *node);
 
@@ -345,6 +349,8 @@ int   stack_push(Stack *stack, void*elem);
 void *stack_pop(Stack *stack);
 void *stack_get(Stack *stack, int idx);
 #define stack_top(stack) stack_get(stack,stack->len-1)
+#define stack_len  vec_len
+#define stack_data vec_data
 
 char* get_type_str(const Type *tp);
 char* get_func_args_str(const Node *node);

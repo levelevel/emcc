@@ -202,6 +202,7 @@ static Node *function_definition(Type *tp, char *name) {
         node->rhs = compound_statement();
         map_put(funcdef_map, node->name, cur_funcdef);
         stack_pop(symbol_stack);
+        stack_pop(tagname_stack);
         check_func_return(cur_funcdef);        //関数の戻り値を返しているかチェック
     } else {                //関数宣言
         consume(';');
@@ -673,7 +674,7 @@ static Node *enum_specifier(void) {
         expect('{');
     }
     node->tp->node = node;
-    if (name) regist_symbol(node);
+    if (name) regist_tagname(node);
     return node;
 }
 static Node *enumerator(Node *enum_def, int default_val) {
@@ -765,6 +766,7 @@ static Node *statement(void) {
     } else if (consume(TK_FOR)) {   //for(A;B;C)D       lhs->lhs=A, lhs->rhs=B, rhs->lhs=C, rhs->rhs=D
         Node *node1, *node2;
         stack_push(symbol_stack, new_map());
+        stack_push(tagname_stack, new_map());
         expect('(');
         if (consume(';')) {
             node1 = new_node_empty(input_str());
@@ -790,6 +792,7 @@ static Node *statement(void) {
         node2 = new_node(ND_UNDEF, node1, statement(), NULL, input);     //C,D
         node = new_node(ND_FOR, node, node2, NULL, input);   //(A,B),(C,D)
         stack_pop(symbol_stack);
+        stack_pop(tagname_stack);
         return node;
 
     //jump_statement
@@ -829,6 +832,7 @@ static Node *compound_statement(void) {
 
     node = new_node_block(input_str());
     stack_push(symbol_stack, new_map());
+    stack_push(tagname_stack, new_map());
     while (!consume('}')) {
         Node *block;
         if (token_is_type_spec()) {
@@ -839,6 +843,7 @@ static Node *compound_statement(void) {
         vec_push(node->lst, block);
     }
     stack_pop(symbol_stack);
+    stack_pop(tagname_stack);
     return node;
 }
 

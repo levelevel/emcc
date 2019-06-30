@@ -1136,28 +1136,38 @@ static int cast(void) {
 }
 
     enum ABC ;
-    enum ABC {A,B,C=100,D,E=C,} e1g_e=E;
+    enum ABC {AA,BB,C=100,D,E=C,} e1g_e=E;
     enum ABC ;
     static enum {P=-1,Q=-2,R=-3} e1g_ae;
+    static int ABC;    //変数名とタグ名は名前空間が別
 static int enum1g(void) {
     int x=0;
     e1g_ae = R;
     switch (e1g_e) {
-    case A:  x=A+1; break;
+    case AA:  x=AA+1; break;
     case E:  x=E+1; break;
     default: x=0;
     }
-    return A==0 && B==1 && C==100 && D==C+1 && E==C && e1g_e==E && x==E+1 && e1g_ae==-3;
+    {
+        enum ABC e2;
+        e2 = D;
+    }
+    return AA==0 && BB==1 && C==100 && D==C+1 && E==C && e1g_e==E && x==E+1 && e1g_ae==-3;
 }
 static int enum1(void) {
     enum ABC ;
     enum ABC {A,B,C=10,D,E=C,} e=E;
     static enum {P=-1,Q=-2,R=-3} ae; ae = R;
     int x=0;
+    int ABC;    //変数名とタグ名は名前空間が別
     switch (e) {
     case A:  x=A+1; break;
     case E:  x=E+1; break;
     default: x=0;
+    }
+    {
+        enum ABC e2;
+        e2 = D;
     }
     return A==0 && B==1 && C==10 && D==C+1 && E==C && e==E && x==E+1 && ae==-3;
 }

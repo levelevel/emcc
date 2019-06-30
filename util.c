@@ -110,7 +110,7 @@ static void dump_type(char *buf, const Type *tp) {
         if (tp->node) strcat(buf, get_func_args_str(tp->node->lhs));
         strcat(buf, ")");
     } else if (tp->type==ENUM) {
-        strcat_word(buf, tp->node->name?tp->node->name:"(anonymouse)");
+        strcat_word(buf, tp->node->name?tp->node->name:"(anonymous)");
     }
     if (tp->ptr_of) dump_type(buf, tp->ptr_of);
 }

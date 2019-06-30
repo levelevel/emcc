@@ -259,6 +259,18 @@ void regist_symbol(Node *node) {
     Map *symbol_map = stack_top(symbol_stack); 
     if (map_get(symbol_map, name, (void**)&node2)==0) {
         map_put(symbol_map, name, node);
+    } else {
+        error_at(node->input, "'%s'はシンボルの重複定義です", name);
+    }
+}
+
+//タグ名を登録
+void regist_tagname(Node *node) {
+    char *name = node->name;
+    Node *node2;
+    Map *tagname_map = stack_top(tagname_stack); 
+    if (map_get(tagname_map, name, (void**)&node2)==0) {
+        map_put(tagname_map, name, node);
     } else if (node2->type==ND_ENUM_DEF && node->type==ND_ENUM_DEF) {
         if (node2->lst!=NULL && node->lst!=NULL)
             error_at(node->input, "enumの重複定義です");
@@ -392,8 +404,9 @@ int get_var_offset(const Type *tp) {
 Funcdef *new_funcdef(void) {
     Funcdef * funcdef;
     funcdef = calloc(1, sizeof(Funcdef));
-    funcdef->ident_map = new_map();
-    funcdef->label_map = new_map();
+    funcdef->symbol_map  = new_map();
+    funcdef->tagname_map = new_map();
+    funcdef->label_map   = new_map();
     return funcdef;
 }
 
@@ -468,7 +481,7 @@ Node *new_node_string(char *string, char *input) {
 //nameをスコープの内側から検索してNodeを返す
 static Node *search_symbol(const char *name) {
     Node *node = NULL;
-    for (int i=symbol_stack->len-1; i>=0; i--) {
+    for (int i=stack_len(symbol_stack)-1; i>=0; i--) {
         Map *symbol_map = (Map*)stack_get(symbol_stack, i);
         if (map_get(symbol_map, name, (void**)&node)!=0) {
             return node;
@@ -567,7 +580,8 @@ Node *new_node_func_def(char *name, Type *tp, char *input) {
     cur_funcdef->tp = tp;
     cur_funcdef->node = node;
     cur_funcdef->name = node->name;
-    stack_push(symbol_stack, cur_funcdef->ident_map);   //popはfunction_definition()で行う
+    stack_push(symbol_stack,  cur_funcdef->symbol_map);     //popはfunction_definition()で行う
+    stack_push(tagname_stack, cur_funcdef->tagname_map);    //popはfunction_definition()で行う
 
     //関数をシンボルとして登録する
     Node *def_node;
