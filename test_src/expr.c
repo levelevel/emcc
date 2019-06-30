@@ -1135,6 +1135,38 @@ static int cast(void) {
         c2[0]==2 && c2[3]==5;
 }
 
+    enum ABC ;
+    enum ABC {A,B,C=100,D,E=C,} e1g_e=E;
+    enum ABC ;
+    static enum {P=-1,Q=-2,R=-3} e1g_ae;
+static int enum1g(void) {
+    int x=0;
+    e1g_ae = R;
+    switch (e1g_e) {
+    case A:  x=A+1; break;
+    case E:  x=E+1; break;
+    default: x=0;
+    }
+    return A==0 && B==1 && C==100 && D==C+1 && E==C && e1g_e==E && x==E+1 && e1g_ae==-3;
+}
+static int enum1(void) {
+    enum ABC ;
+    enum ABC {A,B,C=10,D,E=C,} e=E;
+    static enum {P=-1,Q=-2,R=-3} ae; ae = R;
+    int x=0;
+    switch (e) {
+    case A:  x=A+1; break;
+    case E:  x=E+1; break;
+    default: x=0;
+    }
+    return A==0 && B==1 && C==10 && D==C+1 && E==C && e==E && x==E+1 && ae==-3;
+}
+static int Enum(void) {
+    TEST(enum1);
+    TEST(enum1g);
+    return 1;
+}
+
 int main() {
     TEST(addsub);
     TEST(eq_rel);
@@ -1155,6 +1187,7 @@ int main() {
     TEST(ext);
     TEST(declarate);
     TEST(cast);
+    TEST(Enum);
     //printf("%s:%d func=%s\n",__FILE__, __LINE__, __func__);
     return 0;
 }

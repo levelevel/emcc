@@ -72,13 +72,26 @@ void *stack_get(Stack *stack, int idx) {
 }
 
 // ダンプ関数 ----------------------------------------
-static const char *TypeStr[] = {"Nul", "void", "char", "short", "int", "long", "long long", "*", "[", "func(", "CONST"};
+static const char *TypeStr[] = {
+    "Nul",
+    "void",
+    "char",
+    "short",
+    "int",
+    "long",
+    "long long",
+    "enum",
+    "*",
+    "[",
+    "func(",
+    "CONST",
+    };
 static const char *SClassStr[] = {"", "auto ", "register ", "static ", "extern "};
 
 static void strcat_word(char *buf, const char *str) {
     char last_char = 0;
     int len;
-    last_char = ((len=strlen(buf))>0) ? buf[len] : 0; 
+    last_char = ((len=strlen(buf))>0) ? buf[len-1] : 0; 
     if (isalnum(last_char) && isalnum(*str)) strcat(buf, " ");
     strcat(buf, str);
 }
@@ -96,6 +109,8 @@ static void dump_type(char *buf, const Type *tp) {
     } else if (tp->type==FUNC) {
         if (tp->node) strcat(buf, get_func_args_str(tp->node->lhs));
         strcat(buf, ")");
+    } else if (tp->type==ENUM) {
+        strcat_word(buf, tp->node->name?tp->node->name:"(anonymouse)");
     }
     if (tp->ptr_of) dump_type(buf, tp->ptr_of);
 }
@@ -164,7 +179,7 @@ char *get_func_args_str(const Node *node) {
     return ret;
 }
 
-static const char *get_NDtype_str(NDtype type) {
+const char *get_NDtype_str(NDtype type) {
     #define NDTYPE_CASE(val) case val: return #val
     switch (type) {
     NDTYPE_CASE(ND_UNDEF);
@@ -183,6 +198,9 @@ static const char *get_NDtype_str(NDtype type) {
     NDTYPE_CASE(ND_NUM);
     NDTYPE_CASE(ND_STRING);
     NDTYPE_CASE(ND_IDENT);
+    NDTYPE_CASE(ND_TYPE_DECL);
+    NDTYPE_CASE(ND_ENUM_DEF);
+    NDTYPE_CASE(ND_ENUM);
     NDTYPE_CASE(ND_LOCAL_VAR);
     NDTYPE_CASE(ND_GLOBAL_VAR);
     NDTYPE_CASE(ND_CAST);

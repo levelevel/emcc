@@ -8,7 +8,7 @@
     external_declaration    = function_definition | declaration
     function_definition     = declaration_specifiers declarator compound_statement
 - A.2.2 Declarations          http://port70.net/~nsz/c/c11/n1570.html#A.2.2
-    declaration             = declaration_specifiers init_declarator ( "," init_declarator )* ";"
+    declaration             = declaration_specifiers ( init_declarator ( "," init_declarator )* )? ";"
     declaration_specifiers  = "typeof" "(" identifier ")"
                             | type_specifier          declaration_specifiers*
                             | storage_class_specifier declaration_specifiers*
@@ -16,6 +16,10 @@
     init_declarator         = declarator ( "=" initializer )?
     storage_class_specifier = "static" | "extern"
     type_specifier          = "void" | "char" | "short" | "int" | "long" | "signed" | "unsigned"
+                            | enum_specifier
+    enum_specifier          = "enum" identifier? "{" enumerator ( "," enumerator )* ","? "}"
+                            | "enum" identifier
+    enumerator              = enumeration_constant ( "=" constant-expression )?
     type_qualifier          = "const"
     declarator              = pointer? direct_declarator
     direct_declarator       = identifier | "(" declarator ")"
@@ -103,12 +107,14 @@ static Node *parameter_type_list(void);
 static Node *parameter_declaration(void);
 static Node *initializer(void);
 static Node *init_list(void);
+static Type *array_def(Type *tp);
 static Type *pointer(Type *tp);
 static Type *type_name(void);
 static Type *abstract_declarator(Type *tp);
 static Type *direct_abstract_declarator(Type *tp);
 static Type *declaration_specifiers(void);
-static Type *array_def(Type *tp);
+static Node *enum_specifier(void);
+static Node *enumerator(Node *enum_def, int default_val);
 
 static Node *statement(void);
 static Node *compound_statement(void);
@@ -148,6 +154,7 @@ static Node *external_declaration(void) {
     //          <-> declaration_specifiers
     //             <-> pointer* (declarator|init_declarator)
     //                <-> identifier (declarator|init_declarator)
+    // 型宣言：  int;
     // 関数定義：int * foo (int a){
     // 関数宣言：int * foo (int a);
     //          int * foo (int);
@@ -159,6 +166,10 @@ static Node *external_declaration(void) {
     //                ^ここでdeclarationが確定
     if (token_is_type_spec()) {
         tp = declaration_specifiers();
+        if (consume(';')) {
+            node = new_node(ND_TYPE_DECL, NULL, NULL, tp, input_str());
+            return node;
+        }
         tp = pointer(tp);
         if (token_is('(')) {    //int * ()
             node = declaration(tp, NULL);
@@ -168,7 +179,6 @@ static Node *external_declaration(void) {
             node = function_definition(tp, name);
         } else {
             node = declaration(tp, name);
-            //if (!consume(';')) error_at(input_str(), "; がありません");
         }
     } else if (consume(';')) {
         //仕様書に記載はない？が、空の ; を読み飛ばす。
@@ -202,7 +212,7 @@ static Node *function_definition(Type *tp, char *name) {
     return node;
 }
 
-//    declaration             = declaration_specifiers init_declarator ( "," init_declarator )* ";"
+//    declaration             = declaration_specifiers ( init_declarator ( "," init_declarator )* )? ";"
 //    init_declarator         = declarator ( "=" initializer )?
 //    declarator              = pointer? direct_declarator
 //declaration_specifiers, pointer, identifierまで先読み済み
@@ -213,6 +223,10 @@ static Node *declaration(Type *tp, char *name) {
     if (tp==NULL) {
         //declaration_specifiers, pointer, identifierを先読みしていなければdecl_specを読む
         decl_spec = declaration_specifiers();
+        if (consume(';')) {
+            node = new_node(ND_TYPE_DECL, NULL, NULL, decl_spec, input_str());
+            return node;
+        }
     } else {
         // 関数定義：int * foo (){}
         // 変数定義：int * ptr ;
@@ -237,7 +251,7 @@ static Node *declaration(Type *tp, char *name) {
         }
         node->tp = last_node->tp;
     }
-    if (!consume(';')) error_at(input_str(), "; がありません");
+    expect(';');
     return node;
 }
 
@@ -280,7 +294,7 @@ static Node *init_declarator(Type *decl_spec, Type *tp, char *name) {
     }
 
     regist_var_def(node);   //ND_UNDEF -> ND_(LOCAL|GLOBAL)_VAR_DEFに確定する。ND_FUNC_DECLはそのまま
-    if (rhs) node->rhs = new_node('=', new_node_var(name, input), rhs, tp, input);
+    if (rhs) node->rhs = new_node('=', new_node_ident(name, input), rhs, tp, input);
 
     //初期値のないサイズ未定義のARRAYはエラー
     //externの場合はOK
@@ -339,9 +353,9 @@ static Node *direct_declarator(Type *tp, char *name) {
             node = declarator(new_type(NEST, 0), NULL, name);
             nest_tp = node->tp;
             name = node->name;
-            if (!consume(')')) error_at(input_str(), "閉じかっこがありません");
+            expect(')');
         } else {
-            if (!consume_ident(&name)) error_at(input_str(), "型名の後に識別名がありません");
+            expect_ident(&name, "変数名・関数名");
         }
     }
     if (consume('(')) { //関数定義・宣言確定
@@ -369,7 +383,7 @@ static Node *direct_declarator(Type *tp, char *name) {
             if (org_funcdef) cur_funcdef = org_funcdef;
         }
         tp->node = node;
-        if (!consume(')')) error_at(input_str(), "閉じかっこがありません");
+        expect(')');
         //dump_node(node, __func__);
         return node;
     } else if (tp->type==VOID) {
@@ -433,7 +447,7 @@ static Node *initializer(void) {
     if (consume('{')) {
         node = init_list();
         consume(',');
-        if (!consume('}')) error_at(input_str(),"初期化式の閉じカッコ } がありません");
+        expect('}');
     } else {
         node = assignment_expression();
     }
@@ -470,7 +484,7 @@ static Type *array_def(Type *tp) {
             node = constant_expression();
             if (node->val==0) error_at(input, "配列のサイズが0です");
             tp = new_type_array(tp, node->val);
-            if (!consume(']')) error_at(input_str(), "配列サイズの閉じかっこ ] がありません"); 
+            expect(']'); 
         }
         ret_tp = tp;
         // ret_tp=tp=ARRAY[10] -> PTR -> INT 
@@ -482,7 +496,7 @@ static Type *array_def(Type *tp) {
         if (node->val==0) error_at(input, "配列のサイズが0です");
         tp->ptr_of = new_type_array(tp->ptr_of, node->val);
         tp = tp->ptr_of;
-        if (!consume(']')) error_at(input_str(), "配列サイズの閉じかっこ ] がありません"); 
+        expect(']'); 
         // ARRAYのリストの最後に挿入してゆく
         // ret_tp=tp=ARRAY[10]                               -> PTR -> INT 
         // ret_tp=   ARRAY[10] -> tp=ARRAY[2]                -> PTR -> INT 
@@ -535,7 +549,7 @@ static Type *abstract_declarator(Type *tp) {
 static Type *direct_abstract_declarator(Type *tp) {
     if (consume('(')){
         tp = abstract_declarator(tp);
-        if (!consume(')')) error_at(input_str(), "閉じかっこがありません");
+        expect(')');
     }
     if (token_is('[')) tp = array_def(tp);
     return tp;
@@ -549,17 +563,18 @@ static Type *declaration_specifiers(void) {
     Type *tp;
 
     if (consume(TK_TYPEOF)) {
-        if (!consume('(')) error_at(input_str(), "typeofの後に開きカッコがありません");
+        expect('(');
         char *name;
-        if (!consume_ident(&name)) error_at(input_str(), "識別子がありません");
-        Node *node = new_node_var(name, NULL);
+        expect_ident(&name, "変数名");
+        Node *node = new_node_ident(name, NULL);
         tp = get_typeof(node->tp);
-        if (!consume(')')) error_at(input_str(), "typeofの後に閉じカッコがありません");
+        expect(')');
     	return tp;
     }
 
+    Node *node = NULL;
     char *input;
-    Typ type = 0;
+    TPType type = 0;
     StorageClass sclass = SC_UNDEF;
     int is_unsigned = -1;
     int pre_const = 0;  //型の前にconstがある：const int
@@ -583,6 +598,10 @@ static Type *declaration_specifiers(void) {
             if (type==LONG) type = LONGLONG;
             else if (type && type!=INT) error_at(input, "型指定が不正です\n");
             else type = LONG;
+        } else if (consume(TK_ENUM)) {
+            if (type) error_at(input, "型指定が不正です\n");
+            type = ENUM;
+            node = enum_specifier();
         } else if (consume(TK_SIGNED)) {
             if (is_unsigned>=0) error_at(input, "型指定が不正です\n");
             is_unsigned = 0;
@@ -614,7 +633,11 @@ static Type *declaration_specifiers(void) {
     }
 
     if (is_unsigned<0) is_unsigned = 0;
-    tp = new_type(type, is_unsigned);
+    if (node) {
+        tp = node->tp;
+    } else {
+        tp = new_type(type, is_unsigned);
+    }
     tp->sclass = sclass;
     if (pre_const) tp->is_const = 1;
     if (post_const) {
@@ -625,23 +648,47 @@ static Type *declaration_specifiers(void) {
     return tp;
 }
 
-//重複をチェックしてcase,defaultをcur_switch->mapに登録する。
-void regist_case(Node *node) {
-    if (cur_switch==NULL) error_at(node->input, "switch文の中ではありません");
-    char *name;
-    if (node->type==ND_DEFAULT) {
-        name = "Default";
+//    enum_specifier          = "enum" identifier? "{" enumerator ( "," enumerator )* ","? "}"
+//                            | "enum" identifier
+//    enumerator              = enumeration_constant ( "=" constant-expression )?
+static Node *enum_specifier(void) {
+    Node *node = new_node(ND_ENUM_DEF, NULL, NULL, new_type(ENUM, 0), input_str());
+    char *name = NULL;
+    if (consume_ident(&name)) {
+        node->name = name;
     } else {
-        char buf[64];
-        if (node->val>=0) sprintf(buf, "Case%ld", node->val);
-        else              sprintf(buf, "CaseM%ld", -node->val);
-        name = malloc(strlen(buf)+1);
-        strcpy(name, buf);
+        //node->name = "(anonymouse)";
     }
+    if (consume('{')) {
+        Node *em = enumerator(node, 0);
+        node->lst = new_vector();
+        vec_push(node->lst, em);
+        while (consume(',')) {
+            if (token_is('}')) break;
+            em = enumerator(node, em->val+1);
+            vec_push(node->lst, em);
+        }
+        expect('}');
+    } else if (name==NULL) {
+        expect('{');
+    }
+    node->tp->node = node;
+    if (name) regist_symbol(node);
+    return node;
+}
+static Node *enumerator(Node *enum_def, int default_val) {
+    Node *node = new_node(ND_ENUM, enum_def, NULL, new_type(INT, 0), input_str());
+    char *name;
+    expect_ident(&name, "enum名");
     node->name = name;
-    if (map_get(cur_switch->map, name, NULL)!=0)
-        error_at(node->input, "%sは重複しています", name);
-    map_put(cur_switch->map, name, node);
+    if (consume('=')) {
+        Node *c = constant_expression();
+        node->val = c->val;
+    } else {
+        node->val = default_val;
+    }
+    regist_symbol(node);
+    return node;
 }
 
 static Node *statement(void) {
@@ -651,7 +698,7 @@ static Node *statement(void) {
     // labeled_statement
     if (token_is(TK_IDENT) && next_token_is(':')) {
         char *name;
-        consume_ident(&name);
+        expect_ident(&name, "ラベル名");
         consume(':');
         node = statement();
         node = new_node(ND_LABEL, NULL, node, node->tp, input);
@@ -660,13 +707,13 @@ static Node *statement(void) {
         return node;
     } else if (consume(TK_CASE)) {
         node = constant_expression();
-        if (!consume(':')) error_at(input, "caseの後の:がありません");
+        expect(':');
         node = new_node(ND_CASE, node, statement(), node->tp, input);
         node->val = node->lhs->val;
         regist_case(node);
         return node;
     } else if (consume(TK_DEFAULT)) {
-        if (!consume(':')) error_at(input, "defaultの後の:がありません");
+        expect(':');
         node = statement();
         node = new_node(ND_DEFAULT, NULL, node, node->tp, input);
         regist_case(node);
@@ -677,9 +724,9 @@ static Node *statement(void) {
     //selection_statement
     } else if (consume(TK_IF)) {        //if(A)B else C
         Node *node_A, *node_B;
-        if (!consume('(')) error_at(input_str(), "ifの後に開きカッコがありません");
+        expect('(');
         node_A = expression();
-        if (!consume(')')) error_at(input_str(), "ifの開きカッコに対応する閉じカッコがありません");
+        expect(')');
         input = input_str();
         node_B = statement();
         node = new_node(ND_UNDEF, node_A, node_B, NULL, input); //lhs
@@ -691,9 +738,9 @@ static Node *statement(void) {
         }
         return node;
     } else if (consume(TK_SWITCH)) {    //switch (A) B
-        if (!consume('(')) error_at(input_str(), "switchの後に開きカッコがありません");
+        expect('(');
         node = expression();
-        if (!consume(')')) error_at(input_str(), "switchの開きカッコに対応する閉じカッコがありません");
+        expect(')');
         node = new_node(ND_SWITCH, node, NULL, NULL, input);
         node->map = new_map();
         Node *org_cur_switch = cur_switch;
@@ -704,41 +751,41 @@ static Node *statement(void) {
 
     //iteration_statement
     } else if (consume(TK_WHILE)) { //while(A)B         lhs=A, rhs=B
-        if (!consume('(')) error_at(input_str(), "whileの後に開きカッコがありません");
+        expect('(');
         node = expression();
-        if (!consume(')')) error_at(input_str(), "whileの開きカッコに対応する閉じカッコがありません");
+        expect(')');
         node = new_node(ND_WHILE, node, statement(), NULL, input);
         return node;
     } else if (consume(TK_DO)) {    //do A while(B);    lhs=A, rhs=B
         node = statement();
         if (!consume(TK_WHILE)) error_at(input_str(), "doに対応するwhileがありません");
-        if (!consume('(')) error_at(input_str(), "whileの後に開きカッコがありません");
+        expect('(');
         node = new_node(ND_DO, node, expression(), NULL, input);
-        if (!consume(')')) error_at(input_str(), "whileの開きカッコに対応する閉じカッコがありません");
+        expect(')');
     } else if (consume(TK_FOR)) {   //for(A;B;C)D       lhs->lhs=A, lhs->rhs=B, rhs->lhs=C, rhs->rhs=D
         Node *node1, *node2;
         stack_push(symbol_stack, new_map());
-        if (!consume('(')) error_at(input_str(), "forの後に開きカッコがありません");
+        expect('(');
         if (consume(';')) {
             node1 = new_node_empty(input_str());
         } else if (token_is_type_spec()) {
             node1 = declaration(NULL, NULL);
         } else {
             node1 = expression();         //A
-            if (!consume(';')) error_at(input_str(), "forの1個目の;がありません");
+            expect(';');
         }
         if (consume(';')) {
             node2 = new_node_empty(input_str());
         } else {
             node2 = expression();         //B
-            if (!consume(';')) error_at(input_str(), "forの2個目の;がありません");
+            expect(';');
         }
         node = new_node(ND_UNDEF, node1, node2, NULL, input);       //A,B
         if (consume(')')) {
             node1 = new_node_empty(input_str());
         } else {
             node1 = expression();         //C
-            if (!consume(')')) error_at(input_str(), "forの開きカッコに対応する閉じカッコがありません");
+            expect(')');
         }
         node2 = new_node(ND_UNDEF, node1, statement(), NULL, input);     //C,D
         node = new_node(ND_FOR, node, node2, NULL, input);   //(A,B),(C,D)
@@ -749,7 +796,7 @@ static Node *statement(void) {
     } else if (consume(TK_GOTO)) {      //goto label;      name=label
         char *name;
         node = new_node(ND_GOTO, NULL, NULL, NULL, input);
-        if (!consume_ident(&name)) error_at(input_str(), "ラベルが必要です");
+        expect_ident(&name, "ラベル名");
         node->name = name;
         regist_label(node);
     } else if (consume(TK_CONTINUE)) {  //continue
@@ -772,9 +819,7 @@ static Node *statement(void) {
         node = expression();
     }
 
-    if (!consume(';')) {
-        error_at(input_str(), ";でないトークンです");
-    }
+    expect(';');
     return node;
 }
 
@@ -881,8 +926,7 @@ static Node *conditional_expression(void) {
     char *input = input_str();
     if (consume('?')) {
         lhs = expression();
-        if (!consume(':'))
-            error_at(node->input, "三項演算に : がありません");
+        expect(':');
         rhs = conditional_expression();
         sub_node = new_node(ND_UNDEF, lhs, rhs, lhs->tp, input);
         node = new_node(ND_TRI_COND, node, sub_node, lhs->tp, node->input);
@@ -1091,10 +1135,9 @@ static Node *cast_expression(void) {
     Type *tp;
     char *input = input_str();
     if (token_is('(') && next_token_is_type_spec()) {
-        consume('(');
+        expect('(');
         tp = type_name();
-        if (!consume(')'))
-            error_at(input_str(), "キャストの閉じかっこがありません");
+        expect(')');
         node = new_node(ND_CAST, NULL, cast_expression(), tp, input);
     } else {
         node = unary_expression();
@@ -1144,7 +1187,7 @@ static Node *unary_expression(void) {
             if (next_token_is_type_spec()) {
                 consume('(');
                 tp = type_name();
-                if (!consume(')')) error_at(input_str(), "開きカッコに対応する閉じカッコがありません");
+                expect(')');
             } else {
                 node = unary_expression();
                 tp = node->tp;
@@ -1156,9 +1199,9 @@ static Node *unary_expression(void) {
         node = new_node_num(size_of(tp), input);
     } else if (consume(TK_ALIGNOF)) {
         Type *tp;
-        if (!consume('(')) error_at(input_str(), "開きカッコがありません");
+        expect('(');
         tp = type_name();
-        if (!consume(')')) error_at(input_str(), "開きカッコに対応する閉じカッコがありません");
+        expect(')');
         node = new_node_num(align_of(tp), input);
     } else {
         node = postfix_expression();
@@ -1190,9 +1233,7 @@ static Node *postfix_expression(void) {
             tp = node->tp->ptr_of ? node->tp->ptr_of : rhs->tp->ptr_of;
             if (tp==NULL) error_at(input_str(), "ここでは配列を指定できません");
             node = new_node(ND_INDIRECT, NULL, node, tp, input);
-            if (!consume(']')) {
-                error_at(input_str(), "配列の開きカッコに対応する閉じカッコがありません");
-            }
+            expect(']');
         } else if (consume('(')) {  //関数コール
             //dump_node(node, "func");
             #define node_is_func(node) ((node)->tp->type==FUNC||((node)->tp->type==PTR &&(node)->tp->ptr_of->type==FUNC))
@@ -1204,9 +1245,7 @@ static Node *postfix_expression(void) {
                 if (node->lhs->type != ND_LIST) {
                     node->lhs = new_node_list(node->lhs, input);
                 }
-                if (!consume(')')) {
-                    error_at(input_str(), "関数コールの開きカッコに対応する閉じカッコがありません");
-                }
+                expect(')');
             }
         } else if (node->type==ND_IDENT) {
             error_at(node->input, "'%s'は未定義の変数です", node->name);
@@ -1224,16 +1263,14 @@ static Node *primary_expression(void) {
     char *input = input_str();
     if (consume('(')) {
         node = expression();
-        if (!consume(')')) {
-            error_at(input_str(), "開きカッコに対応する閉じカッコがありません");
-        }
+        expect(')');
     } else if (consume(TK_NUM)) {
         node = new_node_num(tokens[token_pos-1]->val, input);
     } else if (consume(TK_STRING)) {
         node = new_node_string(tokens[token_pos-1]->str, input);
     } else if (consume_ident(&name)) {
-        //すでに出現済みであればその参照に決まる(ND_LOCAL_VAR/ND_GLOBAL_VARなど)
-        node = new_node_var(name, input);
+        //すでに出現済みであればその参照に決まる(ND_LOCAL_VAR/ND_GLOBAL_VAR/ND_ENUMなど)
+        node = new_node_ident(name, input);
     } else {
         error_at(input, "終端記号でないトークンです");
     }

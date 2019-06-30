@@ -14,6 +14,7 @@ long size_of(const Type *tp) {
     case INT:      return sizeof(int);
     case LONG:     return sizeof(long);
     case LONGLONG: return sizeof(long long);
+    case ENUM:     return sizeof(int);
     case PTR:      return sizeof(void*);
     case ARRAY:
         if (tp->array_size<0) return sizeof(void*);
@@ -35,10 +36,43 @@ int align_of(const Type *tp) {
     return size_of(tp);
 }
 
+static long calc_node(Node *node, long val1, long val2) {
+    long val;
+    switch ((int)node->type) {
+    case ND_LAND:   val = val1 && val2; break;
+    case ND_LOR:    val = val1 || val2; break;
+    case '&':       val = val1 &  val2; break;
+    case '^':       val = val1 ^  val2; break;
+    case '|':       val = val1 |  val2; break;
+    case ND_EQ:     val = val1 == val2; break;
+    case ND_NE:     val = val1 != val2; break;
+    case '<':       val = val1 <  val2; break;
+    case ND_LE:     val = val1 <= val2; break;
+    case ND_SHIFTL: val = val1 << val2; break;
+    case ND_SHIFTR: val = val1 >> val2; break;
+    case '+':       val = val1 +  val2; break;
+    case '-':       val = val1 -  val2; break;
+    case '*':       val = val1 *  val2; break;
+    case '/':       val = val1 /  val2; break;
+    case '%':       val = val1 %  val2; break;
+    case '!':       val = !val1;        break;
+    case '~':       val = ~val1;        break;
+    default:
+        assert(0);
+    }
+    return val;
+}
+
+//nodeが定数になっているかどうかを調べる。valpに定数を返す
 int node_is_const(Node *node, long *valp) {
     long val, val1, val2;
 
-    if (node->type==ND_TRI_COND) {
+    switch (node->type) {
+    case ND_NUM:
+    case ND_ENUM:
+        val = node->val;
+        break;
+    case ND_TRI_COND:
         if (!node_is_const(node->lhs, &val)) return 0;
         if (val) {
             if (!node_is_const(node->rhs->lhs, &val)) return 0;
@@ -47,34 +81,20 @@ int node_is_const(Node *node, long *valp) {
         }
         if (valp) *valp = val;
         return 1;
-    } else if (node->type==ND_CAST) {
+    case ND_CAST:
         return node_is_const(node->rhs, valp);
-    }
-
-    if (node->lhs && !node_is_const(node->lhs, &val1)) return 0;
-    if (node->rhs && !node_is_const(node->rhs, &val2)) return 0;
-    switch ((int)node->type) {
-    case ND_NUM:  val = node->val;    break;
-    case ND_LAND: val = val1 && val2; break;
-    case ND_LOR:  val = val1 || val2; break;
-    case '&':     val = val1 &  val2; break;
-    case '^':     val = val1 ^  val2; break;
-    case '|':     val = val1 |  val2; break;
-    case ND_EQ:   val = val1 == val2; break;
-    case ND_NE:   val = val1 != val2; break;
-    case '<':     val = val1 <  val2; break;
-    case ND_LE:   val = val1 <= val2; break;
-    case ND_SHIFTL: val = val1 << val2; break;
-    case ND_SHIFTR: val = val1 >> val2; break;
-    case '+':     val = val1 +  val2; break;
-    case '-':     val = val1 -  val2; break;
-    case '*':     val = val1 *  val2; break;
-    case '/':     val = val1 /  val2; break;
-    case '%':     val = val1 %  val2; break;
-    case '!':     val = !val1;        break;
-    case '~':     val = ~val1;        break;
-    default:
+    case ND_LIST:
+        //if (vec_len(node->lst))
+        //    return node_is_const(vec_data(node->lst, vec_len(node->lst)-1), valp);
+        //return 0;
+    case ND_LOCAL_VAR:
+    case ND_GLOBAL_VAR:
+    case ND_STRING:
         return 0;
+    default:
+        if (node->lhs && !node_is_const(node->lhs, &val1)) return 0;
+        if (node->rhs && !node_is_const(node->rhs, &val2)) return 0;
+        val = calc_node(node, val1, val2);
     }
     if (valp) *valp = val;
     return 1;
@@ -85,26 +105,35 @@ int node_is_const_or_address(Node *node, long *valp, Node **varp) {
     long val, val1, val2;
     Node *var1=NULL, *var2=NULL;
 
-    if (node->type==ND_ADDRESS &&
-        (node->rhs->type==ND_GLOBAL_VAR || type_is_static(node->rhs->tp))) {
-        if (varp) *varp = node;
-        if (valp) *valp = 0;
-        return 1;
-    }
     if ((node->type==ND_GLOBAL_VAR || type_is_static(node->tp))
         && node->tp->type==ARRAY) {
         if (varp) *varp = new_node(ND_ADDRESS, NULL, node, node->tp->ptr_of, node->input);
         if (valp) *valp = 0;
         return 1;
     }
-    if (node->type==ND_LIST) {
-        Node **nodes = (Node**)node->lst->data;
-        if (node->lst->len==1)
-            return node_is_const_or_address(nodes[0], valp, varp);
-        return 0;
-    }
 
-    if (node->type==ND_TRI_COND) {
+    switch (node->type) {
+    case ND_NUM:
+    case ND_ENUM:
+        val = node->val;
+        break;
+    case ND_LIST:
+        if (vec_len(node->lst))
+            return node_is_const_or_address(vec_data(node->lst, vec_len(node->lst)-1), valp, varp);
+        return 0;
+    case ND_LOCAL_VAR:
+    case ND_GLOBAL_VAR:
+    case ND_STRING:
+        return 0;
+    case ND_ADDRESS:
+        if (node->rhs->type==ND_GLOBAL_VAR || type_is_static(node->rhs->tp)) {
+            if (varp) *varp = node;
+            if (valp) *valp = 0;
+            return 1;
+        } else {
+            return 0;
+        }
+    case ND_TRI_COND:
         if (!node_is_const_or_address(node->lhs, &val, varp)) return 0;
         if (val) {
             if (!node_is_const_or_address(node->rhs->lhs, &val, varp)) return 0;
@@ -113,51 +142,29 @@ int node_is_const_or_address(Node *node, long *valp, Node **varp) {
         }
         if (valp) *valp = val;
         return 1;
-    } else if (node->type==ND_CAST) {
+    case ND_CAST:
         return node_is_const_or_address(node->rhs, valp, varp);
-    }
-
-    if (node->lhs && !node_is_const_or_address(node->lhs, &val1, &var1)) return 0;
-    if (node->rhs && !node_is_const_or_address(node->rhs, &val2, &var2)) return 0;
-    if (var1 && var2) {
-        return 0;
-    } else if (var1) {
-        if (node->type=='+' || node->type=='-') {
-            if (varp) *varp = var1;
-        } else {
-            return 0;
-        }
-    } else if (var2) {
-        if (node->type=='+') {
-            if (varp) *varp = var2;
-        } else {
-            return 0;
-        }
-    }
-
-    switch ((int)node->type) {
-    case ND_NUM:  val = node->val;    break;
-    case ND_LAND: val = val1 && val2; break;
-    case ND_LOR:  val = val1 || val2; break;
-    case '&':     val = val1 &  val2; break;    //bitwise and
-    case '^':     val = val1 ^  val2; break;
-    case '|':     val = val1 |  val2; break;
-    case ND_EQ:   val = val1 == val2; break;
-    case ND_NE:   val = val1 != val2; break;
-    case '<':     val = val1 <  val2; break;
-    case ND_LE:   val = val1 <= val2; break;
-    case ND_SHIFTL: val = val1 << val2; break;
-    case ND_SHIFTR: val = val1 >> val2; break;
-    case '+':     val = val1 +  val2; break;
-    case '-':     val = val1 -  val2; break;
-    case '*':     val = val1 *  val2; break;
-    case '/':     val = val1 /  val2; break;
-    case '%':     val = val1 %  val2; break;
-    case '!':     val = !val1;        break;
-    case '~':     val = ~val1;        break;
     default:
-        return 0;
+        if (node->lhs && !node_is_const_or_address(node->lhs, &val1, &var1)) return 0;
+        if (node->rhs && !node_is_const_or_address(node->rhs, &val2, &var2)) return 0;
+        if (var1 && var2) {
+            return 0;
+        } else if (var1) {
+            if (node->type=='+' || node->type=='-') {
+                if (varp) *varp = var1;
+            } else {
+                return 0;
+            }
+        } else if (var2) {
+            if (node->type=='+') {
+                if (varp) *varp = var2;
+            } else {
+                return 0;
+            }
+        }
+        val = calc_node(node, val1, val2);
     }
+
     if (valp) *valp = val;
     return 1;
 }
@@ -177,8 +184,8 @@ int type_is_extern(Type *tp) {
 // ==================================================
 // 以下はparse.cローカル
 
-//次のトークンが期待した型かどうかをチェックし、
-//期待した型の場合だけ入力を1トークン読み進めて真を返す
+//次のトークンが期待したものかどうかをチェックし、
+//期待したものの場合だけ入力を1トークン読み進めて真を返す
 int consume(TKtype type) {
     if (tokens[token_pos]->type != type) return 0;
     token_pos++;
@@ -192,6 +199,103 @@ int consume_ident(char**name) {
     *name = tokens[token_pos]->str;
     token_pos++;
     return 1;
+}
+
+// 次のトークンが期待したものの場合、トークンを1つ読み進める。
+// それ以外の場合にはエラーを報告する。
+void expect(TKtype type) {
+    if (tokens[token_pos++]->type == type) return;
+    if (type<128) {
+        error_at(input_str(), "%cが期待されています", type);
+    } else {
+        error_at(input_str(), "%sが期待されています", get_NDtype_str(type));
+    }
+}
+
+//次のトークンが識別子(TK_IDENT)であればnameを取得し、トークンを1つ読み進める。
+// それ以外の場合にはエラーを報告する。
+void expect_ident(char**name, const char*str) {
+    if (tokens[token_pos]->type != TK_IDENT) {
+        error_at(input_str(), "識別子（%s）が期待されています", str);
+    }
+    *name = tokens[token_pos]->str;
+    token_pos++;
+}
+
+//未登録の変数であればローカル変数またはグローバル変数として登録する
+void regist_var_def(Node *node) {
+    char *name = node->name;
+    if (cur_funcdef && !type_is_extern(node->tp)) {  //関数内かつexternでなければローカル変数
+        Map *symbol_map = stack_top(symbol_stack); 
+        if (map_get(symbol_map, name, NULL)==0) {
+            if (type_is_static(node->tp)) {
+                node->offset = global_index++;
+            } else {
+                node->offset = get_var_offset(node->tp);
+            }
+            if (node->type==ND_UNDEF) node->type = ND_LOCAL_VAR_DEF;
+            map_put(symbol_map, name, node);
+
+            if (type_is_static(node->tp)) {
+                vec_push(static_var_vec, node);
+            }
+        } else {
+            error_at(node->input, "'%s'はローカル変数の重複定義です", name);
+        }
+    } else {            //グローバル変数
+        if (node->type==ND_UNDEF) node->type = ND_GLOBAL_VAR_DEF;
+        if (map_get(global_symbol_map, name, NULL)==0) {
+            map_put(global_symbol_map, name, node);
+        } else if (!type_is_extern(node->tp)) {
+            error_at(node->input, "'%s'はグローバル変数の重複定義です", name);
+        }
+    }
+}
+
+//enum値を登録
+void regist_symbol(Node *node) {
+    char *name = node->name;
+    Node *node2;
+    Map *symbol_map = stack_top(symbol_stack); 
+    if (map_get(symbol_map, name, (void**)&node2)==0) {
+        map_put(symbol_map, name, node);
+    } else if (node2->type==ND_ENUM_DEF && node->type==ND_ENUM_DEF) {
+        if (node2->lst!=NULL && node->lst!=NULL)
+            error_at(node->input, "enumの重複定義です");
+    } else {
+        error_at(node->input, "'%s'はシンボルの重複定義です", name);
+    }
+}
+
+//ラベルを登録
+//ラベル定義より前にgotoが先にあった場合、gotoを登録する。その後ラベル定義があればそれで置き換える。
+//ラベル定義のないgotoはcodegen時にチェックする。
+void regist_label(Node *node) {
+    Node *node2;
+    if (map_get(cur_funcdef->label_map, node->name, (void**)&node2)!=0) {
+        if (node->type==ND_GOTO) return;
+        if (node2->type==ND_LABEL) error_at(node->input, "ラベルが重複しています");
+    }
+    map_put(cur_funcdef->label_map, node->name, node);
+}
+
+//重複をチェックしてcase,defaultをcur_switch->mapに登録する。
+void regist_case(Node *node) {
+    if (cur_switch==NULL) error_at(node->input, "switch文の中ではありません");
+    char *name;
+    if (node->type==ND_DEFAULT) {
+        name = "Default";
+    } else {
+        char buf[64];
+        if (node->val>=0) sprintf(buf, "Case%ld", node->val);
+        else              sprintf(buf, "CaseM%ld", -node->val);
+        name = malloc(strlen(buf)+1);
+        strcpy(name, buf);
+    }
+    node->name = name;
+    if (map_get(cur_switch->map, name, NULL)!=0)
+        error_at(node->input, "%sは重複しています", name);
+    map_put(cur_switch->map, name, node);
 }
 
 //storage classを外したTypeの複製を返す。
@@ -343,48 +447,6 @@ Node *new_node_num(long val, char *input) {
     return node;
 }
 
-//未登録の変数であれば登録する
-void regist_var_def(Node *node) {
-    char *name = node->name;
-    if (cur_funcdef && !type_is_extern(node->tp)) {  //関数内かつexternでなければローカル変数
-        Map *symbol_map = stack_top(symbol_stack); 
-        if (map_get(symbol_map, name, NULL)==0) {
-            if (type_is_static(node->tp)) {
-                node->offset = global_index++;
-            } else {
-                node->offset = get_var_offset(node->tp);
-            }
-            if (node->type==ND_UNDEF) node->type = ND_LOCAL_VAR_DEF;
-            map_put(symbol_map, name, node);
-
-            if (type_is_static(node->tp)) {
-                vec_push(static_var_vec, node);
-            }
-        } else {
-            error_at(node->input, "'%s'はローカル変数の重複定義です", name);
-        }
-    } else {            //グローバル変数
-        if (node->type==ND_UNDEF) node->type = ND_GLOBAL_VAR_DEF;
-        if (map_get(global_symbol_map, name, NULL)==0) {
-            map_put(global_symbol_map, name, node);
-        } else if (!type_is_extern(node->tp)) {
-            error_at(node->input, "'%s'はグローバル変数の重複定義です", name);
-        }
-    }
-}
-
-//ラベルを登録
-//ラベル定義より前にgotoが先にあった場合、gotoを登録する。その後ラベル定義があればそれで置き換える。
-//ラベル定義のないgotoはcodegen時にチェックする。
-void regist_label(Node *node) {
-    Node *tmp;
-    if (map_get(cur_funcdef->label_map, node->name, (void**)&tmp)!=0) {
-        if (node->type==ND_GOTO) return;
-        if (tmp->type==ND_LABEL) error_at(node->input, "ラベルが重複しています");
-    }
-    map_put(cur_funcdef->label_map, node->name, node);
-}
-
 //抽象構文木の生成（変数定義）
 Node *new_node_var_def(char *name, Type*tp, char *input) {
     Node *node = new_node(ND_UNDEF, NULL, NULL, tp, input);
@@ -403,7 +465,7 @@ Node *new_node_string(char *string, char *input) {
     return node;
 }
 
-//identをスコープの内側から検索してNodeを返す
+//nameをスコープの内側から検索してNodeを返す
 static Node *search_symbol(const char *name) {
     Node *node = NULL;
     for (int i=symbol_stack->len-1; i>=0; i--) {
@@ -416,11 +478,11 @@ static Node *search_symbol(const char *name) {
 }
 
 //抽象構文木の生成（識別子：ローカル変数・グローバル変数）
-Node *new_node_var(char *name, char *input) {
+Node *new_node_ident(char *name, char *input) {
     Node *node, *var_def;
     NDtype type;
     Type *tp;
-    long offset;
+    long offset = 0;
 
     //定義済みの変数であるかをスコープの内側からチェック
     var_def = search_symbol(name);
@@ -434,6 +496,8 @@ Node *new_node_var(char *name, char *input) {
         case ND_FUNC_DECL:
             type = ND_GLOBAL_VAR;
             break;
+        case ND_ENUM:
+            return var_def;
         default:
             assert(0);
         }
@@ -442,11 +506,10 @@ Node *new_node_var(char *name, char *input) {
     } else {
         type = ND_IDENT;
         tp = NULL;
-        offset = 0;
     }
 
     node = new_node(type, NULL, NULL, tp, input);
-    node->name = name;
+    node->name   = name;
     node->offset = offset;
     //dump_node(node, __func__);
 

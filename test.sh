@@ -217,6 +217,12 @@ try $ER "case 1: ;"
 try $ER "default 1: ;"
 try $ER "switch(1){case 1:; case 1:;}"
 try $ER "switch(1){default:; default:;}"
+try $ER "int e; enum ABC{A,B,C} e;"
+try $ER "enum ABC{A,B,C} e; int e;"
+try $ER "enum ABC{A,B,A} e;"
+try $ER "enum ABC{A,B,C} e; enum ABC{X,Y,Z} x;"
+try $ER "enum ABC{A,B,C} e; enum XYZ{A,Y,Z} x;"
+try $ER "enum ABC{A,B,C}; enum ABC{P,Q,R} e;"
 
 #多次元配列
 try $ER "int a[][3]={{1,2,3},{11,12,13}; return a[1][2]}"

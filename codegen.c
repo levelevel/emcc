@@ -129,14 +129,17 @@ static char* reg_name_of_type(const char*reg_name, const Type *tp) {
 //型に応じたwriteコマンド名を返す。
 static char* write_command_of_type(const Type *tp) {
     switch (tp->type) {
-    case CHAR:     return "movb";
-    case SHORT:    return "mov";
-    case INT:      return "mov";
-    case LONG:     return "mov";
-    case LONGLONG: return "mov";
-    case PTR:      return "mov";
-    case ARRAY:    return "mov";
-    case FUNC:     return "mov";
+    case CHAR:
+        return "movb";
+    case SHORT:
+    case INT:
+    case LONG:
+    case LONGLONG:
+    case ENUM:
+    case PTR:
+    case ARRAY:
+    case FUNC:
+        return "mov";
     default: _ERROR_;
     }
     return NULL;
@@ -150,6 +153,7 @@ static char* read_command_of_type(const Type *tp) {
     case CHAR:
     case SHORT:
     case INT:
+    case ENUM:
          return tp->is_unsigned ? "movzx" : "movsx";
     case LONG:
     case LONGLONG:
@@ -418,11 +422,15 @@ static int gen(Node*node) {
             printf("  push %d\t# 0x%lx (%s)\n", (int)node->val, node->val, get_type_str(node->tp));
         }
         break;
+    case ND_ENUM:
+        printf("  push %d\t# %s (%s)\n", (int)node->val, node->name, get_type_str(node->lhs->tp));
+        break;
     case ND_STRING:         //文字列リテラル
         sprintf(buf, ".LC%03ld", node->val);
         printf("  lea rax, BYTE PTR %s\n", buf);
         printf("  push rax\n");             //文字列リテラルのアドレスを返す
         break;
+    case ND_TYPE_DECL:
     case ND_EMPTY:          //空文
     case ND_GLOBAL_VAR_DEF: //グローバル(extern)変数定義
     case ND_FUNC_DEF:       //関数定義
@@ -962,13 +970,21 @@ static long get_single_val(Node *node) {
 
 //グローバルシンボルのコードを生成
 static void gen_global_var(Node *node) {
-    if (node->type==ND_FUNC_DEF || node->type==ND_FUNC_DECL) {
+    switch (node->type) {
+    case ND_FUNC_DEF:
+    case ND_FUNC_DECL:
         if (!type_is_static(node->tp))
             printf(".global %s\n", node->name);
         return;
+    case ND_GLOBAL_VAR_DEF:
+        break;
+    case ND_ENUM:
+        return;
+    default:
+        assert(type_is_static(node->tp));
+        break;
     }
 
-    assert(node->type == ND_GLOBAL_VAR_DEF || type_is_static(node->tp));
     if (type_is_extern(node->tp)) return;
     int size = size_of(node->tp);
     int align_size = align_of(node->tp);
@@ -992,6 +1008,7 @@ static void gen_global_var(Node *node) {
             printf("  .value %ld\n", get_single_val(rhs));
             break;
         case INT:
+        case ENUM:
             printf("  .long %ld\n", get_single_val(rhs));
             break;
         case LONG:

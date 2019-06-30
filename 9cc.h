@@ -34,6 +34,7 @@ typedef enum {
     TK_SHORT,       //short
     TK_INT,         //int
     TK_LONG,        //long
+    TK_ENUM,        //enum
     TK_TYPEOF,      //typeof（非標準）
     TK_SIGNED,      //signed
     TK_UNSIGNED,    //unsigned
@@ -99,7 +100,10 @@ typedef enum {
     ND_BNOT  = '~',
     ND_NUM,         //整数のノードの型
     ND_STRING,
+    ND_TYPE_DECL,   //型の宣言　例：int; enum ABC {A,B,C}; enum ABC; struct ST; 
     ND_IDENT,       //IDENT:中間的なタイプであり、最終的にND_LOCAL_VARなどに置き換わる
+    ND_ENUM_DEF,    //enum定義          name=enum名/NULL, lst=node(ND_ENUM)/NULL
+    ND_ENUM,        //enum要素          name=要素名, val=値, lhs=node(ND_ENUN_DEF)
     ND_LOCAL_VAR,   //ローカル変数の参照
     ND_GLOBAL_VAR,  //グローバル変数の参照
     ND_CAST,        //キャスト
@@ -149,13 +153,14 @@ typedef enum {
     INT,
     LONG,
     LONGLONG,
+    ENUM,
     PTR,
     ARRAY,
     FUNC,           //関数
     CONST,          //const処理の一時的なデータ構造でのみ使用し、必ずptr_ofを持つ。
                     //親をconstで修飾する。親がいないときは型を修飾する。
     NEST,           //ネストした型宣言処理の一時的なデータ構造でのみ使用する。他のメンバーは未使用。
-} Typ;
+} TPType;
 
 typedef enum {
     SC_UNDEF,
@@ -170,13 +175,14 @@ typedef struct _Node Node;
 typedef Vector Stack;
 
 struct _Type {
-    Typ type;
-    char is_unsigned;   //unsigned型
-    char is_const;
-    StorageClass sclass;
-    Type *ptr_of;
-    Node *node;         //typeがFUNCの場合のND_FUNC_DEFのノード
-    long array_size;    //typeがARRAYの場合の配列サイズ。未定義の場合は-1
+    TPType          type;
+    char            is_unsigned;    //unsigned型
+    char            is_const;
+    StorageClass    sclass;
+    Type            *ptr_of;
+    Node            *node;          //typeがFUNCの場合のND_FUNC_DEFのノード
+                                    //typeがENUMの場合のND_ENUM_DEFのノード
+    long            array_size;     //typeがARRAYの場合の配列サイズ。未定義の場合は-1
 };
 
 struct _Node {
@@ -208,7 +214,7 @@ typedef struct {
 } Funcdef;
 
 //型がinteger型であるか
-#define type_is_integer(_tp) (CHAR<=(_tp)->type && (_tp)->type<=LONGLONG)
+#define type_is_integer(_tp) (CHAR<=(_tp)->type && (_tp)->type<=ENUM)
 
 //型・ノードがポインタ型（PTR||ARRAY）であるか
 #define type_is_ptr(_tp) ((_tp)->type==PTR || (_tp)->type==ARRAY)
@@ -286,6 +292,14 @@ int type_is_extern(Type *tp);
 #ifdef _PARSE_C_
 int consume(TKtype type);
 int consume_ident(char**name);
+void expect(TKtype type);
+void expect_ident(char**name, const char*str);
+
+void regist_var_def(Node *node);
+void regist_symbol(Node *node);
+void regist_label(Node *node);
+void regist_case(Node *node);
+
 Type *get_typeof(Type *tp);
 void check_return(Node *node);
 void check_func_return(Funcdef *funcdef);
@@ -301,11 +315,9 @@ Type *new_type(int type, int is_unsigned);
 Node *new_node(int type, Node *lhs, Node *rhs, Type *tp, char *input);
 Node *new_node(int type, Node *lhs, Node *rhs, Type *tp, char *input);
 Node *new_node_num(long val, char *input);
-void regist_var_def(Node *node);
-void regist_label(Node *node);
 Node *new_node_var_def(char *name, Type*tp, char *input);
 Node *new_node_string(char *string, char *input);
-Node *new_node_var(char *name, char *input);
+Node *new_node_ident(char *name, char *input);
 Node *new_node_func_call(char *name, char *input);
 Node *new_node_func_def(char *name, Type *tp, char *input);
 Node *new_node_empty(char *input);
@@ -336,6 +348,7 @@ void *stack_get(Stack *stack, int idx);
 
 char* get_type_str(const Type *tp);
 char* get_func_args_str(const Node *node);
+const char *get_NDtype_str(NDtype type);
 void dump_node(const Node *node, const char *str);
 
 EXTERN char *filename;

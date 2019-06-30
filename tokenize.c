@@ -56,6 +56,7 @@ TokenDef TokenLst2[] = {
     {TK("short"),    TK_SHORT},
     {TK("int"),      TK_INT},
     {TK("long"),     TK_LONG},
+    {TK("enum"),     TK_ENUM},
     {TK("signed"),   TK_SIGNED},
     {TK("unsigned"), TK_UNSIGNED},
     {TK("auto"),     TK_AUTO},
