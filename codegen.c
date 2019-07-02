@@ -970,6 +970,7 @@ static long get_single_val(Node *node) {
 
 //グローバルシンボルのコードを生成
 static void gen_global_var(Node *node) {
+    if (type_is_extern(node->tp)) return;
     switch (node->type) {
     case ND_FUNC_DEF:
     case ND_FUNC_DECL:
@@ -985,7 +986,6 @@ static void gen_global_var(Node *node) {
         break;
     }
 
-    if (type_is_extern(node->tp)) return;
     int size = size_of(node->tp);
     int align_size = align_of(node->tp);
 

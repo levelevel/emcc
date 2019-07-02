@@ -169,6 +169,7 @@ typedef enum {
     SC_REGISTER,
     SC_STATIC,
     SC_EXTERN,
+    SC_TYPEDEF,
 } StorageClass;
 
 typedef struct _Type Type;
@@ -248,7 +249,7 @@ EXTERN char *continue_label;
 EXTERN Vector *string_vec;      //value=文字列リテラル
 
 //staticシンボル
-EXTERN Vector *static_var_vec;  //value=node
+EXTERN Vector *static_var_vec;  //value=Node
 
 //グローバルシンボル
 EXTERN Map *global_symbol_map;  //通常の識別子：key=name, val=Node(ND_GLOBAL_VAR_DEFなど)
@@ -299,8 +300,9 @@ long size_of(const Type *tp);
 int align_of(const Type *tp);
 int node_is_const(Node *node, long *val);
 int node_is_const_or_address(Node *node, long *valp, Node **varp);
-int type_is_static(Type *tp);
-int type_is_extern(Type *tp);
+#define type_is_static(tp) (get_strage_class(tp)==SC_STATIC)
+#define type_is_extern(tp) (get_strage_class(tp)==SC_EXTERN)
+StorageClass get_strage_class(Type *tp);
 
 #ifdef _PARSE_C_
 void regist_var_def(Node *node);
@@ -366,6 +368,7 @@ EXTERN char *filename;
 EXTERN char *user_input;
 void error_at(const char*loc, const char*fmt, ...);
 void warning_at(const char*loc, const char*fmt, ...);
+void note_at(const char*loc, const char*fmt, ...);
 void error(const char*fmt, ...);
 void warning(const char*fmt, ...);
 void run_test(void);

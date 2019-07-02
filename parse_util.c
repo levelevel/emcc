@@ -171,14 +171,9 @@ int node_is_const_or_address(Node *node, long *valp, Node **varp) {
 
 // static char*p; のような宣言ではPTRにはsclassが設定されず、
 // charだけに設定されているのでcharのところまで見に行く
-int type_is_static(Type *tp) {
-    if (tp->ptr_of) return type_is_static(tp->ptr_of);
-    return tp->sclass==SC_STATIC;
-}
-
-int type_is_extern(Type *tp) {
-    if (tp->ptr_of) return type_is_extern(tp->ptr_of);
-    return tp->sclass==SC_EXTERN;
+StorageClass get_strage_class(Type *tp) {
+    if (tp->ptr_of) return get_strage_class(tp->ptr_of);
+    return tp->sclass;
 }
 
 // ==================================================
@@ -187,9 +182,11 @@ int type_is_extern(Type *tp) {
 //未登録の変数であればローカル変数またはグローバル変数として登録する
 void regist_var_def(Node *node) {
     char *name = node->name;
-    if (cur_funcdef && !type_is_extern(node->tp)) {  //関数内かつexternでなければローカル変数
+    Node *reg_node;
+
+    if (cur_funcdef!=NULL) {        //関数内であればローカル
         Map *symbol_map = stack_top(symbol_stack); 
-        if (map_get(symbol_map, name, NULL)==0) {
+        if (map_get(symbol_map, name, (void**)&reg_node)==0) {
             if (type_is_static(node->tp)) {
                 node->offset = global_index++;
             } else {
@@ -201,14 +198,29 @@ void regist_var_def(Node *node) {
             if (type_is_static(node->tp)) {
                 vec_push(static_var_vec, node);
             }
+        } else if (type_is_extern(node->tp)) {
+            //同じextern宣言であるかをチェックする
+            if ( !type_eq(reg_node->tp, node->tp)) {
+                note_at(reg_node->input, "以前の宣言と");
+                error_at(node->input, "型が一致しません");
+            }
         } else {
             error_at(node->input, "'%s'はローカル変数の重複定義です", name);
         }
-    } else {            //グローバル変数
+    }
+
+    if (cur_funcdef==NULL ||        //関数外であればグローバル
+        type_is_extern(node->tp)) { //externであればグローバル（関数内であればローカルにも登録）
         if (node->type==ND_UNDEF) node->type = ND_GLOBAL_VAR_DEF;
-        if (map_get(global_symbol_map, name, NULL)==0) {
+        if (map_get(global_symbol_map, name, (void**)&reg_node)==0) {
             map_put(global_symbol_map, name, node);
-        } else if (!type_is_extern(node->tp)) {
+        } else if (type_is_extern(node->tp)) {
+            //同じextern宣言であるかをチェックする
+            if ( !type_eq(reg_node->tp, node->tp)) {
+                note_at(reg_node->input, "以前の宣言と");
+                error_at(node->input, "型が一致しません");
+            }
+        } else {
             error_at(node->input, "'%s'はグローバル変数の重複定義です", name);
         }
     }
@@ -464,7 +476,8 @@ Node *new_node_ident(char *name, char *input) {
     if (var_def) {
         switch (var_def->type) {
         case ND_LOCAL_VAR_DEF:
-            type = ND_LOCAL_VAR;
+            if (type_is_extern(var_def->tp)) type = ND_GLOBAL_VAR;
+            else                             type = ND_LOCAL_VAR;
             break;
         case ND_GLOBAL_VAR_DEF:
         case ND_FUNC_DEF:       

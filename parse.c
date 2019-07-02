@@ -14,7 +14,7 @@
                             | storage_class_specifier declaration_specifiers*
                             | type_qualifier          declaration_specifiers*
     init_declarator         = declarator ( "=" initializer )?
-    storage_class_specifier = "static" | "extern"
+    storage_class_specifier = "typedef" | "static" | "extern" | "auto" | "register"
     type_specifier          = "void" | "char" | "short" | "int" | "long" | "signed" | "unsigned"
                             | enum_specifier
     enum_specifier          = "enum" identifier? "{" enumerator ( "," enumerator )* ","? "}"
@@ -621,6 +621,9 @@ static Type *declaration_specifiers(void) {
         } else if (consume(TK_EXTERN)) {
             if (sclass) error_at(input, "strage classが重複しています\n");
             sclass = SC_EXTERN;
+        } else if (consume(TK_TYPEDEF)) {
+            if (sclass) error_at(input, "strage classが重複しています\n");
+            sclass = SC_TYPEDEF;
         } else if (consume(TK_CONST)) {
             if (type == 0) pre_const = 1;
             else           post_const = 1;

@@ -1043,6 +1043,25 @@ static int extern3() {
     return
         g_static_c==2 && g_static_s==3 && g_static_i==4 && g_static_l==5;
 }
+    extern int   g_extern4_i;
+    extern int   g_extern4_i;
+    extern int   g_extern4func(int);
+    extern int   g_extern4func(int x);
+static int extern4() {
+    //関数内外で同じextern宣言があってもOK
+    extern int   g_extern4_i;
+    extern int   g_extern4_i;
+    extern int   g_extern4func(int);
+    extern int   g_extern4func(int x);
+    return 1;
+}
+static int extern42() {
+    //関数内外で同じextern宣言があってもOK
+    extern int   g_extern4_i;
+    extern int   g_extern4func(int);
+    extern int   g_extern4func(int x);
+    return 1;
+}
 static int static1() {
     static char  g_static_c=1;
     static short g_static_s=2;
@@ -1111,6 +1130,7 @@ static int ext() {
     TEST(extern1);
     TEST(extern2);
     TEST(extern3);
+//    TEST(extern4);
     TEST(static1);
     TEST(static2);
     TEST(static3);

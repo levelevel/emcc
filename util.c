@@ -86,7 +86,14 @@ static const char *TypeStr[] = {
     "func(",
     "CONST",
     };
-static const char *SClassStr[] = {"", "auto ", "register ", "static ", "extern "};
+static const char *SClassStr[] = {
+    "", 
+    "auto ",
+    "register ",
+    "static ",
+    "extern ",
+    "typedef",
+    };
 
 static void strcat_word(char *buf, const char *str) {
     char last_char = 0;
@@ -293,6 +300,15 @@ void error_at(const char*loc, const char*fmt, ...){
 
 void warning_at(const char*loc, const char*fmt, ...){
     message_at(loc, "Warning");
+
+    va_list ap;
+    va_start(ap, fmt);
+    vfprintf(stderr, fmt, ap);
+    fprintf(stderr, "\n");
+  }
+
+void note_at(const char*loc, const char*fmt, ...){
+    message_at(loc, "Note");
 
     va_list ap;
     va_start(ap, fmt);
