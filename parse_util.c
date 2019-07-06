@@ -179,6 +179,18 @@ StorageClass get_strage_class(Type *tp) {
 // ==================================================
 // 以下はparse.cローカル
 
+//nameをスコープの内側から検索してNodeを返す
+static Node *search_symbol(const char *name) {
+    Node *node = NULL;
+    for (int i=stack_len(symbol_stack)-1; i>=0; i--) {
+        Map *symbol_map = (Map*)stack_get(symbol_stack, i);
+        if (map_get(symbol_map, name, (void**)&node)!=0) {
+            return node;
+        }
+    }
+    return NULL;
+}
+
 //未登録の変数であればローカル変数またはグローバル変数として登録する
 void regist_var_def(Node *node) {
     char *name = node->name;
@@ -224,6 +236,34 @@ void regist_var_def(Node *node) {
             error_at(node->input, "'%s'はグローバル変数の重複定義です", name);
         }
     }
+}
+
+//関数の定義・宣言をチェックして登録する
+//full_checkが0の場合は、定義か宣言かが未確定の時点でのチェックだけを行う
+void regist_func(Node *node, int full_check) {
+    assert(node->type==ND_FUNC_DEF || node->type==ND_FUNC_DECL);
+    Node *def_node = search_symbol(node->name);
+    if (def_node==NULL)  {
+        map_put(global_symbol_map, node->name, node);
+    } else if (def_node==node) {
+        return;
+    } else if (def_node->type==ND_GLOBAL_VAR_DEF) {
+        error_at(node->input, "'%s'は異なる種類のシンボルとして再定義されています", node->name);
+    } else if (!type_eq(def_node->tp, node->tp)) {
+        note_at(def_node->input, "以前の関数はここです");
+        error_at(node->input, "関数の型が一致しません");
+    } else if (!full_check) {
+        return;
+    } else if (def_node->type==ND_FUNC_DEF && node->type==ND_FUNC_DEF) {
+        dump_node(def_node, "old");
+        dump_node(node, "new");
+        note_at(def_node->input, "以前の関数はここです");
+        error_at(node->input, "関数が再定義されています");
+    } else if (def_node->type==ND_FUNC_DECL && node->type==ND_FUNC_DEF) {
+        map_put(global_symbol_map, node->name, node);
+    }
+    //if (def_node)    dump_node(def_node, "old");
+    //dump_node(node, "new");
 }
 
 //enum値を登録
@@ -341,10 +381,28 @@ void check_funcargs(Node *node, int def_mode) {
     }
 }
 
+static int func_arg_eq(Node *node1, Node *node2) {
+    if (node1==NULL || node2==NULL) return 1;
+    assert(node1->lhs->type==ND_LIST);
+    assert(node2->lhs->type==ND_LIST);
+    //引数が空の関数宣言は引数をチェックしない
+    //TODO: int func();とint func(char*fmt,...);はerrorかwarningにすべき
+    if ((node1->type==ND_FUNC_DECL && vec_len(node1->lhs->lst)==0) ||
+        (node2->type==ND_FUNC_DECL && vec_len(node2->lhs->lst)==0)) return 1;
+    if (vec_len(node1->lhs->lst) != vec_len(node2->lhs->lst)) return 0;
+    for (int i=0;i<vec_len(node1->lhs->lst);i++) {
+        Node *arg1 = (Node*)vec_data(node1->lhs->lst, i);
+        Node *arg2 = (Node*)vec_data(node2->lhs->lst, i);
+        if (!type_eq(arg1->tp, arg2->tp)) return 0;
+    }
+    return 1;
+}
 //タイプが等しいかどうかを判定する（storage classは無視。constも今は無視）
 int type_eq(const Type *tp1, const Type *tp2) {
     if (tp1->type != tp2->type) return 0;
     if (tp1->is_unsigned != tp2->is_unsigned) return 0;
+    if (tp1->array_size != tp2->array_size) return 0;
+    if (tp1->type==FUNC && !func_arg_eq(tp1->node, tp2->node)) return 0;
     if (tp1->ptr_of) return type_eq(tp1->ptr_of, tp2->ptr_of);
     return 1;
 }
@@ -452,18 +510,6 @@ Node *new_node_string(char *string, char *input) {
     return node;
 }
 
-//nameをスコープの内側から検索してNodeを返す
-static Node *search_symbol(const char *name) {
-    Node *node = NULL;
-    for (int i=stack_len(symbol_stack)-1; i>=0; i--) {
-        Map *symbol_map = (Map*)stack_get(symbol_stack, i);
-        if (map_get(symbol_map, name, (void**)&node)!=0) {
-            return node;
-        }
-    }
-    return NULL;
-}
-
 //抽象構文木の生成（識別子：ローカル変数・グローバル変数）
 Node *new_node_ident(char *name, char *input) {
     Node *node, *var_def;
@@ -544,9 +590,10 @@ Node *new_node_func_call(char *name, char *input) {
     return node;
 }
 
-//抽象構文木の生成（関数定義）
-Node *new_node_func_def(char *name, Type *tp, char *input) {
-    Node *node = new_node(ND_FUNC_DEF, NULL, NULL, tp, input);
+//抽象構文木の生成（関数定義・宣言）
+//この時点では宣言(ND_FUNC_DECL)として作成し、あとで定義であることが確定したら定義(ND_FUNC_DEF)に変更する
+Node *new_node_func(char *name, Type *tp, char *input) {
+    Node *node = new_node(ND_FUNC_DECL, NULL, NULL, tp, input);
     node->name = name;
 //  node->lhs       //引数リスト(ND_LIST)
 //  node->rhs       //ブロック(ND_BLOCK)
@@ -558,15 +605,9 @@ Node *new_node_func_def(char *name, Type *tp, char *input) {
     stack_push(symbol_stack,  cur_funcdef->symbol_map);     //popはfunction_definition()で行う
     stack_push(tagname_stack, cur_funcdef->tagname_map);    //popはfunction_definition()で行う
 
-    //関数をシンボルとして登録する
-    Node *def_node;
-    if (map_get(global_symbol_map, name, (void**)&def_node)==0)  {
-        map_put(global_symbol_map, name, node);
-    } else if (def_node->type==ND_FUNC_DEF) {
-        error_at(input, "関数が再定義されています");
-    } else if (def_node->type==ND_GLOBAL_VAR_DEF) {
-        error_at(input, "'%s'は異なる種類のシンボルとして再定義されています", name);
-    }
+    //関数をシンボルとして仮登録する
+    regist_func(node, 0);
+
     return node;
 }
 

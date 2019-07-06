@@ -83,6 +83,7 @@ static const char *TypeStr[] = {
     "enum",
     "*",
     "[",
+    "...",
     "func(",
     "CONST",
     };
@@ -172,13 +173,9 @@ char *get_func_args_str(const Node *node) {
     int len = 0;
     buf[0] = 0;
     for (int i=0; i<size; i++) {
-        if (arg_nodes[i]->type==ND_VARARGS) {
-            len += sprintf(buf+len, "...");
-        } else {
-            len += sprintf(buf+len, "%s", get_type_str(arg_nodes[i]->tp));
-            if (arg_nodes[i]->name)
-                len += sprintf(buf+len, " %s", arg_nodes[i]->name);
-        }
+        len += sprintf(buf+len, "%s", get_type_str(arg_nodes[i]->tp));
+        if (arg_nodes[i]->name)
+            len += sprintf(buf+len, " %s", arg_nodes[i]->name);
         if (i<size-1) len += sprintf(buf+len, ", ");
     }
     char *ret = malloc(strlen(buf)+1);

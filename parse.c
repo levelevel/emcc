@@ -204,11 +204,13 @@ static Node *function_definition(Type *tp, char *name) {
         stack_pop(symbol_stack);
         stack_pop(tagname_stack);
         check_func_return(cur_funcdef);        //関数の戻り値を返しているかチェック
+        node->type = ND_FUNC_DEF;
     } else {                //関数宣言
         consume(';');
         check_funcargs(node->lhs, 0);   //引数リストの妥当性を確認（宣言モード）
         node->type = ND_FUNC_DECL;
     }
+    regist_func(node, 1);
 
     return node;
 }
@@ -379,7 +381,7 @@ static Node *direct_declarator(Type *tp, char *name) {
             }
             node->tp = tp = nest_tp;
         } else {
-            node = new_node_func_def(name, tp, input);
+            node = new_node_func(name, tp, input);
             node->lhs = parameter_type_list();
             if (org_funcdef) cur_funcdef = org_funcdef;
         }
@@ -412,7 +414,7 @@ static Node *parameter_type_list(void) {
         if (token_is('}')){
             break;
         } else if (consume(TK_3DOTS)) { //...（可変長引数）
-            last_node = new_node(ND_VARARGS, NULL, NULL, NULL, input);
+            last_node = new_node(ND_VARARGS, NULL, NULL, new_type(VARARGS, 0), input);
             vararg_ptr = input;
         } else {
             last_node = parameter_declaration();

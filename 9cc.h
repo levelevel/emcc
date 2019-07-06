@@ -124,8 +124,8 @@ typedef enum {
     ND_TRI_COND,    // A ? B : C（三項演算子）
     ND_PLUS_ASSIGN, // +=
     ND_MINUS_ASSIGN,// -=
-    ND_LOCAL_VAR_DEF,   //ローカル変数の定義・宣言
-    ND_GLOBAL_VAR_DEF,  //グローバル変数の定義・宣言
+    ND_LOCAL_VAR_DEF,   //int A=B;      name=A, rhs=Node（"A=B"の形式の初期化式、初期値がない場合はNULL）
+    ND_GLOBAL_VAR_DEF,  //int A=B;      同上
     ND_IF,          // if(A)B else C    lhs->lhs=A, lhs->rhs=B, rhs=C
     ND_SWITCH,      // switch(A)B       lhs=A, rhs=B, lst=node(ND_CASE,ND_DEFAULT)
     ND_LABEL,       // label:B          name=label, rhs=B
@@ -157,6 +157,7 @@ typedef enum {
     ENUM,
     PTR,
     ARRAY,
+    VARARGS,        //...
     FUNC,           //関数
     CONST,          //const処理の一時的なデータ構造でのみ使用し、必ずptr_ofを持つ。
                     //親をconstで修飾する。親がいないときは型を修飾する。
@@ -306,6 +307,7 @@ StorageClass get_strage_class(Type *tp);
 
 #ifdef _PARSE_C_
 void regist_var_def(Node *node);
+void regist_func(Node *node, int full_check);
 void regist_symbol(Node *node);
 void regist_tagname(Node *node);
 void regist_label(Node *node);
@@ -330,7 +332,7 @@ Node *new_node_var_def(char *name, Type*tp, char *input);
 Node *new_node_string(char *string, char *input);
 Node *new_node_ident(char *name, char *input);
 Node *new_node_func_call(char *name, char *input);
-Node *new_node_func_def(char *name, Type *tp, char *input);
+Node *new_node_func(char *name, Type *tp, char *input);
 Node *new_node_empty(char *input);
 Node *new_node_block(char *input);
 Node *new_node_list(Node *item, char *input);

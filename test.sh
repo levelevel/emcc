@@ -226,6 +226,12 @@ try $ER "enum ABC{A,B,A} e;"
 try $ER "enum ABC{A,B,C} e; enum ABC{X,Y,Z} x;"
 try $ER "enum ABC{A,B,C} e; enum XYZ{A,Y,Z} x;"
 try $ER "enum ABC{A,B,C}; enum ABC{P,Q,R} e;"
+try $ER "int main(void); int main(int x){return 1:}"
+try $ER "int main(void); int main(int){return 1:}"
+try $ER "int main(void); int main(int x);"
+try $ER "void main(void){} void main(int);"
+try $ER "int main(int); int main(int, ...);"
+try $ER "int main(int); int main(){return 1;};"
 
 #多次元配列
 try $ER "int a[][3]={{1,2,3},{11,12,13}; return a[1][2]}"

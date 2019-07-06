@@ -343,6 +343,7 @@ short funcdecl1s(short s);
 static char *funcdecl1c(char *cp);
 extern long funcdecl1l(long l, char*cp, ...); 
 static int funcdecl1();
+static int funcdecl1(void);
 static int funcdecl1() {
     int funcdecl1();
     int funcdelc1i(int i);
@@ -355,7 +356,8 @@ short funcdecl2s(short);
 static char *funcdecl2c(char);
 extern long funcdecl2l(long, char*, ...); 
 static int funcdecl2();
-static int funcdecl2() {
+static int funcdecl2(void);
+static int funcdecl2(void) {
     int funcdecl2();
     int funcdelc2i(int);
     int funcdelc2cp(char);
@@ -368,6 +370,19 @@ static int funcdecl3() {
     return 1;
 }
 int fd3_func() {
+    return 1;
+}
+
+static int funcdecl4a(int a, char*p);
+static int funcdecl4a(int, char*);
+static int funcdecl4a();
+static int funcdecl4a(int a, char*p) {
+    return 1;
+}
+static int funcdecl4b(char*fmp, ...);
+static int funcdecl4b(char*, ...);
+//static int funcdecl4b();  //GCCではこれはエラーになる
+static int funcdecl4b(char*fmt, ...) {
     return 1;
 }
 
