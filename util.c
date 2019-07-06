@@ -244,6 +244,10 @@ const char *get_NDtype_str(NDtype type) {
 static void dump_node_indent(FILE *fp, const Node *node, const char *str, int indent) {
     fprintf(fp, "%*s", indent, "");
     if (str) fprintf(fp, "%s:", str);
+    if (node==NULL) {
+        fprintf(fp, "Node[null]\n");
+        return;        
+    }
     fprintf(fp, "Node[%p]:type=%s, name=%s, tp=%s, offset=%d, val=%ld", 
         node,
         get_NDtype_str(node->type),

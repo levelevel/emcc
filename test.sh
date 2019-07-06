@@ -232,6 +232,8 @@ try $ER "int main(void); int main(int x);"
 try $ER "void main(void){} void main(int);"
 try $ER "int main(int); int main(int, ...);"
 try $ER "int main(int); int main(){return 1;};"
+try $ER "int func(void); int main(){int func(int);}"
+try $ER "int main(){int func(void); int func(int);}"
 
 #多次元配列
 try $ER "int a[][3]={{1,2,3},{11,12,13}; return a[1][2]}"

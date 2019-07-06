@@ -106,7 +106,7 @@ int node_is_const_or_address(Node *node, long *valp, Node **varp) {
     Node *var1=NULL, *var2=NULL;
 
     if ((node->type==ND_GLOBAL_VAR || type_is_static(node->tp))
-        && node->tp->type==ARRAY) {
+        && (node->tp->type==ARRAY || node->tp->type==FUNC)) {
         if (varp) *varp = new_node(ND_ADDRESS, NULL, node, node->tp->ptr_of, node->input);
         if (valp) *valp = 0;
         return 1;
@@ -262,8 +262,6 @@ void regist_func(Node *node, int full_check) {
     } else if (def_node->type==ND_FUNC_DECL && node->type==ND_FUNC_DEF) {
         map_put(global_symbol_map, node->name, node);
     }
-    //if (def_node)    dump_node(def_node, "old");
-    //dump_node(node, "new");
 }
 
 //enum値を登録

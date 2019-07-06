@@ -364,7 +364,7 @@ static Node *direct_declarator(Type *tp, char *name) {
     if (consume('(')) { //関数定義・宣言確定
         Funcdef *org_funcdef = cur_funcdef;
         tp = new_type_func(tp);
-        if (nest_tp) {
+        if (nest_tp) {  //関数のポインタ定義 int(*fp)();
             node->lhs = parameter_type_list();
             Type *p = nest_tp;
             for (;;) {
@@ -388,6 +388,7 @@ static Node *direct_declarator(Type *tp, char *name) {
         tp->node = node;
         expect(')');
         //dump_node(node, __func__);
+        if (node->type==ND_FUNC_DECL) regist_func(node, 1);
         return node;
     } else if (tp->type==VOID) {
         error_at(input_str(), "不正なvoid指定です"); 

@@ -387,24 +387,19 @@ static int funcdecl4b(char*fmt, ...) {
 }
 
 static int fp1_add(int a, int b) { return a+b; }
+static int (*fp1_fp)(int, int)=fp1_add;
 static int funcp1(void) {
     int (*fp)(int, int);
     fp = fp1_add;
-    return fp(1,2)==3;
-}
-
-static int fp1g_add(int a, int b) { return a+b; }
-static int (*fp1g)(int, int);
-static int funcp1g(void) {
-    fp1g = fp1g_add;
-    return fp1g(2,3)==5;
+    return fp(1,2)==3 && fp1_fp(2,3)==5;
 }
 
 extern long fp2_add(long a, long b);    //実体はextern.cで定義
+static int (*fp2_fp)(long, long)=&fp2_add;
 static int funcp2(void) {
     long (*fp)(long, long);
     fp = fp2_add;
-    return fp(11,12)==23;
+    return fp(11,12)==23 && fp2_fp(2,3)==5;
 }
 
 static int *fp3_inc(int *a){(*a)++; return a;}    //*aを++して、aを返す
@@ -439,7 +434,6 @@ static int func() {
     TEST(funcdecl2);
     TEST(funcdecl3);
     TEST(funcp1);
-    TEST(funcp1g);
     TEST(funcp2);
     TEST(funcp3);
     TEST(funcp4);
