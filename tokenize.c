@@ -1,3 +1,5 @@
+#define _PARSE_C_
+
 #include "9cc.h"
 
 //トークンの種類を定義
@@ -218,6 +220,23 @@ void dump_tokens(void) {
 // ==================================================
 // 以下はparse.cローカル
 
+int token_is_type_spec(void) {
+    if (TK_VOID<=token_type() && token_type()<=TK_TYPEDEF) return 1;
+    if (token_is(TK_IDENT)) {
+        Node *node = search_symbol(token_str());
+        if (node && node->type==ND_TYPEDEF) return 1;
+    }
+    return 0;
+}
+int next_token_is_type_spec(void) {
+    if (TK_VOID<=next_token_type() && next_token_type()<=TK_TYPEDEF) return 1;
+    if (next_token_is(TK_IDENT)) {
+        Node *node = search_symbol(next_token_str());
+        if (node && node->type==ND_TYPEDEF) return 1;
+    }
+    return 0;
+}
+
 //次のトークンが期待したものかどうかをチェックし、
 //期待したものの場合だけ入力を1トークン読み進めて真を返す
 int consume(TKtype type) {
@@ -253,7 +272,19 @@ int consume_ident(char **name) {
     return 1;
 }
 
-// 次のトークンが期待したものの場合、トークンを1つ読み進める。
+//次のトークンがtypedef_nsme(TK_IDENT)かどうかをチェックし、
+//その場合はそのNode(ND_TYPEDEF)を取得し、入力を1トークン読み進めて真を返す
+int consume_typedef(Node **ret_node) {
+    if (tokens[token_pos]->type != TK_IDENT) return 0;
+    Node *node = search_symbol(token_str());
+    if (node==NULL) return 0;
+    if (node->type!=ND_TYPEDEF) return 0;
+    token_pos++;
+    *ret_node = node;
+    return 1;
+}
+
+// 次のトークンが期待したものである場合、トークンを1つ読み進める。
 // それ以外の場合にはエラーを報告する。
 void expect(TKtype type) {
     if (tokens[token_pos++]->type == type) return;

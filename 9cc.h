@@ -105,6 +105,7 @@ typedef enum {
     ND_IDENT,       //IDENT:中間的なタイプであり、最終的にND_LOCAL_VARなどに置き換わる
     ND_ENUM_DEF,    //enum定義          name=enum名/NULL, lst=node(ND_ENUM)/NULL
     ND_ENUM,        //enum要素          name=要素名, val=値, lhs=node(ND_ENUN_DEF)
+    ND_TYPEDEF,     //typedef           name=typedef名, tp->sclass=SC_TYPEDEF
     ND_LOCAL_VAR,   //ローカル変数の参照
     ND_GLOBAL_VAR,  //グローバル変数の参照
     ND_CAST,        //キャスト
@@ -173,22 +174,22 @@ typedef enum {
     SC_TYPEDEF,
 } StorageClass;
 
-typedef struct _Type Type;
-typedef struct _Node Node;
+typedef struct Type Type;
+typedef struct Node Node;
 typedef Vector Stack;
 
-struct _Type {
+struct Type {
     TPType          type;
     char            is_unsigned;    //unsigned型
     char            is_const;
     StorageClass    sclass;
-    Type            *ptr_of;
+    Type            *ptr_of;        //typeがPTR,ARRAY,FUNCの場合次のType
     Node            *node;          //typeがFUNCの場合のND_FUNC_DEFのノード
                                     //typeがENUMの場合のND_ENUM_DEFのノード
     long            array_size;     //typeがARRAYの場合の配列サイズ。未定義の場合は-1
 };
 
-struct _Node {
+struct Node {
     NDtype type;    //nodeの型：演算子、ND_INDENTなど
     int offset;     //auto変数：ベースポインタからのoffset
                     //static変数：識別用index（global_index）
@@ -223,6 +224,7 @@ typedef struct {
 //型・ノードがポインタ型（PTR||ARRAY）であるか
 #define type_is_ptr(_tp) ((_tp)->type==PTR || (_tp)->type==ARRAY)
 #define node_is_ptr(_node) type_is_ptr((_node)->tp)
+#define node_is_var_def(node) ((node)->type==ND_LOCAL_VAR_DEF || (node)->type==ND_GLOBAL_VAR_DEF)
 
 //アサーション
 #define COMPILE_ERROR 0
@@ -275,20 +277,24 @@ EXTERN Node *cur_switch;
 
 //現在のトークン（エラー箇所）の入力文字列
 #define input_str() (tokens[token_pos]->input)
-//現在のトークンの型が引数と一致しているか
+
+//トークンへのアクセス
+#define token_str()  (tokens[token_pos]->str)
 #define token_type() (tokens[token_pos]->type)
 #define token_is(_tp) (token_type()==(_tp))
-#define token_is_type_spec() (TK_VOID<=token_type() && token_type()<=TK_EXTERN)
+#define next_token_str()  (tokens[token_pos+1]->str)
 #define next_token_type() (tokens[token_pos+1]->type)
 #define next_token_is(_tp) (next_token_type()==(_tp))
-#define next_token_is_type_spec() (TK_VOID<=next_token_type() && next_token_type()<=TK_EXTERN)
 
 // tokenize.c
 void tokenize(char *p);
 void dump_tokens(void);
+int token_is_type_spec(void);
+int next_token_is_type_spec(void);
 
 #ifdef _PARSE_C_
 int consume(TKtype type);
+int consume_typedef(Node **node);
 int consume_num(long *valp);
 int consume_string(char **str);
 int consume_ident(char**name);
@@ -303,9 +309,11 @@ int node_is_const(Node *node, long *val);
 int node_is_const_or_address(Node *node, long *valp, Node **varp);
 #define type_is_static(tp) (get_strage_class(tp)==SC_STATIC)
 #define type_is_extern(tp) (get_strage_class(tp)==SC_EXTERN)
+#define type_is_typedef(tp) (get_strage_class(tp)==SC_TYPEDEF)
 StorageClass get_strage_class(Type *tp);
 
 #ifdef _PARSE_C_
+Node *search_symbol(const char *name);
 void regist_var_def(Node *node);
 void regist_func(Node *node, int full_check);
 void regist_symbol(Node *node);
@@ -365,6 +373,7 @@ char* get_type_str(const Type *tp);
 char* get_func_args_str(const Node *node);
 const char *get_NDtype_str(NDtype type);
 void dump_node(const Node *node, const char *str);
+void dump_type(const Type *tp, const char *str);
 
 EXTERN char *filename;
 EXTERN char *user_input;

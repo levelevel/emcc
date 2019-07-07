@@ -16,7 +16,7 @@
     init_declarator         = declarator ( "=" initializer )?
     storage_class_specifier = "typedef" | "static" | "extern" | "auto" | "register"
     type_specifier          = "void" | "char" | "short" | "int" | "long" | "signed" | "unsigned"
-                            | enum_specifier
+                            | enum_specifier | typedef_name
     enum_specifier          = "enum" identifier? "{" enumerator ( "," enumerator )* ","? "}"
                             | "enum" identifier
     enumerator              = enumeration_constant ( "=" constant-expression )?
@@ -269,6 +269,12 @@ static Node *init_declarator(Type *decl_spec, Type *tp, char *name) {
     tp   = node->tp;
     name = node->name;
 
+    if (type_is_typedef(tp)) {
+        node->type = ND_TYPEDEF;
+        regist_var_def(node);
+        return node;
+    }
+
     //初期値: rhsに初期値を設定する
     if (consume('=')) {
         if (type_is_extern(tp)) error_at(input, "extern変数は初期化できません");
@@ -296,6 +302,7 @@ static Node *init_declarator(Type *decl_spec, Type *tp, char *name) {
         }
     }
 
+    //初期値により配列のサイズが決まるケースがあるので、regist_var_def()は初期値の確定後に行う必要あり
     regist_var_def(node);   //ND_UNDEF -> ND_(LOCAL|GLOBAL)_VAR_DEFに確定する。ND_FUNC_DECLはそのまま
     if (rhs) node->rhs = new_node('=', new_node_ident(name, input), rhs, tp, input);
 
@@ -390,8 +397,6 @@ static Node *direct_declarator(Type *tp, char *name) {
         //dump_node(node, __func__);
         if (node->type==ND_FUNC_DECL) regist_func(node, 1);
         return node;
-    } else if (tp->type==VOID) {
-        error_at(input_str(), "不正なvoid指定です"); 
     }
     
     if (token_is('[')) tp = array_def(tp);
@@ -577,15 +582,15 @@ static Type *declaration_specifiers(void) {
     }
 
     Node *node = NULL;
-    char *input;
+    char *us_input;
     TPType type = 0;
     StorageClass sclass = SC_UNDEF;
-    int is_unsigned = -1;
-    int pre_const = 0;  //型の前にconstがある：const int
-    int post_const = 0; //型の後にconstがある：int const
+    int is_unsigned = -1;   //-1:未指定、0:signed、1:unsigned
+    int pre_const  = 0;     //型の前にconstがある：const int
+    int post_const = 0;     //型の後にconstがある：int const
 
     while (1) {
-        input = input_str();
+        char *input = input_str();
         if (consume(TK_VOID)) {
             if (type) error_at(input, "型指定が不正です\n");
             type = VOID;
@@ -606,12 +611,17 @@ static Type *declaration_specifiers(void) {
             if (type) error_at(input, "型指定が不正です\n");
             type = ENUM;
             node = enum_specifier();
+        } else if (consume_typedef(&node)) {
+            if (type) error_at(input, "型指定が不正です\n");
+            type = node->tp->type;
         } else if (consume(TK_SIGNED)) {
             if (is_unsigned>=0) error_at(input, "型指定が不正です\n");
             is_unsigned = 0;
+            us_input = input;
         } else if (consume(TK_UNSIGNED)) {
             if (is_unsigned>=0) error_at(input, "型指定が不正です\n");
             is_unsigned = 1;
+            us_input = input;
         } else if (consume(TK_AUTO)) {
             if (sclass) error_at(input, "strage classが重複しています\n");
             sclass = SC_AUTO;
@@ -639,20 +649,23 @@ static Type *declaration_specifiers(void) {
             error_at(input, "void型の指定が不正です\n");
     }
 
-    if (is_unsigned<0) is_unsigned = 0;
-    if (node) {
-        tp = node->tp;
+    Type *top_tp;
+    if (node) { //enum,typedef_name
+        if (is_unsigned>=0) error_at(us_input, "enum/typedef/struct/union名に対してsigned/unsignedの指定はできません\n");
+        top_tp = tp = node->tp;
+        while (tp->ptr_of) tp = tp->ptr_of; //PTRとARRAYを飛ばす
     } else {
-        tp = new_type(type, is_unsigned);
+        if (is_unsigned<0) is_unsigned = 0;
+        top_tp = tp = new_type(type, is_unsigned);
     }
     tp->sclass = sclass;
     if (pre_const) tp->is_const = 1;
-    if (post_const) {
-        Type *tmp = tp;
-        tp = new_type(CONST, 0);
-        tp->ptr_of = tmp;
+    if (post_const) {   //先頭にCONSTを挿入
+        Type *tmp = new_type(CONST, 0);
+        tmp->ptr_of = top_tp;
+        top_tp = tmp;
     }
-    return tp;
+    return top_tp;
 }
 
 //    enum_specifier          = "enum" identifier? "{" enumerator ( "," enumerator )* ","? "}"
@@ -1194,6 +1207,7 @@ static Node *unary_expression(void) {
         node = new_node(ND_ADDRESS, NULL, node, new_type_ptr(node->tp), input);
     } else if (consume(TK_SIZEOF)) {
         Type *tp;
+        char *input = input_str();
         if (token_is('(')) {
             if (next_token_is_type_spec()) {
                 consume('(');
@@ -1207,6 +1221,7 @@ static Node *unary_expression(void) {
             node = unary_expression();
             tp = node->tp;
         }
+        if (tp->type==ARRAY && tp->array_size<=0) error_at(input, "不完全型のサイズは未定義です");
         node = new_node_num(size_of(tp), input);
     } else if (consume(TK_ALIGNOF)) {
         Type *tp;

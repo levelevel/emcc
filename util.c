@@ -104,7 +104,7 @@ static void strcat_word(char *buf, const char *str) {
     strcat(buf, str);
 }
 //bufに対してTypeをダンプする
-static void dump_type(char *buf, const Type *tp) {
+static void sprint_type(char *buf, const Type *tp) {
     const char *str = TypeStr[tp->type];
     if (tp->is_unsigned) strcat_word(buf, "unsigned");
     if (tp->is_const)    strcat_word(buf, "const");
@@ -120,12 +120,12 @@ static void dump_type(char *buf, const Type *tp) {
     } else if (tp->type==ENUM) {
         strcat_word(buf, tp->node->name?tp->node->name:"(anonymous)");
     }
-    if (tp->ptr_of) dump_type(buf, tp->ptr_of);
+    if (tp->ptr_of) sprint_type(buf, tp->ptr_of);
 }
 
 //bufに対して型を表す文字列をCの文法で生成する
-static void print_type(char *buf, const Type *tp) {
-    if (tp->ptr_of) print_type(buf, tp->ptr_of);
+static void sprintC_type(char *buf, const Type *tp) {
+    if (tp->ptr_of) sprintC_type(buf, tp->ptr_of);
     strcat_word(buf, SClassStr[tp->sclass]);
     if (tp->is_unsigned) strcat_word(buf, "unsigned");
     if (tp->is_const)    strcat_word(buf, "const");
@@ -148,9 +148,9 @@ char *get_type_str(const Type *tp) {
     //ARRAY以外を深さ優先で先に処理する
     for (p=tp; p->type==ARRAY; p=p->ptr_of);
     if (1) {
-        dump_type(buf, p);
+        sprint_type(buf, p);
     } else {
-        print_type(buf, p);
+        sprintC_type(buf, p);
     }
     //strcat(buf, ")");
     for (p=tp; p->type==ARRAY; p=p->ptr_of) {
@@ -183,66 +183,95 @@ char *get_func_args_str(const Node *node) {
     return ret;
 }
 
+#define ENUM2STR(val) case val: return #val
 const char *get_NDtype_str(NDtype type) {
-    #define NDTYPE_CASE(val) case val: return #val
     switch (type) {
-    NDTYPE_CASE(ND_UNDEF);
-    NDTYPE_CASE(ND_NOT);
-    NDTYPE_CASE(ND_MOD);
-    NDTYPE_CASE(ND_AND);
-    NDTYPE_CASE(ND_MUL);
-    NDTYPE_CASE(ND_PLUS);
-    NDTYPE_CASE(ND_MINUS);
-    NDTYPE_CASE(ND_DIV);
-    NDTYPE_CASE(ND_LT);
-    NDTYPE_CASE(ND_ASSIGN);
-    NDTYPE_CASE(ND_GT);
-    NDTYPE_CASE(ND_XOR);
-    NDTYPE_CASE(ND_OR);
-    NDTYPE_CASE(ND_NUM);
-    NDTYPE_CASE(ND_STRING);
-    NDTYPE_CASE(ND_IDENT);
-    NDTYPE_CASE(ND_TYPE_DECL);
-    NDTYPE_CASE(ND_ENUM_DEF);
-    NDTYPE_CASE(ND_ENUM);
-    NDTYPE_CASE(ND_LOCAL_VAR);
-    NDTYPE_CASE(ND_GLOBAL_VAR);
-    NDTYPE_CASE(ND_CAST);
-    NDTYPE_CASE(ND_INC);
-    NDTYPE_CASE(ND_DEC);
-    NDTYPE_CASE(ND_INC_PRE);
-    NDTYPE_CASE(ND_DEC_PRE);
-    NDTYPE_CASE(ND_INDIRECT);
-    NDTYPE_CASE(ND_ADDRESS);
-    NDTYPE_CASE(ND_EQ);
-    NDTYPE_CASE(ND_NE);
-    NDTYPE_CASE(ND_LE);
-    NDTYPE_CASE(ND_LAND);
-    NDTYPE_CASE(ND_LOR);
-    NDTYPE_CASE(ND_TRI_COND);
-    NDTYPE_CASE(ND_PLUS_ASSIGN);
-    NDTYPE_CASE(ND_MINUS_ASSIGN);
-    NDTYPE_CASE(ND_LOCAL_VAR_DEF);
-    NDTYPE_CASE(ND_GLOBAL_VAR_DEF);
-    NDTYPE_CASE(ND_RETURN);
-    NDTYPE_CASE(ND_IF);
-    NDTYPE_CASE(ND_WHILE);
-    NDTYPE_CASE(ND_FOR);
-    NDTYPE_CASE(ND_BREAK);
-    NDTYPE_CASE(ND_CONTINUE);
-    NDTYPE_CASE(ND_BLOCK);
-    NDTYPE_CASE(ND_LIST);
-    NDTYPE_CASE(ND_FUNC_CALL);
-    NDTYPE_CASE(ND_FUNC_DEF);
-    NDTYPE_CASE(ND_FUNC_DECL);
-    NDTYPE_CASE(ND_VARARGS);
-    NDTYPE_CASE(ND_EMPTY);
+    ENUM2STR(ND_UNDEF);
+    ENUM2STR(ND_NOT);
+    ENUM2STR(ND_MOD);
+    ENUM2STR(ND_AND);
+    ENUM2STR(ND_MUL);
+    ENUM2STR(ND_PLUS);
+    ENUM2STR(ND_MINUS);
+    ENUM2STR(ND_DIV);
+    ENUM2STR(ND_LT);
+    ENUM2STR(ND_ASSIGN);
+    ENUM2STR(ND_GT);
+    ENUM2STR(ND_XOR);
+    ENUM2STR(ND_OR);
+    ENUM2STR(ND_NUM);
+    ENUM2STR(ND_STRING);
+    ENUM2STR(ND_IDENT);
+    ENUM2STR(ND_TYPE_DECL);
+    ENUM2STR(ND_ENUM_DEF);
+    ENUM2STR(ND_ENUM);
+    ENUM2STR(ND_TYPEDEF);
+    ENUM2STR(ND_LOCAL_VAR);
+    ENUM2STR(ND_GLOBAL_VAR);
+    ENUM2STR(ND_CAST);
+    ENUM2STR(ND_INC);
+    ENUM2STR(ND_DEC);
+    ENUM2STR(ND_INC_PRE);
+    ENUM2STR(ND_DEC_PRE);
+    ENUM2STR(ND_INDIRECT);
+    ENUM2STR(ND_ADDRESS);
+    ENUM2STR(ND_EQ);
+    ENUM2STR(ND_NE);
+    ENUM2STR(ND_LE);
+    ENUM2STR(ND_LAND);
+    ENUM2STR(ND_LOR);
+    ENUM2STR(ND_TRI_COND);
+    ENUM2STR(ND_PLUS_ASSIGN);
+    ENUM2STR(ND_MINUS_ASSIGN);
+    ENUM2STR(ND_LOCAL_VAR_DEF);
+    ENUM2STR(ND_GLOBAL_VAR_DEF);
+    ENUM2STR(ND_RETURN);
+    ENUM2STR(ND_IF);
+    ENUM2STR(ND_WHILE);
+    ENUM2STR(ND_FOR);
+    ENUM2STR(ND_BREAK);
+    ENUM2STR(ND_CONTINUE);
+    ENUM2STR(ND_BLOCK);
+    ENUM2STR(ND_LIST);
+    ENUM2STR(ND_FUNC_CALL);
+    ENUM2STR(ND_FUNC_DEF);
+    ENUM2STR(ND_FUNC_DECL);
+    ENUM2STR(ND_VARARGS);
+    ENUM2STR(ND_EMPTY);
     default: return "ND_???";
+    }
+}
+static const char *get_TPType_str(TPType type) {
+    switch (type) {
+    ENUM2STR(VOID);
+    ENUM2STR(CHAR);
+    ENUM2STR(SHORT);
+    ENUM2STR(INT);
+    ENUM2STR(LONG);
+    ENUM2STR(LONGLONG);
+    ENUM2STR(ENUM);
+    ENUM2STR(PTR);
+    ENUM2STR(ARRAY);
+    ENUM2STR(FUNC);
+    ENUM2STR(CONST);
+    ENUM2STR(NEST);
+    default: return "???";
+    }
+}
+static const char *get_StorageClass_str(StorageClass type) {
+    switch (type) {
+    ENUM2STR(SC_UNDEF);
+    ENUM2STR(SC_AUTO);
+    ENUM2STR(SC_REGISTER);
+    ENUM2STR(SC_STATIC);
+    ENUM2STR(SC_EXTERN);
+    ENUM2STR(SC_TYPEDEF);
+    default: return "SC_???";
     }
 }
 
 static void dump_node_indent(FILE *fp, const Node *node, const char *str, int indent) {
-    fprintf(fp, "%*s", indent, "");
+    fprintf(fp, "#%*s", indent, "");
     if (str) fprintf(fp, "%s:", str);
     if (node==NULL) {
         fprintf(fp, "Node[null]\n");
@@ -260,7 +289,24 @@ static void dump_node_indent(FILE *fp, const Node *node, const char *str, int in
 }
 
 void dump_node(const Node *node, const char *str) {
-    dump_node_indent(stderr, node, str, 2);
+    dump_node_indent(stderr, node, str, 1);
+}
+
+static void dump_type_indent(FILE *fp, const Type *tp, const char *str, int indent) {
+    fprintf(fp, "#%*s", indent, "");
+    if (str) fprintf(fp, "%s:", str);
+    fprintf(fp, "Type[%p] (%s) type=%s, is_unsigned=%d, is_const=%d, sclass=%s, array_size=%ld\n", tp,
+        get_type_str(tp),
+        get_TPType_str(tp->type), 
+        tp->is_unsigned,
+        tp->is_const,
+        get_StorageClass_str(tp->sclass),
+        tp->array_size);
+    if (tp->node) dump_node_indent(fp, tp->node, NULL, indent+2);
+}
+
+void dump_type(const Type *tp, const char *str) {
+    dump_type_indent(stderr, tp, str, 1);
 }
 
 // エラーの起きた場所を報告するための関数

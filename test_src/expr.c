@@ -4,6 +4,7 @@
 #define stdout (__acrt_iob_func(1))
 #define stderr (__acrt_iob_func(2))
 #define size_t long
+#define NULL 0
 int printf(const char *format, ...);
 void exit(int status);
 char *strcpy(char *dest, const char *src);
@@ -729,11 +730,19 @@ int align() {
 
 int size_of1() {
     int n, *p, a[2*4], a2[2][3];
+    typedef int INT;
+    typedef unsigned int* UINTP;
+    typedef const INT INTA3[3];
+    typedef int INTA[];
+    INTA A4={10,20,30,40};
+    typedef int INTAA2[][2];
+//    INTAA2 A3A2={{00,01},{10,11},{20,21}};
     return
         sizeof(n)==4 && sizeof(&n)==8 && sizeof(p)==8 &&
         sizeof(a)==4*8 && sizeof(a[0])==4 &&
         sizeof(a2)==4*2*3 && sizeof(a2[0])==4*3 && sizeof(a2[0][1])==4 &&
         sizeof(int)==4 && sizeof(int*)==8 && sizeof(int(*(*)))==8 &&
+        sizeof(INT)==4 && sizeof(UINTP)==8 && sizeof(INTA3)==4*3 && sizeof(A4)==4*4 &&
         sizeof(unsigned int)==4 && sizeof(signed int)==4 &&
         sizeof(int[5])==4*5 && sizeof(int*[3])==8*3 &&
         sizeof(int[5][2])==4*5*2 && sizeof(int*[3][2])==8*3*2 &&
@@ -741,11 +750,17 @@ int size_of1() {
 }
 int size_of1c() {
     char n, *p, a[2*4], a2[2][3];
+    typedef char CHAR;
+    typedef unsigned char* UCHARP;
+    typedef const CHAR CHARA3[3];
+    typedef char CHARA[];
+    CHARA A4={10,20,30,40};
     return
         sizeof(n)==1 && sizeof(&n)==8 && sizeof(p)==8 &&
         sizeof(a)==1*8 && sizeof(a[0])==1 &&
         sizeof(a2)==1*2*3 && sizeof(a2[0])==1*3 && sizeof(a2[0][1])==1 &&
         sizeof(char)==1 && sizeof(char*)==8 && sizeof(char(*(*)))==8 &&
+        sizeof(CHAR)==1 && sizeof(UCHARP)==8 && sizeof(CHARA3)==1*3 && sizeof(A4)==1*4 &&
         sizeof(unsigned char)==1 && sizeof(signed char)==1 &&
         sizeof(char[5])==1*5 && sizeof(char*[3])==8*3 &&
         sizeof(char[5][2])==1*5*2 && sizeof(char*[3][2])==8*3*2 &&
@@ -753,11 +768,15 @@ int size_of1c() {
 }
 int size_of1s() {
     short n, *p, a[2*4], a2[2][3];
+    typedef short SHORT;
+    typedef unsigned short* USHORTP;
+    typedef const SHORT SHORTA3[3];
     return
         sizeof(n)==2 && sizeof(&n)==8 && sizeof(p)==8 &&
         sizeof(a)==2*8 && sizeof(a[0])==2 &&
         sizeof(a2)==2*2*3 && sizeof(a2[0])==2*3 && sizeof(a2[0][1])==2 &&
         sizeof(short)==2 && sizeof(short*)==8 && sizeof(short(*(*)))==8 &&
+        sizeof(SHORT)==2 && sizeof(USHORTP)==8 && sizeof(SHORTA3)==2*3 &&
         sizeof(unsigned short)==2 && sizeof(signed short)==2 &&
         sizeof(short[5])==2*5 && sizeof(short*[3])==8*3 &&
         sizeof(short[5][2])==2*5*2 && sizeof(short*[3][2])==8*3*2 &&
@@ -765,11 +784,15 @@ int size_of1s() {
 }
 int size_of1l() {
     long n, *p, a[2*4], a2[2][3];
+    typedef long LONG;
+    typedef unsigned long* ULONGP;
+    typedef const LONG LONGA3[3];
     return 
         sizeof(n)==8 && sizeof(&n)==8 && sizeof(p)==8 &&
         sizeof(a)==8*8 && sizeof(a[0])==8 &&
         sizeof(a2)==8*2*3 && sizeof(a2[0])==8*3 && sizeof(a2[0][1])==8 &&
         sizeof(long)==8 && sizeof(long*)==8 && sizeof(long(*(*)))==8 &&
+        sizeof(LONG)==8 && sizeof(ULONGP)==8 && sizeof(LONGA3)==8*3 &&
         sizeof(unsigned long)==8 && sizeof(signed long)==8 &&
         sizeof(long[5])==8*5 && sizeof(long*[3])==8*3 &&
         sizeof(long[5][2])==8*5*2 && sizeof(long*[3][2])==8*3*2 &&
@@ -777,33 +800,45 @@ int size_of1l() {
 }
 int size_of1ll() {
     long long n, *p, a[2*4], a2[2][3];
+    typedef long long LLONG;
+    typedef unsigned long long* ULLONGP;
+    typedef const LLONG LLONGA3[3];
     return 
         sizeof(n)==8 && sizeof(&n)==8 && sizeof(p)==8 &&
         sizeof(a)==8*8 && sizeof(a[0])==8 &&
         sizeof(a2)==8*2*3 && sizeof(a2[0])==8*3 && sizeof(a2[0][1])==8 &&
         sizeof(long long)==8 && sizeof(long long*)==8 &&
         sizeof(unsigned long long)==8 && sizeof(signed long long)==8 &&
+        sizeof(LLONG)==8 && sizeof(ULLONGP)==8 && sizeof(LLONGA3)==8*3 &&
         sizeof(long long[5])==8*5 && sizeof(long long*[3])==8*3 &&
         sizeof(long long[5][2])==8*5*2 && sizeof(long long*[3][2])==8*3*2 &&
         sizeof(1)==4 && sizeof(1==1)==4 && sizeof(n=1)==8;
 }
 int size_of1v() {
     void *p, *a[2*4], *a2[2][3];
+    typedef void VOID;
+    typedef void* VOIDP;
+    typedef const VOIDP VOIDA3[3];
     return
         sizeof(p)==8 &&
         sizeof(a)==8*8 && sizeof(a[0])==8 &&
         sizeof(a2)==8*2*3 && sizeof(a2[0])==8*3 && sizeof(a2[0][1])==8 &&
         sizeof(void)==1 && sizeof(void*)==8 && sizeof(void(*(*)))==8 &&
+        sizeof(VOID)==1 && sizeof(VOIDP)==8 && sizeof(VOIDA3)==8*3 &&
         sizeof(char*[3])==8*3 &&
         sizeof(char*[5][2])==8*5*2 && sizeof(char*[3][2])==8*3*2;
 }
 int size_of1C() {
     const int n, *p, a[2*4], a2[2][3];
+    typedef const int INT;
+    typedef const unsigned int* UINTP;
+    typedef const INT INTA3[3];
     return
         sizeof(n)==4 && sizeof(&n)==8 && sizeof(p)==8 &&
         sizeof(a)==4*8 && sizeof(a[0])==4 &&
         sizeof(a2)==4*2*3 && sizeof(a2[0])==4*3 && sizeof(a2[0][1])==4 &&
         sizeof(const int)==4 && sizeof(const int*)==8 && sizeof(const int(*(*)))==8 &&
+        sizeof(INT)==4 && sizeof(UINTP)==8 && sizeof(INTA3)==4*3 && 
         sizeof(unsigned const int)==4 && sizeof(const signed int)==4 &&
         sizeof(const int[5])==4*5 && sizeof(const int*[3])==8*3 &&
         sizeof(const int[5][2])==4*5*2 && sizeof(int const*[3][2])==8*3*2;
@@ -1200,9 +1235,71 @@ static int enum1(void) {
     }
     return A==0 && B==1 && C==10 && D==C+1 && E==C && e==E && x==E+1 && ae==-3;
 }
+static int enum1e(void) {
+    typedef enum ABC {A,B,C=10,D,E=C,} ABC;
+    ABC e=E;
+    typedef enum {P=-1,Q=-2,R=-3} PQ;
+    static PQ ae; ae = R;
+    int x=0;
+    switch (e) {
+    case A:  x=A+1; break;
+    case E:  x=E+1; break;
+    default: x=0;
+    }
+    {
+        typedef enum ABC;
+        ABC e2 = D;
+    }
+    return A==0 && B==1 && C==10 && D==C+1 && E==C && e==E && x==E+1 && ae==-3;
+}
 static int Enum(void) {
     TEST(enum1);
+    TEST(enum1e);
     TEST(enum1g);
+    return 1;
+}
+
+static int typedef1(void) {
+    typedef int INT;
+    INT i=5, j=i+1;
+    INT a[]={10,20,30};
+    INT *ip=&i;
+    INT *pa[]={NULL, &i, &j};
+    return i==5 && a[2]==30
+        && *ip==5 && *pa[2]==6;
+}
+static int typedef1p(void) {
+    typedef int INT;
+    typedef int* INTP;
+    INT i=5, j=i+1;
+    INT a[]={10,20,30};
+    INTP ip=&i;
+    INTP pa[]={NULL, &i, &j};
+    return i==5 && a[2]==30
+        && *ip==5 && *pa[2]==6;
+}
+static int typedef1a(void) {
+    typedef int INT;
+    typedef int* INTP;
+    typedef int INTA[];
+    typedef int* INTPA[];
+    INT i=5, j=i+1;
+    INTA a={10,20,30};
+    INTP ip=&i;
+    INTPA pa={NULL, &i, &j};
+    return i==5 && a[2]==30
+        && *ip==5 && *pa[2]==6;
+}
+static int typedef3(void) {
+    typedef char* STR;
+    STR str="ABC";
+    return strcmp(str, "ABC")==0;
+}
+static int Typedef(void) {
+    TEST(typedef1);
+    TEST(typedef1p);
+    TEST(typedef1a);
+    TEST(typedef3);
     return 1;
 }
 
@@ -1227,6 +1324,7 @@ int main() {
     TEST(declarate);
     TEST(cast);
     TEST(Enum);
+    TEST(Typedef);
     //printf("%s:%d func=%s\n",__FILE__, __LINE__, __func__);
     return 0;
 }

@@ -430,7 +430,8 @@ static int gen(Node*node) {
         printf("  lea rax, BYTE PTR %s\n", buf);
         printf("  push rax\n");             //文字列リテラルのアドレスを返す
         break;
-    case ND_TYPE_DECL:
+    case ND_TYPE_DECL:      //enum/struct/unionの定義
+    case ND_TYPEDEF:        //typedef
     case ND_EMPTY:          //空文
     case ND_GLOBAL_VAR_DEF: //グローバル(extern)変数定義
     case ND_FUNC_DEF:       //関数定義
@@ -980,6 +981,7 @@ static void gen_global_var(Node *node) {
     case ND_GLOBAL_VAR_DEF:
         break;
     case ND_ENUM:
+    case ND_TYPEDEF:
         return;
     default:
         assert(type_is_static(node->tp));

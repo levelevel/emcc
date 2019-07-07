@@ -4,7 +4,7 @@ ulimit -c unlimited
 
 EXE=tmp/test
 AFLAGS="-g -no-pie"
-CFLAGS="-D_9cc"
+CFLAGS="-D_9cc -std=c11 -pedantic-errors "
 ER=Error
 WR=Warning
 
@@ -166,6 +166,7 @@ try $ER "static extern func(){} int main(){}"
 #try $ER "extern int func(); extern int*func();"
 try $ER "sizeof(static int);"
 try $ER "sizeof(extern int);"
+try $ER "sizeof(int[])"
 try $ER "int main(...){}"
 try $ER "int main(int argc, ..., char *argv[]){}"
 try $ER "int main(int argc, void){}"
@@ -220,12 +221,15 @@ try $ER "case 1: ;"
 try $ER "default 1: ;"
 try $ER "switch(1){case 1:; case 1:;}"
 try $ER "switch(1){default:; default:;}"
+
 try $ER "int e; enum ABC{A,B,C} e;"
 try $ER "enum ABC{A,B,C} e; int e;"
 try $ER "enum ABC{A,B,A} e;"
 try $ER "enum ABC{A,B,C} e; enum ABC{X,Y,Z} x;"
 try $ER "enum ABC{A,B,C} e; enum XYZ{A,Y,Z} x;"
 try $ER "enum ABC{A,B,C}; enum ABC{P,Q,R} e;"
+try $ER "enum ABC{A,B,C}; unsigned enum ABC abc;"
+
 try $ER "int main(void); int main(int x){return 1:}"
 try $ER "int main(void); int main(int){return 1:}"
 try $ER "int main(void); int main(int x);"
@@ -234,6 +238,9 @@ try $ER "int main(int); int main(int, ...);"
 try $ER "int main(int); int main(){return 1;};"
 try $ER "int func(void); int main(){int func(int);}"
 try $ER "int main(){int func(void); int func(int);}"
+
+try $ER "typedef int INT=1;"
+try $ER "typedef int INT; unsigned INT i;"
 
 #多次元配列
 try $ER "int a[][3]={{1,2,3},{11,12,13}; return a[1][2]}"

@@ -1,9 +1,9 @@
-CFLAGS=-Wall -std=c11 -g -static
+CFLAGS=-Wall -std=c11 -pedantic-errors -g -static
 SRCS=$(wildcard *.c)
 OBJS=$(SRCS:.c=.o)
 
 9cc: $(OBJS)
-	$(CC) -o 9cc $(OBJS) $(LDFLAGS)
+	$(CC) $(CFLAGS) -o 9cc $(OBJS) $(LDFLAGS)
 
 $(OBJS): 9cc.h
 

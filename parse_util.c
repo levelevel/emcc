@@ -17,8 +17,8 @@ long size_of(const Type *tp) {
     case ENUM:     return sizeof(int);
     case PTR:      return sizeof(void*);
     case ARRAY:
-        if (tp->array_size<0) return sizeof(void*);
-        else return tp->array_size * size_of(tp->ptr_of);
+        if (tp->array_size<0) return 0;
+        else                  return tp->array_size * size_of(tp->ptr_of);
     case FUNC:     return sizeof(void*);
     default:    //CONST,NEST
         assert(0);
@@ -180,7 +180,7 @@ StorageClass get_strage_class(Type *tp) {
 // 以下はparse.cローカル
 
 //nameをスコープの内側から検索してNodeを返す
-static Node *search_symbol(const char *name) {
+Node *search_symbol(const char *name) {
     Node *node = NULL;
     for (int i=stack_len(symbol_stack)-1; i>=0; i--) {
         Map *symbol_map = (Map*)stack_get(symbol_stack, i);
@@ -199,15 +199,20 @@ void regist_var_def(Node *node) {
     if (cur_funcdef!=NULL) {        //関数内であればローカル
         Map *symbol_map = stack_top(symbol_stack); 
         if (map_get(symbol_map, name, (void**)&reg_node)==0) {
-            if (type_is_static(node->tp)) {
+            StorageClass sclass = get_strage_class(node->tp);
+            switch (sclass) {
+            case SC_STATIC:
                 node->offset = global_index++;
-            } else {
+                break;
+            case SC_TYPEDEF:
+                break;
+            default:
                 node->offset = get_var_offset(node->tp);
             }
             if (node->type==ND_UNDEF) node->type = ND_LOCAL_VAR_DEF;
             map_put(symbol_map, name, node);
 
-            if (type_is_static(node->tp)) {
+            if (sclass==SC_STATIC) {
                 vec_push(static_var_vec, node);
             }
         } else if (type_is_extern(node->tp)) {
@@ -236,6 +241,10 @@ void regist_var_def(Node *node) {
             error_at(node->input, "'%s'はグローバル変数の重複定義です", name);
         }
     }
+
+    if (node_is_var_def(node) && node->tp->type==VOID) {
+        error_at(input_str(), "不正なvoid指定です"); 
+    }
 }
 
 //関数の定義・宣言をチェックして登録する
@@ -255,8 +264,6 @@ void regist_func(Node *node, int full_check) {
     } else if (!full_check) {
         return;
     } else if (def_node->type==ND_FUNC_DEF && node->type==ND_FUNC_DEF) {
-        dump_node(def_node, "old");
-        dump_node(node, "new");
         note_at(def_node->input, "以前の関数はここです");
         error_at(node->input, "関数が再定義されています");
     } else if (def_node->type==ND_FUNC_DECL && node->type==ND_FUNC_DEF) {
