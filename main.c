@@ -21,13 +21,8 @@ static char *read_file(const char *path) {
 
 int main(int argc, char*argv[])
 {
-    verbose = 0;
     while (argc>1) {
-        if (strcmp(argv[1], "-v")==0) {
-            verbose = 1;
-            argc--;
-            argv++;
-        } else if (strcmp(argv[1], "-test")==0) {
+        if (strcmp(argv[1], "-test")==0) {
             run_test();
             return 0;
         } else if (argc==3 && strcmp(argv[1], "-s")==0) {
@@ -49,8 +44,20 @@ int main(int argc, char*argv[])
         }
     }
 
-    // トークナイズしてパースする
+    error_ctrl = 0;     //エラー発生時にexit(1)する
+
+    compile();
+
+    return 0;
+}
+
+void compile(void) {
+    error_cnt          = 0;
+    warning_cnt        = 0;
+    note_cnt           = 0;
     token_vec          = new_vector();
+
+    // トークナイズ
     tokenize(user_input);
 
     tokens             = (Token**)token_vec->data;
@@ -68,12 +75,12 @@ int main(int argc, char*argv[])
     stack_push(symbol_stack,  global_symbol_map);
     stack_push(tagname_stack, global_tagname_map);
     funcdef_map        = new_map();
+    cur_funcdef        = NULL;
     global_index       = 0;
     cur_switch         = NULL;
+    // パース
     translation_unit();
 
     // 抽象構文木を下りながらコード生成
     gen_program();
-
-    return 0;
 }

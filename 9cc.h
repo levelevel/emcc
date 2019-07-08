@@ -6,6 +6,7 @@
 #include <string.h>
 #include <assert.h>
 #include <limits.h>
+#include <setjmp.h>
 
 //可変長ベクタ ---------------------------------------
 typedef struct {
@@ -236,8 +237,6 @@ typedef struct {
 #define EXTERN extern
 #endif
 
-EXTERN int verbose;
-
 // トークナイズした結果のトークン列はこのVectorに保存する
 EXTERN Vector *token_vec;
 EXTERN Token **tokens;  //token_vec->data;
@@ -275,6 +274,12 @@ EXTERN int global_index;
 //現在処理中のswitch文: cur_switch->valをラベルの識別indexとして用いる
 EXTERN Node *cur_switch;
 
+EXTERN int error_ctrl;      // エラー発生時の処理: 0:exit(1), 1:return, 2:longjmp
+EXTERN jmp_buf jmpbuf;
+EXTERN int error_cnt;
+EXTERN int warning_cnt;
+EXTERN int note_cnt;
+
 //現在のトークン（エラー箇所）の入力文字列
 #define input_str() (tokens[token_pos]->input)
 
@@ -285,6 +290,9 @@ EXTERN Node *cur_switch;
 #define next_token_str()  (tokens[token_pos+1]->str)
 #define next_token_type() (tokens[token_pos+1]->type)
 #define next_token_is(_tp) (next_token_type()==(_tp))
+
+// main.c
+void compile(void);
 
 // tokenize.c
 void tokenize(char *p);
@@ -383,3 +391,5 @@ void note_at(const char*loc, const char*fmt, ...);
 void error(const char*fmt, ...);
 void warning(const char*fmt, ...);
 void run_test(void);
+
+void test_error(void);

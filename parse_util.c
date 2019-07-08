@@ -8,7 +8,7 @@
 long size_of(const Type *tp) {
     assert(tp);
     switch (tp->type) {
-    case VOID:     return sizeof(void);
+    case VOID:     return 1;
     case CHAR:     return sizeof(char);
     case SHORT:    return sizeof(short);
     case INT:      return sizeof(int);
@@ -90,6 +90,7 @@ int node_is_const(Node *node, long *valp) {
     case ND_LOCAL_VAR:
     case ND_GLOBAL_VAR:
     case ND_STRING:
+    case ND_FUNC_CALL:
         return 0;
     default:
         if (node->lhs && !node_is_const(node->lhs, &val1)) return 0;

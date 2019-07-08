@@ -14,7 +14,6 @@ https://www.sigbus.info/compilerbook/
 - 関数コール時の引数の型チェック
 - 多次元配列の初期化
 - より厳密なC標準準拠（GCCの-std=c11 -pedantic-errors相当）
-- エラーケースのテストをCで書き直す
 - \による文字のエスケープ
 - **構造体の実装**
   - .

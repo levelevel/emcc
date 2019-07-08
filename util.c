@@ -278,7 +278,7 @@ static void dump_node_indent(FILE *fp, const Node *node, const char *str, int in
         return;        
     }
     fprintf(fp, "Node[%p]:type=%s, name=%s, tp=%s, offset=%d, val=%ld", 
-        node,
+        (void*)node,
         get_NDtype_str(node->type),
         node->name?node->name:"",
         get_type_str(node->tp),
@@ -295,7 +295,8 @@ void dump_node(const Node *node, const char *str) {
 static void dump_type_indent(FILE *fp, const Type *tp, const char *str, int indent) {
     fprintf(fp, "#%*s", indent, "");
     if (str) fprintf(fp, "%s:", str);
-    fprintf(fp, "Type[%p] (%s) type=%s, is_unsigned=%d, is_const=%d, sclass=%s, array_size=%ld\n", tp,
+    fprintf(fp, "Type[%p] (%s) type=%s, is_unsigned=%d, is_const=%d, sclass=%s, array_size=%ld\n",
+        (void*)tp,
         get_type_str(tp),
         get_TPType_str(tp->type), 
         tp->is_unsigned,
@@ -341,8 +342,13 @@ void error_at(const char*loc, const char*fmt, ...){
     va_start(ap, fmt);
     vfprintf(stderr, fmt, ap);
     fprintf(stderr, "\n");
+    error_cnt++;
 
-    exit(1);
+    switch (error_ctrl) {
+    case 0: exit(1);
+    case 1: return;
+    case 2: longjmp(jmpbuf, 1);
+    }
   }
 
 void warning_at(const char*loc, const char*fmt, ...){
@@ -352,6 +358,7 @@ void warning_at(const char*loc, const char*fmt, ...){
     va_start(ap, fmt);
     vfprintf(stderr, fmt, ap);
     fprintf(stderr, "\n");
+    warning_cnt++;
   }
 
 void note_at(const char*loc, const char*fmt, ...){
@@ -361,6 +368,7 @@ void note_at(const char*loc, const char*fmt, ...){
     va_start(ap, fmt);
     vfprintf(stderr, fmt, ap);
     fprintf(stderr, "\n");
+    note_cnt++;
   }
 
 // エラーと警告を報告するための関数 --------------------------
@@ -382,7 +390,7 @@ void warning(const char*fmt, ...) {
     fprintf(stderr, "\n");
 }
 
-// テスト
+// テスト -------------------------------------------------
 static void expect(int line, long expected, long actual) {
     if (expected == actual) return;
     fprintf(stderr, "%d: %ld expected, but got actual %ld\n", line, expected, actual);
@@ -426,6 +434,7 @@ static void test_map(void) {
 void run_test(void) {
     test_vector();
     test_map();
+    test_error();   //test_src/test_error.c
     printf("run_test: OK\n");
 }
 

@@ -1,5 +1,5 @@
 CFLAGS=-Wall -std=c11 -pedantic-errors -g -static
-SRCS=$(wildcard *.c)
+SRCS=$(wildcard *.c) test_src/test_error.c
 OBJS=$(SRCS:.c=.o)
 
 9cc: $(OBJS)
@@ -8,7 +8,6 @@ OBJS=$(SRCS:.c=.o)
 $(OBJS): 9cc.h
 
 test: 9cc
-	./9cc -test
 	./test.sh
 tester: 9cc
 	./test.sh -e
