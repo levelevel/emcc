@@ -44,7 +44,8 @@ int main(int argc, char*argv[])
         }
     }
 
-    error_ctrl = 0;     //エラー発生時にexit(1)する
+    error_ctrl   = ERC_EXIT;
+    warning_ctrl = ERC_CONTINUE;
 
     compile();
 

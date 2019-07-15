@@ -157,7 +157,8 @@ static void test_error1(int index) {
         user_input = buf;
     }
 
-    error_ctrl = 2; //エラー発生時にlongjmp
+    error_ctrl   = ERC_LONGJMP; //エラー発生時にlongjmp
+    warning_ctrl = (test[index].expect==WR ? ERC_LONGJMP : ERC_CONTINUE);
     if (setjmp(jmpbuf)==0) {
         fprintf(fp, "# %s ----------\n", filename);
         fprintf(fp, "%s\n", user_input);

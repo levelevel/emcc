@@ -345,11 +345,11 @@ void error_at(const char*loc, const char*fmt, ...){
     error_cnt++;
 
     switch (error_ctrl) {
-    case 0: exit(1);
-    case 1: return;
-    case 2: longjmp(jmpbuf, 1);
+    case ERC_CONTINUE: return;
+    case ERC_EXIT:     exit(1);
+    case ERC_LONGJMP:  longjmp(jmpbuf, 1);
     }
-  }
+}
 
 void warning_at(const char*loc, const char*fmt, ...){
     message_at(loc, "Warning");
@@ -359,7 +359,13 @@ void warning_at(const char*loc, const char*fmt, ...){
     vfprintf(stderr, fmt, ap);
     fprintf(stderr, "\n");
     warning_cnt++;
-  }
+
+    switch (warning_ctrl) {
+    case ERC_CONTINUE: return;
+    case ERC_EXIT:     exit(1);
+    case ERC_LONGJMP:  longjmp(jmpbuf, 1);
+    }
+}
 
 void note_at(const char*loc, const char*fmt, ...){
     message_at(loc, "Note");

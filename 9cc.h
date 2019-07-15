@@ -274,7 +274,13 @@ EXTERN int global_index;
 //現在処理中のswitch文: cur_switch->valをラベルの識別indexとして用いる
 EXTERN Node *cur_switch;
 
-EXTERN int error_ctrl;      // エラー発生時の処理: 0:exit(1), 1:return, 2:longjmp
+typedef enum {
+    ERC_CONTINUE,
+    ERC_EXIT,
+    ERC_LONGJMP,
+} ErCtrl;
+EXTERN ErCtrl error_ctrl;       // エラー発生時の処理
+EXTERN ErCtrl warning_ctrl;     // Warning発生時の処理
 EXTERN jmp_buf jmpbuf;
 EXTERN int error_cnt;
 EXTERN int warning_cnt;
