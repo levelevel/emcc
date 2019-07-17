@@ -1,6 +1,4 @@
 #include "../9cc.h"
-/*
- */
 
 struct {
     enum {ER, WR} expect;
@@ -17,16 +15,16 @@ struct {
     {ER, "int a; int a;"},
     {ER, "int &a;"},
     {ER, "int +a;"},
-    {ER, "1++;"},
-    {ER, "--1;"},
+    {ER, "return 1++;"},
+    {ER, "return --1;"},
     {ER, "int a; *a;"},
     {ER, "int *a; **a;"},
     {ER, "*1;"},
     {ER, "*1=0;"},
-    {ER, "&1;"},
+    {ER, "&1; return 1;"},
     {ER, "int a; *a;"},
     {ER, "int a; *a=0;"},
-    {ER, "int a; & &a;"},
+    {ER, "int a; & &a; return 1;"},
     {WR, "int *a; a=1;"},
     {WR, "int a; int*b; a=b;"},
     {WR, "int a; int*b; b=a;"},
@@ -65,9 +63,9 @@ struct {
     {ER, "int func(int , void); int main(){}"},
     {ER, "int func(int a, char *a); int main(){}"},
     {WR, "int a = func();"},
-    {ER, "int func(){} int func(){} int main(){}"},
-    {ER, "int func     int func(){} int main(){}"},
-    {ER, "int func(){} int func     int main(){}"},
+    {ER, "void func(){} void func(){} int main(){}"},
+    {ER, "int func     void func(){} int main(){}"},
+    {ER, "void func(){} int func     int main(){}"},
     {ER, "int func(); *func();"},
     {ER, "int func(); int (*fp)()=func; *fp();"},
     {ER, "int func(); func()();"},
@@ -75,8 +73,8 @@ struct {
     {ER, "int a; a();"},
     {ER, "int a; int main(){a();}"},
     {ER, "extern int func(); extern int*func();"},
-    {ER, "break;"},
-    {ER, "continue;"},
+    {ER, "break; return 1;"},
+    {ER, "continue; return 1;"},
     //LVALUE
     {ER, "int a,b; (1?a:b)=0;"},
     {ER, "int a; a||1=0;"},
@@ -104,9 +102,9 @@ struct {
     {WR, "void main(){return 1;}"},
     {WR, "int main(){return;}"},
     {WR, "int main(){char*p=0; return p;}"},
-    {ER, "goto;"},
-    {ER, "goto L1;"},
-    {ER, "L1:; L1:;"},
+    {ER, "goto; return 1;"},
+    {ER, "goto L1; return 1;"},
+    {ER, "L1:; L1:; return 1;"},
     {ER, "case 1: ;"},
     {ER, "default 1: ;"},
     {ER, "switch(1){case 1:; case 1:;}"},
@@ -128,7 +126,12 @@ struct {
     {ER, "int main(){int func(void); int func(int);}"},
     {ER, "typedef int INT=1;"},
     {ER, "typedef int INT; unsigned INT i;"},
-    //多次元配列
+    {ER, "int func(int a){return 1;}; int main(){return func();}"}, //関数コールの引数が足りない
+    {ER, "int func(int *a){return 1;}; int main(){return func(1);}"},
+    {ER, "int func(int a, int b){return 1;}; int main(){return func(1);}"},
+    {ER, "int func(int a){return 1;}; int main(){return func(1,2);}"},
+    {ER, "int func(void){return 1;}; int main(){return func(1);}"},
+    //多次元配int func(int a){return 1;}; int main(){return func();}列
     {ER, "int a[][3]={{1,2,3},{11,12,13}; return a[1][2]}"},
     {ER, "int x; int x[4]; int main(){}"},
     {ER, "\"ABC\"=1;"},

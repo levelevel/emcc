@@ -19,12 +19,25 @@ static char *read_file(const char *path) {
     return buf;
 }
 
-int main(int argc, char*argv[])
-{
-    while (argc>1) {
-        if (strcmp(argv[1], "-test")==0) {
+static ErCtrl get_ctrl(const char*opt) {
+    switch(opt[2]) {
+    case 'c': return ERC_CONTINUE;
+    case 'e': return ERC_EXIT;
+    case 'a': return ERC_ABORT;
+    }
+    fprintf(stderr, "Illegal option: %s\n", opt);
+    exit(1);
+}
+
+static void read_opt(int argc, char*argv[]) {
+    for (; argc>1;  argc--, argv++) {
+        if (strncmp(argv[1], "-e", 2)==0) {
+            error_ctrl = get_ctrl(argv[1]);
+        } else if (strncmp(argv[1], "-w", 2)==0) {
+            warning_ctrl = get_ctrl(argv[1]);
+        } else if (strcmp(argv[1], "-test")==0) {
             run_test();
-            return 0;
+            exit(0);
         } else if (argc==3 && strcmp(argv[1], "-s")==0) {
             filename = argv[1];
             user_input = argv[2];
@@ -39,13 +52,21 @@ int main(int argc, char*argv[])
             user_input = read_file(filename);
             break;
         } else {
-            fprintf(stderr,"Usage: 9cc [-v] {-s 'program' | -test | filename\n");
-            return 1;
+            fprintf(stderr,"Usage: 9cc [option] {-s 'program' | file}\n");
+            fprintf(stderr,"  -[ew][cea]: error/warnin制御。c:continue, e:exit, a:abort\n");
+            fprintf(stderr,"  -test: run self test\n");
+            exit(1);
         }
     }
+}
 
+int main(int argc, char*argv[])
+{
     error_ctrl   = ERC_EXIT;
     warning_ctrl = ERC_CONTINUE;
+    note_ctrl    = ERC_CONTINUE;
+
+    read_opt(argc, argv);
 
     compile();
 

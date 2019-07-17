@@ -54,7 +54,7 @@ test_src() {
 try1() {
   rm -f $EXE
   make -s
-  ./9cc -s "$*" > $EXE.s
+  ./9cc "$@" > $EXE.s
   if [ $? != 0 ]; then exit 1; fi
   cat -n $EXE.s
   gcc $AFLAGS -o $EXE $EXE.s
@@ -69,7 +69,7 @@ while [ $# -gt 0 ]; do
   case $1 in
   -d*) GDB=gdb;;
   -e*) test_er_only=1;;
-  *) try1 "$1";;
+  *) try1 "$@";;
   esac
   shift
 done

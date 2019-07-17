@@ -219,8 +219,9 @@ void regist_var_def(Node *node) {
         } else if (type_is_extern(node->tp)) {
             //同じextern宣言であるかをチェックする
             if ( !type_eq(reg_node->tp, node->tp)) {
-                note_at(reg_node->input, "以前の宣言と");
+                SET_ERROR_WITH_NOTE;
                 error_at(node->input, "型が一致しません");
+                note_at(reg_node->input, "以前の宣言はここです");
             }
         } else {
             error_at(node->input, "'%s'はローカル変数の重複定義です", name);
@@ -235,8 +236,9 @@ void regist_var_def(Node *node) {
         } else if (type_is_extern(node->tp)) {
             //同じextern宣言であるかをチェックする
             if ( !type_eq(reg_node->tp, node->tp)) {
-                note_at(reg_node->input, "以前の宣言と");
+                SET_ERROR_WITH_NOTE;
                 error_at(node->input, "型が一致しません");
+                note_at(reg_node->input, "以前の宣言はここです");
             }
         } else {
             error_at(node->input, "'%s'はグローバル変数の重複定義です", name);
@@ -260,13 +262,15 @@ void regist_func(Node *node, int full_check) {
     } else if (def_node->type==ND_GLOBAL_VAR_DEF) {
         error_at(node->input, "'%s'は異なる種類のシンボルとして再定義されています", node->name);
     } else if (!type_eq(def_node->tp, node->tp)) {
-        note_at(def_node->input, "以前の関数はここです");
+        SET_ERROR_WITH_NOTE;
         error_at(node->input, "関数の型が一致しません");
+        note_at(def_node->input, "以前の関数はここです");
     } else if (!full_check) {
         return;
     } else if (def_node->type==ND_FUNC_DEF && node->type==ND_FUNC_DEF) {
-        note_at(def_node->input, "以前の関数はここです");
+        SET_ERROR_WITH_NOTE;
         error_at(node->input, "関数が再定義されています");
+        note_at(def_node->input, "以前の関数はここです");
     } else if (def_node->type==ND_FUNC_DECL && node->type==ND_FUNC_DEF) {
         map_put(global_symbol_map, node->name, node);
     }
@@ -370,10 +374,10 @@ void check_func_return(Funcdef *funcdef) {
 
 }
 
-//引数リスト(ND_LIST)の妥当性を確認
+//関数定義・宣言の引数リスト(ND_LIST)の妥当性を確認
 //関数定義(def_mode=1)の場合は名前付き宣言(declaration)であることを確認
 void check_funcargs(Node *node, int def_mode) {
-    int size = node->lst->len;
+    int size = lst_len(node->lst);
     Node **arg_nodes = (Node**)node->lst->data;
     for (int i=0; i < size; i++) {
         Node *arg = arg_nodes[i];
@@ -384,6 +388,59 @@ void check_funcargs(Node *node, int def_mode) {
         }
         if (def_mode && arg->name==NULL)
             error_at(arg->input, "関数定義の引数には名前が必要です");
+    }
+}
+
+//関数コールの妥当性を確認
+void check_funccall(Node *node) {
+    assert(node->type==ND_FUNC_CALL);
+    int decl_size = 0;
+    int call_size = 0;
+    Node **decl_args = NULL;
+    Node **call_args = NULL;
+    if (node->lhs) {    //引数リスト(ND_LIST)
+        call_size = lst_len(node->lhs->lst);
+        call_args = (Node**)node->lhs->lst->data;
+    }
+    if (node->rhs) {    //ND_FUNC_DEF|DECL/ND_LOCAL|GLOBAL_VAR_DEF(FUNC)
+        if (node->rhs->lhs) {
+            decl_size = lst_len(node->rhs->lhs->lst);
+            decl_args = (Node**)node->rhs->lhs->lst->data;
+        } else {
+            Node *var_def;
+            Type *func_tp = node->rhs->tp;
+            if (func_tp->type==PTR) func_tp = func_tp->ptr_of;
+            assert(func_tp->type==FUNC);
+            var_def = func_tp->node;
+            decl_size = lst_len(var_def->lhs->lst);
+            decl_args = (Node**)var_def->lhs->lst->data;
+        }
+    }
+
+    if (call_size==0) { //
+        if (decl_size==0 || (decl_size==1 && decl_args[0]->tp->type==VOID)) return;
+        error_at(node->input, "引数の数が足りません");
+    } else {
+        for (int i=0;i<decl_size && i<call_size;i++) {
+            if (decl_args[i]->type==ND_VARARGS) return; //唯一引数の数が一致しないケース
+            if (!type_eq_assign(decl_args[i]->tp, call_args[i]->tp)) {
+                SET_ERROR_WITH_NOTE;
+                error_at(call_args[i]->input, "引数の型(%s:%s)が一致しません",
+                    get_type_str(decl_args[i]->tp),
+                    get_type_str(call_args[i]->tp));
+                note_at(decl_args[i]->input, "関数の定義はここです");
+            }
+        }
+        if (decl_size>call_size) {
+            SET_ERROR_WITH_NOTE;
+            error_at(call_args[call_size-1]->input, "引数の数が少なすぎます");
+            note_at (decl_args[call_size  ]->input, "関数の定義はここです");
+        }
+        if (decl_size<call_size) {
+            SET_ERROR_WITH_NOTE;
+            error_at(call_args[decl_size  ]->input, "引数の数が多すぎます");
+            note_at (decl_args[decl_size-1]->input, "関数の定義はここです");
+        }
     }
 }
 
@@ -456,10 +513,11 @@ Type *new_type_ptr(Type*ptr) {
     return tp;
 }
 
-Type *new_type_func(Type*ptr) {
+Type *new_type_func(Type*ptr, Node *node) {
     Type *tp = calloc(1, sizeof(Type));
     tp->type = FUNC;
     tp->ptr_of = ptr;
+    tp->node = node;
     return tp;
 }
 

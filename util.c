@@ -335,6 +335,15 @@ static void message_at(const char*loc, const char *level) {
     fprintf(stderr, "^ ");
 }
 
+static void err_ctrl(ErCtrl ctrl) {
+    switch (ctrl) {
+    case ERC_CONTINUE: return;
+    case ERC_EXIT:     exit(1);
+    case ERC_LONGJMP:  longjmp(jmpbuf, 1);
+    case ERC_ABORT:    abort();
+    }
+}
+
 void error_at(const char*loc, const char*fmt, ...){
     message_at(loc, "Error");
 
@@ -343,12 +352,7 @@ void error_at(const char*loc, const char*fmt, ...){
     vfprintf(stderr, fmt, ap);
     fprintf(stderr, "\n");
     error_cnt++;
-
-    switch (error_ctrl) {
-    case ERC_CONTINUE: return;
-    case ERC_EXIT:     exit(1);
-    case ERC_LONGJMP:  longjmp(jmpbuf, 1);
-    }
+    err_ctrl(error_ctrl);
 }
 
 void warning_at(const char*loc, const char*fmt, ...){
@@ -359,12 +363,7 @@ void warning_at(const char*loc, const char*fmt, ...){
     vfprintf(stderr, fmt, ap);
     fprintf(stderr, "\n");
     warning_cnt++;
-
-    switch (warning_ctrl) {
-    case ERC_CONTINUE: return;
-    case ERC_EXIT:     exit(1);
-    case ERC_LONGJMP:  longjmp(jmpbuf, 1);
-    }
+    err_ctrl(warning_ctrl);
 }
 
 void note_at(const char*loc, const char*fmt, ...){
@@ -375,6 +374,7 @@ void note_at(const char*loc, const char*fmt, ...){
     vfprintf(stderr, fmt, ap);
     fprintf(stderr, "\n");
     note_cnt++;
+    err_ctrl(note_ctrl);
   }
 
 // エラーと警告を報告するための関数 --------------------------

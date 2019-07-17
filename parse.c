@@ -355,7 +355,7 @@ static Node *declarator(Type *decl_spec, Type *tp, char *name) {
     return node;
 }
 static Node *direct_declarator(Type *tp, char *name) {
-    Node *node, *lhs=NULL;
+    Node *node=NULL, *lhs=NULL;
     Type *nest_tp=NULL;
     char *input = input_str();
     if (name == NULL) {
@@ -370,7 +370,7 @@ static Node *direct_declarator(Type *tp, char *name) {
     }
     if (consume('(')) { //関数定義・宣言確定
         Funcdef *org_funcdef = cur_funcdef;
-        tp = new_type_func(tp);
+        tp = new_type_func(tp, node);
         if (nest_tp) {  //関数のポインタ定義 int(*fp)();
             node->lhs = parameter_type_list();
             Type *p = nest_tp;
@@ -1273,6 +1273,7 @@ static Node *postfix_expression(void) {
                 }
                 expect(')');
             }
+            check_funccall(node);
         } else if (node->type==ND_IDENT) {
             error_at(node->input, "'%s'は未定義の変数です", node->name);
         } else {

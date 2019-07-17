@@ -16,6 +16,8 @@ typedef struct {
 } Vector;
 #define vec_len(vec) (vec)->len
 #define vec_data(vec,i) ((vec)->data[i])
+#define lst_len vec_len
+#define lst_data vec_data
 
 //マップ --------------------------------------------
 typedef struct {
@@ -142,9 +144,10 @@ typedef enum {
     ND_RETURN,      // rhs=expression
     ND_BLOCK,       //{ }               lst=ノード(declaration/statement)
     ND_LIST,        //コンマリスト
-    ND_FUNC_CALL,   //関数コール
-    ND_FUNC_DEF,    //関数定義          rhs=ブロック(ND_BLOCK)
-    ND_FUNC_DECL,   //関数宣言
+    ND_FUNC_CALL,   //関数コール        name=関数名, lhs=引数リスト(ND_LIST)/NULL, 
+                    //                 rhs=ND_FUNC_DEF|DECL/ND_LOCAL|GLOBAL_VAR_DEF(FUNC)
+    ND_FUNC_DEF,    //関数定義          lhs=引数リスト(ND_LIST), rhs=ブロック(ND_BLOCK：関数本体)
+    ND_FUNC_DECL,   //関数宣言          lhs=引数リスト(ND_LIST)
     ND_VARARGS,     //...
     ND_EMPTY,       //空のノード
 } NDtype;
@@ -278,13 +281,16 @@ typedef enum {
     ERC_CONTINUE,
     ERC_EXIT,
     ERC_LONGJMP,
+    ERC_ABORT,
 } ErCtrl;
 EXTERN ErCtrl error_ctrl;       // エラー発生時の処理
-EXTERN ErCtrl warning_ctrl;     // Warning発生時の処理
+EXTERN ErCtrl warning_ctrl;
+EXTERN ErCtrl note_ctrl;
 EXTERN jmp_buf jmpbuf;
 EXTERN int error_cnt;
 EXTERN int warning_cnt;
 EXTERN int note_cnt;
+#define SET_ERROR_WITH_NOTE  {note_ctrl = error_ctrl; error_ctrl = ERC_CONTINUE;}
 
 //現在のトークン（エラー箇所）の入力文字列
 #define input_str() (tokens[token_pos]->input)
@@ -339,12 +345,13 @@ Type *get_typeof(Type *tp);
 void check_return(Node *node);
 void check_func_return(Funcdef *funcdef);
 void check_funcargs(Node *node, int def_mode);
+void check_funccall(Node *node);
 int type_eq(const Type *tp1, const Type *tp2);
 int type_eq_assign(const Type *tp1, const Type *tp2);
 int get_var_offset(const Type *tp);
 Funcdef *new_funcdef(void);
 Type *new_type_ptr(Type*ptr);
-Type *new_type_func(Type*ptr);
+Type *new_type_func(Type*ptr, Node *node);
 Type *new_type_array(Type*ptr, size_t size);
 Type *new_type(int type, int is_unsigned);
 Node *new_node(int type, Node *lhs, Node *rhs, Type *tp, char *input);
