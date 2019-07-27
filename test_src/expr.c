@@ -18,30 +18,31 @@ size_t strlen(const char *s);
 #include <stdarg.h>
 #endif
 
+#define GLOBAL
 #define TEST(f) if(!f()) {printf("Error at %s:%d:%s\n",__FILE__,__LINE__,#f);exit(1);} else {printf("  OK: %s\n",#f);}
 
 static int f42() {42; ;;;;;}
-int addsub1(){
+static int addsub1(){
     int a=10, b=3, c=a+b*(-2), d=a/b, e=a%b;
     return c==4 && d==3 && e==1;
 }
-char addsub1c(){
+static char addsub1c(){
     char a=10, b=3, c=a+b*(-2), d=a/b, e=a%b;
     return c==4 && d==3 && e==1;
 }
-short addsub1s(){
+static short addsub1s(){
     short a=10, b=3, c=a+b*(-2), d=a/b, e=a%b;
     return c==4 && d==3 && e==1;
 }
-long addsub1l(){
+static long addsub1l(){
     long a=10, b=3, c=a+b*(-2), d=a/b, e=a%b;
     return c==4 && d==3 && e==1;
 }
-long long addsub1ll(){
+static long long addsub1ll(){
     long long a=10, b=3, c=a+b*(-2), d=a/b, e=a%b;
     return c==4 && d==3 && e==1;
 }
-int addsub_mix1() {
+static int addsub_mix1() {
     char c = 0x7f; unsigned char uc = 0x7f; int ic = 0x7f;
     short s = 0x7fff; unsigned short us = 0x7fff; int is = 0x7fff;
     int i = 0x7fffffff; unsigned int ui = 0x7fffffff; long li = 0x7fffffff;
@@ -52,7 +53,7 @@ int addsub_mix1() {
         i+ui == ui*2 && li+i == ui*2 &&
         l+ul == ul*2;
 }
-int addsub_mix2() {
+static int addsub_mix2() {
     char  c = -1; unsigned char  uc = 1;
     short s = -1; unsigned short us = 1;
     int   i = -1; unsigned int   ui = 1;
@@ -69,7 +70,7 @@ int addsub_mix2() {
         l == s && s == l && ul == us && ul == -s &&
         l == i && i == l && ul == ui && ul == -i;
 }
-int addsub() {
+static int addsub() {
     TEST(addsub1);
     TEST(addsub1c);
     TEST(addsub1s);
@@ -93,7 +94,7 @@ int addsub() {
         8<<2==32;
 }
 
-int eq_rel1() {
+static int eq_rel1() {
     return
         (5 == 5) == 1 &&
         (6 != 7) == 1 &&
@@ -102,7 +103,7 @@ int eq_rel1() {
         (3 <= 3) == 1 &&
         (4 >= 4) == 1;
 }
-int eq_rel2() {
+static int eq_rel2() {
     return
         (5 == 4) == 0 &&
         (6 != 6) == 0 &&
@@ -111,13 +112,13 @@ int eq_rel2() {
         (4 <= 3) == 0 &&
         (3 >= 4) == 0;
 }
-int eq_rel() {
+static int eq_rel() {
     TEST(eq_rel1);
     TEST(eq_rel2);
     return 1;
 }
 
-int while1() {
+static int while1() {
     int a=3;
     while (a) a = a-1; 
     while (1) {break;}
@@ -127,7 +128,7 @@ int while1() {
     return a==0 && sum==55;
 }
 
-int do1() {
+static int do1() {
     int a=3;
     do a--; while (a); 
     do {break;} while (1);
@@ -137,7 +138,7 @@ int do1() {
     return a==0 && sum==55;
 }
 
-int for1() {
+static int for1() {
     int a, b, i, j;
     for (i=0; i<5; i++) a=i;
     for (i=10; i; i--) {b=i; continue; b=999;};
@@ -153,7 +154,7 @@ int for1() {
     }
     return a==4 && b==1;
 }
-int for2() {
+static int for2() {
     int i=5;
     int n1=i, n2, n3;
     for (int i=0;i<=10;i++) {
@@ -164,16 +165,16 @@ int for2() {
     return n1==5 && n2==10 && n3==20;
 }
 
-    static int gtri_x;
-    static int gtri_a = 1?2:gtri_x;
-int tri_cond() {
+static int gtri_x;
+static int gtri_a = 1?2:gtri_x;
+static int tri_cond() {
     int a,b;
     a = 1?10:20;
     b = 0?10:20;
     return
         a==10 && b==20 && gtri_a==2;
 }
-int goto1(void) {
+static int goto1(void) {
     int i=0, L1=2;
     goto L1;
     i=1;
@@ -184,7 +185,7 @@ int goto1(void) {
     }
     L2: return i==10;
 }
-int iterate() {
+static int iterate() {
     TEST(while1);
     TEST(do1);
     TEST(for1);
@@ -238,7 +239,7 @@ static int inc() {
     px++; px+=2;
     return a+b+c==6 && x[1]==3 && x[2]==13 && *px==4;
 }
-int inc_char() {
+static int inc_char() {
     char a=1, b, c, x[]={1,2,3,4}, *px=&x[0];
     b = a++;
     c = ++b;
@@ -246,7 +247,7 @@ int inc_char() {
     px++; px+=2;
     return a+b+c==6 && x[1]==3 && x[2]==13 && *px==4;
 }
-int inc_short() {
+static int inc_short() {
     short a=1, b, c, x[]={1,2,3,4}, *px=&x[0];
     b = a++;
     c = ++b;
@@ -254,7 +255,7 @@ int inc_short() {
     px++; px+=2;
     return a+b+c==6 && x[1]==3 && x[2]==13 && *px==4;
 }
-int inc_long() {
+static int inc_long() {
     long a=1, b, c, x[]={1,2,3,4}, *px=&x[0];
     b = a++;
     c = ++b;
@@ -262,7 +263,7 @@ int inc_long() {
     px++; px+=2;
     return a+b+c==6 && x[1]==3 && x[2]==13 && *px==4;
 }
-int dec() {
+static int dec() {
     int a=2, b, c, x[]={1,2,3,4}, *px=&x[3];
     b = a--;
     c = --b;
@@ -270,7 +271,7 @@ int dec() {
     px--; px-=2;
     return a+b+c==3 && x[1]==1 && x[2]==-7 && *px==1;
 }
-int dec_char() {
+static int dec_char() {
     char a=2, b, c, x[]={1,2,3,4}, *px=&x[3];
     b = a--;
     c = --b;
@@ -278,7 +279,7 @@ int dec_char() {
     px--; px-=2;
     return a+b+c==3 && x[1]==1 && x[2]==-7 && *px==1;
 }
-int dec_short() {
+static int dec_short() {
     char a=2, b, c, x[]={1,2,3,4}, *px=&x[3];
     b = a--;
     c = --b;
@@ -286,7 +287,7 @@ int dec_short() {
     px--; px-=2;
     return a+b+c==3 && x[1]==1 && x[2]==-7 && *px==1;
 }
-int dec_long() {
+static int dec_long() {
     long a=2, b, c, x[]={1,2,3,4}, *px=&x[3];
     b = a--;
     c = --b;
@@ -294,7 +295,7 @@ int dec_long() {
     px--; px-=2;
     return a+b+c==3 && x[1]==1 && x[2]==-7 && *px==1;
 }
-int incdec() {
+static int incdec() {
     TEST(inc);
     TEST(inc_char);
     TEST(inc_short);
@@ -331,16 +332,16 @@ static char* stdarg(char fmt, ...) {
     return buf;
 }
 
-void void_func(void);
-void void_func(void) {
+static void void_func(void);
+static void void_func(void) {
     ;
 }
-void *void_funcp(void*);
-void *void_funcp(void*p) {
+static void *void_funcp(void*);
+static void *void_funcp(void*p) {
     return p;
 }
 
-short funcdecl1s(short s);
+       short funcdecl1s(short s);
 static char *funcdecl1c(char *cp);
 extern long funcdecl1l(long l, char*cp, ...); 
 static int funcdecl1();
@@ -353,7 +354,7 @@ static int funcdecl1() {
     return 1;
 }
 
-short funcdecl2s(short);
+       short funcdecl2s(short);
 static char *funcdecl2c(char);
 extern long funcdecl2l(long, char*, ...); 
 static int funcdecl2();
@@ -452,50 +453,50 @@ static int func() {
         fib(10) == 55;
 }
 
-int pf1(int *p, int**pp) {
+static int pf1(int *p, int**pp) {
     return *p + **pp;
 }
-int pointer1() {
+static int pointer1() {
     int  a = 1;
     int *p = &a;
     return *p == 1 && pf1(&a, &p)==2;
 }
-    int  gp1_a = 1;
-    int *gp1_p = &gp1_a;
-int pointer1g() {
+static int  gp1_a = 1;
+static int *gp1_p = &gp1_a;
+static int pointer1g() {
     return *gp1_p == 1 && pf1(&gp1_a, &gp1_p)==2;
 }
-int pointer2() {
+static int pointer2() {
     int a;
     int *p=&a;
     *p=12;
     return a==12;
 }
-    int gp2_a;
-    int *gp2_p=&gp2_a;
-int pointer2g() {
+static int  gp2_a;
+static int *gp2_p=&gp2_a;
+static int pointer2g() {
     *gp2_p=12;
     return gp2_a==12;
 }
-int**pointer3(int ***********a) {
+static int**pointer3(int ***********a) {
     &(a);
     &(*(a));
     &**(**a);
     return 0;
 }
-int* pf4(int *a){return a;}
-int pointer4() {
+static int* pf4(int *a){return a;}
+static int pointer4() {
     int x;
     int *y=pf4(&x);
     return &x==y;
 }
-int pointer5() {
+static int pointer5() {
     int **p=0;
     p++;
     ++p;
     return (long)(p-1) == sizeof(int*);
 }
-int pointer6() {
+static int pointer6() {
     int *p=0;
     int a=2;
     p = p+a;
@@ -504,11 +505,11 @@ int pointer6() {
     --p;
     return (long)(1+p) == sizeof(int)*2;
 }
-int pointer7() {
+static int pointer7() {
     int a, *p=&a, *q=&a+5;
     return p+5==q && q-p==5;
 }
-int pointer() {
+static int pointer() {
     TEST(pointer1);
     TEST(pointer1g);
     TEST(pointer2);
@@ -520,7 +521,7 @@ int pointer() {
     return 1;
 }
 
-int array1() {
+static int array1() {
     int a[4];
     *a     = 2;
     a[1]   = 4;
@@ -529,7 +530,7 @@ int array1() {
     return
         (long)a==(long)&a && a[0]==2 && *(a+1)==4 && a[2]==8 && (1,2)[1+a]==16;
 }
-int array1c() {
+static int array1c() {
     char a[4];
     *a     = 2;
     a[1]   = 4;
@@ -538,7 +539,7 @@ int array1c() {
     return
         (long)a==(long)&a && a[0]==2 && *(a+1)==4 && a[2]==8 && (1,2)[1+a]==16;
 }
-int array1s() {
+static int array1s() {
     short a[4];
     *a     = 2;
     a[1]   = 4;
@@ -547,7 +548,7 @@ int array1s() {
     return
         (long)a==(long)&a && a[0]==2 && *(a+1)==4 && a[2]==8 && (1,2)[1+a]==16;
 }
-int array1l() {
+static int array1l() {
     long a[4];
     *a     = 2;
     a[1]   = 4;
@@ -557,63 +558,63 @@ int array1l() {
         (long)a==(long)&a && a[0]==2 && *(a+1)==4 && a[2]==8 && (1,2)[1+a]==16;
 }
 static int af2(int *a){return a[0]+a[1]+a[2];}
-int array2() {
+static int array2() {
     int a[4]={1,2,3,4}, *p=a, *q=&a[2];
     return af2(a)==6 && p[1]==2, *q==3;
 }
-       int a2g_a[4]={1,2,3,4};
+GLOBAL int a2g_a[4]={1,2,3,4};
 static int a2g_b[4]={1,2,3,4}, *a2g_p=&a2g_a, *a2g_q=&a2g_b[2];
-int array2g() {
+static int array2g() {
     return af2(a2g_a)==6 && a2g_p[1]==2, *a2g_q==3;
 }
 static char af2c(char *a){return a[0]+a[1]+a[2];}
-int array2c() {
+static int array2c() {
     char a[4]={1,2,3,4}, *p=a, *q=&a[2];
     return af2c(a)==6 && p[1]==2, *q==3;
 }
 static short af2s(short *a){return a[0]+a[1]+a[2];}
-int array2s() {
+static int array2s() {
     short a[4]={1,2,3,4}, *p=a, *q=&a[2];
     return af2s(a)==6 && p[1]==2, *q==3;
 }
 static long af2l(long *a){return a[0]+a[1]+a[2];}
-int array2l() {
+static int array2l() {
     long a[4]={1,2,3,4}, *p=a, *q=&a[2];
     return af2l(a)==6 && p[1]==2, *q==3;
 }
-int array3() {
+static int array3() {
     int a[4][5], *p=(int*)a, b[4][5][6], *q=(int*)b;
     a[2][3] = 10;
     b[2][3][4] = 20;
     return
         (long)a[1] == (long)(a+1) && p[2*5+3]==10 && *(q+2*5*6+3*6+4)==20;
 }
-int array3c() {
+static int array3c() {
     char a[4][5], *p=(char*)a, b[4][5][6], *q=(char*)b;
     a[2][3] = 10;
     b[2][3][4] = 20;
     return
         (long)a[1] == (long)(a+1) && p[2*5+3]==10 && *(q+2*5*6+3*6+4)==20;
 }
-int array3s() {
+static int array3s() {
     short a[4][5], *p=(short*)a, b[4][5][6], *q=(short*)b;
     a[2][3] = 10;
     b[2][3][4] = 20;
     return
         (long)a[1] == (long)(a+1) && p[2*5+3]==10 && *(q+2*5*6+3*6+4)==20;
 }
-int array3l() {
+static int array3l() {
     long a[4][5], *p=(long*)a, b[4][5][6], *q=(long*)b;
     a[2][3] = 10;
     b[2][3][4] = 20;
     return
         (long)a[1] == (long)(a+1) && p[2*5+3]==10 && *(q+2*5*6+3*6+4)==20;
 }
-int sarray2() {
+static int sarray2() {
 //    static int a[4]={1,2,3,4}, *p=a, *q=&a[2];
 //    return af2(a)==6 && p[1]==2, *q==3;
 }
-int array() {
+static int array() {
     TEST(array1);
     TEST(array1c);
     TEST(array1s);
@@ -632,12 +633,12 @@ int array() {
     return 1;
 }
 
-    char sg1_buf[20];
-    char*sg1_p[4];
-    char sg1_str1[5] = "ABC";
-    char sg1_str2[ ] = "ABC";
-    char sg1_str3[4] = "ABCDE"; //長すぎる
-int string1() {
+GLOBAL char sg1_buf[20];
+GLOBAL char*sg1_p[4];
+GLOBAL char sg1_str1[5] = "ABC";
+GLOBAL char sg1_str2[ ] = "ABC";
+GLOBAL char sg1_str3[4] = "ABCDE"; //長すぎる
+static int string1() {
     char buf[20];
     strcpy(buf, "abc");
 
@@ -657,7 +658,7 @@ int string1() {
         strncmp(str3, "ABCD", 4)==0 &&
         strcmp(str1, sg1_str1)==0;
 }
-int string1g() {
+static int string1g() {
     strcpy(sg1_buf, "abc");
 
     sg1_p[0] = 0;
@@ -670,13 +671,13 @@ int string1g() {
         strcmp(sg1_str2, "ABC")==0 && strlen(sg1_str2)==3 &&
         strncmp(sg1_str3, "ABCD", 4)==0;
 }
-int string() {
+static int string() {
     TEST(string1);
     TEST(string1g);
     return 1;
 }
 
-int init1() {
+static int init1() {
     int a[] = {1,2,1+2};
     int b = {5,};
     char*p    = "ABC";
@@ -694,12 +695,13 @@ int init1() {
         ac[0]+ac[1]+ac[2]==13 &&
         ai[0]+ai[1]+ai[2]==13;
 }
-    int i1g_a[] = {1,2,1+2};
-    int i1g_b = {5,};
-    char*i1g_p    = "ABC";
-    char i1g_s1[] = "ABC";
-    char i1g_s2[] = {'A', 66, 'A'+2, 0};
-int init1g() {
+
+GLOBAL int i1g_a[] = {1,2,1+2};
+GLOBAL int i1g_b = {5,};
+GLOBAL char*i1g_p    = "ABC";
+GLOBAL char i1g_s1[] = "ABC";
+GLOBAL char i1g_s2[] = {'A', 66, 'A'+2, 0};
+static int init1g() {
     return
         i1g_a[0]+i1g_a[1]+i1g_a[2]==6 && sizeof(i1g_a)==sizeof(int)*3 &&
         i1g_b==5 && 
@@ -712,7 +714,7 @@ static int i1sg_b = {5,};
 static char*i1sg_p    = "ABC";
 static char i1sg_s1[] = "ABC";
 static char i1sg_s2[] = {'A', 66, 'A'+2, 0};
-int init1sg() {
+static int init1sg() {
     return
         i1sg_a[0]+i1sg_a[1]+i1sg_a[2]==6 && sizeof(i1sg_a)==sizeof(int)*3 &&
         i1sg_b==5 && 
@@ -720,20 +722,20 @@ int init1sg() {
         strcmp(i1sg_p,i1sg_s1)==0 &&
         strcmp(i1sg_s1,i1sg_s2)==0;
 }
-    int  i2g_x, *i2g_p = 2 + &i2g_x - 1;
-    char i2g_c, *i2g_ac[3] = {0,&i2g_c+1,(char*)3,(char*)4};    //初期値多い
-    int  i2g_i, *i2g_ai[5] = {0,&i2g_i+1,(int*) 3,(int*) 4};    //初期値足りない分は0
-int init2g() {
+GLOBAL int  i2g_x, *i2g_p = 2 + &i2g_x - 1;
+GLOBAL char i2g_c, *i2g_ac[3] = {0,&i2g_c+1,(char*)3,(char*)4};    //初期値多い
+GLOBAL int  i2g_i, *i2g_ai[5] = {0,&i2g_i+1,(int*) 3,(int*) 4};    //初期値足りない分は0
+static int init2g() {
     return 
         &i2g_x+1 == i2g_p && i2g_x==0 &&
         i2g_ac[1]==&i2g_c+1 && i2g_ac[2]==(char*)3 &&
         i2g_ai[1]==&i2g_i+1 && i2g_ai[2]==(int*)3 && i2g_ai[4]==0;
 }
-    static int i3g_a=9, *i3g_p=&*&i3g_a;
-int init3g() {
+static int i3g_a=9, *i3g_p=&*&i3g_a;
+static int init3g() {
     return *i3g_p==9;
 }
-int init() {
+static int init() {
     TEST(init1);
     TEST(init1g);
     TEST(init1sg);
@@ -742,23 +744,26 @@ int init() {
     return 1;
 }
 
-int align1() {
+static int align1() {
     char c1; int i; char c2; int*p;
     unsigned long ui = (unsigned long)&i, up = (unsigned long)&p;
     return ui%4==0 && up%8==0;
 }
-    char ag1_c1; int ag1_i; char ag1_c2; char*ag1_p;
-int align1g() {
+static char ag1_c1;
+static int  ag1_i;
+static char ag1_c2;
+static char*ag1_p;
+static int align1g() {
     unsigned long ui = (unsigned long)&ag1_i, up = (unsigned long)&ag1_p;
     return ui%4==0 && up%8==0;
 }
-int align() {
+static int align() {
     TEST(align1);
     TEST(align1g);
     return 1;
 }
 
-int size_of1() {
+static int size_of1() {
     int n, *p, a[2*4], a2[2][3];
     typedef int INT;
     typedef unsigned int* UINTP;
@@ -778,7 +783,7 @@ int size_of1() {
         sizeof(int[5][2])==4*5*2 && sizeof(int*[3][2])==8*3*2 &&
         sizeof(1)==4 && sizeof(1==1)==4 && sizeof(n=1)==4;
 }
-int size_of1c() {
+static int size_of1c() {
     char n, *p, a[2*4], a2[2][3];
     typedef char CHAR;
     typedef unsigned char* UCHARP;
@@ -796,7 +801,7 @@ int size_of1c() {
         sizeof(char[5][2])==1*5*2 && sizeof(char*[3][2])==8*3*2 &&
         sizeof(1)==4 && sizeof(1==1)==4 && sizeof(n=1)==1;
 }
-int size_of1s() {
+static int size_of1s() {
     short n, *p, a[2*4], a2[2][3];
     typedef short SHORT;
     typedef unsigned short* USHORTP;
@@ -812,7 +817,7 @@ int size_of1s() {
         sizeof(short[5][2])==2*5*2 && sizeof(short*[3][2])==8*3*2 &&
         sizeof(1)==4 && sizeof(1==1)==4 && sizeof(n=1)==2;
 }
-int size_of1l() {
+static int size_of1l() {
     long n, *p, a[2*4], a2[2][3];
     typedef long LONG;
     typedef unsigned long* ULONGP;
@@ -828,7 +833,7 @@ int size_of1l() {
         sizeof(long[5][2])==8*5*2 && sizeof(long*[3][2])==8*3*2 &&
         sizeof(1)==4 && sizeof(1==1)==4 && sizeof(n=1)==8;
 }
-int size_of1ll() {
+static int size_of1ll() {
     long long n, *p, a[2*4], a2[2][3];
     typedef long long LLONG;
     typedef unsigned long long* ULLONGP;
@@ -844,7 +849,7 @@ int size_of1ll() {
         sizeof(long long[5][2])==8*5*2 && sizeof(long long*[3][2])==8*3*2 &&
         sizeof(1)==4 && sizeof(1==1)==4 && sizeof(n=1)==8;
 }
-int size_of1v() {
+static int size_of1v() {
     void *p, *a[2*4], *a2[2][3];
     typedef void VOID;
     typedef void* VOIDP;
@@ -858,7 +863,7 @@ int size_of1v() {
         sizeof(char*[3])==8*3 &&
         sizeof(char*[5][2])==8*5*2 && sizeof(char*[3][2])==8*3*2;
 }
-int size_of1C() {
+static int size_of1C() {
     const int n, *p, a[2*4], a2[2][3];
     typedef const int INT;
     typedef const unsigned int* UINTP;
@@ -873,7 +878,7 @@ int size_of1C() {
         sizeof(const int[5])==4*5 && sizeof(const int*[3])==8*3 &&
         sizeof(const int[5][2])==4*5*2 && sizeof(int const*[3][2])==8*3*2;
 }
-int size_of2() {
+static int size_of2() {
     return
         _Alignof(char)==1            && _Alignof(char*)==8 &&
         _Alignof(char[5])==1         && _Alignof(char*[3])==8 &&
@@ -890,7 +895,7 @@ int size_of2() {
         _Alignof(long long)==8       && _Alignof(long long*)==8 &&
         _Alignof(long long[5][2])==8 && _Alignof(long long*[3][2])==8;
 }
-int size_of() {
+static int size_of() {
     TEST(size_of1);
     TEST(size_of1c);
     TEST(size_of1s);
@@ -902,7 +907,7 @@ int size_of() {
     return 1;
 }
 
-int type_of() {
+static int type_of() {
     char  c; typeof(c) c2;
     short s; typeof(s) s2;
     int   i; typeof(i) i2;
@@ -920,7 +925,7 @@ int type_of() {
         sizeof(typeof(si))==4;
 }
 
-    int sc_x=0, sc_y=0;
+static int sc_x=0, sc_y=0;
 static int scope1(void) {
     int sc_x; 
     sc_x=1;
@@ -964,7 +969,7 @@ static int scope(void) {
     return 1;
 }
 
-int overflow1() {
+static int overflow1() {
     int a = 0xffffffff;
     int b = 0 - 1;
     unsigned int ua = 0xffffffff;
@@ -976,7 +981,7 @@ int overflow1() {
         ub == -1 && ub > 0  &&
         ua == ub && a == ub ; 
 }
-int overflow1c() {
+static int overflow1c() {
     char a = 0xff;
     char b = 0 - 1;
     unsigned char ua = 0xff;
@@ -988,7 +993,7 @@ int overflow1c() {
         ub != -1 && ub > 0  &&
         ua == ub && a != ub ; 
 }
-int overflow1s() {
+static int overflow1s() {
     short a = 0xffff;
     short b = 0 - 1;
     unsigned short ua = 0xffff;
@@ -1000,7 +1005,7 @@ int overflow1s() {
         ub != -1 && ub > 0  &&
         ua == ub && a != ub ; 
 }
-int overflow1l() {
+static int overflow1l() {
     long a = 0xffffffffffffffff;
     long b = 0 - 1;
     unsigned long ua = 0xffffffffffffffff;
@@ -1012,7 +1017,7 @@ int overflow1l() {
         ub == -1 && ub > 0  &&
         ua == ub && a == ub ; 
 }
-int overflow1ll() {
+static int overflow1ll() {
     long long a = 0xffffffffffffffff;
     long long b = 0 - 1;
     unsigned long long ua = 0xffffffffffffffff;
@@ -1024,7 +1029,7 @@ int overflow1ll() {
         ub == -1 && ub > 0  &&
         ua == ub && a == ub ; 
 }
-int overflow2() {
+static int overflow2() {
     char          c = -1;
     short int     s = -1;
     int           i = -1;
@@ -1036,7 +1041,7 @@ int overflow2() {
         i == l && i == ll &&
         l == ll; 
 }
-int overflow() {
+static int overflow() {
     TEST(overflow1);
     TEST(overflow1c);
     TEST(overflow1s);
@@ -1191,7 +1196,7 @@ static int auto1() {
 
     return 1;
 }
-const int const1() {
+static const int const1() {
     const int i;
     int const j;
     const int *ip;
