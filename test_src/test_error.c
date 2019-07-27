@@ -3,6 +3,7 @@
 struct {
     enum {ER, WR} expect;
     char *code;
+    char *note;
 } test[] = {
     {ER, "42"},
     {ER, "10 + / 2;"},
@@ -126,11 +127,16 @@ struct {
     {ER, "int main(){int func(void); int func(int);}"},
     {ER, "typedef int INT=1;"},
     {ER, "typedef int INT; unsigned INT i;"},
-    {ER, "int func(int a){return 1;}; int main(){return func();}"}, //関数コールの引数が足りない
-    {ER, "int func(int *a){return 1;}; int main(){return func(1);}"},
-    {ER, "int func(int a, int b){return 1;}; int main(){return func(1);}"},
-    {ER, "int func(int a){return 1;}; int main(){return func(1,2);}"},
-    {ER, "int func(void){return 1;}; int main(){return func(1);}"},
+    {ER, "int func(int a){return 1;}; int main(){return func();}",          "引数1個に対して0個でコール"},
+    {ER, "int func(int a, int b){return 1;}; int main(){return func(1);}",  "引数2個に対して1個でコール"},
+    {ER, "int func(int a){return 1;}; int main(){return func(1,2);}",       "引数1個に対して2個でコール"},
+    {ER, "int func(void){return 1;}; int main(){return func(1);}",          "引数0個(void)に対して1個でコール"},
+    {ER, "int func(int a, int b, ...){return 1;}; void main(){func(1);}",   "引数2+...個に対して1個でコール"},
+    {ER, "int func(int *a){return 1;}; int main(){return func(1);}",        "int*に対してintでコール"},
+    {ER, "int a, b=a; void main(){}",          "グローバル変数をグローバル変数で初期化"},
+    {ER, "int a; void main(){static int b=a;", "静的ローカル変数をローカル変数で初期化"},
+    {ER, "static int a, b=a;",                 "静的ローカル変数をローカル変数で初期化"},
+    {ER, "int a; static int b=a;",             "静的ローカル変数を自動変数で初期化"},
     //多次元配int func(int a){return 1;}; int main(){return func();}列
     {ER, "int a[][3]={{1,2,3},{11,12,13}; return a[1][2]}"},
     {ER, "int x; int x[4]; int main(){}"},
@@ -163,7 +169,8 @@ static void test_error1(int index) {
     error_ctrl   = ERC_LONGJMP; //エラー発生時にlongjmp
     warning_ctrl = (test[index].expect==WR ? ERC_LONGJMP : ERC_CONTINUE);
     if (setjmp(jmpbuf)==0) {
-        fprintf(fp, "# %s ----------\n", filename);
+        fprintf(fp, "# %s ----------------\n", filename);
+        if (test[index].note) fprintf(fp, "# [%s]\n", test[index].note);
         fprintf(fp, "%s\n", user_input);
         compile();
     }

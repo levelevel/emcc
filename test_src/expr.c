@@ -561,6 +561,11 @@ int array2() {
     int a[4]={1,2,3,4}, *p=a, *q=&a[2];
     return af2(a)==6 && p[1]==2, *q==3;
 }
+       int a2g_a[4]={1,2,3,4};
+static int a2g_b[4]={1,2,3,4}, *a2g_p=&a2g_a, *a2g_q=&a2g_b[2];
+int array2g() {
+    return af2(a2g_a)==6 && a2g_p[1]==2, *a2g_q==3;
+}
 static char af2c(char *a){return a[0]+a[1]+a[2];}
 int array2c() {
     char a[4]={1,2,3,4}, *p=a, *q=&a[2];
@@ -614,6 +619,7 @@ int array() {
     TEST(array1s);
     TEST(array1l);
     TEST(array2);
+    TEST(array2g);
     TEST(array2c);
     TEST(array2s);
     TEST(array2l);
@@ -673,6 +679,7 @@ int string() {
 int init1() {
     int a[] = {1,2,1+2};
     int b = {5,};
+    char*p    = "ABC";
     char s1[] = "ABC";
     char s2[] = {'A', 66, 'A'+2, 0};
     int i=1;
@@ -682,33 +689,56 @@ int init1() {
     return
         a[0]+a[1]+a[2]==6 && sizeof(a)==sizeof(int)*3 &&
         b==5 && 
+        strcmp(p,s1)==0 &&
         strcmp(s1,s2)==0 &&
         ac[0]+ac[1]+ac[2]==13 &&
         ai[0]+ai[1]+ai[2]==13;
 }
     int i1g_a[] = {1,2,1+2};
     int i1g_b = {5,};
+    char*i1g_p    = "ABC";
     char i1g_s1[] = "ABC";
     char i1g_s2[] = {'A', 66, 'A'+2, 0};
 int init1g() {
     return
         i1g_a[0]+i1g_a[1]+i1g_a[2]==6 && sizeof(i1g_a)==sizeof(int)*3 &&
         i1g_b==5 && 
+        i1g_p[0]=='A' &&
+        strcmp(i1g_p,i1g_s1)==0 &&
         strcmp(i1g_s1,i1g_s2)==0;
 }
-int  i2g_x, *i2g_p = 2 + &i2g_x - 1;
-char i2g_c, *i2g_ac[3] = {0,&i2g_c+1,(char*)3,(char*)4};    //初期値多い
-int  i2g_i, *i2g_ai[5] = {0,&i2g_i+1,(int*) 3,(int*) 4};    //初期値足りない分は0
+static int i1sg_a[] = {1,2,1+2};
+static int i1sg_b = {5,};
+static char*i1sg_p    = "ABC";
+static char i1sg_s1[] = "ABC";
+static char i1sg_s2[] = {'A', 66, 'A'+2, 0};
+int init1sg() {
+    return
+        i1sg_a[0]+i1sg_a[1]+i1sg_a[2]==6 && sizeof(i1sg_a)==sizeof(int)*3 &&
+        i1sg_b==5 && 
+        i1sg_p[0]=='A' &&
+        strcmp(i1sg_p,i1sg_s1)==0 &&
+        strcmp(i1sg_s1,i1sg_s2)==0;
+}
+    int  i2g_x, *i2g_p = 2 + &i2g_x - 1;
+    char i2g_c, *i2g_ac[3] = {0,&i2g_c+1,(char*)3,(char*)4};    //初期値多い
+    int  i2g_i, *i2g_ai[5] = {0,&i2g_i+1,(int*) 3,(int*) 4};    //初期値足りない分は0
 int init2g() {
     return 
         &i2g_x+1 == i2g_p && i2g_x==0 &&
         i2g_ac[1]==&i2g_c+1 && i2g_ac[2]==(char*)3 &&
         i2g_ai[1]==&i2g_i+1 && i2g_ai[2]==(int*)3 && i2g_ai[4]==0;
 }
+    static int i3g_a=9, *i3g_p=&*&i3g_a;
+int init3g() {
+    return *i3g_p==9;
+}
 int init() {
     TEST(init1);
     TEST(init1g);
+    TEST(init1sg);
     TEST(init2g);
+    TEST(init3g);
     return 1;
 }
 

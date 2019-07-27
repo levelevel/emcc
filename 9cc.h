@@ -330,6 +330,7 @@ int node_is_const_or_address(Node *node, long *valp, Node **varp);
 #define type_is_static(tp) (get_strage_class(tp)==SC_STATIC)
 #define type_is_extern(tp) (get_strage_class(tp)==SC_EXTERN)
 #define type_is_typedef(tp) (get_strage_class(tp)==SC_TYPEDEF)
+#define node_is_local_static_var(node) ((node)->type==ND_LOCAL_VAR && type_is_static((node)->tp))
 StorageClass get_strage_class(Type *tp);
 
 #ifdef _PARSE_C_

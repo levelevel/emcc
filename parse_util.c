@@ -106,7 +106,7 @@ int node_is_const_or_address(Node *node, long *valp, Node **varp) {
     long val, val1, val2;
     Node *var1=NULL, *var2=NULL;
 
-    if ((node->type==ND_GLOBAL_VAR || type_is_static(node->tp))
+    if ((node->type==ND_GLOBAL_VAR || node_is_local_static_var(node))
         && (node->tp->type==ARRAY || node->tp->type==FUNC)) {
         if (varp) *varp = new_node(ND_ADDRESS, NULL, node, node->tp->ptr_of, node->input);
         if (valp) *valp = 0;
@@ -127,10 +127,13 @@ int node_is_const_or_address(Node *node, long *valp, Node **varp) {
     case ND_STRING:
         return 0;
     case ND_ADDRESS:
-        if (node->rhs->type==ND_GLOBAL_VAR || type_is_static(node->rhs->tp)) {
+        //dump_node(node,__func__);
+        if (node->rhs->type==ND_GLOBAL_VAR || node_is_local_static_var(node->rhs)) {
             if (varp) *varp = node;
             if (valp) *valp = 0;
             return 1;
+        } else if (node->rhs->type==ND_INDIRECT) {
+            return node_is_const_or_address(node->rhs->rhs, valp, varp);
         } else {
             return 0;
         }
@@ -436,7 +439,7 @@ void check_funccall(Node *node) {
             error_at(call_args[call_size-1]->input, "引数の数が少なすぎます");
             note_at (decl_args[call_size  ]->input, "関数の定義はここです");
         }
-        if (decl_size<call_size) {
+        if (decl_size && decl_size<call_size) {
             SET_ERROR_WITH_NOTE;
             error_at(call_args[decl_size  ]->input, "引数の数が多すぎます");
             note_at (decl_args[decl_size-1]->input, "関数の定義はここです");
@@ -568,6 +571,7 @@ Node *new_node_var_def(char *name, Type*tp, char *input) {
 Node *new_node_string(char *string, char *input) {
     Type *tp = new_type_array(new_type(CHAR, 0), strlen(string)+1);
     Node *node = new_node(ND_STRING, NULL, NULL, tp, input);
+    node->name = string;
     node->val = string_vec->len;    //インデックス
     vec_push(string_vec, string);
 

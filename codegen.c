@@ -221,6 +221,7 @@ static char *get_asm_var_name(Node *node) {
     } else if (node->type==ND_GLOBAL_VAR) {
         ret = node->name;
     } else {
+        dump_node(node, __func__);
         _NOT_YET_(node);
     }
     return ret;
@@ -305,17 +306,18 @@ static void gen_array_init(Node *node) {
 
 //グローバル変数の配列の初期化
 static void gen_array_init_global(Node *node) {
+    Node *lhs=node->lhs, *rhs=node->rhs;
     assert(node->type=='=');
-    assert(node->lhs->type==ND_GLOBAL_VAR || type_is_static(node->lhs->tp));
-    assert(node->lhs->tp->type==ARRAY);
-    int array_size  = node->lhs->tp->array_size;  //配列のサイズ
+    assert(lhs->type==ND_GLOBAL_VAR || node_is_local_static_var(lhs));
+    assert(lhs->tp->type==ARRAY);
+    int array_size  = lhs->tp->array_size;  //配列のサイズ
     int data_len;
 
-    if (node->lhs->tp->ptr_of->type==CHAR &&
-        node->rhs->type==ND_STRING) {
+    if (lhs->tp->ptr_of->type==CHAR &&
+        rhs->type==ND_STRING) {
         //文字列リテラルによる初期化: char a[]="ABC";
-        data_len = node->rhs->tp->array_size;
-        char *str = (char*)vec_get(string_vec, node->rhs->val);
+        data_len = rhs->tp->array_size;
+        char *str = (char*)vec_get(string_vec, rhs->val);
         if (array_size < data_len) {
             str[array_size] = 0;
             printf("  .ascii \"%s\"\n", str);
@@ -326,12 +328,12 @@ static void gen_array_init_global(Node *node) {
         return;
     }
 
-    assert(node->rhs->type==ND_LIST);
+    assert(rhs->type==ND_LIST);
     // char a[]={'A', 'B', 'C', '\0'}
     // int  b[]={1, 2, 4, 8}
-    int type_size = size_of(node->lhs->tp->ptr_of);   //左辺の型のサイズ
-    Node **nodes = (Node**)node->rhs->lst->data;
-    data_len = node->rhs->lst->len;
+    int type_size = size_of(lhs->tp->ptr_of);   //左辺の型のサイズ
+    Node **nodes = (Node**)rhs->lst->data;
+    data_len = rhs->lst->len;
     long val;
     Node *var = NULL;
     char *val_name = val_name_of_type(node->lhs->tp);
@@ -957,16 +959,17 @@ static void gen_op2(Node *node) {
     printf("  push rax\n");
 }
 
-static long get_single_val(Node *node) {
-    long val;
-    if (node->type==ND_NUM) {
-        val = node->val;
-    } else if (node->type==ND_LIST) {
-        val = get_single_val((Node*)node->lst->data[0]);
-    } else {
+static void gen_single_val(const char*size, Node *node) {
+    switch (node->type) {
+    case ND_NUM:
+        printf("  .%s %ld\n", size, node->val);
+        break;
+    case ND_LIST:
+        printf("  .%s %ld\n", size, ((Node*)node->lst->data[0])->val);
+        break;
+    default:
         error_at(node->input, "スカラー定数ではありません");
     }
-    return val;
 }
 
 //グローバルシンボルのコードを生成
@@ -1001,27 +1004,30 @@ static void gen_global_var(Node *node) {
     }
 
     if (node->rhs) {    //初期値あり、rhsは'='のノード
+        //dump_node(node,__func__);
         Node *rhs = node->rhs->rhs; //'='の右辺
         switch (node->tp->type) {
         case CHAR:
-            printf("  .byte %ld\n", get_single_val(rhs));
+            gen_single_val("byte", rhs);
             break;
         case SHORT:
-            printf("  .value %ld\n", get_single_val(rhs));
+            gen_single_val("value", rhs);
             break;
         case INT:
         case ENUM:
-            printf("  .long %ld\n", get_single_val(rhs));
+            gen_single_val("long", rhs);
             break;
         case LONG:
         case LONGLONG:
-            printf("  .quad %ld\n", get_single_val(rhs));
+            gen_single_val("quad", rhs);
             break;
         case PTR:
             if (rhs->type==ND_ADDRESS) {
                 printf("  .quad %s\n", get_asm_var_name(rhs->rhs));
             } else if (rhs->type==ND_NUM || rhs->type==ND_LIST) {
-                printf("  .quad %ld\n", get_single_val(rhs));
+                gen_single_val("quad", rhs);
+            } else if (rhs->type==ND_STRING) {
+                printf("  .quad .LC%03ld\n", rhs->val);
             } else if (rhs->type=='+') {
                 printf("  .quad %s%+ld\n", rhs->lhs->rhs->name, size_of(node->tp->ptr_of)*rhs->rhs->val);
             } else {

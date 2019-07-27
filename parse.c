@@ -313,13 +313,15 @@ static Node *init_declarator(Type *decl_spec, Type *tp, char *name) {
         error_at(input_str(), "配列のサイズが未定義です");
 
     //グローバルスカラー変数の初期値は定数または固定アドレスでなければならない
-    if ((node->type==ND_GLOBAL_VAR_DEF || type_is_static(node->tp)) && 
+    if ((node->type==ND_GLOBAL_VAR_DEF || node_is_local_static_var(node)) && 
         node->tp->type!=ARRAY && node->rhs &&
         node->rhs->rhs->type!=ND_STRING) {  //文字列リテラルはここではチェックしない
-        long val;
+        long val=0;
         Node *var=NULL;
-        if (!node_is_const_or_address(node->rhs->rhs, &val, &var))
-            error_at(node->rhs->rhs->input, "グローバル変数の初期値が定数ではありません");
+        if (!node_is_const_or_address(node->rhs->rhs, &val, &var)) {
+            error_at(node->rhs->rhs->input, "%s変数の初期値が定数ではありません", 
+                     node->type==ND_GLOBAL_VAR_DEF?"グローバル":"静的ローカル");
+        }
         if (var) {
             if (val) {
                 node->rhs->rhs = new_node('+', var, new_node_num(val, input), var->tp, input);

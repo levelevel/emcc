@@ -138,7 +138,7 @@ static void sprintC_type(char *buf, const Type *tp) {
     }
 }
 
-// 型を表す文字列をCの文法表記で返す。文字列はmallocされている。
+// 型を表す文字列を返す。文字列はmallocされている。
 char *get_type_str(const Type *tp) {
     char buf[1024];
     const Type *p;
@@ -147,7 +147,7 @@ char *get_type_str(const Type *tp) {
     //ARRAY[10]->ARRAY[2]->PTR->INT
     //ARRAY以外を深さ優先で先に処理する
     for (p=tp; p->type==ARRAY; p=p->ptr_of);
-    if (1) {
+    if (0) {
         sprint_type(buf, p);
     } else {
         sprintC_type(buf, p);
@@ -277,7 +277,7 @@ static void dump_node_indent(FILE *fp, const Node *node, const char *str, int in
         fprintf(fp, "Node[null]\n");
         return;        
     }
-    fprintf(fp, "Node[%p]:type=%s, name=%s, tp=%s, offset=%d, val=%ld", 
+    fprintf(fp, "Node[%p]:type=%s, name=\"%s\", tp=%s, offset=%d, val=%ld", 
         (void*)node,
         get_NDtype_str(node->type),
         node->name?node->name:"",
@@ -289,7 +289,8 @@ static void dump_node_indent(FILE *fp, const Node *node, const char *str, int in
 }
 
 void dump_node(const Node *node, const char *str) {
-    dump_node_indent(stderr, node, str, 1);
+    if (str) fprintf(stderr, "# == %s ==\n", str);
+    dump_node_indent(stderr, node, "top=", 1);
 }
 
 static void dump_type_indent(FILE *fp, const Type *tp, const char *str, int indent) {
