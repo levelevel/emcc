@@ -391,6 +391,9 @@ static Node *direct_declarator(Type *tp, char *name) {
             }
             node->tp = tp = nest_tp;
         } else {
+            if (cur_funcdef && type_is_static(tp)) {
+                error_at(input, "ブロック内のstatic関数");
+            }
             node = new_node_func(name, tp, input);
             node->lhs = parameter_type_list();
             if (org_funcdef) cur_funcdef = org_funcdef;
