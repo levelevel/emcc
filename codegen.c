@@ -317,7 +317,8 @@ static void gen_array_init_global(Node *node) {
         rhs->type==ND_STRING) {
         //文字列リテラルによる初期化: char a[]="ABC";
         data_len = rhs->tp->array_size;
-        char *str = (char*)vec_get(string_vec, rhs->val);
+        char *str = (char*)get_string(rhs->val);
+        unuse_string(rhs->val);
         if (array_size < data_len) {
             str[array_size] = 0;
             printf("  .ascii \"%s\"\n", str);
@@ -975,6 +976,7 @@ static void gen_single_val(const char*size, Node *node) {
 //グローバルシンボルのコードを生成
 static void gen_global_var(Node *node) {
     if (type_is_extern(node->tp)) return;
+    if (node->unused) return;
     switch (node->type) {
     case ND_FUNC_DEF:
     case ND_FUNC_DECL:
@@ -1075,11 +1077,12 @@ void gen_program(void) {
     }
 
     //文字列リテラル
-    size = string_vec->len;
-    char **strs = (char**)string_vec->data;
+    size = vec_len(string_vec);
+    String **strings = (String**)string_vec->data;
     for (int i=0; i<size; i++) {
+        if (strings[i]->unused) continue;
         printf(".LC%03d:\n", i);
-        printf("   .string \"%s\"\n", strs[i]);
+        printf("   .string \"%s\"\n", strings[i]->str);
     }
 
     // 関数ごとに、抽象構文木を下りながらコード生成

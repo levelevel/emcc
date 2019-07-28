@@ -195,6 +195,7 @@ struct Type {
 
 struct Node {
     NDtype type;    //nodeの型：演算子、ND_INDENTなど
+    char unused;    //無効（重複した宣言など：コード生成時には無視する）
     int offset;     //auto変数：ベースポインタからのoffset
                     //static変数：識別用index（global_index）
     long val;       //typeがND_NUMの場合の値
@@ -251,7 +252,12 @@ EXTERN char *break_label;
 EXTERN char *continue_label;
 
 //文字列リテラル
-EXTERN Vector *string_vec;      //value=文字列リテラル
+typedef struct String {
+    const char *str;
+    int size;                   //予約
+    char unused;                //.text領域に出力する必要なし
+} String;
+EXTERN Vector *string_vec;      //value=String
 
 //staticシンボル
 EXTERN Vector *static_var_vec;  //value=Node
@@ -327,11 +333,14 @@ long size_of(const Type *tp);
 int align_of(const Type *tp);
 int node_is_const(Node *node, long *val);
 int node_is_const_or_address(Node *node, long *valp, Node **varp);
-#define type_is_static(tp) (get_strage_class(tp)==SC_STATIC)
-#define type_is_extern(tp) (get_strage_class(tp)==SC_EXTERN)
-#define type_is_typedef(tp) (get_strage_class(tp)==SC_TYPEDEF)
+#define type_is_static(tp) (get_storage_class(tp)==SC_STATIC)
+#define type_is_extern(tp) (get_storage_class(tp)==SC_EXTERN)
+#define type_is_typedef(tp) (get_storage_class(tp)==SC_TYPEDEF)
 #define node_is_local_static_var(node) ((node)->type==ND_LOCAL_VAR && type_is_static((node)->tp))
-StorageClass get_strage_class(Type *tp);
+StorageClass get_storage_class(Type *tp);
+int new_string(const char *str);
+const char* get_string(int index);
+void unuse_string(int index);
 
 #ifdef _PARSE_C_
 Node *search_symbol(const char *name);

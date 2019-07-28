@@ -175,9 +175,29 @@ int node_is_const_or_address(Node *node, long *valp, Node **varp) {
 
 // static char*p; のような宣言ではPTRにはsclassが設定されず、
 // charだけに設定されているのでcharのところまで見に行く
-StorageClass get_strage_class(Type *tp) {
-    if (tp->ptr_of) return get_strage_class(tp->ptr_of);
+StorageClass get_storage_class(Type *tp) {
+    if (tp->ptr_of) return get_storage_class(tp->ptr_of);
     return tp->sclass;
+}
+
+int new_string(const char *str) {
+    String *string = calloc(1, sizeof(String));
+    string->str = str;
+    string->size = strlen(str)+1;
+    vec_push(string_vec, string);
+    return vec_len(string_vec)-1;
+}
+
+const char* get_string(int index) {
+    assert(index<vec_len(string_vec));
+    String *string = vec_data(string_vec, index);
+    return string->str;
+}
+
+void unuse_string(int index) {
+    assert(index<vec_len(string_vec));
+    String *string = vec_data(string_vec, index);
+    string->unused = 1;
 }
 
 // ==================================================
@@ -203,7 +223,7 @@ void regist_var_def(Node *node) {
     if (cur_funcdef!=NULL) {        //関数内であればローカル
         Map *symbol_map = stack_top(symbol_stack); 
         if (map_get(symbol_map, name, (void**)&reg_node)==0) {
-            StorageClass sclass = get_strage_class(node->tp);
+            StorageClass sclass = get_storage_class(node->tp);
             switch (sclass) {
             case SC_STATIC:
                 node->offset = global_index++;
@@ -219,15 +239,22 @@ void regist_var_def(Node *node) {
             if (sclass==SC_STATIC) {
                 vec_push(static_var_vec, node);
             }
-        } else if (type_is_extern(node->tp)) {
-            //同じextern宣言であるかをチェックする
-            if ( !type_eq(reg_node->tp, node->tp)) {
-                SET_ERROR_WITH_NOTE;
-                error_at(node->input, "型が一致しません");
-                note_at(reg_node->input, "以前の宣言はここです");
-            }
+        } else if (!type_eq(reg_node->tp, node->tp)) {
+            SET_ERROR_WITH_NOTE;
+            error_at(node->input, "型が一致しません");
+            note_at(reg_node->input, "以前の宣言はここです");
         } else {
-            error_at(node->input, "'%s'はローカル変数の重複定義です", name);
+            int has_init_value1 = (reg_node->rhs!=NULL);
+            int has_init_value2 = (node->rhs!=NULL);
+            if (has_init_value1 && has_init_value2) {
+                SET_ERROR_WITH_NOTE;
+                error_at(node->input, "'%s'はローカル変数の重複定義です", name);
+                note_at(reg_node->input, "以前の定義はここです");
+            } else if (has_init_value2) {
+                map_put(symbol_map, name, node);
+                reg_node->unused = 1;
+            }
+            if (node->type==ND_UNDEF) node->type = ND_LOCAL_VAR_DEF;
         }
     }
 
@@ -236,15 +263,21 @@ void regist_var_def(Node *node) {
         if (node->type==ND_UNDEF) node->type = ND_GLOBAL_VAR_DEF;
         if (map_get(global_symbol_map, name, (void**)&reg_node)==0) {
             map_put(global_symbol_map, name, node);
-        } else if (type_is_extern(node->tp)) {
-            //同じextern宣言であるかをチェックする
-            if ( !type_eq(reg_node->tp, node->tp)) {
-                SET_ERROR_WITH_NOTE;
-                error_at(node->input, "型が一致しません");
-                note_at(reg_node->input, "以前の宣言はここです");
-            }
+        } else if ( !type_eq(reg_node->tp, node->tp)) {
+            SET_ERROR_WITH_NOTE;
+            error_at(node->input, "型が一致しません");
+            note_at(reg_node->input, "以前の宣言はここです");
         } else {
-            error_at(node->input, "'%s'はグローバル変数の重複定義です", name);
+            int has_init_value1 = (reg_node->rhs!=NULL);
+            int has_init_value2 = (node->rhs!=NULL);
+            if (has_init_value1 && has_init_value2) {
+                SET_ERROR_WITH_NOTE;
+                error_at(node->input, "'%s'はグローバル変数の重複定義です", name);
+                note_at(reg_node->input, "以前の定義はここです");
+            } else if (has_init_value2) {
+                reg_node->unused = 1;
+                map_put(global_symbol_map, name, node);
+            }
         }
     }
 
@@ -572,8 +605,7 @@ Node *new_node_string(char *string, char *input) {
     Type *tp = new_type_array(new_type(CHAR, 0), strlen(string)+1);
     Node *node = new_node(ND_STRING, NULL, NULL, tp, input);
     node->name = string;
-    node->val = string_vec->len;    //インデックス
-    vec_push(string_vec, string);
+    node->val = new_string(string); //インデックス
 
     return node;
 }

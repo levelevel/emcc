@@ -633,11 +633,7 @@ static int array() {
     return 1;
 }
 
-GLOBAL char sg1_buf[20];
-GLOBAL char*sg1_p[4];
-GLOBAL char sg1_str1[5] = "ABC";
-GLOBAL char sg1_str2[ ] = "ABC";
-GLOBAL char sg1_str3[4] = "ABCDE"; //長すぎる
+GLOBAL char sg1_str1[5];
 static int string1() {
     char buf[20];
     strcpy(buf, "abc");
@@ -658,6 +654,11 @@ static int string1() {
         strncmp(str3, "ABCD", 4)==0 &&
         strcmp(str1, sg1_str1)==0;
 }
+GLOBAL char sg1_buf[20];
+GLOBAL char*sg1_p[4];
+GLOBAL char sg1_str1[5] = "ABC";
+GLOBAL char sg1_str2[ ] = "ABC";
+GLOBAL char sg1_str3[4] = "ABCDE"; //長すぎる
 static int string1g() {
     strcpy(sg1_buf, "abc");
 
@@ -1361,5 +1362,6 @@ int main() {
     TEST(Enum);
     TEST(Typedef);
     //printf("%s:%d func=%s\n",__FILE__, __LINE__, __func__);
+    //char a[]="ABC" "XYZ";
     return 0;
 }

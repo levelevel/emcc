@@ -277,13 +277,12 @@ static void dump_node_indent(FILE *fp, const Node *node, const char *str, int in
         fprintf(fp, "Node[null]\n");
         return;        
     }
-    fprintf(fp, "Node[%p]:type=%s, name=\"%s\", tp=%s, offset=%d, val=%ld", 
+    fprintf(fp, "Node[%p]:type=%s, name=\"%s\", tp=%s, offset=%d, val=%ld, unused=%d\n", 
         (void*)node,
         get_NDtype_str(node->type),
         node->name?node->name:"",
         get_type_str(node->tp),
-        node->offset, node->val);
-    fprintf(fp, "\n");
+        node->offset, node->val, node->unused);
     if (node->lhs) dump_node_indent(fp, node->lhs, "lhs=", indent+2);
     if (node->rhs) dump_node_indent(fp, node->rhs, "rhs=", indent+2);
 }

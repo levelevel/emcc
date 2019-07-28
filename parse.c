@@ -302,9 +302,10 @@ static Node *init_declarator(Type *decl_spec, Type *tp, char *name) {
         }
     }
 
+    if (rhs) node->rhs = new_node('=', NULL, rhs, tp, input);
     //初期値により配列のサイズが決まるケースがあるので、regist_var_def()は初期値の確定後に行う必要あり
     regist_var_def(node);   //ND_UNDEF -> ND_(LOCAL|GLOBAL)_VAR_DEFに確定する。ND_FUNC_DECLはそのまま
-    if (rhs) node->rhs = new_node('=', new_node_ident(name, input), rhs, tp, input);
+    if (rhs) node->rhs->lhs = new_node_ident(name, input);  //=の左辺
 
     //初期値のないサイズ未定義のARRAYはエラー
     //externの場合はOK
