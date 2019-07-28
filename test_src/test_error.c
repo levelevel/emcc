@@ -78,6 +78,7 @@ struct {
     {ER, "int a; a();"},
     {ER, "int a; int main(){a();}"},
     {ER, "extern int func(); extern int*func();"},
+    {ER, "static void func();",                 "関数内でstaticな関数の宣言"},
     {ER, "break; return 1;"},
     {ER, "continue; return 1;"},
     //LVALUE

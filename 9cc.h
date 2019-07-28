@@ -103,7 +103,7 @@ typedef enum {
     ND_OR    = '|',
     ND_BNOT  = '~',
     ND_NUM,         //整数のノードの型
-    ND_STRING,
+    ND_STRING,      //文字列リテラル    name=文字列, val=string_vecのindex
     ND_TYPE_DECL,   //型の宣言　例：int; enum ABC {A,B,C}; enum ABC; struct ST; 
     ND_IDENT,       //IDENT:中間的なタイプであり、最終的にND_LOCAL_VARなどに置き換わる
     ND_ENUM_DEF,    //enum定義          name=enum名/NULL, lst=node(ND_ENUM)/NULL
@@ -357,6 +357,8 @@ void check_func_return(Funcdef *funcdef);
 void check_funcargs(Node *node, int def_mode);
 void check_funccall(Node *node);
 int type_eq(const Type *tp1, const Type *tp2);
+int type_eq_global_local(const Type *tp1, const Type *tp2);
+int type_eq_func(const Type *tp1, const Type *tp2);
 int type_eq_assign(const Type *tp1, const Type *tp2);
 int get_var_offset(const Type *tp);
 Funcdef *new_funcdef(void);

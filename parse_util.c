@@ -239,7 +239,8 @@ void regist_var_def(Node *node) {
             if (sclass==SC_STATIC) {
                 vec_push(static_var_vec, node);
             }
-        } else if (!type_eq(reg_node->tp, node->tp)) {
+        } else if ((reg_node->type==ND_GLOBAL_VAR_DEF && !type_eq_global_local(reg_node->tp, node->tp)) ||
+                   (reg_node->type==ND_LOCAL_VAR_DEF && !type_eq(reg_node->tp, node->tp))) {
             SET_ERROR_WITH_NOTE;
             error_at(node->input, "型が一致しません");
             note_at(reg_node->input, "以前の宣言はここです");
@@ -263,7 +264,7 @@ void regist_var_def(Node *node) {
         if (node->type==ND_UNDEF) node->type = ND_GLOBAL_VAR_DEF;
         if (map_get(global_symbol_map, name, (void**)&reg_node)==0) {
             map_put(global_symbol_map, name, node);
-        } else if ( !type_eq(reg_node->tp, node->tp)) {
+        } else if (node->type!=ND_LOCAL_VAR_DEF && !type_eq(reg_node->tp, node->tp)) {
             SET_ERROR_WITH_NOTE;
             error_at(node->input, "型が一致しません");
             note_at(reg_node->input, "以前の宣言はここです");
@@ -297,7 +298,7 @@ void regist_func(Node *node, int full_check) {
         return;
     } else if (def_node->type==ND_GLOBAL_VAR_DEF) {
         error_at(node->input, "'%s'は異なる種類のシンボルとして再定義されています", node->name);
-    } else if (!type_eq(def_node->tp, node->tp)) {
+    } else if (!type_eq_func(def_node->tp, node->tp)) {
         SET_ERROR_WITH_NOTE;
         error_at(node->input, "関数の型が一致しません");
         note_at(def_node->input, "以前の関数はここです");
@@ -496,13 +497,36 @@ static int func_arg_eq(Node *node1, Node *node2) {
     }
     return 1;
 }
-//タイプが等しいかどうかを判定する（storage classは無視。constも今は無視）
+
+//型が等しいかどうかを判定する（constは今は無視）
 int type_eq(const Type *tp1, const Type *tp2) {
+    if (tp1->type != tp2->type) return 0;
+    if (tp1->is_unsigned != tp2->is_unsigned) return 0;
+    if (tp1->sclass != tp2->sclass) return 0;
+    if (tp1->array_size != tp2->array_size) return 0;
+    if (tp1->type==FUNC && !func_arg_eq(tp1->node, tp2->node)) return 0;
+    if (tp1->ptr_of) return type_eq(tp1->ptr_of, tp2->ptr_of);
+    return 1;
+}
+
+//型が等しいかどうかを判定する（global変数 vs local変数、constは今は無視）
+int type_eq_global_local(const Type *tp1, const Type *tp2) {
+    if (tp1->type != tp2->type) return 0;
+    if (tp1->is_unsigned != tp2->is_unsigned) return 0;
+    if (tp1->sclass != tp2->sclass && tp2->sclass!=SC_EXTERN) return 0;
+    if (tp1->array_size != tp2->array_size) return 0;
+    if (tp1->type==FUNC && !func_arg_eq(tp1->node, tp2->node)) return 0;
+    if (tp1->ptr_of) return type_eq_global_local(tp1->ptr_of, tp2->ptr_of);
+    return 1;
+}
+
+//  関数の戻り値の型が等しいかどうかを判定する（storage classは無視。constも今は無視）
+int type_eq_func(const Type *tp1, const Type *tp2) {
     if (tp1->type != tp2->type) return 0;
     if (tp1->is_unsigned != tp2->is_unsigned) return 0;
     if (tp1->array_size != tp2->array_size) return 0;
     if (tp1->type==FUNC && !func_arg_eq(tp1->node, tp2->node)) return 0;
-    if (tp1->ptr_of) return type_eq(tp1->ptr_of, tp2->ptr_of);
+    if (tp1->ptr_of) return type_eq_func(tp1->ptr_of, tp2->ptr_of);
     return 1;
 }
 
