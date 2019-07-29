@@ -670,7 +670,8 @@ static int string1g() {
         *(sg1_p[1]+2)-'A'==2 &&
         strcmp(sg1_str1, "ABC")==0 && strlen(sg1_str1)==3 &&
         strcmp(sg1_str2, "ABC")==0 && strlen(sg1_str2)==3 &&
-        strncmp(sg1_str3, "ABCD", 4)==0;
+        strncmp(sg1_str3, "ABCD", 4)==0 &&
+        strcmp("ab" "cd" "ef", "abcdef")==0;
 }
 static int string() {
     TEST(string1);

@@ -1301,6 +1301,12 @@ static Node *primary_expression(void) {
     } else if (consume_num(&val)) {
         node = new_node_num(val, input);
     } else if (consume_string(&str)) {
+        char *str2;
+        while (consume_string(&str2)) {
+            int len = strlen(str);
+            str = realloc(str, len+strlen(str2)+1);
+            strcpy(str+len, str2);
+        }
         node = new_node_string(str, input);
     } else if (consume_ident(&name)) {
         //すでに出現済みであればその参照に決まる(ND_LOCAL_VAR/ND_GLOBAL_VAR/ND_ENUMなど)
