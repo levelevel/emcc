@@ -313,6 +313,7 @@ EXTERN int note_cnt;
 void compile(void);
 
 // tokenize.c
+char *escape_str(const char *str);
 void tokenize(char *p);
 void dump_tokens(void);
 int token_is_type_spec(void);

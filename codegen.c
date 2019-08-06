@@ -321,9 +321,9 @@ static void gen_array_init_global(Node *node) {
         unuse_string(rhs->val);
         if (array_size < data_len) {
             str[array_size] = 0;
-            printf("  .ascii \"%s\"\n", str);
+            printf("  .ascii \"%s\"\n", escape_str(str));
         } else {
-            printf("  .string \"%s\"\n", str);
+            printf("  .string \"%s\"\n", escape_str(str));
         }
         if (array_size > data_len) printf("  .zero %d\n", array_size-data_len);
         return;
@@ -1082,7 +1082,7 @@ void gen_program(void) {
     for (int i=0; i<size; i++) {
         if (strings[i]->unused) continue;
         printf(".LC%03d:\n", i);
-        printf("   .string \"%s\"\n", strings[i]->str);
+        printf("   .string \"%s\"\n", escape_str(strings[i]->str));
     }
 
     // 関数ごとに、抽象構文木を下りながらコード生成

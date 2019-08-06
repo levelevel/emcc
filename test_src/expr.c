@@ -634,7 +634,7 @@ static int array() {
 }
 
 GLOBAL char sg1_str1[5];
-static int string1() {
+static int string1(void) {
     char buf[20];
     strcpy(buf, "abc");
 
@@ -659,7 +659,7 @@ GLOBAL char*sg1_p[4];
 GLOBAL char sg1_str1[5] = "ABC";
 GLOBAL char sg1_str2[ ] = "ABC";
 GLOBAL char sg1_str3[4] = "ABCDE"; //長すぎる
-static int string1g() {
+static int string1g(void) {
     strcpy(sg1_buf, "abc");
 
     sg1_p[0] = 0;
@@ -673,9 +673,41 @@ static int string1g() {
         strncmp(sg1_str3, "ABCD", 4)==0 &&
         strcmp("ab" "cd" "ef", "abcdef")==0;
 }
+static int string1s(void) {
+    static char buf[20];
+    strcpy(buf, "abc");
+
+    static char*p[4];
+    p[0] = 0;
+    p[1] = "ABCD";
+
+    static char str1[5] = "ABC";
+    static char str2[ ] = "ABC";
+    static char str3[4] = "ABCDE"; //長すぎる
+
+    return
+        strcmp(buf, "abc")==0 &&
+        *(p[1]+2)-'A'==2 &&
+        strcmp(str1, "ABC")==0 && strlen(str1)==3 &&
+        strcmp(str2, "ABC")==0 && strlen(str2)==3 &&
+        strncmp(str3, "ABCD", 4)==0 &&
+        strcmp(str1, sg1_str1)==0;
+}
+static int chara1(void) {
+    char a='\a', b='\b', f='\f', n='\n', r='\r', t='\t', v='\v';
+    char sq='\'', dq='\"', q='\?', bs='\\';
+    char o0='\0', o1='\12', o2='\123';
+    char h0='\x0', h1='\xFF', h2='\xffff';
+    return a==7 && b==8 && f==12 && n==10 && r==13 && t==9 && v==11 &&
+           sq==39 && dq==34 && q=='?' && bs==92 &&
+           o0==0 && o1==10 && o2==83 &&
+           h0==0 && h1==-1 && h2==-1;
+}
 static int string() {
     TEST(string1);
     TEST(string1g);
+    TEST(string1s);
+    TEST(chara1);
     return 1;
 }
 

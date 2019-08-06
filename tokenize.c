@@ -120,18 +120,140 @@ static char*token_ident(const char*ptop) {
     return name;
 }
 
+// 8進数：最大3桁
+static int get_octa(char **pp) {
+    char *p = *pp;
+    int val = 0;
+    for (int i=0; i<3; i++) {
+        if (*p>='0' && *p<='7') {
+            val = val*8 + *p++ - '0';
+        } else {
+            break;
+        }
+    }
+    *pp = p;
+    return val;
+}
+
+// 16進数：桁数制限なし
+static int get_hexa(char **pp) {
+    char *p = *pp;
+    int val = 0;
+    for (;;) {
+        if (*p>='0' && *p<='9') {
+            val = val*16 + *p++ - '0';
+        } else if (*p>='a' && *p<='f') {
+            val = val*16 + *p++ - 'a' + 10;
+        } else if (*p>='A' && *p<='F') {
+            val = val*16 + *p++ - 'A' + 10;
+        } else {
+            break;
+        }
+    }
+    *pp = p;
+    return val;
+}
+
+//リターン時、ppは次の文字を示す
+static int get_escape_char(char **pp) {
+    char *p = *pp;
+    int c = *p++;
+    if (c=='\\') {
+        c = *p++;
+        switch (c) {
+        case 'a':  c = '\a'; break; // 7
+        case 'b':  c = '\b'; break; // 8
+        case 'f':  c = '\f'; break; //12
+        case 'n':  c = '\n'; break; //10
+        case 'r':  c = '\r'; break; //13
+        case 't':  c = '\t'; break; // 9
+        case 'v':  c = '\v'; break; //11
+        case '\'':
+        case '"':
+        case '?':
+        case '\\': break;
+        case '0':
+        case '1':
+        case '2':
+        case '3':
+        case '4':
+        case '5':
+        case '6':
+        case '7':  --p; c = get_octa(&p); break;
+        case 'x':       c = get_hexa(&p); break;
+        default:
+            warning_at(p-1, "未定義のエスケープシーケンス");
+        }
+    }
+
+    *pp = p;
+    return c;
+}
+
 //文字列リテラルの文字列を返す。
-static char*token_string(const char*ptop) {
-    const char *p = ptop+1;
-    int len = 1;
-    while ((*p)!='"') {
+static char*token_string(char**pp) {
+    char *p, *ptop;
+    p = ptop = *pp;
+    int len = 0;
+    //まずはエスケープシーケンスもそのまま取得する。
+    while (*p && (*p)!='"') {
         p++;
         len++;
+        if (*p=='\\' && *(p+1)=='"') {
+            p += 2;
+            len += 2;
+        }
     }
-    char *name = malloc(len+1);
-    strncpy(name, ptop, len);
-    name[len] = 0;
-    return name;
+    *pp = *p ? p+1 : p;
+
+    char *buf = malloc(len+1);
+    strncpy(buf, ptop, len);
+    buf[len] = 0;
+    char *q;
+    //エスケープシーケンスを処理する
+    for (p=q=buf; *p;) {
+        if (*p == '\\') {
+            *q++ = get_escape_char(&p);
+        } else {
+            *q++ = *p++;
+        }
+    }
+    *q = 0;
+    return buf;
+}
+
+char *escape_str(const char *str) {
+    static char *buf = NULL;
+    static int buf_size = 2;
+    if (buf==NULL) {
+        buf = malloc(buf_size);
+    }
+    int len = strlen(str)*4;    // 0 -> \000
+    if (len > buf_size) {
+        while (len > buf_size) buf_size *= 2;
+        buf = realloc(buf, buf_size);
+    }
+    const char *p=str;
+    char *q=buf;
+    while (*p) {
+        switch (*p) {
+        case '\b': *q++ = '\\'; *q++ = 'b'; break;
+        case '\f': *q++ = '\\'; *q++ = 'f'; break;
+        case '\n': *q++ = '\\'; *q++ = 'n'; break;
+        case '\r': *q++ = '\\'; *q++ = 'r'; break;
+        case '\v': *q++ = '\\'; *q++ = 'v'; break;
+        case '"':  *q++ = '\\'; *q++ = '"'; break;
+        default: 
+            if (*p<' ' || *p>'\x7f') {
+                q += sprintf(q, "\\%03o", *p);
+            } else {
+                *q++ = *p;
+            }
+        }
+        p++;
+    }
+    *q = 0;
+    return buf;
 }
 
 // pが指している文字列をトークンに分割してtokensに保存する
@@ -187,13 +309,12 @@ void tokenize(char *p) {
             //  fprintf(stderr, "strtol=%ld,%lx\n", token->val, token->val);
             }
         } else if (*p == '"') {     //文字列
-            token = new_token(TK_STRING, p);
-            token->str = token_string(++p);
-            p += strlen(token->str) + 1;
+            token = new_token(TK_STRING, p++);
+            token->str = token_string(&p);
         } else if (*p == '\'') {    //文字
             token = new_token(TK_NUM, p++);
-            token->val = *p++;
-            if (*p++ != '\'') error_at(p, "トークナイズエラー");
+            token->val = get_escape_char(&p);
+            if (*p++ != '\'') error_at(p-1, "トークナイズエラー：'が必要です");
         } else {
             error_at(p, "トークナイズエラー");
             exit(1);

@@ -142,6 +142,11 @@ struct {
     {ER, "int a; void main(){static int b=a;", "静的ローカル変数をローカル変数で初期化"},
     {ER, "static int a, b=a;",                 "静的ローカル変数をローカル変数で初期化"},
     {ER, "int a; static int b=a;",             "静的ローカル変数を自動変数で初期化"},
+    {ER, "return 'ab';",                       "複数文字"},
+    {WR, "return '\\N';",                      "未定義のエスケープシーケンス"},
+    {ER, "return '\\0123';",                   "4文字以上のoctal"},
+    {ER, "return '\\08';",                     "octal規定外文字"},
+    {ER, "return '\\xG';",                     "hexadecimal規定外文字"},
     //多次元配int func(int a){return 1;}; int main(){return func();}列
     {ER, "int a[][3]={{1,2,3},{11,12,13}; return a[1][2]}"},
     {ER, "int x; int x[4]; int main(){}"},
