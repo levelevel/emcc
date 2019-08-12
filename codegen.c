@@ -317,13 +317,15 @@ static void gen_array_init_global(Node *node) {
         rhs->type==ND_STRING) {
         //文字列リテラルによる初期化: char a[]="ABC";
         data_len = rhs->tp->array_size;
-        char *str = (char*)get_string(rhs->val);
-        unuse_string(rhs->val);
+        String *string = get_string_literal(rhs->val);
+        unuse_string_literal(rhs->val);
         if (array_size < data_len) {
-            str[array_size] = 0;
-            printf("  .ascii \"%s\"\n", escape_str(str));
+            string->size = array_size;
+        }
+        if (string->buf[string->size-1]!='\0') {
+            printf("  .ascii \"%s\"\n", escape_ascii(string));
         } else {
-            printf("  .string \"%s\"\n", escape_str(str));
+            printf("  .string \"%s\"\n", escape_string(string));
         }
         if (array_size > data_len) printf("  .zero %d\n", array_size-data_len);
         return;
@@ -1076,13 +1078,13 @@ void gen_program(void) {
         gen_global_var(nodes[i]);
     }
 
-    //文字列リテラル
+    //文字列リテラル(ND_STRING)
     size = vec_len(string_vec);
-    String **strings = (String**)string_vec->data;
+    StringL **strings = (StringL**)string_vec->data;
     for (int i=0; i<size; i++) {
         if (strings[i]->unused) continue;
         printf(".LC%03d:\n", i);
-        printf("   .string \"%s\"\n", escape_str(strings[i]->str));
+        printf("   .string \"%s\"\n", escape_string(&(strings[i]->string)));
     }
 
     // 関数ごとに、抽象構文木を下りながらコード生成
@@ -1091,8 +1093,8 @@ void gen_program(void) {
     for (int i=0; i < funcdef_map->keys->len; i++) {
         assert(funcdef[i]->node->type==ND_FUNC_DEF);
         cur_funcdef = funcdef[i];
-        printf("%s:\t#%s %s(%s)\n", funcdef[i]->name, 
-            get_type_str(funcdef[i]->tp), funcdef[i]->name,
+        printf("%s:\t#%s %s(%s)\n", funcdef[i]->func_name, 
+            get_type_str(funcdef[i]->tp), funcdef[i]->func_name,
             get_func_args_str(funcdef[i]->node->lhs));
 
         // プロローグ

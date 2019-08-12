@@ -15,24 +15,24 @@ test_src/expr.c:647:20: warning: initializer-string for array of chars is too lo
      char str3[4] = "ABCDE"; //長すぎる
                     ^~~~~~~
 test_src/expr.c: At top level:
-test_src/expr.c:661:27: warning: initializer-string for array of chars is too long
+test_src/expr.c:663:27: warning: initializer-string for array of chars is too long
  GLOBAL char sg1_str3[4] = "ABCDE"; //長すぎる
                            ^~~~~~~
 test_src/expr.c: In function ‘string1s’:
-test_src/expr.c:686:27: warning: initializer-string for array of chars is too long
+test_src/expr.c:690:27: warning: initializer-string for array of chars is too long
      static char str3[4] = "ABCDE"; //長すぎる
                            ^~~~~~~
 test_src/expr.c: In function ‘chara1’:
-test_src/expr.c:700:34: warning: hex escape sequence out of range
+test_src/expr.c:704:34: warning: hex escape sequence out of range
      char h0='\x0', h1='\xFF', h2='\xffff';
                                   ^~~~~~~~
 test_src/expr.c: At top level:
-test_src/expr.c:760:54: warning: excess elements in array initializer
+test_src/expr.c:764:54: warning: excess elements in array initializer
  GLOBAL char i2g_c, *i2g_ac[3] = {0,&i2g_c+1,(char*)3,(char*)4};    //初期値多い
                                                       ^
-test_src/expr.c:760:54: note: (near initialization for ‘i2g_ac’)
+test_src/expr.c:764:54: note: (near initialization for ‘i2g_ac’)
 test_src/expr.c: In function ‘enum1e’:
-test_src/expr.c:1319:22: warning: empty declaration with storage class specifier does not redeclare tag
+test_src/expr.c:1323:22: warning: empty declaration with storage class specifier does not redeclare tag
          typedef enum ABC;
                       ^~~
   OK: addsub1

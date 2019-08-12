@@ -107,7 +107,7 @@ static int is_alpha(char c) {
 }
 
 //識別子の文字列を返す。
-static char*token_ident(const char*ptop) {
+static char*get_ident(const char*ptop) {
     const char *p = ptop+1;
     int len = 1;
     while (is_alnum(*p)) {
@@ -191,7 +191,7 @@ static int get_escape_char(char **pp) {
 }
 
 //文字列リテラルの文字列を返す。
-static char*token_string(char**pp) {
+static char*get_string(char**pp, String *string) {
     char *p, *ptop;
     p = ptop = *pp;
     int len = 0;
@@ -218,24 +218,33 @@ static char*token_string(char**pp) {
             *q++ = *p++;
         }
     }
-    *q = 0;
+    *q++ = 0;
+    string->buf = buf;
+    string->size = q-buf;
     return buf;
 }
 
-char *escape_str(const char *str) {
-    static char *buf = NULL;
-    static int buf_size = 2;
-    if (buf==NULL) {
-        buf = malloc(buf_size);
+//Stringをアセンブラ用にエスケープした文字列を返す
+//戻り値は次回コールまで有効
+char *escape_string(const String *string) {
+    //終端のNULLは出力しない
+    String s2;
+    s2 = *string;
+    if (s2.buf[s2.size-1]=='\0') s2.size--;
+    return escape_ascii(&s2);
+}
+char *escape_ascii(const String *string) {
+    //終端のNULLも\000で出力する
+    static char *str = NULL;
+    static int str_size = 2;
+    int new_size = string->size*4;    // 0 -> \000 を考慮して、余裕をもって4倍確保
+    if (new_size > str_size) {
+        while (new_size > str_size) str_size *= 2;
+        str = realloc(str, str_size);
     }
-    int len = strlen(str)*4;    // 0 -> \000
-    if (len > buf_size) {
-        while (len > buf_size) buf_size *= 2;
-        buf = realloc(buf, buf_size);
-    }
-    const char *p=str;
-    char *q=buf;
-    while (*p) {
+    const char *p = string->buf;
+    char *q = str;
+    for (int size = string->size; size; p++, size--) {
         switch (*p) {
         case '\b': *q++ = '\\'; *q++ = 'b'; break;
         case '\f': *q++ = '\\'; *q++ = 'f'; break;
@@ -250,10 +259,9 @@ char *escape_str(const char *str) {
                 *q++ = *p;
             }
         }
-        p++;
     }
     *q = 0;
-    return buf;
+    return str;
 }
 
 // pが指している文字列をトークンに分割してtokensに保存する
@@ -297,8 +305,8 @@ void tokenize(char *p) {
 
         if (is_alpha(*p)) {         //識別子
             token = new_token(TK_IDENT, p);
-            token->str = token_ident(p);
-            p += strlen(token->str);
+            token->ident = get_ident(p);
+            p += strlen(token->ident);
         } else if (isdigit(*p)) {   //数値
             token = new_token(TK_NUM, p);
             if (strncmp(p, "0x", 2)==0 || strncmp(p, "0X", 2)==0) {
@@ -310,7 +318,7 @@ void tokenize(char *p) {
             }
         } else if (*p == '"') {     //文字列
             token = new_token(TK_STRING, p++);
-            token->str = token_string(&p);
+            get_string(&p, &token->string);
         } else if (*p == '\'') {    //文字
             token = new_token(TK_NUM, p++);
             token->val = get_escape_char(&p);
@@ -344,7 +352,7 @@ void dump_tokens(void) {
 int token_is_type_spec(void) {
     if (TK_VOID<=token_type() && token_type()<=TK_TYPEDEF) return 1;
     if (token_is(TK_IDENT)) {
-        Node *node = search_symbol(token_str());
+        Node *node = search_symbol(token_ident());
         if (node && node->type==ND_TYPEDEF) return 1;
     }
     return 0;
@@ -352,7 +360,7 @@ int token_is_type_spec(void) {
 int next_token_is_type_spec(void) {
     if (TK_VOID<=next_token_type() && next_token_type()<=TK_TYPEDEF) return 1;
     if (next_token_is(TK_IDENT)) {
-        Node *node = search_symbol(next_token_str());
+        Node *node = search_symbol(next_token_ident());
         if (node && node->type==ND_TYPEDEF) return 1;
     }
     return 0;
@@ -376,10 +384,10 @@ int consume_num(long *valp) {
 }
 
 //次のトークンが識別子(TK_STRING)かどうかをチェックし、
-//その場合はstrを取得し、入力を1トークン読み進めて真を返す
-int consume_string(char **str) {
+//その場合はstringを取得し、入力を1トークン読み進めて真を返す
+int consume_string(String *string) {
     if (tokens[token_pos]->type != TK_STRING) return 0;
-    *str = tokens[token_pos]->str;
+    *string = tokens[token_pos]->string;
     token_pos++;
     return 1;
 }
@@ -388,7 +396,7 @@ int consume_string(char **str) {
 //その場合はnameを取得し、入力を1トークン読み進めて真を返す
 int consume_ident(char **name) {
     if (tokens[token_pos]->type != TK_IDENT) return 0;
-    *name = tokens[token_pos]->str;
+    *name = tokens[token_pos]->ident;
     token_pos++;
     return 1;
 }
@@ -397,7 +405,7 @@ int consume_ident(char **name) {
 //その場合はそのNode(ND_TYPEDEF)を取得し、入力を1トークン読み進めて真を返す
 int consume_typedef(Node **ret_node) {
     if (tokens[token_pos]->type != TK_IDENT) return 0;
-    Node *node = search_symbol(token_str());
+    Node *node = search_symbol(token_ident());
     if (node==NULL) return 0;
     if (node->type!=ND_TYPEDEF) return 0;
     token_pos++;
@@ -422,6 +430,6 @@ void expect_ident(char**name, const char*str) {
     if (tokens[token_pos]->type != TK_IDENT) {
         error_at(input_str(), "識別子（%s）が期待されています", str);
     }
-    *name = tokens[token_pos]->str;
+    *name = tokens[token_pos]->ident;
     token_pos++;
 }

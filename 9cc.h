@@ -79,10 +79,19 @@ typedef enum {
     TK_EOF,         //入力の終わり
 } TKtype;
 
+//文字列。NULL終端でなくてもよい。
+typedef struct String {
+    char *buf;
+    int size;
+} String;
+
 typedef struct {
     TKtype type;    //トークンの型
     long val;       //typeがTK_TOKENの場合、値
-    char *str;      //typeがTK_STRING/TK_IDENTの場合、その文字列
+    union {
+    char *ident;    //typeがTK_IDENTの場合、その文字列
+    String string;  //typeがTK_STRINGの場合、その文字列
+    };
     char *input;    //トークン文字列（エラーメッセージ用）
 } Token;
 
@@ -207,14 +216,17 @@ struct Node {
                     //typeがND_LISTの場合のassignmentのリスト
     Map *map;       //typeがND_SWITCHの場合のND_CASEのマップ: key=node->val, val=node(ND_CASE)
     };
+    union {
     char *name;     //typeがND_LOCAL|GLOBAL_VAR[_DEF]の場合の変数名
                     //typeがND_FUNC_CALL|DEF|DECLの場合の関数名
+    String string;  //typeがND_STRINGの場合の文字列（NULL終端でなくてもよい）
+    };
     Type *tp;       //型情報
     char *input;    //トークン文字列（エラーメッセージ用）。Token.inputと同じ。
 };
 
 typedef struct {
-    char    *name;          //関数名
+    char    *func_name;     //関数名
     Node    *node;          //ND_FUNC_DEFのnode
     Type    *tp;            //関数の型(常にFUNC)
     Map     *symbol_map;    //通常の識別子：key=name, val=Node(ND_LOCAL_VAR_DEFなど)
@@ -252,12 +264,11 @@ EXTERN char *break_label;
 EXTERN char *continue_label;
 
 //文字列リテラル
-typedef struct String {
-    const char *str;
-    int size;                   //予約
+typedef struct StringL {
+    String string;
     char unused;                //.text領域に出力する必要なし
-} String;
-EXTERN Vector *string_vec;      //value=String
+} StringL;
+EXTERN Vector *string_vec;      //value=StringL
 
 //staticシンボル
 EXTERN Vector *static_var_vec;  //value=Node
@@ -302,18 +313,19 @@ EXTERN int note_cnt;
 #define input_str() (tokens[token_pos]->input)
 
 //トークンへのアクセス
-#define token_str()  (tokens[token_pos]->str)
-#define token_type() (tokens[token_pos]->type)
-#define token_is(_tp) (token_type()==(_tp))
-#define next_token_str()  (tokens[token_pos+1]->str)
-#define next_token_type() (tokens[token_pos+1]->type)
-#define next_token_is(_tp) (next_token_type()==(_tp))
+#define token_ident()       (tokens[token_pos]->ident)
+#define token_type()        (tokens[token_pos]->type)
+#define token_is(_tp)       (token_type()==(_tp))
+#define next_token_ident()  (tokens[token_pos+1]->ident)
+#define next_token_type()   (tokens[token_pos+1]->type)
+#define next_token_is(_tp)  (next_token_type()==(_tp))
 
 // main.c
 void compile(void);
 
 // tokenize.c
-char *escape_str(const char *str);
+char *escape_ascii(const String *string);
+char *escape_string(const String *string);
 void tokenize(char *p);
 void dump_tokens(void);
 int token_is_type_spec(void);
@@ -323,7 +335,7 @@ int next_token_is_type_spec(void);
 int consume(TKtype type);
 int consume_typedef(Node **node);
 int consume_num(long *valp);
-int consume_string(char **str);
+int consume_string(String *string);
 int consume_ident(char**name);
 void expect(TKtype type);
 void expect_ident(char**name, const char*str);
@@ -339,9 +351,9 @@ int node_is_const_or_address(Node *node, long *valp, Node **varp);
 #define type_is_typedef(tp) (get_storage_class(tp)==SC_TYPEDEF)
 #define node_is_local_static_var(node) ((node)->type==ND_LOCAL_VAR && type_is_static((node)->tp))
 StorageClass get_storage_class(Type *tp);
-int new_string(const char *str);
-const char* get_string(int index);
-void unuse_string(int index);
+int new_string_literal(String *string);
+String *get_string_literal(int index);
+void unuse_string_literal(int index);
 
 #ifdef _PARSE_C_
 Node *search_symbol(const char *name);
@@ -371,7 +383,7 @@ Node *new_node(int type, Node *lhs, Node *rhs, Type *tp, char *input);
 Node *new_node(int type, Node *lhs, Node *rhs, Type *tp, char *input);
 Node *new_node_num(long val, char *input);
 Node *new_node_var_def(char *name, Type*tp, char *input);
-Node *new_node_string(char *string, char *input);
+Node *new_node_string(String *string, char *input);
 Node *new_node_ident(char *name, char *input);
 Node *new_node_func_call(char *name, char *input);
 Node *new_node_func(char *name, Type *tp, char *input);

@@ -180,24 +180,23 @@ StorageClass get_storage_class(Type *tp) {
     return tp->sclass;
 }
 
-int new_string(const char *str) {
-    String *string = calloc(1, sizeof(String));
-    string->str = str;
-    string->size = strlen(str)+1;
-    vec_push(string_vec, string);
+int new_string_literal(String *string) {
+    StringL *stringL = calloc(1, sizeof(StringL));
+    stringL->string = *string;
+    vec_push(string_vec, stringL);
     return vec_len(string_vec)-1;
 }
 
-const char* get_string(int index) {
+String *get_string_literal(int index) {
     assert(index<vec_len(string_vec));
-    String *string = vec_data(string_vec, index);
-    return string->str;
+    StringL *stringL = vec_data(string_vec, index);
+    return &(stringL->string);
 }
 
-void unuse_string(int index) {
+void unuse_string_literal(int index) {
     assert(index<vec_len(string_vec));
-    String *string = vec_data(string_vec, index);
-    string->unused = 1;
+    StringL *stringL = vec_data(string_vec, index);
+    stringL->unused = 1;
 }
 
 // ==================================================
@@ -392,10 +391,10 @@ void check_return(Node *node) {
         if (ret_tp->type==VOID) return;
         warning_at(node->input, "void型関数が値を返しています");
     } else if (ret_tp==NULL || ret_tp->type==VOID) {
-        warning_at(node->input, "非void関数%sが値を返していません", cur_funcdef->name);
+        warning_at(node->input, "非void関数%sが値を返していません", cur_funcdef->func_name);
     } else if (!type_eq_assign(func_tp, ret_tp)) {
         warning_at(node->input, "%s型の関数%sが%s型を返しています",
-            get_type_str(func_tp), cur_funcdef->name, get_type_str(ret_tp));
+            get_type_str(func_tp), cur_funcdef->func_name, get_type_str(ret_tp));
     }
 }
 
@@ -625,11 +624,11 @@ Node *new_node_var_def(char *name, Type*tp, char *input) {
 }
 
 //抽象構文木の生成（文字列リテラル）
-Node *new_node_string(char *string, char *input) {
-    Type *tp = new_type_array(new_type(CHAR, 0), strlen(string)+1);
+Node *new_node_string(String *string, char *input) {
+    Type *tp = new_type_array(new_type(CHAR, 0), string->size);
     Node *node = new_node(ND_STRING, NULL, NULL, tp, input);
-    node->name = string;
-    node->val = new_string(string); //インデックス
+    node->string = *string;
+    node->val = new_string_literal(string); //インデックス
 
     return node;
 }
@@ -725,7 +724,7 @@ Node *new_node_func(char *name, Type *tp, char *input) {
     cur_funcdef = new_funcdef();
     cur_funcdef->tp = tp;
     cur_funcdef->node = node;
-    cur_funcdef->name = node->name;
+    cur_funcdef->func_name = node->name;
     stack_push(symbol_stack,  cur_funcdef->symbol_map);     //popはfunction_definition()で行う
     stack_push(tagname_stack, cur_funcdef->tagname_map);    //popはfunction_definition()で行う
 

@@ -645,6 +645,7 @@ static int string1(void) {
     char str1[5] = "ABC";
     char str2[ ] = "ABC";
     char str3[4] = "ABCDE"; //長すぎる
+    char str4[3] = "A\0B";  //途中にnul、最後がnulでない
 
     return
         strcmp(buf, "abc")==0 &&
@@ -652,6 +653,7 @@ static int string1(void) {
         strcmp(str1, "ABC")==0 && strlen(str1)==3 &&
         strcmp(str2, "ABC")==0 && strlen(str2)==3 &&
         strncmp(str3, "ABCD", 4)==0 &&
+        str4[1]==0 && str4[2]=='B' &&
         strcmp(str1, sg1_str1)==0;
 }
 GLOBAL char sg1_buf[20];
@@ -659,6 +661,7 @@ GLOBAL char*sg1_p[4];
 GLOBAL char sg1_str1[5] = "ABC";
 GLOBAL char sg1_str2[ ] = "ABC";
 GLOBAL char sg1_str3[4] = "ABCDE"; //長すぎる
+GLOBAL char sg1_str4[3] = "A\0B";  //途中にnul、最後がnulでない
 static int string1g(void) {
     strcpy(sg1_buf, "abc");
 
@@ -671,6 +674,7 @@ static int string1g(void) {
         strcmp(sg1_str1, "ABC")==0 && strlen(sg1_str1)==3 &&
         strcmp(sg1_str2, "ABC")==0 && strlen(sg1_str2)==3 &&
         strncmp(sg1_str3, "ABCD", 4)==0 &&
+        sg1_str4[1]==0 && sg1_str4[2]=='B' &&
         strcmp("ab" "cd" "ef", "abcdef")==0;
 }
 static int string1s(void) {

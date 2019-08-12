@@ -12,7 +12,7 @@
                                      ^ static int**型の関数pointer3がint型を返しています
 9cc:Warning: tmp/test_src.c:598: }
                                   ^ 関数が戻り値を返していません
-9cc:Warning: tmp/test_src.c:913: }
+9cc:Warning: tmp/test_src.c:917: }
                                   ^ 関数が戻り値を返していません
   OK: addsub1
   OK: addsub1c

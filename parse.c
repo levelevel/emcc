@@ -1293,21 +1293,22 @@ static Node *postfix_expression(void) {
 static Node *primary_expression(void) {
     Node *node;
     long val;
-    char *name, *str;
+    char *name;
+    String string, string2;
     char *input = input_str();
     if (consume('(')) {
         node = expression();
         expect(')');
     } else if (consume_num(&val)) {
         node = new_node_num(val, input);
-    } else if (consume_string(&str)) {
-        char *str2;
-        while (consume_string(&str2)) {
-            int len = strlen(str);
-            str = realloc(str, len+strlen(str2)+1);
-            strcpy(str+len, str2);
+    } else if (consume_string(&string)) {
+        while (consume_string(&string2)) {
+            int new_size = string.size + string2.size - 1;
+            string.buf = realloc(string.buf, new_size);
+            memcpy(string.buf+string.size-1, string2.buf, string2.size);
+            string.size = new_size;
         }
-        node = new_node_string(str, input);
+        node = new_node_string(&string, input);
     } else if (consume_ident(&name)) {
         //すでに出現済みであればその参照に決まる(ND_LOCAL_VAR/ND_GLOBAL_VAR/ND_ENUMなど)
         node = new_node_ident(name, input);
