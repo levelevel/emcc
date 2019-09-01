@@ -1,18 +1,16 @@
-9cc:Warning: tmp/test_src.c:14: static int f42() {42; ;;;;;}
+9cc:Warning: tmp/test_src.c:17: static int f42() {42; ;;;;;}
                                                             ^ 関数が戻り値を返していません
-9cc:Warning: tmp/test_src.c:177: }
+9cc:Warning: tmp/test_src.c:180: }
                                   ^ 関数が戻り値を返していません
-9cc:Warning: tmp/test_src.c:305: }
+9cc:Warning: tmp/test_src.c:308: }
                                   ^ 関数が戻り値を返していません
-9cc:Warning: tmp/test_src.c:310: }
+9cc:Warning: tmp/test_src.c:313: }
                                   ^ 関数が戻り値を返していません
-9cc:Warning: tmp/test_src.c:361:     fd3_func();
+9cc:Warning: tmp/test_src.c:364:     fd3_func();
                                      ^ 未宣言の関数コールです。
-9cc:Warning: tmp/test_src.c:467:     return 0;
+9cc:Warning: tmp/test_src.c:470:     return 0;
                                      ^ static int**型の関数pointer3がint型を返しています
-9cc:Warning: tmp/test_src.c:598: }
-                                  ^ 関数が戻り値を返していません
-9cc:Warning: tmp/test_src.c:917: }
+9cc:Warning: tmp/test_src.c:925: }
                                   ^ 関数が戻り値を返していません
   OK: addsub1
   OK: addsub1c
@@ -74,6 +72,8 @@
   OK: array3c
   OK: array3s
   OK: array3l
+  OK: sarray2
+  OK: sarray2c
   OK: array
   OK: string1
   OK: string1g

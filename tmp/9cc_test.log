@@ -615,7 +615,7 @@ int a; void main(){static int b=a;
 9cc:Error: selftest133:1: int a; void main(){static int b=a;
                                                             ^ 終端記号でないトークンです
 # selftest134 ----------------
-# [静的ローカル変数をローカル変数で初期化]
+# [静的ローカル変数を静的ローカル変数で初期化]
 int main(){static int a, b=a;}
 9cc:Warning: selftest134:1: int main(){static int a, b=a;}
                                                          ^ 関数が戻り値を返していません
@@ -629,61 +629,68 @@ int main(){int a; static int b=a;}
 9cc:Error: selftest135:1: int main(){int a; static int b=a;}
                                                          ^ スカラー定数ではありません
 # selftest136 ----------------
+# [静的ローカル変数を自動変数で初期化]
+int main(){int a[4]; static int *b=a;}
+9cc:Warning: selftest136:1: int main(){int a[4]; static int *b=a;}
+                                                                 ^ 関数が戻り値を返していません
+9cc:Error: selftest136:1: int main(){int a[4]; static int *b=a;}
+                                                             ^ 静的変数の初期化には定数式が必要です
+# selftest137 ----------------
 # [複数文字]
 int main(){return 'ab';}
-9cc:Error: selftest136:1: int main(){return 'ab';}
+9cc:Error: selftest137:1: int main(){return 'ab';}
                                               ^ トークナイズエラー：'が必要です
-# selftest137 ----------------
+# selftest138 ----------------
 # [未定義のエスケープシーケンス]
 int main(){return '\N';}
-9cc:Warning: selftest137:1: int main(){return '\N';}
+9cc:Warning: selftest138:1: int main(){return '\N';}
                                                 ^ 未定義のエスケープシーケンス
-# selftest138 ----------------
+# selftest139 ----------------
 # [4文字以上のoctal]
 int main(){return '\0123';}
-9cc:Error: selftest138:1: int main(){return '\0123';}
+9cc:Error: selftest139:1: int main(){return '\0123';}
                                                  ^ トークナイズエラー：'が必要です
-# selftest139 ----------------
+# selftest140 ----------------
 # [octal規定外文字]
 int main(){return '\08';}
-9cc:Error: selftest139:1: int main(){return '\08';}
-                                               ^ トークナイズエラー：'が必要です
-# selftest140 ----------------
-# [hexadecimal規定外文字]
-int main(){return '\xG';}
-9cc:Error: selftest140:1: int main(){return '\xG';}
+9cc:Error: selftest140:1: int main(){return '\08';}
                                                ^ トークナイズエラー：'が必要です
 # selftest141 ----------------
-int main(){int a[][3]={{1,2,3},{11,12,13}; return a[1][2]}}
-9cc:Error: selftest141:1: int main(){int a[][3]={{1,2,3},{11,12,13}; return a[1][2]}}
-                                                                     ^ }が期待されています
+# [hexadecimal規定外文字]
+int main(){return '\xG';}
+9cc:Error: selftest141:1: int main(){return '\xG';}
+                                               ^ トークナイズエラー：'が必要です
 # selftest142 ----------------
-int x; int x[4]; int main(){}
-9cc:Error: selftest142:1: int x; int x[4]; int main(){}
-                                      ^ 型が一致しません
-9cc:Note: selftest142:1: int x; int x[4]; int main(){}
-                              ^ 以前の宣言はここです
+int main(){int a[][3]={{1,2,3},{11,12,13}; return a[1][2]}}
+9cc:Error: selftest142:1: int main(){int a[][3]={{1,2,3},{11,12,13}; return a[1][2]}}
+                                                                     ^ }が期待されています
 # selftest143 ----------------
-int main(){"ABC"=1;}
-9cc:Error: selftest143:1: int main(){"ABC"=1;}
-                                     ^ 左辺値ではありません
+int x; int x[4]; int main(){}
+9cc:Error: selftest143:1: int x; int x[4]; int main(){}
+                                      ^ 型が一致しません
+9cc:Note: selftest143:1: int x; int x[4]; int main(){}
+                              ^ 以前の宣言はここです
 # selftest144 ----------------
-int main(){char p[3]=1;}
-9cc:Error: selftest144:1: int main(){char p[3]=1;}
-                                               ^ 配列の初期値が配列形式になっていません
+int main(){"ABC"=1;}
+9cc:Error: selftest144:1: int main(){"ABC"=1;}
+                                     ^ 左辺値ではありません
 # selftest145 ----------------
-int main(){int a[]="ABC";}
-9cc:Error: selftest145:1: int main(){int a[]="ABC";}
-                                             ^ int[]を文字列リテラルで初期化できません
+int main(){char p[3]=1;}
+9cc:Error: selftest145:1: int main(){char p[3]=1;}
+                                               ^ 配列の初期値が配列形式になっていません
 # selftest146 ----------------
-int main(){char *p[]="ABC";}
-9cc:Error: selftest146:1: int main(){char *p[]="ABC";}
-                                               ^ char*[]を文字列リテラルで初期化できません
+int main(){int a[]="ABC";}
+9cc:Error: selftest146:1: int main(){int a[]="ABC";}
+                                             ^ int[]を文字列リテラルで初期化できません
 # selftest147 ----------------
+int main(){char *p[]="ABC";}
+9cc:Error: selftest147:1: int main(){char *p[]="ABC";}
+                                               ^ char*[]を文字列リテラルで初期化できません
+# selftest148 ----------------
 int main(){int a; a[1];}
-9cc:Error: selftest147:1: int main(){int a; a[1];}
+9cc:Error: selftest148:1: int main(){int a; a[1];}
                                                ^ ここでは配列を指定できません
 9cc self test
-Total : 148
-   Ok : 148
+Total : 149
+   Ok : 149
    NG : 0

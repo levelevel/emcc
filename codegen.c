@@ -212,15 +212,21 @@ char *get_byte_string(Node *node, int array_size, int data_size) {
 static char *get_asm_var_name(Node *node) {
     static char buf[16];
     char *ret = buf;
-    if (node->type==ND_LOCAL_VAR) {
+    switch (node->type) {
+    case ND_LOCAL_VAR:
         if (type_is_static(node->tp)) {
             sprintf(buf, "%s.%03d", node->name, node->offset);
         } else {
             sprintf(buf, "rbp-%d", node->offset);
         }
-    } else if (node->type==ND_GLOBAL_VAR) {
+        break;
+    case ND_GLOBAL_VAR:
         ret = node->name;
-    } else {
+        break;
+    case ND_ADDRESS:
+        return get_asm_var_name(node->rhs);
+        break;
+    default:
         dump_node(node, __func__);
         _NOT_YET_(node);
     }
@@ -1026,15 +1032,34 @@ static void gen_global_var(Node *node) {
             gen_single_val("quad", rhs);
             break;
         case PTR:
-            if (rhs->type==ND_ADDRESS) {
+            if (rhs->type==ND_ADDRESS && rhs->rhs->type==ND_INDIRECT) {
+                rhs = rhs->rhs->rhs;
+            }
+            switch (rhs->type) {
+            case ND_ADDRESS:
                 printf("  .quad %s\n", get_asm_var_name(rhs->rhs));
-            } else if (rhs->type==ND_NUM || rhs->type==ND_LIST) {
+                break;
+            case ND_GLOBAL_VAR:
+                printf("  .quad %s\n", get_asm_var_name(rhs));
+                break;
+            case ND_LOCAL_VAR:
+                if (type_is_static(rhs->tp)) {
+                    printf("  .quad %s\n", get_asm_var_name(rhs));
+                } else {
+                    error_at(rhs->input,"静的変数の初期化には定数式が必要です");
+                }
+                break;
+            case ND_NUM:
+            case ND_LIST:
                 gen_single_val("quad", rhs);
-            } else if (rhs->type==ND_STRING) {
+                break;
+            case ND_STRING:
                 printf("  .quad .LC%03ld\n", rhs->val);
-            } else if (rhs->type=='+') {
-                printf("  .quad %s%+ld\n", rhs->lhs->rhs->name, size_of(node->tp->ptr_of)*rhs->rhs->val);
-            } else {
+                break;
+            case '+':
+                printf("  .quad %s%+ld\n", get_asm_var_name(rhs->lhs), size_of(node->tp->ptr_of)*rhs->rhs->val);
+                break;
+            default:
                 _NOT_YET_(rhs);
             }
             break;

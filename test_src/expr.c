@@ -19,7 +19,8 @@ size_t strlen(const char *s);
 #endif
 
 #define GLOBAL
-#define TEST(f) if(!f()) {printf("Error at %s:%d:%s\n",__FILE__,__LINE__,#f);exit(1);} else {printf("  OK: %s\n",#f);}
+static int test_cnt = 0;
+#define TEST(f) test_cnt++;if(!f()) {printf("Error at %s:%d:%s\n",__FILE__,__LINE__,#f);exit(1);} else {printf("  OK: %s\n",#f);}
 
 static int f42() {42; ;;;;;}
 static int addsub1(){
@@ -559,28 +560,28 @@ static int array1l() {
 }
 static int af2(int *a){return a[0]+a[1]+a[2];}
 static int array2() {
-    int a[4]={1,2,3,4}, *p=a, *q=&a[2];
-    return af2(a)==6 && p[1]==2, *q==3;
+    int a[4]={1,2,3,4}, *p=a, *q=&a[2], *r=a+3;
+    return af2(a)==6 && p[1]==2, *q==3, *r=4;
 }
 GLOBAL int a2g_a[4]={1,2,3,4};
-static int a2g_b[4]={1,2,3,4}, *a2g_p=&a2g_a, *a2g_q=&a2g_b[2];
+static int a2g_b[4]={1,2,3,4}, *a2g_p=&a2g_a, *a2g_q=&a2g_b[2], *a2g_r=a2g_a+3;
 static int array2g() {
-    return af2(a2g_a)==6 && a2g_p[1]==2, *a2g_q==3;
+    return af2(a2g_a)==6 && a2g_p[1]==2, *a2g_q==3, *a2g_r==4;
 }
 static char af2c(char *a){return a[0]+a[1]+a[2];}
 static int array2c() {
-    char a[4]={1,2,3,4}, *p=a, *q=&a[2];
-    return af2c(a)==6 && p[1]==2, *q==3;
+    char a[4]={1,2,3,4}, *p=a, *q=&a[2], *r=a+3;
+    return af2c(a)==6 && p[1]==2, *q==3, *r==4;
 }
 static short af2s(short *a){return a[0]+a[1]+a[2];}
 static int array2s() {
-    short a[4]={1,2,3,4}, *p=a, *q=&a[2];
-    return af2s(a)==6 && p[1]==2, *q==3;
+    short a[4]={1,2,3,4}, *p=a, *q=&a[2], *r=a+3;
+    return af2s(a)==6 && p[1]==2, *q==3, *r==4;
 }
 static long af2l(long *a){return a[0]+a[1]+a[2];}
 static int array2l() {
-    long a[4]={1,2,3,4}, *p=a, *q=&a[2];
-    return af2l(a)==6 && p[1]==2, *q==3;
+    long a[4]={1,2,3,4}, *p=a, *q=&a[2], *r=a+3;
+    return af2l(a)==6 && p[1]==2, *q==3, *r==4;
 }
 static int array3() {
     int a[4][5], *p=(int*)a, b[4][5][6], *q=(int*)b;
@@ -611,8 +612,12 @@ static int array3l() {
         (long)a[1] == (long)(a+1) && p[2*5+3]==10 && *(q+2*5*6+3*6+4)==20;
 }
 static int sarray2() {
-//    static int a[4]={1,2,3,4}, *p=a, *q=&a[2];
-//    return af2(a)==6 && p[1]==2, *q==3;
+    static int a[4]={1,2,3,4}, *p=a, *q=&a[2], *r=a+3;
+    return af2(a)==6 && p[1]==2, *q==3, *r==4;
+}
+static int sarray2c() {
+    static char a[4]={1,2,3,4}, *p=a, *q=&a[2], *r=a+3;
+    return af2(a)==6 && p[1]==2, *q==3, *r==4;
 }
 static int array() {
     TEST(array1);
@@ -629,7 +634,8 @@ static int array() {
     TEST(array3s);
     TEST(array3l);
 
-//    TEST(sarray2);
+    TEST(sarray2);
+    TEST(sarray2c);
     return 1;
 }
 
@@ -1399,6 +1405,5 @@ int main() {
     TEST(Enum);
     TEST(Typedef);
     //printf("%s:%d func=%s\n",__FILE__, __LINE__, __func__);
-    //char a[]="ABC" "XYZ";
     return 0;
 }
