@@ -10,13 +10,6 @@ test_src/expr.c:401:34: warning: initialization from incompatible pointer type [
 test_src/expr.c:567:39: warning: initialization from incompatible pointer type [-Wincompatible-pointer-types]
  static int a2g_b[4]={1,2,3,4}, *a2g_p=&a2g_a, *a2g_q=&a2g_b[2], *a2g_r=a2g_a+3;
                                        ^
-test_src/expr.c: In function ‘sarray2c’:
-test_src/expr.c:620:16: warning: passing argument 1 of ‘af2’ from incompatible pointer type [-Wincompatible-pointer-types]
-     return af2(a)==6 && p[1]==2, *q==3, *r==4;
-                ^
-test_src/expr.c:561:12: note: expected ‘int *’ but argument is of type ‘char *’
- static int af2(int *a){return a[0]+a[1]+a[2];}
-            ^~~
 test_src/expr.c: In function ‘string1’:
 test_src/expr.c:653:20: warning: initializer-string for array of chars is too long
      char str3[4] = "ABCDE"; //長すぎる
