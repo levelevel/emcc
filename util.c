@@ -285,6 +285,15 @@ static void dump_node_indent(FILE *fp, const Node *node, const char *str, int in
         node->offset, node->val, node->unused);
     if (node->lhs) dump_node_indent(fp, node->lhs, "lhs=", indent+2);
     if (node->rhs) dump_node_indent(fp, node->rhs, "rhs=", indent+2);
+    if (node->type==ND_LIST) {
+        char buf[16];
+        Vector *lists = node->lst;
+        Node **nodes = (Node**)lists->data;
+        for (int i=0; i < lists->len; i++) {
+            sprintf(buf, "lst[%d]", i);
+            dump_node_indent(fp, nodes[i], buf, indent+2);
+        }
+    }
 }
 
 void dump_node(const Node *node, const char *str) {

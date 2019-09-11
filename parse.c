@@ -1252,21 +1252,7 @@ static Node *postfix_expression(void) {
     for (;;) {
         char *input = input_str();
         Type *tp = node->tp;
-        if (consume(TK_INC)) {
-            node = new_node(ND_INC, node, NULL, node->tp, input);
-        } else if (consume(TK_DEC)) {
-            node = new_node(ND_DEC, node, NULL, node->tp, input);
-        } else if (consume('[')) {
-            // a[3] => *(a+3)
-            // a[3][2] => *(*(a+3)+2)
-            input = input_str();
-            Node *rhs = expression();
-            node = new_node('+', node, rhs, tp ,input);
-            tp = node->tp->ptr_of ? node->tp->ptr_of : rhs->tp->ptr_of;
-            if (tp==NULL) error_at(input_str(), "ここでは配列を指定できません");
-            node = new_node(ND_INDIRECT, NULL, node, tp, input);
-            expect(']');
-        } else if (consume('(')) {  //関数コール
+        if (consume('(')) {  //関数コール
             //dump_node(node, "func");
             #define node_is_func(node) ((node)->tp->type==FUNC||((node)->tp->type==PTR &&(node)->tp->ptr_of->type==FUNC))
             if (node->type!=ND_IDENT && !node_is_func(node))
@@ -1282,6 +1268,20 @@ static Node *postfix_expression(void) {
             check_funccall(node);
         } else if (node->type==ND_IDENT) {
             error_at(node->input, "'%s'は未定義の変数です", node->name);
+        } else if (consume(TK_INC)) {
+            node = new_node(ND_INC, node, NULL, node->tp, input);
+        } else if (consume(TK_DEC)) {
+            node = new_node(ND_DEC, node, NULL, node->tp, input);
+        } else if (consume('[')) {
+            // a[3] => *(a+3)
+            // a[3][2] => *(*(a+3)+2)
+            input = input_str();
+            Node *rhs = expression();
+            node = new_node('+', node, rhs, tp ,input);
+            tp = node->tp->ptr_of ? node->tp->ptr_of : rhs->tp->ptr_of;
+            if (tp==NULL) error_at(input_str(), "ここでは配列を指定できません");
+            node = new_node(ND_INDIRECT, NULL, node, tp, input);
+            expect(']');
         } else {
             break;
         }
