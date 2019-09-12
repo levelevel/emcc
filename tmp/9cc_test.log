@@ -32,665 +32,668 @@ int main(){a;}
 9cc:Error: selftest007:1: int main(){a;}
                                      ^ 'a'は未定義の変数です
 # selftest008 ----------------
+int main(){a[1];}
+9cc:Error: selftest008:1: int main(){a[1];}
+                                     ^ 'a'は未定義の変数です
+# selftest009 ----------------
+int main(){a++;}
+9cc:Error: selftest009:1: int main(){a++;}
+                                     ^ 'a'は未定義の変数です
+# selftest010 ----------------
 # [ローカル変数の重複定義]
 int main(){int a=1; int a=1;}
-9cc:Error: selftest008:1: int main(){int a=1; int a=1;}
+9cc:Error: selftest010:1: int main(){int a=1; int a=1;}
                                                   ^ 'a'はローカル変数の重複定義です
-9cc:Note: selftest008:1: int main(){int a=1; int a=1;}
+9cc:Note: selftest010:1: int main(){int a=1; int a=1;}
                                         ^ 以前の定義はここです
-# selftest009 ----------------
+# selftest011 ----------------
 # [静的ローカル変数の重複定義]
 int main(){static int a=1, a=1;}
-9cc:Error: selftest009:1: int main(){static int a=1, a=1;}
+9cc:Error: selftest011:1: int main(){static int a=1, a=1;}
                                                      ^ 'a'はローカル変数の重複定義です
-9cc:Note: selftest009:1: int main(){static int a=1, a=1;}
+9cc:Note: selftest011:1: int main(){static int a=1, a=1;}
                                                ^ 以前の定義はここです
-# selftest010 ----------------
+# selftest012 ----------------
 # [グローバル変数の重複定義]
 int a=1, a=1; void main(){}
-9cc:Error: selftest010:1: int a=1, a=1; void main(){}
+9cc:Error: selftest012:1: int a=1, a=1; void main(){}
                                    ^ 'a'はグローバル変数の重複定義です
-9cc:Note: selftest010:1: int a=1, a=1; void main(){}
+9cc:Note: selftest012:1: int a=1, a=1; void main(){}
                               ^ 以前の定義はここです
-# selftest011 ----------------
+# selftest013 ----------------
 # [ローカル変数のstatic/auto]
 int main(){static int a; int a;}
-9cc:Error: selftest011:1: int main(){static int a; int a;}
+9cc:Error: selftest013:1: int main(){static int a; int a;}
                                                        ^ 型が一致しません
-9cc:Note: selftest011:1: int main(){static int a; int a;}
+9cc:Note: selftest013:1: int main(){static int a; int a;}
                                                ^ 以前の宣言はここです
-# selftest012 ----------------
+# selftest014 ----------------
 # [グローバル変数のstatic/global]
 static int a; int a;void main(){}
-9cc:Error: selftest012:1: static int a; int a;void main(){}
+9cc:Error: selftest014:1: static int a; int a;void main(){}
                                              ^ 型が一致しません
-9cc:Note: selftest012:1: static int a; int a;void main(){}
+9cc:Note: selftest014:1: static int a; int a;void main(){}
                                      ^ 以前の宣言はここです
-# selftest013 ----------------
-int main(){int &a;}
-9cc:Error: selftest013:1: int main(){int &a;}
-                                         ^ 識別子（変数名・関数名）が期待されています
-# selftest014 ----------------
-int main(){int +a;}
-9cc:Error: selftest014:1: int main(){int +a;}
-                                         ^ 識別子（変数名・関数名）が期待されています
 # selftest015 ----------------
-int main(){return 1++;}
-9cc:Error: selftest015:1: int main(){return 1++;}
-                                            ^ アドレスを生成できません
+int main(){int &a;}
+9cc:Error: selftest015:1: int main(){int &a;}
+                                         ^ 識別子（変数名・関数名）が期待されています
 # selftest016 ----------------
-int main(){return --1;}
-9cc:Error: selftest016:1: int main(){return --1;}
-                                              ^ アドレスを生成できません
+int main(){int +a;}
+9cc:Error: selftest016:1: int main(){int +a;}
+                                         ^ 識別子（変数名・関数名）が期待されています
 # selftest017 ----------------
-int main(){int a; *a;}
-9cc:Error: selftest017:1: int main(){int a; *a;}
-                                             ^ '*'は非ポインタ型(int)を参照しています
+int main(){return 1++;}
+9cc:Error: selftest017:1: int main(){return 1++;}
+                                            ^ アドレスを生成できません
 # selftest018 ----------------
-int main(){int *a; **a;}
-9cc:Error: selftest018:1: int main(){int *a; **a;}
-                                              ^ '*'は非ポインタ型(int)を参照しています
-# selftest019 ----------------
-int main(){*1;}
-9cc:Error: selftest019:1: int main(){*1;}
-                                      ^ '*'は非ポインタ型(int)を参照しています
-# selftest020 ----------------
-int main(){*1=0;}
-9cc:Error: selftest020:1: int main(){*1=0;}
-                                      ^ '*'は非ポインタ型(int)を参照しています
-# selftest021 ----------------
-int main(){&1; return 1;}
-9cc:Error: selftest021:1: int main(){&1; return 1;}
-                                      ^ アドレスを生成できません
-# selftest022 ----------------
-int main(){int a; *a;}
-9cc:Error: selftest022:1: int main(){int a; *a;}
-                                             ^ '*'は非ポインタ型(int)を参照しています
-# selftest023 ----------------
-int main(){int a; *a=0;}
-9cc:Error: selftest023:1: int main(){int a; *a=0;}
-                                             ^ '*'は非ポインタ型(int)を参照しています
-# selftest024 ----------------
-int main(){int a; & &a; return 1;}
-9cc:Error: selftest024:1: int main(){int a; & &a; return 1;}
+int main(){return --1;}
+9cc:Error: selftest018:1: int main(){return --1;}
                                               ^ アドレスを生成できません
+# selftest019 ----------------
+int main(){int a; *a;}
+9cc:Error: selftest019:1: int main(){int a; *a;}
+                                             ^ '*'は非ポインタ型(int)を参照しています
+# selftest020 ----------------
+int main(){int *a; **a;}
+9cc:Error: selftest020:1: int main(){int *a; **a;}
+                                              ^ '*'は非ポインタ型(int)を参照しています
+# selftest021 ----------------
+int main(){*1;}
+9cc:Error: selftest021:1: int main(){*1;}
+                                      ^ '*'は非ポインタ型(int)を参照しています
+# selftest022 ----------------
+int main(){*1=0;}
+9cc:Error: selftest022:1: int main(){*1=0;}
+                                      ^ '*'は非ポインタ型(int)を参照しています
+# selftest023 ----------------
+int main(){&1; return 1;}
+9cc:Error: selftest023:1: int main(){&1; return 1;}
+                                      ^ アドレスを生成できません
+# selftest024 ----------------
+int main(){int a; *a;}
+9cc:Error: selftest024:1: int main(){int a; *a;}
+                                             ^ '*'は非ポインタ型(int)を参照しています
 # selftest025 ----------------
-int main(){int *a; a=1;}
-9cc:Warning: selftest025:1: int main(){int *a; a=1;}
-                                                ^ =の左右の型(int*:int)が異なります
+int main(){int a; *a=0;}
+9cc:Error: selftest025:1: int main(){int a; *a=0;}
+                                             ^ '*'は非ポインタ型(int)を参照しています
 # selftest026 ----------------
-int main(){int a; int*b; a=b;}
-9cc:Warning: selftest026:1: int main(){int a; int*b; a=b;}
-                                                      ^ =の左右の型(int:int*)が異なります
+int main(){int a; & &a; return 1;}
+9cc:Error: selftest026:1: int main(){int a; & &a; return 1;}
+                                              ^ アドレスを生成できません
 # selftest027 ----------------
-int main(){int a; int*b; b=a;}
-9cc:Warning: selftest027:1: int main(){int a; int*b; b=a;}
-                                                      ^ =の左右の型(int*:int)が異なります
+int main(){int *a; a=1;}
+9cc:Warning: selftest027:1: int main(){int *a; a=1;}
+                                                ^ =の左右の型(int*:int)が異なります
 # selftest028 ----------------
-int main(){int a; int b; a=&b;}
-9cc:Warning: selftest028:1: int main(){int a; int b; a=&b;}
+int main(){int a; int*b; a=b;}
+9cc:Warning: selftest028:1: int main(){int a; int*b; a=b;}
                                                       ^ =の左右の型(int:int*)が異なります
 # selftest029 ----------------
-int main(){int*a; int**b; a=b;}
-9cc:Warning: selftest029:1: int main(){int*a; int**b; a=b;}
-                                                       ^ =の左右の型(int*:int**)が異なります
+int main(){int a; int*b; b=a;}
+9cc:Warning: selftest029:1: int main(){int a; int*b; b=a;}
+                                                      ^ =の左右の型(int*:int)が異なります
 # selftest030 ----------------
-int *f(){int a; return &a;} int main(){int a; a=f();}
-9cc:Warning: selftest030:1: int *f(){int a; return &a;} int main(){int a; a=f();}
-                                                                           ^ =の左右の型(int:int*)が異なります
+int main(){int a; int b; a=&b;}
+9cc:Warning: selftest030:1: int main(){int a; int b; a=&b;}
+                                                      ^ =の左右の型(int:int*)が異なります
 # selftest031 ----------------
-int main(){int *p; p+p;}
-9cc:Error: selftest031:1: int main(){int *p; p+p;}
-                                             ^ ポインタ同士の加算です
+int main(){int*a; int**b; a=b;}
+9cc:Warning: selftest031:1: int main(){int*a; int**b; a=b;}
+                                                       ^ =の左右の型(int*:int**)が異なります
 # selftest032 ----------------
-int main(){int *p; char*q; p-q;}
-9cc:Error: selftest032:1: int main(){int *p; char*q; p-q;}
-                                                     ^ 異なるタイプのポインタによる減算です: int* vs char*
+int *f(){int a; return &a;} int main(){int a; a=f();}
+9cc:Warning: selftest032:1: int *f(){int a; return &a;} int main(){int a; a=f();}
+                                                                           ^ =の左右の型(int:int*)が異なります
 # selftest033 ----------------
-int main(){int *p; 1-p;}
-9cc:Error: selftest033:1: int main(){int *p; 1-p;}
-                                             ^ ポインタによる減算です
+int main(){int *p; p+p;}
+9cc:Error: selftest033:1: int main(){int *p; p+p;}
+                                             ^ ポインタ同士の加算です
 # selftest034 ----------------
-int main(){int *p; return sizeof(**p);}
-9cc:Error: selftest034:1: int main(){int *p; return sizeof(**p);}
-                                                            ^ '*'は非ポインタ型(int)を参照しています
+int main(){int *p; char*q; p-q;}
+9cc:Error: selftest034:1: int main(){int *p; char*q; p-q;}
+                                                     ^ 異なるタイプのポインタによる減算です: int* vs char*
 # selftest035 ----------------
-int main(){int a[4]; a=1;}
-9cc:Error: selftest035:1: int main(){int a[4]; a=1;}
-                                               ^ 左辺値ではありません
+int main(){int *p; 1-p;}
+9cc:Error: selftest035:1: int main(){int *p; 1-p;}
+                                             ^ ポインタによる減算です
 # selftest036 ----------------
-int main(){char *argv[];}
-9cc:Error: selftest036:1: int main(){char *argv[];}
-                                                 ^ 配列のサイズが未定義です
+int main(){int *p; return sizeof(**p);}
+9cc:Error: selftest036:1: int main(){int *p; return sizeof(**p);}
+                                                            ^ '*'は非ポインタ型(int)を参照しています
 # selftest037 ----------------
-int main(){char *argv[0];}
-9cc:Error: selftest037:1: int main(){char *argv[0];}
-                                                ^ 配列のサイズが0です
+int main(){int a[4]; a=1;}
+9cc:Error: selftest037:1: int main(){int a[4]; a=1;}
+                                               ^ 左辺値ではありません
 # selftest038 ----------------
-int main(){int a; char *argv[a];}
-9cc:Error: selftest038:1: int main(){int a; char *argv[a];}
-                                                       ^ 定数式が必要です
+int main(){char *argv[];}
+9cc:Error: selftest038:1: int main(){char *argv[];}
+                                                 ^ 配列のサイズが未定義です
 # selftest039 ----------------
-int main(){char  char a;}
-9cc:Error: selftest039:1: int main(){char  char a;}
-                                           ^ 型指定が不正です
-
+int main(){char *argv[0];}
+9cc:Error: selftest039:1: int main(){char *argv[0];}
+                                                ^ 配列のサイズが0です
 # selftest040 ----------------
-int main(){short short a;}
-9cc:Error: selftest040:1: int main(){short short a;}
-                                           ^ 型指定が不正です
-
+int main(){int a; char *argv[a];}
+9cc:Error: selftest040:1: int main(){int a; char *argv[a];}
+                                                       ^ 定数式が必要です
 # selftest041 ----------------
-int main(){int   int a;}
-9cc:Error: selftest041:1: int main(){int   int a;}
+int main(){char  char a;}
+9cc:Error: selftest041:1: int main(){char  char a;}
                                            ^ 型指定が不正です
 
 # selftest042 ----------------
-int main(){long long long a;}
-9cc:Error: selftest042:1: int main(){long long long a;}
-                                               ^ 型指定が不正です
+int main(){short short a;}
+9cc:Error: selftest042:1: int main(){short short a;}
+                                           ^ 型指定が不正です
 
 # selftest043 ----------------
-int main(){void  void *p;}
-9cc:Error: selftest043:1: int main(){void  void *p;}
+int main(){int   int a;}
+9cc:Error: selftest043:1: int main(){int   int a;}
                                            ^ 型指定が不正です
 
 # selftest044 ----------------
-int main(){signed void *p;}
-9cc:Error: selftest044:1: int main(){signed void *p;}
-                                            ^ void型の指定が不正です
+int main(){long long long a;}
+9cc:Error: selftest044:1: int main(){long long long a;}
+                                               ^ 型指定が不正です
 
 # selftest045 ----------------
-int main(){unsigned void *p;}
-9cc:Error: selftest045:1: int main(){unsigned void *p;}
-                                              ^ void型の指定が不正です
+int main(){void  void *p;}
+9cc:Error: selftest045:1: int main(){void  void *p;}
+                                           ^ 型指定が不正です
 
 # selftest046 ----------------
-int main(){void a;}
-9cc:Error: selftest046:1: int main(){void a;}
-                                           ^ 不正なvoid指定です
+int main(){signed void *p;}
+9cc:Error: selftest046:1: int main(){signed void *p;}
+                                            ^ void型の指定が不正です
+
 # selftest047 ----------------
-int main(){signed unsigned a;}
-9cc:Error: selftest047:1: int main(){signed unsigned a;}
-                                            ^ 型指定が不正です
+int main(){unsigned void *p;}
+9cc:Error: selftest047:1: int main(){unsigned void *p;}
+                                              ^ void型の指定が不正です
 
 # selftest048 ----------------
-int main(){ststic ststic int a;}
-9cc:Error: selftest048:1: int main(){ststic ststic int a;}
-                                     ^ 'ststic'は未定義の変数です
+int main(){void a;}
+9cc:Error: selftest048:1: int main(){void a;}
+                                           ^ 不正なvoid指定です
 # selftest049 ----------------
-int main(){extern extern int a;}
-9cc:Error: selftest049:1: int main(){extern extern int a;}
-                                            ^ strage classが重複しています
+int main(){signed unsigned a;}
+9cc:Error: selftest049:1: int main(){signed unsigned a;}
+                                            ^ 型指定が不正です
 
 # selftest050 ----------------
-int main(){extern ststic int a;}
-9cc:Error: selftest050:1: int main(){extern ststic int a;}
-                                            ^ 型名がありません
+int main(){static static int a;}
+9cc:Error: selftest050:1: int main(){static static int a;}
+                                            ^ strage classが重複しています
 
 # selftest051 ----------------
-int main(){extern int x; extern int*x;}
-9cc:Error: selftest051:1: int main(){extern int x; extern int*x;}
-                                                              ^ 型が一致しません
-9cc:Note: selftest051:1: int main(){extern int x; extern int*x;}
-                                               ^ 以前の宣言はここです
+int main(){extern extern int a;}
+9cc:Error: selftest051:1: int main(){extern extern int a;}
+                                            ^ strage classが重複しています
+
 # selftest052 ----------------
-int main(){extern int x; extern int*x;}
-9cc:Error: selftest052:1: int main(){extern int x; extern int*x;}
-                                                              ^ 型が一致しません
-9cc:Note: selftest052:1: int main(){extern int x; extern int*x;}
-                                               ^ 以前の宣言はここです
+int main(){extern static int a;}
+9cc:Error: selftest052:1: int main(){extern static int a;}
+                                            ^ strage classが重複しています
+
 # selftest053 ----------------
+int main(){extern int x; extern int*x;}
+9cc:Error: selftest053:1: int main(){extern int x; extern int*x;}
+                                                              ^ 型が一致しません
+9cc:Note: selftest053:1: int main(){extern int x; extern int*x;}
+                                               ^ 以前の宣言はここです
+# selftest054 ----------------
+int main(){extern int x; extern int*x;}
+9cc:Error: selftest054:1: int main(){extern int x; extern int*x;}
+                                                              ^ 型が一致しません
+9cc:Note: selftest054:1: int main(){extern int x; extern int*x;}
+                                               ^ 以前の宣言はここです
+# selftest055 ----------------
 static extern func(){} int main(){}
-9cc:Error: selftest053:1: static extern func(){} int main(){}
+9cc:Error: selftest055:1: static extern func(){} int main(){}
                                  ^ strage classが重複しています
 
-# selftest054 ----------------
-int main(){sizeof(static int);}
-9cc:Error: selftest054:1: int main(){sizeof(static int);}
-                                                      ^ storage classは指定できません
-# selftest055 ----------------
-int main(){sizeof(extern int);}
-9cc:Error: selftest055:1: int main(){sizeof(extern int);}
-                                                      ^ storage classは指定できません
 # selftest056 ----------------
-int main(){sizeof(int[])}
-9cc:Error: selftest056:1: int main(){sizeof(int[])}
-                                           ^ 不完全型のサイズは未定義です
+int main(){sizeof(static int);}
+9cc:Error: selftest056:1: int main(){sizeof(static int);}
+                                                      ^ storage classは指定できません
 # selftest057 ----------------
-int main(...){}
-9cc:Error: selftest057:1: int main(...){}
-                                      ^ )が期待されています
+int main(){sizeof(extern int);}
+9cc:Error: selftest057:1: int main(){sizeof(extern int);}
+                                                      ^ storage classは指定できません
 # selftest058 ----------------
-int main(int argc, ..., char *argv[]){}
-9cc:Error: selftest058:1: int main(int argc, ..., char *argv[]){}
-                                             ^ ...の位置が不正です
+int main(){sizeof(int[])}
+9cc:Error: selftest058:1: int main(){sizeof(int[])}
+                                           ^ 不完全型のサイズは未定義です
 # selftest059 ----------------
-int main(int argc, void){}
-9cc:Error: selftest059:1: int main(int argc, void){}
-                                             ^ ここではvoidを指定できません
+int main(...){}
+9cc:Error: selftest059:1: int main(...){}
+                                      ^ )が期待されています
 # selftest060 ----------------
-int func(int , void); int main(){}
-9cc:Error: selftest060:1: int func(int , void); int main(){}
-                                         ^ ここではvoidを指定できません
+int main(int argc, ..., char *argv[]){}
+9cc:Error: selftest060:1: int main(int argc, ..., char *argv[]){}
+                                             ^ ...の位置が不正です
 # selftest061 ----------------
-int func(int a, char *a); int main(){}
-9cc:Error: selftest061:1: int func(int a, char *a); int main(){}
-                                                 ^ 型が一致しません
-9cc:Note: selftest061:1: int func(int a, char *a); int main(){}
-                                       ^ 以前の宣言はここです
+int main(int argc, void){}
+9cc:Error: selftest061:1: int main(int argc, void){}
+                                             ^ ここではvoidを指定できません
 # selftest062 ----------------
-int main(){int a = func();}
-9cc:Warning: selftest062:1: int main(){int a = func();}
-                                               ^ 未宣言の関数コールです。
+int func(int , void); int main(){}
+9cc:Error: selftest062:1: int func(int , void); int main(){}
+                                         ^ ここではvoidを指定できません
 # selftest063 ----------------
-void func(){} void func(){} int main(){}
-9cc:Error: selftest063:1: void func(){} void func(){} int main(){}
-                                                 ^ 関数が再定義されています
-9cc:Note: selftest063:1: void func(){} void func(){} int main(){}
-                                  ^ 以前の関数はここです
+int func(int a, char *a); int main(){}
+9cc:Error: selftest063:1: int func(int a, char *a); int main(){}
+                                                 ^ 型が一致しません
+9cc:Note: selftest063:1: int func(int a, char *a); int main(){}
+                                       ^ 以前の宣言はここです
 # selftest064 ----------------
-int func;     void func(){} int main(){}
-9cc:Error: selftest064:1: int func;     void func(){} int main(){}
-                                                 ^ 'func'は異なる種類のシンボルとして再定義されています
+int main(){int a = func();}
+9cc:Warning: selftest064:1: int main(){int a = func();}
+                                               ^ 未宣言の関数コールです。
 # selftest065 ----------------
-void func(){} int func;     int main(){}
-9cc:Error: selftest065:1: void func(){} int func;     int main(){}
-                                                ^ 型が一致しません
-9cc:Note: selftest065:1: void func(){} int func;     int main(){}
-                                  ^ 以前の宣言はここです
+void func(){} void func(){} int main(){}
+9cc:Error: selftest065:1: void func(){} void func(){} int main(){}
+                                                 ^ 関数が再定義されています
+9cc:Note: selftest065:1: void func(){} void func(){} int main(){}
+                                  ^ 以前の関数はここです
 # selftest066 ----------------
-int main(){int func(); *func();}
-9cc:Error: selftest066:1: int main(){int func(); *func();}
-                                                  ^ '*'は非ポインタ型(int)を参照しています
+int func;     void func(){} int main(){}
+9cc:Error: selftest066:1: int func;     void func(){} int main(){}
+                                                 ^ 'func'は異なる種類のシンボルとして再定義されています
 # selftest067 ----------------
-int main(){int func(); int (*fp)()=func; *fp();}
-9cc:Error: selftest067:1: int main(){int func(); int (*fp)()=func; *fp();}
-                                                                    ^ '*'は非ポインタ型(int)を参照しています
+void func(){} int func;     int main(){}
+9cc:Error: selftest067:1: void func(){} int func;     int main(){}
+                                                ^ 型が一致しません
+9cc:Note: selftest067:1: void func(){} int func;     int main(){}
+                                  ^ 以前の宣言はここです
 # selftest068 ----------------
-int main(){int func(); func()();}
-9cc:Error: selftest068:1: int main(){int func(); func()();}
-                                                       ^ intに対して関数コールできません
+int main(){int func(); *func();}
+9cc:Error: selftest068:1: int main(){int func(); *func();}
+                                                  ^ '*'は非ポインタ型(int)を参照しています
 # selftest069 ----------------
-int main(){int func(); func()[];}
-9cc:Error: selftest069:1: int main(){int func(); func()[];}
-                                                        ^ 終端記号でないトークンです
+int main(){int func(); int (*fp)()=func; *fp();}
+9cc:Error: selftest069:1: int main(){int func(); int (*fp)()=func; *fp();}
+                                                                    ^ '*'は非ポインタ型(int)を参照しています
 # selftest070 ----------------
-int main(){int a; a();}
-9cc:Error: selftest070:1: int main(){int a; a();}
-                                             ^ intに対して関数コールできません
+int main(){int func(); func()();}
+9cc:Error: selftest070:1: int main(){int func(); func()();}
+                                                       ^ intに対して関数コールできません
 # selftest071 ----------------
-int a; int main(){a();}
-9cc:Error: selftest071:1: int a; int main(){a();}
-                                             ^ intに対して関数コールできません
+int main(){int func(); func()[];}
+9cc:Error: selftest071:1: int main(){int func(); func()[];}
+                                                        ^ 終端記号でないトークンです
 # selftest072 ----------------
-int main(){extern int func(); extern int*func();}
-9cc:Error: selftest072:1: int main(){extern int func(); extern int*func();}
-                                                                   ^ 関数の型が一致しません
-9cc:Note: selftest072:1: int main(){extern int func(); extern int*func();}
-                                               ^ 以前の関数はここです
+int main(){int a; a();}
+9cc:Error: selftest072:1: int main(){int a; a();}
+                                             ^ intに対して関数コールできません
 # selftest073 ----------------
+int a; int main(){a();}
+9cc:Error: selftest073:1: int a; int main(){a();}
+                                             ^ intに対して関数コールできません
+# selftest074 ----------------
+int main(){extern int func(); extern int*func();}
+9cc:Error: selftest074:1: int main(){extern int func(); extern int*func();}
+                                                                   ^ 関数の型が一致しません
+9cc:Note: selftest074:1: int main(){extern int func(); extern int*func();}
+                                               ^ 以前の関数はここです
+# selftest075 ----------------
 # [関数内でstaticな関数の宣言]
 int main(){static void func();}
-9cc:Error: selftest073:1: int main(){static void func();}
+9cc:Error: selftest075:1: int main(){static void func();}
                                                  ^ ブロック内のstatic関数
-# selftest074 ----------------
-int main(){break; return 1;}
-9cc:Error: selftest074:1: int main(){break; return 1;}
-                                     ^ ここではbreakを使用できません
-# selftest075 ----------------
-int main(){continue; return 1;}
-9cc:Error: selftest075:1: int main(){continue; return 1;}
-                                     ^ ここではcontinueを使用できません
 # selftest076 ----------------
-int main(){int a,b; (1?a:b)=0;}
-9cc:Error: selftest076:1: int main(){int a,b; (1?a:b)=0;}
-                                               ^ 左辺値ではありません
+int main(){break; return 1;}
+9cc:Error: selftest076:1: int main(){break; return 1;}
+                                     ^ ここではbreakを使用できません
 # selftest077 ----------------
-int main(){int a; a||1=0;}
-9cc:Error: selftest077:1: int main(){int a; a||1=0;}
-                                             ^ 左辺値ではありません
+int main(){continue; return 1;}
+9cc:Error: selftest077:1: int main(){continue; return 1;}
+                                     ^ ここではcontinueを使用できません
 # selftest078 ----------------
-int main(){int a; a&&1=0;}
-9cc:Error: selftest078:1: int main(){int a; a&&1=0;}
-                                             ^ 左辺値ではありません
+int main(){int a,b; (1?a:b)=0;}
+9cc:Error: selftest078:1: int main(){int a,b; (1?a:b)=0;}
+                                               ^ 左辺値ではありません
 # selftest079 ----------------
-int main(){int a; a^1=0;}
-9cc:Error: selftest079:1: int main(){int a; a^1=0;}
+int main(){int a; a||1=0;}
+9cc:Error: selftest079:1: int main(){int a; a||1=0;}
                                              ^ 左辺値ではありません
 # selftest080 ----------------
-int main(){int a; a|1=0;}
-9cc:Error: selftest080:1: int main(){int a; a|1=0;}
+int main(){int a; a&&1=0;}
+9cc:Error: selftest080:1: int main(){int a; a&&1=0;}
                                              ^ 左辺値ではありません
 # selftest081 ----------------
-int main(){int a; a&1=0;}
-9cc:Error: selftest081:1: int main(){int a; a&1=0;}
+int main(){int a; a^1=0;}
+9cc:Error: selftest081:1: int main(){int a; a^1=0;}
                                              ^ 左辺値ではありません
 # selftest082 ----------------
-int main(){int a; a==1=0;}
-9cc:Error: selftest082:1: int main(){int a; a==1=0;}
+int main(){int a; a|1=0;}
+9cc:Error: selftest082:1: int main(){int a; a|1=0;}
                                              ^ 左辺値ではありません
 # selftest083 ----------------
-int main(){int a; a>1=0;}
-9cc:Error: selftest083:1: int main(){int a; a>1=0;}
+int main(){int a; a&1=0;}
+9cc:Error: selftest083:1: int main(){int a; a&1=0;}
                                              ^ 左辺値ではありません
 # selftest084 ----------------
-int main(){int a; a+1+=0;}
-9cc:Error: selftest084:1: int main(){int a; a+1+=0;}
+int main(){int a; a==1=0;}
+9cc:Error: selftest084:1: int main(){int a; a==1=0;}
                                              ^ 左辺値ではありません
 # selftest085 ----------------
-int main(){int a; a*1-=0;}
-9cc:Error: selftest085:1: int main(){int a; a*1-=0;}
+int main(){int a; a>1=0;}
+9cc:Error: selftest085:1: int main(){int a; a>1=0;}
                                              ^ 左辺値ではありません
 # selftest086 ----------------
-int main(){int *a; (char*)a=0;}
-9cc:Error: selftest086:1: int main(){int *a; (char*)a=0;}
+int main(){int a; a+1+=0;}
+9cc:Error: selftest086:1: int main(){int a; a+1+=0;}
                                              ^ 左辺値ではありません
 # selftest087 ----------------
-int main(){int a; a&1=0;}
-9cc:Error: selftest087:1: int main(){int a; a&1=0;}
+int main(){int a; a*1-=0;}
+9cc:Error: selftest087:1: int main(){int a; a*1-=0;}
                                              ^ 左辺値ではありません
 # selftest088 ----------------
-int main(){int a; a|1=0;}
-9cc:Error: selftest088:1: int main(){int a; a|1=0;}
+int main(){int *a; (char*)a=0;}
+9cc:Error: selftest088:1: int main(){int *a; (char*)a=0;}
                                              ^ 左辺値ではありません
 # selftest089 ----------------
-int main(){int a; a^1=0;}
-9cc:Error: selftest089:1: int main(){int a; a^1=0;}
+int main(){int a; a&1=0;}
+9cc:Error: selftest089:1: int main(){int a; a&1=0;}
                                              ^ 左辺値ではありません
 # selftest090 ----------------
-int main(){int a; ~a=0;}
-9cc:Error: selftest090:1: int main(){int a; ~a=0;}
-                                            ^ 左辺値ではありません
+int main(){int a; a|1=0;}
+9cc:Error: selftest090:1: int main(){int a; a|1=0;}
+                                             ^ 左辺値ではありません
 # selftest091 ----------------
-int main(){int a; a>>1=0;}
-9cc:Error: selftest091:1: int main(){int a; a>>1=0;}
+int main(){int a; a^1=0;}
+9cc:Error: selftest091:1: int main(){int a; a^1=0;}
                                              ^ 左辺値ではありません
 # selftest092 ----------------
-int main(){int a; a<<1=0;}
-9cc:Error: selftest092:1: int main(){int a; a<<1=0;}
-                                             ^ 左辺値ではありません
+int main(){int a; ~a=0;}
+9cc:Error: selftest092:1: int main(){int a; ~a=0;}
+                                            ^ 左辺値ではありません
 # selftest093 ----------------
-int main(){int*p; p&1;}
-9cc:Error: selftest093:1: int main(){int*p; p&1;}
-                                             ^ ポインタに対するビット演算です
+int main(){int a; a>>1=0;}
+9cc:Error: selftest093:1: int main(){int a; a>>1=0;}
+                                             ^ 左辺値ではありません
 # selftest094 ----------------
-int main(){int*p; p|1;}
-9cc:Error: selftest094:1: int main(){int*p; p|1;}
-                                             ^ ポインタに対するビット演算です
+int main(){int a; a<<1=0;}
+9cc:Error: selftest094:1: int main(){int a; a<<1=0;}
+                                             ^ 左辺値ではありません
 # selftest095 ----------------
-int main(){int*p; p^1;}
-9cc:Error: selftest095:1: int main(){int*p; p^1;}
+int main(){int*p; p&1;}
+9cc:Error: selftest095:1: int main(){int*p; p&1;}
                                              ^ ポインタに対するビット演算です
 # selftest096 ----------------
-int main(){int*p; ~p;}
-9cc:Error: selftest096:1: int main(){int*p; ~p;}
-                                            ^ ポインタに対するビット演算です
+int main(){int*p; p|1;}
+9cc:Error: selftest096:1: int main(){int*p; p|1;}
+                                             ^ ポインタに対するビット演算です
 # selftest097 ----------------
-int main(){int*p; p>>1;}
-9cc:Error: selftest097:1: int main(){int*p; p>>1;}
-                                            ^ ポインタによるシフト演算です
+int main(){int*p; p^1;}
+9cc:Error: selftest097:1: int main(){int*p; p^1;}
+                                             ^ ポインタに対するビット演算です
 # selftest098 ----------------
-int main(){int*p; p<<1;}
-9cc:Error: selftest098:1: int main(){int*p; p<<1;}
-                                            ^ ポインタによるシフト演算です
+int main(){int*p; ~p;}
+9cc:Error: selftest098:1: int main(){int*p; ~p;}
+                                            ^ ポインタに対するビット演算です
 # selftest099 ----------------
-void main(){return 1;}
-9cc:Warning: selftest099:1: void main(){return 1;}
-                                        ^ void型関数が値を返しています
+int main(){int*p; p>>1;}
+9cc:Error: selftest099:1: int main(){int*p; p>>1;}
+                                            ^ ポインタによるシフト演算です
 # selftest100 ----------------
-int main(){return;}
-9cc:Warning: selftest100:1: int main(){return;}
-                                       ^ 非void関数mainが値を返していません
+int main(){int*p; p<<1;}
+9cc:Error: selftest100:1: int main(){int*p; p<<1;}
+                                            ^ ポインタによるシフト演算です
 # selftest101 ----------------
-int main(){char*p=0; return p;}
-9cc:Warning: selftest101:1: int main(){char*p=0; return p;}
-                                                 ^ int型の関数mainがchar*型を返しています
+void main(){return 1;}
+9cc:Warning: selftest101:1: void main(){return 1;}
+                                        ^ void型関数が値を返しています
 # selftest102 ----------------
-int main(){goto; return 1;}
-9cc:Error: selftest102:1: int main(){goto; return 1;}
-                                         ^ 識別子（ラベル名）が期待されています
+int main(){return;}
+9cc:Warning: selftest102:1: int main(){return;}
+                                       ^ 非void関数mainが値を返していません
 # selftest103 ----------------
-int main(){goto L1; return 1;}
-9cc:Error: selftest103:1: int main(){goto L1; return 1;}
-                                     ^ ラベルが未定義です
+int main(){char*p=0; return p;}
+9cc:Warning: selftest103:1: int main(){char*p=0; return p;}
+                                                 ^ int型の関数mainがchar*型を返しています
 # selftest104 ----------------
-int main(){L1:; L1:; return 1;}
-9cc:Error: selftest104:1: int main(){L1:; L1:; return 1;}
-                                          ^ ラベルが重複しています
+int main(){goto; return 1;}
+9cc:Error: selftest104:1: int main(){goto; return 1;}
+                                         ^ 識別子（ラベル名）が期待されています
 # selftest105 ----------------
-int main(){case 1: ;}
-9cc:Error: selftest105:1: int main(){case 1: ;}
-                                     ^ switch文の中ではありません
+int main(){goto L1; return 1;}
+9cc:Error: selftest105:1: int main(){goto L1; return 1;}
+                                     ^ ラベルが未定義です
 # selftest106 ----------------
-int main(){default 1: ;}
-9cc:Error: selftest106:1: int main(){default 1: ;}
-                                              ^ :が期待されています
+int main(){L1:; L1:; return 1;}
+9cc:Error: selftest106:1: int main(){L1:; L1:; return 1;}
+                                          ^ ラベルが重複しています
 # selftest107 ----------------
-int main(){switch(1){case 1:; case 1:;}}
-9cc:Error: selftest107:1: int main(){switch(1){case 1:; case 1:;}}
-                                                        ^ Case1は重複しています
+int main(){case 1: ;}
+9cc:Error: selftest107:1: int main(){case 1: ;}
+                                     ^ switch文の中ではありません
 # selftest108 ----------------
-int main(){switch(1){default:; default:;}}
-9cc:Error: selftest108:1: int main(){switch(1){default:; default:;}}
-                                                         ^ Defaultは重複しています
+int main(){default 1: ;}
+9cc:Error: selftest108:1: int main(){default 1: ;}
+                                              ^ :が期待されています
 # selftest109 ----------------
-int main(){int e; enum ABC{A,B,C} e;}
-9cc:Error: selftest109:1: int main(){int e; enum ABC{A,B,C} e;}
-                                                            ^ 型が一致しません
-9cc:Note: selftest109:1: int main(){int e; enum ABC{A,B,C} e;}
-                                        ^ 以前の宣言はここです
+int main(){switch(1){case 1:; case 1:;}}
+9cc:Error: selftest109:1: int main(){switch(1){case 1:; case 1:;}}
+                                                        ^ Case1は重複しています
 # selftest110 ----------------
-int main(){enum ABC{A,B,C} e; int e;}
-9cc:Error: selftest110:1: int main(){enum ABC{A,B,C} e; int e;}
-                                                            ^ 型が一致しません
-9cc:Note: selftest110:1: int main(){enum ABC{A,B,C} e; int e;}
-                                                    ^ 以前の宣言はここです
+int main(){switch(1){default:; default:;}}
+9cc:Error: selftest110:1: int main(){switch(1){default:; default:;}}
+                                                         ^ Defaultは重複しています
 # selftest111 ----------------
-int main(){enum ABC{A,B,A} e;}
-9cc:Error: selftest111:1: int main(){enum ABC{A,B,A} e;}
-                                                  ^ 'A'はシンボルの重複定義です
+int main(){int e; enum ABC{A,B,C} e;}
+9cc:Error: selftest111:1: int main(){int e; enum ABC{A,B,C} e;}
+                                                            ^ 型が一致しません
+9cc:Note: selftest111:1: int main(){int e; enum ABC{A,B,C} e;}
+                                        ^ 以前の宣言はここです
 # selftest112 ----------------
-int main(){enum ABC{A,B,C} e; enum ABC{X,Y,Z} x;}
-9cc:Error: selftest112:1: int main(){enum ABC{A,B,C} e; enum ABC{X,Y,Z} x;}
-                                                             ^ enumの重複定義です
+int main(){enum ABC{A,B,C} e; int e;}
+9cc:Error: selftest112:1: int main(){enum ABC{A,B,C} e; int e;}
+                                                            ^ 型が一致しません
+9cc:Note: selftest112:1: int main(){enum ABC{A,B,C} e; int e;}
+                                                    ^ 以前の宣言はここです
 # selftest113 ----------------
-int main(){enum ABC{A,B,C} e; enum XYZ{A,Y,Z} x;}
-9cc:Error: selftest113:1: int main(){enum ABC{A,B,C} e; enum XYZ{A,Y,Z} x;}
-                                                                 ^ 'A'はシンボルの重複定義です
+int main(){enum ABC{A,B,A} e;}
+9cc:Error: selftest113:1: int main(){enum ABC{A,B,A} e;}
+                                                  ^ 'A'はシンボルの重複定義です
 # selftest114 ----------------
-int main(){enum ABC{A,B,C}; enum ABC{P,Q,R} e;}
-9cc:Error: selftest114:1: int main(){enum ABC{A,B,C}; enum ABC{P,Q,R} e;}
-                                                           ^ enumの重複定義です
+int main(){enum ABC{A,B,C} e; enum ABC{X,Y,Z} x;}
+9cc:Error: selftest114:1: int main(){enum ABC{A,B,C} e; enum ABC{X,Y,Z} x;}
+                                                             ^ enumの重複定義です
 # selftest115 ----------------
+int main(){enum ABC{A,B,C} e; enum XYZ{A,Y,Z} x;}
+9cc:Error: selftest115:1: int main(){enum ABC{A,B,C} e; enum XYZ{A,Y,Z} x;}
+                                                                 ^ 'A'はシンボルの重複定義です
+# selftest116 ----------------
+int main(){enum ABC{A,B,C}; enum ABC{P,Q,R} e;}
+9cc:Error: selftest116:1: int main(){enum ABC{A,B,C}; enum ABC{P,Q,R} e;}
+                                                           ^ enumの重複定義です
+# selftest117 ----------------
 int main(){enum ABC{A,B,C}; unsigned enum ABC abc;}
-9cc:Error: selftest115:1: int main(){enum ABC{A,B,C}; unsigned enum ABC abc;}
+9cc:Error: selftest117:1: int main(){enum ABC{A,B,C}; unsigned enum ABC abc;}
                                                       ^ enum/typedef/struct/union名に対してsigned/unsignedの指定はできません
 
-# selftest116 ----------------
-int main(void); int main(int x){return 1:}
-9cc:Error: selftest116:1: int main(void); int main(int x){return 1:}
-                                                  ^ 関数の型が一致しません
-9cc:Note: selftest116:1: int main(void); int main(int x){return 1:}
-                                 ^ 以前の関数はここです
-# selftest117 ----------------
-int main(void); int main(int){return 1:}
-9cc:Error: selftest117:1: int main(void); int main(int){return 1:}
-                                                  ^ 関数の型が一致しません
-9cc:Note: selftest117:1: int main(void); int main(int){return 1:}
-                                 ^ 以前の関数はここです
 # selftest118 ----------------
-int main(void); int main(int x);
-9cc:Error: selftest118:1: int main(void); int main(int x);
+int main(void); int main(int x){return 1:}
+9cc:Error: selftest118:1: int main(void); int main(int x){return 1:}
                                                   ^ 関数の型が一致しません
-9cc:Note: selftest118:1: int main(void); int main(int x);
+9cc:Note: selftest118:1: int main(void); int main(int x){return 1:}
                                  ^ 以前の関数はここです
 # selftest119 ----------------
-void main(void){} void main(int);
-9cc:Error: selftest119:1: void main(void){} void main(int);
-                                                     ^ 関数の型が一致しません
-9cc:Note: selftest119:1: void main(void){} void main(int);
-                                  ^ 以前の関数はここです
+int main(void); int main(int){return 1:}
+9cc:Error: selftest119:1: int main(void); int main(int){return 1:}
+                                                  ^ 関数の型が一致しません
+9cc:Note: selftest119:1: int main(void); int main(int){return 1:}
+                                 ^ 以前の関数はここです
 # selftest120 ----------------
-int main(int); int main(int, ...);
-9cc:Error: selftest120:1: int main(int); int main(int, ...);
-                                                 ^ 関数の型が一致しません
-9cc:Note: selftest120:1: int main(int); int main(int, ...);
+int main(void); int main(int x);
+9cc:Error: selftest120:1: int main(void); int main(int x);
+                                                  ^ 関数の型が一致しません
+9cc:Note: selftest120:1: int main(void); int main(int x);
                                  ^ 以前の関数はここです
 # selftest121 ----------------
-int main(int); int main(){return 1;};
-9cc:Error: selftest121:1: int main(int); int main(){return 1;};
-                                                 ^ 関数の型が一致しません
-9cc:Note: selftest121:1: int main(int); int main(){return 1;};
-                                 ^ 以前の関数はここです
+void main(void){} void main(int);
+9cc:Error: selftest121:1: void main(void){} void main(int);
+                                                     ^ 関数の型が一致しません
+9cc:Note: selftest121:1: void main(void){} void main(int);
+                                  ^ 以前の関数はここです
 # selftest122 ----------------
-int func(void); int main(){int func(int);}
-9cc:Error: selftest122:1: int func(void); int main(){int func(int);}
-                                                         ^ 関数の型が一致しません
-9cc:Note: selftest122:1: int func(void); int main(){int func(int);}
+int main(int); int main(int, ...);
+9cc:Error: selftest122:1: int main(int); int main(int, ...);
+                                                 ^ 関数の型が一致しません
+9cc:Note: selftest122:1: int main(int); int main(int, ...);
                                  ^ 以前の関数はここです
 # selftest123 ----------------
-int main(){int func(void); int func(int);}
-9cc:Error: selftest123:1: int main(){int func(void); int func(int);}
-                                                         ^ 関数の型が一致しません
-9cc:Note: selftest123:1: int main(){int func(void); int func(int);}
-                                        ^ 以前の関数はここです
+int main(int); int main(){return 1;};
+9cc:Error: selftest123:1: int main(int); int main(){return 1;};
+                                                 ^ 関数の型が一致しません
+9cc:Note: selftest123:1: int main(int); int main(){return 1;};
+                                 ^ 以前の関数はここです
 # selftest124 ----------------
-int main(){typedef int INT=1;}
-9cc:Error: selftest124:1: int main(){typedef int INT=1;}
-                                                     ^ ;が期待されています
+int func(void); int main(){int func(int);}
+9cc:Error: selftest124:1: int func(void); int main(){int func(int);}
+                                                         ^ 関数の型が一致しません
+9cc:Note: selftest124:1: int func(void); int main(){int func(int);}
+                                 ^ 以前の関数はここです
 # selftest125 ----------------
+int main(){int func(void); int func(int);}
+9cc:Error: selftest125:1: int main(){int func(void); int func(int);}
+                                                         ^ 関数の型が一致しません
+9cc:Note: selftest125:1: int main(){int func(void); int func(int);}
+                                        ^ 以前の関数はここです
+# selftest126 ----------------
+int main(){typedef int INT=1;}
+9cc:Error: selftest126:1: int main(){typedef int INT=1;}
+                                                     ^ ;が期待されています
+# selftest127 ----------------
 int main(){typedef int INT; unsigned INT i;}
-9cc:Error: selftest125:1: int main(){typedef int INT; unsigned INT i;}
+9cc:Error: selftest127:1: int main(){typedef int INT; unsigned INT i;}
                                                       ^ enum/typedef/struct/union名に対してsigned/unsignedの指定はできません
 
-# selftest126 ----------------
+# selftest128 ----------------
 # [引数1個に対して0個でコール]
 int func(int a){return 1;}; int main(){return func();}
-9cc:Error: selftest126:1: int func(int a){return 1;}; int main(){return func();}
+9cc:Error: selftest128:1: int func(int a){return 1;}; int main(){return func();}
                                                                         ^ 引数の数が足りません
-# selftest127 ----------------
+# selftest129 ----------------
 # [引数2個に対して1個でコール]
 int func(int a, int b){return 1;}; int main(){return func(1);}
-9cc:Error: selftest127:1: int func(int a, int b){return 1;}; int main(){return func(1);}
+9cc:Error: selftest129:1: int func(int a, int b){return 1;}; int main(){return func(1);}
                                                                                     ^ 引数の数が少なすぎます
-9cc:Note: selftest127:1: int func(int a, int b){return 1;}; int main(){return func(1);}
+9cc:Note: selftest129:1: int func(int a, int b){return 1;}; int main(){return func(1);}
                                          ^ 関数の定義はここです
-# selftest128 ----------------
+# selftest130 ----------------
 # [引数1個に対して2個でコール]
 int func(int a){return 1;}; int main(){return func(1,2);}
-9cc:Error: selftest128:1: int func(int a){return 1;}; int main(){return func(1,2);}
+9cc:Error: selftest130:1: int func(int a){return 1;}; int main(){return func(1,2);}
                                                                                ^ 引数の数が多すぎます
-9cc:Note: selftest128:1: int func(int a){return 1;}; int main(){return func(1,2);}
+9cc:Note: selftest130:1: int func(int a){return 1;}; int main(){return func(1,2);}
                                        ^ 関数の定義はここです
-# selftest129 ----------------
+# selftest131 ----------------
 # [引数0個(void)に対して1個でコール]
 int func(void){return 1;}; int main(){return func(1);}
-9cc:Error: selftest129:1: int func(void){return 1;}; int main(){return func(1);}
+9cc:Error: selftest131:1: int func(void){return 1;}; int main(){return func(1);}
                                                                             ^ 引数の型(void:int)が一致しません
-9cc:Note: selftest129:1: int func(void){return 1;}; int main(){return func(1);}
+9cc:Note: selftest131:1: int func(void){return 1;}; int main(){return func(1);}
                                   ^ 関数の定義はここです
-# selftest130 ----------------
+# selftest132 ----------------
 # [引数2+...個に対して1個でコール]
 int func(int a, int b, ...){return 1;}; void main(){func(1);}
-9cc:Error: selftest130:1: int func(int a, int b, ...){return 1;}; void main(){func(1);}
+9cc:Error: selftest132:1: int func(int a, int b, ...){return 1;}; void main(){func(1);}
                                                                                    ^ 引数の数が少なすぎます
-9cc:Note: selftest130:1: int func(int a, int b, ...){return 1;}; void main(){func(1);}
+9cc:Note: selftest132:1: int func(int a, int b, ...){return 1;}; void main(){func(1);}
                                          ^ 関数の定義はここです
-# selftest131 ----------------
+# selftest133 ----------------
 # [int*に対してintでコール]
 int func(int *a){return 1;}; int main(){return func(1);}
-9cc:Error: selftest131:1: int func(int *a){return 1;}; int main(){return func(1);}
+9cc:Error: selftest133:1: int func(int *a){return 1;}; int main(){return func(1);}
                                                                               ^ 引数の型(int*:int)が一致しません
-9cc:Note: selftest131:1: int func(int *a){return 1;}; int main(){return func(1);}
+9cc:Note: selftest133:1: int func(int *a){return 1;}; int main(){return func(1);}
                                         ^ 関数の定義はここです
-# selftest132 ----------------
+# selftest134 ----------------
 # [グローバル変数をグローバル変数で初期化]
 int a, b=a; void main(){}
-9cc:Error: selftest132:1: int a, b=a; void main(){}
+9cc:Error: selftest134:1: int a, b=a; void main(){}
                                    ^ グローバル変数の初期値が定数ではありません
-# selftest133 ----------------
+# selftest135 ----------------
 # [静的ローカル変数をローカル変数で初期化]
 int a; void main(){static int b=a;
-9cc:Error: selftest133:1: int a; void main(){static int b=a;
-                                                            ^ 終端記号でないトークンです
-# selftest134 ----------------
+9cc:Error: selftest135:1: int a; void main(){static int b=a;
+                                                          ^ 静的ローカル変数の初期値が定数ではありません
+# selftest136 ----------------
 # [静的ローカル変数を静的ローカル変数で初期化]
 int main(){static int a, b=a;}
-9cc:Warning: selftest134:1: int main(){static int a, b=a;}
-                                                         ^ 関数が戻り値を返していません
-9cc:Error: selftest134:1: int main(){static int a, b=a;}
-                                                     ^ スカラー定数ではありません
-# selftest135 ----------------
+9cc:Error: selftest136:1: int main(){static int a, b=a;}
+                                                     ^ 静的ローカル変数の初期値が定数ではありません
+# selftest137 ----------------
 # [静的ローカル変数を自動変数で初期化]
 int main(){int a; static int b=a;}
-9cc:Warning: selftest135:1: int main(){int a; static int b=a;}
-                                                             ^ 関数が戻り値を返していません
-9cc:Error: selftest135:1: int main(){int a; static int b=a;}
-                                                         ^ スカラー定数ではありません
-# selftest136 ----------------
+9cc:Error: selftest137:1: int main(){int a; static int b=a;}
+                                                         ^ 静的ローカル変数の初期値が定数ではありません
+# selftest138 ----------------
 # [静的ローカル変数を自動変数で初期化]
 int main(){int a[4]; static int *b=a;}
-9cc:Warning: selftest136:1: int main(){int a[4]; static int *b=a;}
-                                                                 ^ 関数が戻り値を返していません
-9cc:Error: selftest136:1: int main(){int a[4]; static int *b=a;}
-                                                             ^ 静的変数の初期化には定数式が必要です
-# selftest137 ----------------
+9cc:Error: selftest138:1: int main(){int a[4]; static int *b=a;}
+                                                             ^ 静的ローカル変数の初期値が定数ではありません
+# selftest139 ----------------
 # [複数文字]
 int main(){return 'ab';}
-9cc:Error: selftest137:1: int main(){return 'ab';}
+9cc:Error: selftest139:1: int main(){return 'ab';}
                                               ^ トークナイズエラー：'が必要です
-# selftest138 ----------------
+# selftest140 ----------------
 # [未定義のエスケープシーケンス]
 int main(){return '\N';}
-9cc:Warning: selftest138:1: int main(){return '\N';}
+9cc:Warning: selftest140:1: int main(){return '\N';}
                                                 ^ 未定義のエスケープシーケンス
-# selftest139 ----------------
+# selftest141 ----------------
 # [4文字以上のoctal]
 int main(){return '\0123';}
-9cc:Error: selftest139:1: int main(){return '\0123';}
+9cc:Error: selftest141:1: int main(){return '\0123';}
                                                  ^ トークナイズエラー：'が必要です
-# selftest140 ----------------
+# selftest142 ----------------
 # [octal規定外文字]
 int main(){return '\08';}
-9cc:Error: selftest140:1: int main(){return '\08';}
+9cc:Error: selftest142:1: int main(){return '\08';}
                                                ^ トークナイズエラー：'が必要です
-# selftest141 ----------------
+# selftest143 ----------------
 # [hexadecimal規定外文字]
 int main(){return '\xG';}
-9cc:Error: selftest141:1: int main(){return '\xG';}
+9cc:Error: selftest143:1: int main(){return '\xG';}
                                                ^ トークナイズエラー：'が必要です
-# selftest142 ----------------
-int main(){int a[][3]={{1,2,3},{11,12,13}; return a[1][2]}}
-9cc:Error: selftest142:1: int main(){int a[][3]={{1,2,3},{11,12,13}; return a[1][2]}}
-                                                                     ^ }が期待されています
-# selftest143 ----------------
-int x; int x[4]; int main(){}
-9cc:Error: selftest143:1: int x; int x[4]; int main(){}
-                                      ^ 型が一致しません
-9cc:Note: selftest143:1: int x; int x[4]; int main(){}
-                              ^ 以前の宣言はここです
 # selftest144 ----------------
-int main(){"ABC"=1;}
-9cc:Error: selftest144:1: int main(){"ABC"=1;}
-                                     ^ 左辺値ではありません
+int main(){int a[][3]={{1,2,3},{11,12,13}; return a[1][2]}}
+9cc:Error: selftest144:1: int main(){int a[][3]={{1,2,3},{11,12,13}; return a[1][2]}}
+                                                                     ^ }が期待されています
 # selftest145 ----------------
-int main(){char p[3]=1;}
-9cc:Error: selftest145:1: int main(){char p[3]=1;}
-                                               ^ 配列の初期値が配列形式になっていません
+int x; int x[4]; int main(){}
+9cc:Error: selftest145:1: int x; int x[4]; int main(){}
+                                      ^ 型が一致しません
+9cc:Note: selftest145:1: int x; int x[4]; int main(){}
+                              ^ 以前の宣言はここです
 # selftest146 ----------------
-int main(){int a[]="ABC";}
-9cc:Error: selftest146:1: int main(){int a[]="ABC";}
-                                             ^ int[]を文字列リテラルで初期化できません
+int main(){"ABC"=1;}
+9cc:Error: selftest146:1: int main(){"ABC"=1;}
+                                     ^ 左辺値ではありません
 # selftest147 ----------------
-int main(){char *p[]="ABC";}
-9cc:Error: selftest147:1: int main(){char *p[]="ABC";}
-                                               ^ char*[]を文字列リテラルで初期化できません
+int main(){char p[3]=1;}
+9cc:Error: selftest147:1: int main(){char p[3]=1;}
+                                               ^ 配列の初期値が配列形式になっていません
 # selftest148 ----------------
+int main(){int a[]="ABC";}
+9cc:Error: selftest148:1: int main(){int a[]="ABC";}
+                                             ^ int[]を文字列リテラルで初期化できません
+# selftest149 ----------------
+int main(){char *p[]="ABC";}
+9cc:Error: selftest149:1: int main(){char *p[]="ABC";}
+                                               ^ char*[]を文字列リテラルで初期化できません
+# selftest150 ----------------
 int main(){int a; a[1];}
-9cc:Error: selftest148:1: int main(){int a; a[1];}
+9cc:Error: selftest150:1: int main(){int a; a[1];}
                                                ^ ここでは配列を指定できません
 9cc self test
-Total : 149
-   Ok : 149
+Total : 151
+   Ok : 151
    NG : 0

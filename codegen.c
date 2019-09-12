@@ -1014,7 +1014,6 @@ static void gen_global_var(Node *node) {
     }
 
     if (node->rhs) {    //初期値あり、rhsは'='のノード
-        //dump_node(node,__func__);
         Node *rhs = node->rhs->rhs; //'='の右辺
         switch (node->tp->type) {
         case CHAR:

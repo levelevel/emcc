@@ -349,7 +349,7 @@ int node_is_const_or_address(Node *node, long *valp, Node **varp);
 #define type_is_static(tp) (get_storage_class(tp)==SC_STATIC)
 #define type_is_extern(tp) (get_storage_class(tp)==SC_EXTERN)
 #define type_is_typedef(tp) (get_storage_class(tp)==SC_TYPEDEF)
-#define node_is_local_static_var(node) ((node)->type==ND_LOCAL_VAR && type_is_static((node)->tp))
+#define node_is_local_static_var(node) (((node)->type==ND_LOCAL_VAR||(node)->type==ND_LOCAL_VAR_DEF) && type_is_static((node)->tp))
 StorageClass get_storage_class(Type *tp);
 int new_string_literal(String *string);
 String *get_string_literal(int index);

@@ -400,7 +400,6 @@ static Node *direct_declarator(Type *tp, char *name) {
         }
         tp->node = node;
         expect(')');
-        //dump_node(node, __func__);
         if (node->type==ND_FUNC_DECL) regist_func(node, 1);
         return node;
     }
@@ -1253,7 +1252,6 @@ static Node *postfix_expression(void) {
         char *input = input_str();
         Type *tp = node->tp;
         if (consume('(')) {  //関数コール
-            //dump_node(node, "func");
             #define node_is_func(node) ((node)->tp->type==FUNC||((node)->tp->type==PTR &&(node)->tp->ptr_of->type==FUNC))
             if (node->type!=ND_IDENT && !node_is_func(node))
                 error_at(input, "%sに対して関数コールできません", get_type_str(node->tp));
