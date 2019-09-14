@@ -9,6 +9,7 @@ long size_of(const Type *tp) {
     assert(tp);
     switch (tp->type) {
     case VOID:     return 1;
+    case BOOL:     return sizeof(_Bool);
     case CHAR:     return sizeof(char);
     case SHORT:    return sizeof(short);
     case INT:      return sizeof(int);
@@ -427,6 +428,26 @@ void check_funcargs(Node *node, int def_mode) {
     }
 }
 
+//関数コールの仮引数リストを返す
+Vector *get_func_args(Node *node) {
+    assert(node->type==ND_FUNC_CALL);
+    if (node->rhs) {    //ND_FUNC_DEF|DECL/ND_LOCAL|GLOBAL_VAR_DEF(FUNC)
+        if (node->rhs->lhs) {
+            return node->rhs->lhs->lst;
+        } else {
+            Node *var_def;
+            Type *func_tp = node->rhs->tp;
+            if (func_tp->type==PTR) func_tp = func_tp->ptr_of;
+            assert(func_tp->type==FUNC);
+            var_def = func_tp->node;
+            return var_def->lhs->lst;
+        }
+    }
+    //dump_node(node,__func__);
+    //abort();
+    return NULL;
+}
+
 //関数コールの妥当性を確認
 void check_funccall(Node *node) {
     assert(node->type==ND_FUNC_CALL);
@@ -438,19 +459,10 @@ void check_funccall(Node *node) {
         call_size = lst_len(node->lhs->lst);
         call_args = (Node**)node->lhs->lst->data;
     }
-    if (node->rhs) {    //ND_FUNC_DEF|DECL/ND_LOCAL|GLOBAL_VAR_DEF(FUNC)
-        if (node->rhs->lhs) {
-            decl_size = lst_len(node->rhs->lhs->lst);
-            decl_args = (Node**)node->rhs->lhs->lst->data;
-        } else {
-            Node *var_def;
-            Type *func_tp = node->rhs->tp;
-            if (func_tp->type==PTR) func_tp = func_tp->ptr_of;
-            assert(func_tp->type==FUNC);
-            var_def = func_tp->node;
-            decl_size = lst_len(var_def->lhs->lst);
-            decl_args = (Node**)var_def->lhs->lst->data;
-        }
+    Vector *decl_list = get_func_args(node);
+    if (decl_list) {
+        decl_size = lst_len(decl_list);
+        decl_args = (Node**)decl_list->data;
     }
 
     if (call_size==0) { //

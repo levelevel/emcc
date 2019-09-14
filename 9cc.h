@@ -33,6 +33,7 @@ typedef enum {
     TK_STRING,      //文字列
     TK_IDENT,       //識別子
     TK_VOID,        //void
+    TK_BOOL,        //_Bool
     TK_CHAR,        //char
     TK_SHORT,       //short
     TK_INT,         //int
@@ -163,6 +164,7 @@ typedef enum {
 
 typedef enum {
     VOID = 1,
+    BOOL,
     CHAR,
     SHORT,
     INT,
@@ -236,7 +238,7 @@ typedef struct {
 } Funcdef;
 
 //型がinteger型であるか
-#define type_is_integer(_tp) (CHAR<=(_tp)->type && (_tp)->type<=ENUM)
+#define type_is_integer(_tp) (BOOL<=(_tp)->type && (_tp)->type<=ENUM)
 
 //型・ノードがポインタ型（PTR||ARRAY）であるか
 #define type_is_ptr(_tp) ((_tp)->type==PTR || (_tp)->type==ARRAY)
@@ -354,6 +356,7 @@ StorageClass get_storage_class(Type *tp);
 int new_string_literal(String *string);
 String *get_string_literal(int index);
 void unuse_string_literal(int index);
+Vector *get_func_args(Node *node);
 
 #ifdef _PARSE_C_
 Node *search_symbol(const char *name);
@@ -367,8 +370,8 @@ void regist_case(Node *node);
 Type *get_typeof(Type *tp);
 void check_return(Node *node);
 void check_func_return(Funcdef *funcdef);
-void check_funcargs(Node *node, int def_mode);
 void check_funccall(Node *node);
+void check_funcargs(Node *node, int def_mode);
 int type_eq(const Type *tp1, const Type *tp2);
 int type_eq_global_local(const Type *tp1, const Type *tp2);
 int type_eq_func(const Type *tp1, const Type *tp2);
@@ -414,6 +417,9 @@ void *stack_get(Stack *stack, int idx);
 #define stack_top(stack) stack_get(stack,stack->len-1)
 #define stack_len  vec_len
 #define stack_data vec_data
+
+int is_alnum(char c);
+int is_alpha(char c);
 
 char* get_type_str(const Type *tp);
 char* get_func_args_str(const Node *node);

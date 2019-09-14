@@ -27,6 +27,10 @@ static int addsub1(){
     int a=10, b=3, c=a+b*(-2), d=a/b, e=a%b;
     return c==4 && d==3 && e==1;
 }
+static _Bool addsub1b(){
+    _Bool a=10, b=3, c=a+b*(-2), d=a/b, e=a%b;
+    return c==1 && d==1 && e==0;
+}
 static char addsub1c(){
     char a=10, b=3, c=a+b*(-2), d=a/b, e=a%b;
     return c==4 && d==3 && e==1;
@@ -44,11 +48,13 @@ static long long addsub1ll(){
     return c==4 && d==3 && e==1;
 }
 static int addsub_mix1() {
+    _Bool b1=0xff, b0=0, ib=1;
     char c = 0x7f; unsigned char uc = 0x7f; int ic = 0x7f;
     short s = 0x7fff; unsigned short us = 0x7fff; int is = 0x7fff;
     int i = 0x7fffffff; unsigned int ui = 0x7fffffff; long li = 0x7fffffff;
     long l = 0x7fffffffffffffff; unsigned long ul = 0x7fffffffffffffff;
     return
+        b0+b1== b1 && b1+ib == 2 &&
         c+uc == uc*2 && ic+c == uc*2 &&
         s+us == us*2 && is+s == us*2 &&
         i+ui == ui*2 && li+i == ui*2 &&
@@ -73,6 +79,7 @@ static int addsub_mix2() {
 }
 static int addsub() {
     TEST(addsub1);
+    TEST(addsub1b);
     TEST(addsub1c);
     TEST(addsub1s);
     TEST(addsub1l);
@@ -240,6 +247,14 @@ static int inc() {
     px++; px+=2;
     return a+b+c==6 && x[1]==3 && x[2]==13 && *px==4;
 }
+static int inc_bool() {
+    _Bool a=0, b, c, x[]={1,0,1,0}, *px=&x[0];
+    b = a++;
+    c = ++b;
+    x[1]++; x[2]+=10;
+    px++; px+=2;
+    return a+b+c==3 && x[1]==1 && x[2]==1 && *px==0;
+}
 static int inc_char() {
     char a=1, b, c, x[]={1,2,3,4}, *px=&x[0];
     b = a++;
@@ -272,6 +287,14 @@ static int dec() {
     px--; px-=2;
     return a+b+c==3 && x[1]==1 && x[2]==-7 && *px==1;
 }
+static int dec_bool() {
+    _Bool a=0, b=1, c, x[]={1,2,3,4}, *px=&x[3];
+    a--;
+    --b; b--;
+    x[1]--; x[2]-=10;
+    px--; px-=2;
+    return a==1 && b==1 && x[1]==0 && x[2]==1 && *px==1;
+}
 static int dec_char() {
     char a=2, b, c, x[]={1,2,3,4}, *px=&x[3];
     b = a--;
@@ -298,10 +321,12 @@ static int dec_long() {
 }
 static int incdec() {
     TEST(inc);
+    TEST(inc_bool);
     TEST(inc_char);
     TEST(inc_short);
     TEST(inc_long);
     TEST(dec);
+    TEST(dec_bool);
     TEST(dec_char);
     TEST(dec_short);
     TEST(dec_long);
@@ -531,6 +556,15 @@ static int array1() {
     return
         (long)a==(long)&a && a[0]==2 && *(a+1)==4 && a[2]==8 && (1,2)[1+a]==16;
 }
+static int array1b() {
+    _Bool a[4];
+    *a     = 2;
+    a[1]   = 4;
+    *(a+2) = 8;
+    a[3]   = 16;
+    return
+        (long)a==(long)&a && a[0]==1 && *(a+1)==1 && a[2]==1 && (1,2)[1+a]==1;
+}
 static int array1c() {
     char a[4];
     *a     = 2;
@@ -568,6 +602,11 @@ static int a2g_b[4]={1,2,3,4}, *a2g_p=&a2g_a, *a2g_q=&a2g_b[2], *a2g_r=a2g_a+3;
 static int array2g() {
     return af2(a2g_a)==6 && a2g_p[1]==2 && *a2g_q==3 && *a2g_r==4;
 }
+static _Bool af2b(_Bool *a){return a[0]+a[1]+a[2];}
+static int array2b() {
+    _Bool a[4]={1,2,3,4}, *p=a, *q=&a[2], *r=a+3;
+    return af2b(a)==1 && p[1]==1 && *q==1 && *r==1;
+}
 static char af2c(char *a){return a[0]+a[1]+a[2];}
 static int array2c() {
     char a[4]={1,2,3,4}, *p=a, *q=&a[2], *r=a+3;
@@ -589,6 +628,13 @@ static int array3() {
     b[2][3][4] = 20;
     return
         (long)a[1] == (long)(a+1) && p[2*5+3]==10 && *(q+2*5*6+3*6+4)==20;
+}
+static int array3b() {
+    _Bool a[4][5], *p=(char*)a, b[4][5][6], *q=(char*)b;
+    a[2][3] = 10;
+    b[2][3][4] = 20;
+    return
+        (long)a[1] == (long)(a+1) && p[2*5+3]==1 && *(q+2*5*6+3*6+4)==1;
 }
 static int array3c() {
     char a[4][5], *p=(char*)a, b[4][5][6], *q=(char*)b;
@@ -621,15 +667,18 @@ static int sarray2c() {
 }
 static int array() {
     TEST(array1);
+    TEST(array1b);
     TEST(array1c);
     TEST(array1s);
     TEST(array1l);
     TEST(array2);
     TEST(array2g);
+    TEST(array2b);
     TEST(array2c);
     TEST(array2s);
     TEST(array2l);
     TEST(array3);
+    TEST(array3b);
     TEST(array3c);
     TEST(array3s);
     TEST(array3l);
@@ -730,6 +779,9 @@ static int init1() {
     int i=1;
     char ac[]={i,i*2,10};
     int  ai[]={i,i*2,10};
+    _Bool ba[]={0,1,1+2};
+    short sa[]={0,1,1+2};
+    long  la[]={0,1,1+2};
 
     return
         a[0]+a[1]+a[2]==6 && sizeof(a)==sizeof(int)*3 &&
@@ -737,7 +789,26 @@ static int init1() {
         strcmp(p,s1)==0 &&
         strcmp(s1,s2)==0 &&
         ac[0]+ac[1]+ac[2]==13 &&
-        ai[0]+ai[1]+ai[2]==13;
+        ai[0]+ai[1]+ai[2]==13 &&
+        ba[2]==1 && sa[2]==3 && la[2]==3;
+}
+
+static int init1s() {
+    static int a[] = {1,2,1+2};
+    static int b = {5,};
+    static char*p    = "ABC";
+    static char s1[] = "ABC";
+    static char s2[] = {'A', 66, 'A'+2, 0};
+    static _Bool ba[]={0,1,1+2};
+    static short sa[]={0,1,1+2};
+    static long  la[]={0,1,1+2};
+
+    return
+        a[0]+a[1]+a[2]==6 && sizeof(a)==sizeof(int)*3 &&
+        b==5 && 
+        strcmp(p,s1)==0 &&
+        strcmp(s1,s2)==0 &&
+        ba[2]==1 && sa[2]==3 && la[2]==3;
 }
 
 GLOBAL int i1g_a[] = {1,2,1+2};
@@ -745,13 +816,17 @@ GLOBAL int i1g_b = {5,};
 GLOBAL char*i1g_p    = "ABC";
 GLOBAL char i1g_s1[] = "ABC";
 GLOBAL char i1g_s2[] = {'A', 66, 'A'+2, 0};
+GLOBAL _Bool i1gb[] = {0,1,1+2};
+GLOBAL short i1gs[] = {0,1,1+2};
+GLOBAL long  i1gl[] = {0,1,1+2};
 static int init1g() {
     return
         i1g_a[0]+i1g_a[1]+i1g_a[2]==6 && sizeof(i1g_a)==sizeof(int)*3 &&
         i1g_b==5 && 
         i1g_p[0]=='A' &&
         strcmp(i1g_p,i1g_s1)==0 &&
-        strcmp(i1g_s1,i1g_s2)==0;
+        strcmp(i1g_s1,i1g_s2)==0 &&
+        i1gb[2]==1 && i1gs[2]==3 && i1gl[2]==3;
 }
 static int i1sg_a[] = {1,2,1+2};
 static int i1sg_b = {5,};
@@ -759,12 +834,16 @@ static char*i1sg_p    = "ABC";
 static char i1sg_s1[] = "ABC";
 static char i1sg_s2[] = {'A', 66, 'A'+2, 0};
 static int init1sg() {
+static _Bool i1sb[] = {0,1,1+2};
+static short i1ss[] = {0,1,1+2};
+static long  i1sl[] = {0,1,1+2};
     return
         i1sg_a[0]+i1sg_a[1]+i1sg_a[2]==6 && sizeof(i1sg_a)==sizeof(int)*3 &&
         i1sg_b==5 && 
         i1sg_p[0]=='A' &&
         strcmp(i1sg_p,i1sg_s1)==0 &&
-        strcmp(i1sg_s1,i1sg_s2)==0;
+        strcmp(i1sg_s1,i1sg_s2)==0 &&
+        i1sb[2]==1 && i1ss[2]==3 && i1sl[2]==3;
 }
 GLOBAL int  i2g_x, *i2g_p = 2 + &i2g_x - 1;
 GLOBAL char i2g_c, *i2g_ac[3] = {0,&i2g_c+1,(char*)3,(char*)4};    //初期値多い
@@ -781,6 +860,7 @@ static int init3g() {
 }
 static int init() {
     TEST(init1);
+    TEST(init1s);
     TEST(init1g);
     TEST(init1sg);
     TEST(init2g);
@@ -826,6 +906,22 @@ static int size_of1() {
         sizeof(int[5])==4*5 && sizeof(int*[3])==8*3 &&
         sizeof(int[5][2])==4*5*2 && sizeof(int*[3][2])==8*3*2 &&
         sizeof(1)==4 && sizeof(1==1)==4 && sizeof(n=1)==4;
+}
+static int size_of1b() {
+    _Bool n, *p, a[2*4], a2[2][3];
+    typedef _Bool BOOL;
+    typedef const BOOL BOOLA3[3];
+    typedef char BOOLA[];
+    BOOLA A4={10,20,30,40};
+    return
+        sizeof(n)==1 && sizeof(&n)==8 && sizeof(p)==8 &&
+        sizeof(a)==1*8 && sizeof(a[0])==1 &&
+        sizeof(a2)==1*2*3 && sizeof(a2[0])==1*3 && sizeof(a2[0][1])==1 &&
+        sizeof(_Bool)==1 && sizeof(_Bool*)==8 && sizeof(_Bool(*(*)))==8 &&
+        sizeof(BOOL)==1 && sizeof(BOOLA3)==1*3 && sizeof(A4)==1*4 &&
+        sizeof(_Bool[5])==1*5 && sizeof(_Bool*[3])==8*3 &&
+        sizeof(_Bool[5][2])==1*5*2 && sizeof(_Bool*[3][2])==8*3*2 &&
+        sizeof(1)==4 && sizeof(1==1)==4 && sizeof(n=1)==1;
 }
 static int size_of1c() {
     char n, *p, a[2*4], a2[2][3];
@@ -924,6 +1020,9 @@ static int size_of1C() {
 }
 static int size_of2() {
     return
+        _Alignof(_Bool)==1           && _Alignof(_Bool*)==8 &&
+        _Alignof(_Bool[5])==1        && _Alignof(_Bool*[3])==8 &&
+        _Alignof(_Bool[5][2])==1     && _Alignof(_Bool*[3][2])==8 &&
         _Alignof(char)==1            && _Alignof(char*)==8 &&
         _Alignof(char[5])==1         && _Alignof(char*[3])==8 &&
         _Alignof(char[5][2])==1      && _Alignof(char*[3][2])==8 &&
@@ -941,6 +1040,7 @@ static int size_of2() {
 }
 static int size_of() {
     TEST(size_of1);
+    TEST(size_of1b);
     TEST(size_of1c);
     TEST(size_of1s);
     TEST(size_of1l);
@@ -952,6 +1052,7 @@ static int size_of() {
 }
 
 static int type_of() {
+    _Bool b; typeof(b) b2;
     char  c; typeof(c) c2;
     short s; typeof(s) s2;
     int   i; typeof(i) i2;
@@ -960,6 +1061,7 @@ static int type_of() {
     char *p; typeof(p) p2;
     static int si;
     return
+        sizeof(b) == sizeof(b2) &&
         sizeof(c) == sizeof(c2) &&
         sizeof(s) == sizeof(s2) &&
         sizeof(i) == sizeof(i2) &&
@@ -1025,6 +1127,16 @@ static int overflow1() {
         ub == -1 && ub > 0  &&
         ua == ub && a == ub ; 
 }
+static int overflow1b() {
+    _Bool a = -1;//=1
+    _Bool b = 0;
+    _Bool c = a+1;
+    _Bool d = b-1;
+    return
+        a != -1 &&//intでの比較
+        c == 1 &&
+        d == 1;
+}
 static int overflow1c() {
     char a = 0xff;
     char b = 0 - 1;
@@ -1087,6 +1199,7 @@ static int overflow2() {
 }
 static int overflow() {
     TEST(overflow1);
+    TEST(overflow1b);
     TEST(overflow1c);
     TEST(overflow1s);
     TEST(overflow1l);
@@ -1129,11 +1242,13 @@ static int integer_def() {
 // - 関数外の変数、関数：global宣言しない
 // - 関数内の変数：基本はグローバル変数と同じだが、ローカルスコープなので
 //                名前が重複しないようにする(%s.%03d)。スタック確保しない。
+extern _Bool g_extern_b;
 extern char  g_extern_c;
 extern short g_extern_s;
 extern int   g_extern_i;
 extern long  g_extern_l;
 
+static _Bool g_static_b=1;
 static char  g_static_c=2;
 static short g_static_s=3;
 static int   g_static_i=4;
@@ -1142,8 +1257,8 @@ static long  g_static_l=5;
 static int extern1() {
     g_extern_s = 5;
     return
-        g_extern_c==1 && g_extern_s==5 && g_extern_i==3 && g_extern_l==4 &&
-        g_static_c==2 && g_static_s==3 && g_static_i==4 && g_static_l==5;
+        g_extern_b==1 && g_extern_c==1 && g_extern_s==5 && g_extern_i==3 && g_extern_l==4 &&
+        g_static_b==1 && g_static_c==2 && g_static_s==3 && g_static_i==4 && g_static_l==5;
 }
 static int extern2() {
     extern char *g_extern_pc, g_extern_ac6[];
@@ -1159,12 +1274,13 @@ static int extern2() {
         g_extern_al4[2]==3;
 }
 static int extern3() {
+    extern _Bool g_static_b;
     extern char  g_static_c;
     extern short g_static_s;
     extern int   g_static_i;
     extern long  g_static_l;
     return
-        g_static_c==2 && g_static_s==3 && g_static_i==4 && g_static_l==5;
+        g_static_b==1 && g_static_c==2 && g_static_s==3 && g_static_i==4 && g_static_l==5;
 }
     extern int   g_extern4_i;
     extern int   g_extern4_i;
@@ -1186,28 +1302,26 @@ static int extern42() {
     return 1;
 }
 static int static1() {
+    static _Bool g_static_b=1;
     static char  g_static_c=1;
     static short g_static_s=2;
     static int   g_static_i=3;
     static long  g_static_l=4;
 
+    g_static_b --;
     g_static_c --;
     g_static_s -= 1;
     g_static_i ++;
     g_static_l += 1;
 
     return
+        ++g_static_b==1 &&
         ++g_static_c==1 &&
         ++g_static_s==2 &&
         --g_static_i==3 &&
         --g_static_l==4;
 }
 static int static2() {
-    static char  g_static_c=11;
-    static short g_static_s=22;
-    static int   g_static_i=33;
-    static long  g_static_l=44;
-
     int i, ret;
     for (i=10;i;i--) {
         static int cnt=0;       //初期化は1回だけ
@@ -1229,10 +1343,12 @@ static int static3() {
     return a1!=a2;
 }
 static int auto1() {
+    auto _Bool auto_b=1;
     auto char  auto_c=1;
     auto short auto_s=2;
     auto int   auto_i=3;
     auto long  auto_l=4;
+    register _Bool register_b=1;
     register char  register_c=1;
     register short register_s=2;
     register int   register_i=3;

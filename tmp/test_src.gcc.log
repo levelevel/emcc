@@ -1,41 +1,49 @@
 test_src/expr.c: In function ‘funcdecl3’:
-test_src/expr.c:372:5: warning: implicit declaration of function ‘fd3_func’; did you mean ‘void_func’? [-Wimplicit-function-declaration]
+test_src/expr.c:397:5: warning: implicit declaration of function ‘fd3_func’; did you mean ‘void_func’? [-Wimplicit-function-declaration]
      fd3_func(); //未定義の関数
      ^~~~~~~~
      void_func
 test_src/expr.c: At top level:
-test_src/expr.c:401:34: warning: initialization from incompatible pointer type [-Wincompatible-pointer-types]
+test_src/expr.c:426:34: warning: initialization from incompatible pointer type [-Wincompatible-pointer-types]
  static int (*fp2_fp)(long, long)=&fp2_add;
                                   ^
-test_src/expr.c:567:39: warning: initialization from incompatible pointer type [-Wincompatible-pointer-types]
+test_src/expr.c:601:39: warning: initialization from incompatible pointer type [-Wincompatible-pointer-types]
  static int a2g_b[4]={1,2,3,4}, *a2g_p=&a2g_a, *a2g_q=&a2g_b[2], *a2g_r=a2g_a+3;
                                        ^
+test_src/expr.c: In function ‘array3b’:
+test_src/expr.c:633:23: warning: initialization from incompatible pointer type [-Wincompatible-pointer-types]
+     _Bool a[4][5], *p=(char*)a, b[4][5][6], *q=(char*)b;
+                       ^
+test_src/expr.c:633:48: warning: initialization from incompatible pointer type [-Wincompatible-pointer-types]
+     _Bool a[4][5], *p=(char*)a, b[4][5][6], *q=(char*)b;
+                                                ^
 test_src/expr.c: In function ‘string1’:
-test_src/expr.c:653:20: warning: initializer-string for array of chars is too long
+test_src/expr.c:702:20: warning: initializer-string for array of chars is too long
      char str3[4] = "ABCDE"; //長すぎる
                     ^~~~~~~
 test_src/expr.c: At top level:
-test_src/expr.c:669:27: warning: initializer-string for array of chars is too long
+test_src/expr.c:718:27: warning: initializer-string for array of chars is too long
  GLOBAL char sg1_str3[4] = "ABCDE"; //長すぎる
                            ^~~~~~~
 test_src/expr.c: In function ‘string1s’:
-test_src/expr.c:696:27: warning: initializer-string for array of chars is too long
+test_src/expr.c:745:27: warning: initializer-string for array of chars is too long
      static char str3[4] = "ABCDE"; //長すぎる
                            ^~~~~~~
 test_src/expr.c: In function ‘chara1’:
-test_src/expr.c:710:34: warning: hex escape sequence out of range
+test_src/expr.c:759:34: warning: hex escape sequence out of range
      char h0='\x0', h1='\xFF', h2='\xffff';
                                   ^~~~~~~~
 test_src/expr.c: At top level:
-test_src/expr.c:770:54: warning: excess elements in array initializer
+test_src/expr.c:849:54: warning: excess elements in array initializer
  GLOBAL char i2g_c, *i2g_ac[3] = {0,&i2g_c+1,(char*)3,(char*)4};    //初期値多い
                                                       ^
-test_src/expr.c:770:54: note: (near initialization for ‘i2g_ac’)
+test_src/expr.c:849:54: note: (near initialization for ‘i2g_ac’)
 test_src/expr.c: In function ‘enum1e’:
-test_src/expr.c:1329:22: warning: empty declaration with storage class specifier does not redeclare tag
+test_src/expr.c:1445:22: warning: empty declaration with storage class specifier does not redeclare tag
          typedef enum ABC;
                       ^~~
   OK: addsub1
+  OK: addsub1b
   OK: addsub1c
   OK: addsub1s
   OK: addsub1l
@@ -65,10 +73,12 @@ test_src/expr.c:1329:22: warning: empty declaration with storage class specifier
   OK: case1
   OK: selection
   OK: inc
+  OK: inc_bool
   OK: inc_char
   OK: inc_short
   OK: inc_long
   OK: dec
+  OK: dec_bool
   OK: dec_char
   OK: dec_short
   OK: dec_long
@@ -83,15 +93,18 @@ test_src/expr.c:1329:22: warning: empty declaration with storage class specifier
   OK: pointer7
   OK: pointer
   OK: array1
+  OK: array1b
   OK: array1c
   OK: array1s
   OK: array1l
   OK: array2
   OK: array2g
+  OK: array2b
   OK: array2c
   OK: array2s
   OK: array2l
   OK: array3
+  OK: array3b
   OK: array3c
   OK: array3s
   OK: array3l
@@ -104,6 +117,7 @@ test_src/expr.c:1329:22: warning: empty declaration with storage class specifier
   OK: chara1
   OK: string
   OK: init1
+  OK: init1s
   OK: init1g
   OK: init1sg
   OK: init2g
@@ -113,6 +127,7 @@ test_src/expr.c:1329:22: warning: empty declaration with storage class specifier
   OK: align1g
   OK: align
   OK: size_of1
+  OK: size_of1b
   OK: size_of1c
   OK: size_of1s
   OK: size_of1l
@@ -127,6 +142,7 @@ test_src/expr.c:1329:22: warning: empty declaration with storage class specifier
   OK: scope3
   OK: scope
   OK: overflow1
+  OK: overflow1b
   OK: overflow1c
   OK: overflow1s
   OK: overflow1l

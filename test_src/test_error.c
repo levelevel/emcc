@@ -55,6 +55,8 @@ struct {
     {ER, "unsigned void *p;"},
     {ER, "void a;"},
     {ER, "signed unsigned a;"},
+    {ER, "signed _Bool b;"},
+    {ER, "unsigned _Bool b;"},
     {ER, "static static int a;"},
     {ER, "extern extern int a;"},
     {ER, "extern static int a;"},
@@ -170,7 +172,8 @@ static int ng_cnt   = 0;
 static void test_error1(int index) {
     char fname[50];
     FILE *fp = stderr;
-    sprintf(fname, "selftest%03d", index);
+//  sprintf(fname, "selftest%03d", index);
+    sprintf(fname, "selftest");
     filename = fname;
     user_input = test[index].code;
     if (strstr(user_input, "main")==NULL) {

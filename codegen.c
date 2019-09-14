@@ -129,6 +129,7 @@ static char* reg_name_of_type(const char*reg_name, const Type *tp) {
 //型に応じたwriteコマンド名を返す。
 static char* write_command_of_type(const Type *tp) {
     switch (tp->type) {
+    case BOOL:
     case CHAR:
         return "movb";
     case SHORT:
@@ -150,6 +151,7 @@ static char* write_command_of_type(const Type *tp) {
  //movzx: srcで提供されない残りのビットを0で埋める
 static char* read_command_of_type(const Type *tp) {
     switch (tp->type) {
+    case BOOL:
     case CHAR:
     case SHORT:
     case INT:
@@ -189,9 +191,10 @@ static void gen_read_reg(const char*dst, const char*src, const Type *tp, const c
     else         printf("\n");
 }
 
-//array_size個のノードをdata_size単位のバイト列に変換して返す。
+//array_size個のノード(ND_LIST)をarray_size*data_sizeのtype型のバイト列に変換して返す。
 //定数でないノードがあればNULLを返す。
-char *get_byte_string(Node *node, int array_size, int data_size) {
+static char *get_byte_string(Node *node, int array_size, int data_size, TPType type) {
+    assert(node->type==ND_LIST);
     int byte_len = array_size * data_size;
     char *byte_string = malloc(byte_len);
     char *p = byte_string;
@@ -200,7 +203,12 @@ char *get_byte_string(Node *node, int array_size, int data_size) {
     for (int i=0; i<array_size; i++) {
         if (nodes[i]->type==ND_LIST) {
             _ERROR_;
-        } else if (!node_is_const(nodes[i],&val)) return NULL;
+        } else if (!node_is_const(nodes[i],&val)) {
+            return NULL;
+        }
+        if (type==BOOL) {
+            if (val) val = 1;
+        }
         memcpy(p, (char*)(&val), data_size);
         p += data_size;
     }
@@ -263,7 +271,7 @@ static void gen_array_init(Node *node) {
     int type_size = size_of(node->lhs->tp->ptr_of);   //左辺の型のサイズ
     data_len = node->rhs->lst->len;
     if (array_size > data_len) array_size = data_len;
-    char *data = get_byte_string(node->rhs, array_size, type_size);
+    char *data = get_byte_string(node->rhs, array_size, type_size, node->lhs->tp->ptr_of->type);
     if (data) { //定数のみの初期値
         printf("  pop rdi\n");
         switch (type_size) {
@@ -350,13 +358,17 @@ static void gen_array_init_global(Node *node) {
         var = NULL;
         //nodes[i]がアドレス+定数の形式になっているかどうかを調べる。
         //varにND_ADDRESS(&var)のノード、valに定数を返す
-        if (!node_is_const_or_address(nodes[i], &val, &var))
+        if (!node_is_const_or_address(nodes[i], &val, &var)) {
             error_at(nodes[i]->input, "初期値が定数式ではありません");
+        }
         if (var && val) {
             printf("  .%s %s%+ld\n", val_name, var->rhs->name, val*size_of(var->rhs->tp));
         } else if (var) {
             printf("  .%s %s\n", val_name, var->rhs->name);
         } else {
+            if (lhs->tp->ptr_of->type==BOOL) {
+                if (val) val = 1;
+            }
             printf("  .%s %ld\n", val_name, val);
         }
     }
@@ -414,6 +426,19 @@ static void gen_write_var(Node *node, char *reg) {
     }
 }
 
+//raxを_Boolに変換する。
+static void gen_bool_rax(void) {
+    printf("  cmp rax, 0\n");
+    printf("  setne al\n");
+    printf("  movzb rax, al\n");
+}
+//スタックトップを_Boolに変換する。raxは保存されない。
+static void gen_bool(void) {
+    printf("  pop rax\n");
+    gen_bool_rax();
+    printf("  push rax\n");
+}
+
 //ステートメントを評価
 //結果をスタックに積んだ場合は1、そうでない場合は0を返す
 static int gen(Node*node) {
@@ -468,11 +493,17 @@ static int gen(Node*node) {
         comment("CALL:%s\t%s\n", node->name, get_type_str(node->tp));
         if (node->lhs) {    //引数
             assert(node->lhs->type==ND_LIST);
-            Vector *lists = node->lhs->lst;
-            Node **nodes = (Node**)lists->data;
-            for (i=0; i < lists->len; i++) {
+            Vector *actual_list = node->lhs->lst;
+            Node **actual_nodes = (Node**)actual_list->data;
+            Vector *formal_list = get_func_args(node);
+            Node **formal_nodes = formal_list?(Node**)formal_list->data:NULL;
+            for (i=0; i < actual_list->len; i++) {
                 comment("ARGLIST[%d]\n", i);
-                gen(nodes[i]);  //スタックトップに引数がセットされる
+                gen(actual_nodes[i]);  //スタックトップに引数がセットされる
+                if (formal_nodes && i<formal_list->len &&
+                    formal_nodes[i]->tp->type==BOOL) {
+                    gen_bool();
+                }
             }
         }
         if (node->rhs==NULL ||          //未定義の関数のコール
@@ -520,6 +551,7 @@ static int gen(Node*node) {
         if (node->rhs) {
             comment("RETURN (%s)\n", get_type_str(node->tp));
             gen(node->rhs);
+            if (cur_funcdef->tp->ptr_of->type==BOOL) gen_bool();
             printf("  pop rax\t# RETURN VALUE\n");
         } else {
             comment("RETURN\n");
@@ -692,6 +724,7 @@ static int gen(Node*node) {
             return 0;
         } else {
             gen(node->rhs);
+            if (node->lhs->tp->type==BOOL) gen_bool();
             gen_write_var(node->lhs, "rax");
             printf("  push rax\n");
         }
@@ -716,6 +749,7 @@ static int gen(Node*node) {
             printf("  mov rax, rdi\n");
         }
         printf("  pop rdi\n");  //lhsのアドレス
+        if (node->lhs->tp->type==BOOL) gen_bool();
         gen_write_reg("rdi", "rax", node->lhs->tp, NULL);
         printf("  push rax\n"); //戻り値
         break;
@@ -743,6 +777,7 @@ static int gen(Node*node) {
             printf("  add rax, %ld\n", size_of(node->tp->ptr_of));
         } else {
             printf("  inc rax\n");  //戻り値を設定する前にINC
+            if (node->tp->type==BOOL) gen_bool_rax();
         }
         gen_write_reg("rdi", "rax", node->rhs->tp, NULL);
         printf("  push rax\n"); //戻り値
@@ -756,6 +791,7 @@ static int gen(Node*node) {
             printf("  sub rax, %ld\n", size_of(node->tp->ptr_of));
         } else {
             printf("  dec rax\n");  //戻り値を設定する前にDEC
+            if (node->tp->type==BOOL) gen_bool_rax();
         }
         gen_write_reg("rdi", "rax", node->rhs->tp, NULL);
         printf("  push rax\n"); //戻り値
@@ -770,6 +806,7 @@ static int gen(Node*node) {
             printf("  add rax, %ld\n", size_of(node->tp->ptr_of));
         } else {
             printf("  inc rax\n");
+            if (node->tp->type==BOOL) gen_bool_rax();
         }
         gen_write_reg("rdi", "rax", node->lhs->tp, NULL);
         break;
@@ -783,6 +820,7 @@ static int gen(Node*node) {
             printf("  sub rax, %ld\n", size_of(node->tp->ptr_of));
         } else {
             printf("  dec rax\n");
+            if (node->tp->type==BOOL) gen_bool_rax();
         }
         gen_write_reg("rdi", "rax", node->lhs->tp, NULL);
         break;
@@ -1016,6 +1054,7 @@ static void gen_global_var(Node *node) {
     if (node->rhs) {    //初期値あり、rhsは'='のノード
         Node *rhs = node->rhs->rhs; //'='の右辺
         switch (node->tp->type) {
+        case BOOL:
         case CHAR:
             gen_single_val("byte", rhs);
             break;

@@ -54,6 +54,7 @@ TokenDef TokenLst1[] = {
 //トークンの終わりをis_alnum()で判定するもの
 TokenDef TokenLst2[] = {
     {TK("void"),     TK_VOID},
+    {TK("_Bool"),    TK_BOOL},
     {TK("char"),     TK_CHAR},
     {TK("short"),    TK_SHORT},
     {TK("int"),      TK_INT},
@@ -94,16 +95,6 @@ static Token *new_token(TKtype type, char *input) {
     token->input = input;
     vec_push(token_vec, token);
     return token;
-}
-
-//識別子に使用できる文字
-static int is_alnum(char c) {
-    return ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z') ||
-           ('0' <= c && c <= '9') || (c == '_');
-}
-//識別子の先頭に使用できる文字
-static int is_alpha(char c) {
-    return ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z') || (c == '_');
 }
 
 //識別子の文字列を返す。

@@ -15,7 +15,7 @@
                             | type_qualifier          declaration_specifiers*
     init_declarator         = declarator ( "=" initializer )?
     storage_class_specifier = "typedef" | "static" | "extern" | "auto" | "register"
-    type_specifier          = "void" | "char" | "short" | "int" | "long" | "signed" | "unsigned"
+    type_specifier          = "void" | "_Bool" | "char" | "short" | "int" | "long" | "signed" | "unsigned"
                             | enum_specifier | typedef_name
     enum_specifier          = "enum" identifier? "{" enumerator ( "," enumerator )* ","? "}"
                             | "enum" identifier
@@ -599,6 +599,9 @@ static Type *declaration_specifiers(void) {
         if (consume(TK_VOID)) {
             if (type) error_at(input, "型指定が不正です\n");
             type = VOID;
+        } else if (consume(TK_BOOL)) {
+            if (type) error_at(input, "型指定が不正です\n");
+            type = BOOL;
         } else if (consume(TK_CHAR)) {
             if (type) error_at(input, "型指定が不正です\n");
             type = CHAR;
@@ -659,6 +662,10 @@ static Type *declaration_specifiers(void) {
         if (is_unsigned>=0) error_at(us_input, "enum/typedef/struct/union名に対してsigned/unsignedの指定はできません\n");
         top_tp = tp = node->tp;
         while (tp->ptr_of) tp = tp->ptr_of; //PTRとARRAYを飛ばす
+    } else if (type==BOOL) {
+        if (is_unsigned>=0) error_at(us_input, "_Boolに対してsigned/unsignedの指定はできません\n");
+        is_unsigned = 1;
+        top_tp = tp = new_type(type, is_unsigned);
     } else {
         if (is_unsigned<0) is_unsigned = 0;
         top_tp = tp = new_type(type, is_unsigned);
