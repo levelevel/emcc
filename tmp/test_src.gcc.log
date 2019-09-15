@@ -34,12 +34,12 @@ test_src/expr.c:759:34: warning: hex escape sequence out of range
      char h0='\x0', h1='\xFF', h2='\xffff';
                                   ^~~~~~~~
 test_src/expr.c: At top level:
-test_src/expr.c:849:54: warning: excess elements in array initializer
+test_src/expr.c:853:54: warning: excess elements in array initializer
  GLOBAL char i2g_c, *i2g_ac[3] = {0,&i2g_c+1,(char*)3,(char*)4};    //初期値多い
                                                       ^
-test_src/expr.c:849:54: note: (near initialization for ‘i2g_ac’)
+test_src/expr.c:853:54: note: (near initialization for ‘i2g_ac’)
 test_src/expr.c: In function ‘enum1e’:
-test_src/expr.c:1445:22: warning: empty declaration with storage class specifier does not redeclare tag
+test_src/expr.c:1449:22: warning: empty declaration with storage class specifier does not redeclare tag
          typedef enum ABC;
                       ^~~
   OK: addsub1
@@ -115,6 +115,7 @@ test_src/expr.c:1445:22: warning: empty declaration with storage class specifier
   OK: string1g
   OK: string1s
   OK: chara1
+  OK: func_name
   OK: string
   OK: init1
   OK: init1s

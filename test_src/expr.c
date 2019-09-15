@@ -762,11 +762,15 @@ static int chara1(void) {
            o0==0 && o1==10 && o2==83 &&
            h0==0 && h1==-1 && h2==-1;
 }
+static int func_name(void) {
+    return strcmp(__func__,"func_name")==0;
+}
 static int string() {
     TEST(string1);
     TEST(string1g);
     TEST(string1s);
     TEST(chara1);
+    TEST(func_name);
     return 1;
 }
 

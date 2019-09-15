@@ -10,7 +10,7 @@
                                      ^ 未宣言の関数コールです。
 9cc:Warning: tmp/test_src.c:495:     return 0;
                                      ^ static int**型の関数pointer3がint型を返しています
-9cc:Warning: tmp/test_src.c:1024: }
+9cc:Warning: tmp/test_src.c:1028: }
                                    ^ 関数が戻り値を返していません
   OK: addsub1
   OK: addsub1b
@@ -85,6 +85,7 @@
   OK: string1g
   OK: string1s
   OK: chara1
+  OK: func_name
   OK: string
   OK: init1
   OK: init1s

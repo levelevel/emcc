@@ -209,6 +209,7 @@ Node *search_symbol(const char *name) {
     for (int i=stack_len(symbol_stack)-1; i>=0; i--) {
         Map *symbol_map = (Map*)stack_get(symbol_stack, i);
         if (map_get(symbol_map, name, (void**)&node)!=0) {
+            node->unused = 0;
             return node;
         }
     }

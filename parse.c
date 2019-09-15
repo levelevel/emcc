@@ -117,7 +117,7 @@ static Node *enum_specifier(void);
 static Node *enumerator(Node *enum_def, int default_val);
 
 static Node *statement(void);
-static Node *compound_statement(void);
+static Node *compound_statement(int is_func_body);
 static Node *expression(void);
 static Node *constant_expression(void);
 static Node *assignment_expression(void);
@@ -199,7 +199,7 @@ static Node *function_definition(Type *tp, char *name) {
     node = declarator(decl_spec, tp, name);
     if (token_is('{')) {    //関数定義
         check_funcargs(node->lhs, 1);   //引数リストの妥当性を確認（定義モード）
-        node->rhs = compound_statement();
+        node->rhs = compound_statement(1);
         map_put(funcdef_map, node->name, cur_funcdef);
         stack_pop(symbol_stack);
         stack_pop(tagname_stack);
@@ -751,7 +751,7 @@ static Node *statement(void) {
         regist_case(node);
         return node;
     } else if (token_is('{')) {
-        return compound_statement();    //{ ブロック }
+        return compound_statement(0);    //{ ブロック }
 
     //selection_statement
     } else if (consume(TK_IF)) {        //if(A)B else C
@@ -857,21 +857,39 @@ static Node *statement(void) {
     return node;
 }
 
-static Node *compound_statement(void) {
+static Node *compound_statement(int is_func_body) {
     Node *node;
     assert (consume('{'));
 
     node = new_node_block(input_str());
     stack_push(symbol_stack, new_map());
     stack_push(tagname_stack, new_map());
+
+    if (is_func_body) {
+        //関数の先頭に static const char __func__[]="function name"; 相当の変数を登録する
+        char *input = input_str();
+        String string;
+        string.buf = cur_funcdef->func_name;
+        string.size = strlen(cur_funcdef->func_name)+1;
+        Node *init = new_node_string(&string, input);
+        Type *tp = init->tp;
+        tp->ptr_of->is_const = 1;
+        tp->ptr_of->sclass = SC_STATIC;
+        Node *func_name_node = new_node_var_def("__func__", tp, input);
+        func_name_node->unused = 1;
+        func_name_node->rhs = new_node('=', NULL, init, tp, input);
+        func_name_node->rhs->lhs = new_node_ident(func_name_node->name, input);  //=の左辺
+        //dump_node(func_name_node,__func__);
+    }
+
     while (!consume('}')) {
-        Node *block;
+        Node *block_item;
         if (token_is_type_spec()) {
-            block = declaration(NULL, NULL);
+            block_item = declaration(NULL, NULL);
         } else {
-            block = statement();
+            block_item = statement();
         }
-        vec_push(node->lst, block);
+        vec_push(node->lst, block_item);
     }
     stack_pop(symbol_stack);
     stack_pop(tagname_stack);
