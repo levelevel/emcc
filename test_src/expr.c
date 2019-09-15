@@ -1489,6 +1489,24 @@ static int typedef1a(void) {
     return i==5 && a[2]==30
         && *ip==5 && *pa[2]==6;
 }
+static int typedef1b(void) {
+    typedef _Bool BOOL;
+    BOOL i=0, j=i+1;
+    BOOL a[]={0,1,2};
+    BOOL *ip=&i;
+    BOOL *pa[]={NULL, &i, &j};
+    return i==0 && a[2]==1
+        && *ip==0 && *pa[2]==1;
+}
+static int typedef1c(void) {
+    typedef char CHAR;
+    CHAR i=5, j=i+1;
+    CHAR a[]={10,20,30};
+    CHAR *ip=&i;
+    CHAR *pa[]={NULL, &i, &j};
+    return i==5 && a[2]==30
+        && *ip==5 && *pa[2]==6;
+}
 static int typedef3(void) {
     typedef char* STR;
     STR str="ABC";
@@ -1498,6 +1516,8 @@ static int Typedef(void) {
     TEST(typedef1);
     TEST(typedef1p);
     TEST(typedef1a);
+    TEST(typedef1b);
+    TEST(typedef1c);
     TEST(typedef3);
     return 1;
 }

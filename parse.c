@@ -868,18 +868,15 @@ static Node *compound_statement(int is_func_body) {
     if (is_func_body) {
         //関数の先頭に static const char __func__[]="function name"; 相当の変数を登録する
         char *input = input_str();
-        String string;
-        string.buf = cur_funcdef->func_name;
-        string.size = strlen(cur_funcdef->func_name)+1;
-        Node *init = new_node_string(&string, input);
-        Type *tp = init->tp;
+        String string = {cur_funcdef->func_name, strlen(cur_funcdef->func_name)+1};
+        Node *string_node = new_node_string(&string, input);
+        Type *tp = string_node->tp;
         tp->ptr_of->is_const = 1;
         tp->ptr_of->sclass = SC_STATIC;
         Node *func_name_node = new_node_var_def("__func__", tp, input);
+        Node *var_node = new_node_ident(func_name_node->name, input);  //=の左辺
         func_name_node->unused = 1;
-        func_name_node->rhs = new_node('=', NULL, init, tp, input);
-        func_name_node->rhs->lhs = new_node_ident(func_name_node->name, input);  //=の左辺
-        //dump_node(func_name_node,__func__);
+        func_name_node->rhs = new_node('=', var_node, string_node, tp, input);
     }
 
     while (!consume('}')) {

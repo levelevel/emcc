@@ -169,5 +169,7 @@ test_src/expr.c:1449:22: warning: empty declaration with storage class specifier
   OK: typedef1
   OK: typedef1p
   OK: typedef1a
+  OK: typedef1b
+  OK: typedef1c
   OK: typedef3
   OK: Typedef
