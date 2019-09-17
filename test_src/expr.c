@@ -595,34 +595,36 @@ static int array1l() {
 static int af2(int *a){return a[0]+a[1]+a[2];}
 static int array2() {
     int a[4]={1,2,3,4}, *p=a, *q=&a[2], *r=a+3;
-    return af2(a)==6 && p[1]==2 && *q==3 && *r==4;
-}
-GLOBAL int a2g_a[4]={1,2,3,4};
-static int a2g_b[4]={1,2,3,4}, *a2g_p=&a2g_a, *a2g_q=&a2g_b[2], *a2g_r=a2g_a+3;
-static int array2g() {
-    return af2(a2g_a)==6 && a2g_p[1]==2 && *a2g_q==3 && *a2g_r==4;
+    int b[4]={1,2,3,a[3]};
+    return af2(a)==6 && p[1]==2 && *q==3 && *r==4 && b[3]==4;
 }
 static _Bool af2b(_Bool *a){return a[0]+a[1]+a[2];}
 static int array2b() {
     _Bool a[4]={1,2,3,4}, *p=a, *q=&a[2], *r=a+3;
-    return af2b(a)==1 && p[1]==1 && *q==1 && *r==1;
+    _Bool b[4]={1,2,3,a[3]};
+    return af2b(a)==1 && p[1]==1 && *q==1 && *r==1 && b[3]==1;
 }
 static char af2c(char *a){return a[0]+a[1]+a[2];}
 static int array2c() {
     char a[4]={1,2,3,4}, *p=a, *q=&a[2], *r=a+3;
-    return af2c(a)==6 && p[1]==2 && *q==3 && *r==4;
+    char b[4]={1,2,3,a[3]};
+    char s1[]="ab" "c", s2[4]={'A', 'B', 'C', 0};
+    return af2c(a)==6 && p[1]==2 && *q==3 && *r==4 && b[3]==4
+        && strcmp(s1, "abc")==0 && strcmp(s2, "ABC")==0;
 }
 static short af2s(short *a){return a[0]+a[1]+a[2];}
 static int array2s() {
     short a[4]={1,2,3,4}, *p=a, *q=&a[2], *r=a+3;
-    return af2s(a)==6 && p[1]==2 && *q==3 && *r==4;
+    short b[4]={1,2,3,a[3]};
+    return af2s(a)==6 && p[1]==2 && *q==3 && *r==4 && b[3]==4;
 }
 static long af2l(long *a){return a[0]+a[1]+a[2];}
 static int array2l() {
     long a[4]={1,2,3,4}, *p=a, *q=&a[2], *r=a+3;
-    return af2l(a)==6 && p[1]==2 && *q==3 && *r==4;
+    long b[4]={1,2,3,a[3]};
+    return af2l(a)==6 && p[1]==2 && *q==3 && *r==4 && b[3]==4;
 }
-static int array3() {
+static int array3() {   //2次元
     int a[4][5], *p=(int*)a, b[4][5][6], *q=(int*)b;
     a[2][3] = 10;
     b[2][3][4] = 20;
@@ -657,33 +659,72 @@ static int array3l() {
     return
         (long)a[1] == (long)(a+1) && p[2*5+3]==10 && *(q+2*5*6+3*6+4)==20;
 }
+static int array4() {   //2次元+初期化
+    int x=5, a[2][3]={{0,1,2},{3,4,x}};
+    return
+        a[0][0]==0 && a[1][0]==3 && a[1][2]==5;
+}
+static int array4c() {
+    char x=5, a[2][3]={{0,1,2},{3,4,x}};
+    char b[2][2][3]={
+        {{1,2,3},{4,5,6}},
+        {"ab", "AB"},
+    };
+    char s[][4]={"abc", "ABC"};
+    char *sp[]={"abc", "ABC"};
+    return
+        a[0][0]==0 && a[1][0]==3 && a[1][2]==5 &&
+        b[0][1][1]==5 && b[1][1][1]=='B' && strcmp(b[1][0],"ab")==0 &&
+        s[0][0]=='a' && s[1][2]=='C' && strcmp(s[0],"abc")==0 && strcmp(s[1],"ABC")==0 &&
+        sp[0][2]=='c' && strcmp(sp[1], "ABC")==0;
+}
+
+GLOBAL int ga2_a[4]={1,2,3,4};
+static int ga2_b[4]={1,2,3,4}, *ga2_p=&ga2_a, *ga2_q=&ga2_b[2], *ga2_r=ga2_a+3;
+static int garray2() {
+    return af2(ga2_a)==6 && ga2_p[1]==2 && *ga2_q==3 && *ga2_r==4;
+}
+GLOBAL char ga2c_a[4]={1,2,3,4};
+static char ga2c_b[4]={1,2,3,4}, *ga2c_p=&ga2c_a, *ga2c_q=&ga2c_b[2], *ga2c_r=ga2c_a+3;
+static char ga2c_s1[]="ab" "c", ga2c_s2[4]={'A', 'B', 'C', 0};
+static int garray2c() {
+    return af2c(ga2c_a)==6 && ga2c_p[1]==2 && *ga2c_q==3 && *ga2c_r==4
+        && strcmp(ga2c_s1, "abc")==0 && strcmp(ga2c_s2, "ABC")==0;
+}
+
 static int sarray2() {
     static int a[4]={1,2,3,4}, *p=a, *q=&a[2], *r=a+3;
     return af2(a)==6 && p[1]==2 && *q==3 && *r==4;
 }
-static int sarray2c() {
+static int sarray2c() { //static 1次元+初期化
     static char a[4]={1,2,3,4}, *p=a, *q=&a[2], *r=a+3;
-    return af2c(a)==6 && p[1]==2 && *q==3 && *r==4;
+    static char s1[]="ab" "c", s2[4]={'A', 'B', 'C', 0};
+    return af2c(a)==6 && p[1]==2 && *q==3 && *r==4
+        && strcmp(s1, "abc")==0 && strcmp(s2, "ABC")==0;
 }
 static int array() {
-    TEST(array1);
+    TEST(array1);   //1次元
     TEST(array1b);
     TEST(array1c);
     TEST(array1s);
     TEST(array1l);
-    TEST(array2);
-    TEST(array2g);
+    TEST(array2);   //1次元+初期化
     TEST(array2b);
     TEST(array2c);
     TEST(array2s);
     TEST(array2l);
-    TEST(array3);
+    TEST(array3);   //2次元
     TEST(array3b);
     TEST(array3c);
     TEST(array3s);
     TEST(array3l);
-
-    TEST(sarray2);
+    TEST(array4);   //2次元+初期化
+    TEST(array4c);
+    //global
+    TEST(garray2);
+    TEST(garray2c);
+    //local static
+    TEST(sarray2);  //static 1次元+初期化
     TEST(sarray2c);
     return 1;
 }

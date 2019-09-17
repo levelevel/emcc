@@ -245,57 +245,63 @@ static int gen(Node*node);
 static void gen_op2(Node *node);
 
 //ローカル変数の配列の初期化。スタックトップに変数のアドレスが設定されている前提。
-static void gen_array_init(Node *node) {
-    assert(node->type=='=');
-    assert(node->lhs->type==ND_LOCAL_VAR);
-    assert(node->lhs->tp->type==ARRAY);
-    int array_size  = node->lhs->tp->array_size;  //配列のサイズ
+static void gen_array_init_sub(Type *tp, Node *init, int offset) {
+    assert(tp->type==ARRAY);
+
+    int array_size = tp->array_size;  //配列のサイズ
     int data_len;
 
-    if (node->lhs->tp->ptr_of->type==CHAR &&
-        node->rhs->type==ND_STRING) {
+    if (tp->ptr_of->type==ARRAY) {
+        for (int i=0; i<array_size; i++) {
+            gen_array_init_sub(tp->ptr_of, init->lst?lst_data(init->lst, i):init, offset+i*size_of(tp->ptr_of));
+        }
+        return;
+    }
+
+    if (tp->ptr_of->type==CHAR && init->type==ND_STRING) {
         //文字列リテラルによる初期化: char a[]="ABC";
-        data_len = node->rhs->tp->array_size;
+        data_len = init->tp->array_size;
         if (array_size > data_len) array_size = data_len;
         // [rdi++] = [rsi++] を rcx回繰り返す
-        printf("  pop rdi\n");
-        printf("  lea rsi, BYTE PTR .LC%03ld\n", node->rhs->val);
+        printf("  mov rdi, QWORD PTR [rsp]\n");
+        if (offset) printf("  add rdi, %d\n", offset);
+        printf("  lea rsi, BYTE PTR .LC%03ld\n", init->val);
         printf("  mov rcx, %d\n", array_size);
         printf("  rep movsb\n");
         return;
     }
 
-    assert(node->rhs->type==ND_LIST);
+    assert(init->type==ND_LIST);
     // char a[]={'A', 'B', 'C', '\0'}
     // int  b[]={1, 2, 4, 8}
-    int type_size = size_of(node->lhs->tp->ptr_of);   //左辺の型のサイズ
-    data_len = node->rhs->lst->len;
+    int type_size = size_of(tp->ptr_of);   //左辺の型のサイズ
+    data_len = init->lst->len;
     if (array_size > data_len) array_size = data_len;
-    char *data = get_byte_string(node->rhs, array_size, type_size, node->lhs->tp->ptr_of->type);
+    char *data = get_byte_string(init, array_size, type_size, tp->ptr_of->type);
     if (data) { //定数のみの初期値
-        printf("  pop rdi\n");
+        printf("  mov rdi, QWORD PTR [rsp]\n");
         switch (type_size) {
         case 1:
             for (int i=0; i<array_size; i++) {
-                printf("  movb BYTE PTR [rdi+%d], %d\n", i*type_size, data[i]);
+                printf("  movb BYTE PTR [rdi+%d], %d\n", i*type_size+offset, data[i]);
             }
             break;
         case 2: ;
             short *datas = (short*)data;
             for (int i=0; i<array_size; i++) {
-                printf("  mov WORD PTR [rdi+%d], %d\n", i*type_size, datas[i]);
+                printf("  mov WORD PTR [rdi+%d], %d\n", i*type_size+offset, datas[i]);
             }
             break;
         case 4: ;
             int *datai = (int*)data;
             for (int i=0; i<array_size; i++) {
-                printf("  mov DWORD PTR [rdi+%d], %d\n", i*type_size, datai[i]);
+                printf("  mov DWORD PTR [rdi+%d], %d\n", i*type_size+offset, datai[i]);
             }
             break;
         case 8: ;
             long *datal = (long*)data;
             for (int i=0; i<array_size; i++) {
-                printf("  mov QWORD PTR [rdi+%d], %ld\n", i*type_size, datal[i]);
+                printf("  mov QWORD PTR [rdi+%d], %ld\n", i*type_size+offset, datal[i]);
             }
             break;
         default:
@@ -303,19 +309,25 @@ static void gen_array_init(Node *node) {
             break;
         }
     } else {    //初期値に定数でない式を含む場合
-        Node **nodes = (Node**)node->rhs->lst->data;
+        Node **nodes = (Node**)init->lst->data;
         for (int i=0; i<array_size; i++) {
             gen(nodes[i]);
             printf("  pop rax\n");
-            printf("  pop rdi\n");
+            printf("  mov rdi, QWORD PTR [rsp]\n");
             printf("  %s %s PTR [rdi+%d], %s\n", 
-                write_command_of_type(node->lhs->tp->ptr_of),
-                ptr_name_of_type(node->lhs->tp->ptr_of), i*type_size,
-                reg_name_of_type("rax", node->lhs->tp->ptr_of));
+                write_command_of_type(tp->ptr_of),
+                ptr_name_of_type(tp->ptr_of), i*type_size+offset,
+                reg_name_of_type("rax", tp->ptr_of));
             printf("  push rdi\n");
         }
-        printf("  pop rdi\n");
     }
+}
+static void gen_array_init(Node *node) {
+    assert(node->type=='=');
+    assert(node->lhs->type==ND_LOCAL_VAR);
+    assert(node->lhs->tp->type==ARRAY);
+    gen_array_init_sub(node->lhs->tp, node->rhs, 0);
+    printf("  pop rax\n");
 }
 
 //グローバル変数の配列の初期化

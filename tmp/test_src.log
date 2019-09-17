@@ -10,7 +10,7 @@
                                      ^ 未宣言の関数コールです。
 9cc:Warning: tmp/test_src.c:495:     return 0;
                                      ^ static int**型の関数pointer3がint型を返しています
-9cc:Warning: tmp/test_src.c:1028: }
+9cc:Warning: tmp/test_src.c:1069: }
                                    ^ 関数が戻り値を返していません
   OK: addsub1
   OK: addsub1b
@@ -68,7 +68,6 @@
   OK: array1s
   OK: array1l
   OK: array2
-  OK: array2g
   OK: array2b
   OK: array2c
   OK: array2s
@@ -78,6 +77,10 @@
   OK: array3c
   OK: array3s
   OK: array3l
+  OK: array4
+  OK: array4c
+  OK: garray2
+  OK: garray2c
   OK: sarray2
   OK: sarray2c
   OK: array

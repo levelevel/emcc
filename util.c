@@ -325,6 +325,7 @@ static void dump_type_indent(FILE *fp, const Type *tp, const char *str, int inde
         get_StorageClass_str(tp->sclass),
         tp->array_size);
     if (tp->node) dump_node_indent(fp, tp->node, NULL, indent+2);
+    if (tp->ptr_of) dump_type_indent(fp, tp->ptr_of, NULL, indent+2);
 }
 
 void dump_type(const Type *tp, const char *str) {

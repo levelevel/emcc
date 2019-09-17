@@ -287,7 +287,11 @@ static Node *init_declarator(Type *decl_spec, Type *tp, char *name) {
                 if (rhs->type==ND_STRING && tp->ptr_of->type!=CHAR)
                     error_at(rhs->input, "%sを文字列リテラルで初期化できません", get_type_str(tp));
                 if (tp->array_size<0) {
-                    tp->array_size = rhs->tp->array_size;
+                    if (rhs->type==ND_LIST) {
+                        tp->array_size = rhs->lst->len;
+                    } else {
+                        tp->array_size = rhs->tp->array_size;
+                    }
                 }
             } else if (rhs->type==ND_LIST) {
                 if (tp->array_size<0) {
@@ -875,7 +879,7 @@ static Node *compound_statement(int is_func_body) {
         tp->ptr_of->sclass = SC_STATIC;
         Node *func_name_node = new_node_var_def("__func__", tp, input);
         Node *var_node = new_node_ident(func_name_node->name, input);  //=の左辺
-        func_name_node->unused = 1;
+        func_name_node->unused = 1; //参照されたときに0となり、有効になる
         func_name_node->rhs = new_node('=', var_node, string_node, tp, input);
     }
 
