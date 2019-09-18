@@ -102,7 +102,9 @@ int node_is_const(Node *node, long *valp) {
     return 1;
 }
 
-//nodeが定数またはアドレス+定数の形式になっているかどうかを調べる。varpにND_ADDRESS(&var)のノード、valpに定数を返す
+//nodeが定数またはアドレス+定数の形式になっているかどうかを調べる。
+//varpにND_ADDRESS(&var)のノード、valpに定数を返す。
+//nodeが文字列リテラル(ND_STRING)の場合は1を返すがvalp/varpには何も返さない。
 int node_is_const_or_address(Node *node, long *valp, Node **varp) {
     long val, val1, val2;
     Node *var1=NULL, *var2=NULL;
@@ -125,8 +127,10 @@ int node_is_const_or_address(Node *node, long *valp, Node **varp) {
         return 0;
     case ND_LOCAL_VAR:
     case ND_GLOBAL_VAR:
-    case ND_STRING:
         return 0;
+    case ND_STRING:
+        val = 0;
+        break;
     case ND_ADDRESS:
         //dump_node(node,__func__);
         if (node->rhs->type==ND_GLOBAL_VAR || node_is_local_static_var(node->rhs)) {

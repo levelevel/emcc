@@ -246,8 +246,6 @@ static void gen_op2(Node *node);
 
 //ローカル変数の配列の初期化。スタックトップに変数のアドレスが設定されている前提。
 static void gen_array_init_sub(Type *tp, Node *init, int offset) {
-    assert(tp->type==ARRAY);
-
     int array_size = tp->array_size;  //配列のサイズ
     int data_len;
 
@@ -331,20 +329,23 @@ static void gen_array_init(Node *node) {
 }
 
 //グローバル変数の配列の初期化
-static void gen_array_init_global(Node *node) {
-    Node *lhs=node->lhs, *rhs=node->rhs;
-    assert(node->type=='=');
-    assert(lhs->type==ND_GLOBAL_VAR || node_is_local_static_var(lhs));
-    assert(lhs->tp->type==ARRAY);
-    int array_size  = lhs->tp->array_size;  //配列のサイズ
+static void gen_array_init_global_sub(Type *tp, Node *init) {
+    int array_size  = tp->array_size;  //配列のサイズ
     int data_len;
 
-    if (lhs->tp->ptr_of->type==CHAR &&
-        rhs->type==ND_STRING) {
+    if (tp->ptr_of->type==ARRAY) {
+        for (int i=0; i<array_size; i++) {
+            gen_array_init_global_sub(tp->ptr_of, init->lst?lst_data(init->lst, i):init);
+        }
+        return;
+    }
+
+    if (tp->ptr_of->type==CHAR &&
+        init->type==ND_STRING) {
         //文字列リテラルによる初期化: char a[]="ABC";
-        data_len = rhs->tp->array_size;
-        String *string = get_string_literal(rhs->val);
-        unuse_string_literal(rhs->val);
+        data_len = init->tp->array_size;
+        String *string = get_string_literal(init->val);
+        unuse_string_literal(init->val);
         if (array_size < data_len) {
             string->size = array_size;
         }
@@ -357,15 +358,15 @@ static void gen_array_init_global(Node *node) {
         return;
     }
 
-    assert(rhs->type==ND_LIST);
+    assert(init->type==ND_LIST);
     // char a[]={'A', 'B', 'C', '\0'}
     // int  b[]={1, 2, 4, 8}
-    int type_size = size_of(lhs->tp->ptr_of);   //左辺の型のサイズ
-    Node **nodes = (Node**)rhs->lst->data;
-    data_len = rhs->lst->len;
+    int type_size = size_of(tp->ptr_of);   //左辺の型のサイズ
+    Node **nodes = (Node**)init->lst->data;
+    data_len = init->lst->len;
     long val;
     Node *var = NULL;
-    char *val_name = val_name_of_type(node->lhs->tp);
+    char *val_name = val_name_of_type(tp);
     for (int i=0; i<array_size && i<data_len; i++) {
         var = NULL;
         //nodes[i]がアドレス+定数の形式になっているかどうかを調べる。
@@ -377,14 +378,24 @@ static void gen_array_init_global(Node *node) {
             printf("  .%s %s%+ld\n", val_name, var->rhs->name, val*size_of(var->rhs->tp));
         } else if (var) {
             printf("  .%s %s\n", val_name, var->rhs->name);
+        } else if (nodes[i]->type==ND_STRING) {
+            printf("   .quad .LC%03ld\n", nodes[i]->val);
+            //abort();
         } else {
-            if (lhs->tp->ptr_of->type==BOOL) {
+            if (tp->ptr_of->type==BOOL) {
                 if (val) val = 1;
             }
             printf("  .%s %ld\n", val_name, val);
         }
     }
     if (array_size > data_len) printf("  .zero %d\n", (array_size-data_len)*type_size);
+}
+
+static void gen_array_init_global(Node *node) {
+    assert(node->type=='=');
+    assert(node->lhs->type==ND_GLOBAL_VAR || node_is_local_static_var(node->lhs));
+    assert(node->lhs->tp->type==ARRAY);
+    gen_array_init_global_sub(node->lhs->tp, node->rhs);
 }
 
 //式を左辺値として評価し、そのアドレスをPUSHする

@@ -702,6 +702,47 @@ static int sarray2c() { //static 1次元+初期化
     return af2c(a)==6 && p[1]==2 && *q==3 && *r==4
         && strcmp(s1, "abc")==0 && strcmp(s2, "ABC")==0;
 }
+
+static int ga4_a[2][3]={{0,1,2},{3,4,5}};
+static int garray4() {
+    return
+        ga4_a[0][0]==0 && ga4_a[1][0]==3 && ga4_a[1][2]==5;
+}
+static char ga4c_a[2][3]={{0,1,2},{3,4,5}};
+static char ga4c_b[2][2][3]={
+    {{1,2,3},{4,5,6}},
+    {"ab", "AB"},
+};
+static char ga4c_s[][4]={"abc", "ABC"};
+static char *ga4c_sp[]={"abc", "ABC"};
+static int garray4c() {
+    return
+        ga4c_a[0][0]==0 && ga4c_a[1][0]==3 && ga4c_a[1][2]==5 &&
+        ga4c_b[0][1][1]==5 && ga4c_b[1][1][1]=='B' && strcmp(ga4c_b[1][0],"ab")==0 &&
+        ga4c_s[0][0]=='a' && ga4c_s[1][2]=='C' && strcmp(ga4c_s[0],"abc")==0 && strcmp(ga4c_s[1],"ABC")==0 &&
+        ga4c_sp[0][2]=='c' && strcmp(ga4c_sp[1], "ABC")==0;
+}
+
+static int sarray4() {
+    static int sa4_a[2][3]={{0,1,2},{3,4,5}};
+    return
+        sa4_a[0][0]==0 && sa4_a[1][0]==3 && sa4_a[1][2]==5;
+}
+static int sarray4c() {
+    static char sa4c_a[2][3]={{0,1,2},{3,4,5}};
+    static char sa4c_b[2][2][3]={
+        {{1,2,3},{4,5,6}},
+        {"ab", "AB"},
+    };
+    static char sa4c_s[][4]={"abc", "ABC"};
+    static char *sa4c_sp[]={"abc", "ABC"};
+    return
+        sa4c_a[0][0]==0 && sa4c_a[1][0]==3 && sa4c_a[1][2]==5 &&
+        sa4c_b[0][1][1]==5 && sa4c_b[1][1][1]=='B' && strcmp(sa4c_b[1][0],"ab")==0 &&
+        sa4c_s[0][0]=='a' && sa4c_s[1][2]=='C' && strcmp(sa4c_s[0],"abc")==0 && strcmp(sa4c_s[1],"ABC")==0 &&
+        sa4c_sp[0][2]=='c' && strcmp(sa4c_sp[1], "ABC")==0;
+}
+
 static int array() {
     TEST(array1);   //1次元
     TEST(array1b);
@@ -723,9 +764,13 @@ static int array() {
     //global
     TEST(garray2);
     TEST(garray2c);
+    TEST(garray4);
+    TEST(garray4c);
     //local static
     TEST(sarray2);  //static 1次元+初期化
     TEST(sarray2c);
+    TEST(sarray4);
+    TEST(sarray4c);
     return 1;
 }
 
