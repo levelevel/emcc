@@ -191,6 +191,24 @@ static void gen_read_reg(const char*dst, const char*src, const Type *tp, const c
     else         printf("\n");
 }
 
+// [reg+offset]からlenバイトを0で埋める
+static void gen_fill_zero(const char *reg, int offset, int len) {
+    while (len) {
+        if (len>=8) {
+            printf("  mov QWORD PTR [%s+%d], 0\n", reg, offset);
+            len -= 8; offset += 8;
+        } else if (len>=4) {
+            printf("  mov DWORD PTR [%s+%d], 0\n", reg, offset);
+            len -= 4; offset += 4;
+        } else if (len>=2) {
+            printf("  mov WORD PTR [%s+%d], 0\n", reg, offset);
+            len -= 2; offset += 2;
+        } else if (len>=1) {
+            printf("  mov BYTE PTR [%s+%d], 0\n", reg, offset);
+            len -= 1; offset += 1;
+        }
+    }
+}
 //array_size個のノード(ND_LIST)をarray_size*data_sizeのtype型のバイト列に変換して返す。
 //定数でないノードがあればNULLを返す。
 static char *get_byte_string(Node *node, int array_size, int data_size, TPType type) {
@@ -259,13 +277,14 @@ static void gen_array_init_sub(Type *tp, Node *init, int offset) {
     if (tp->ptr_of->type==CHAR && init->type==ND_STRING) {
         //文字列リテラルによる初期化: char a[]="ABC";
         data_len = init->tp->array_size;
-        if (array_size > data_len) array_size = data_len;
+        if (array_size < data_len) data_len = array_size;
         // [rdi++] = [rsi++] を rcx回繰り返す
         printf("  mov rdi, QWORD PTR [rsp]\n");
         if (offset) printf("  add rdi, %d\n", offset);
         printf("  lea rsi, BYTE PTR .LC%03ld\n", init->val);
-        printf("  mov rcx, %d\n", array_size);
+        printf("  mov rcx, %d\n", data_len);
         printf("  rep movsb\n");
+        if (array_size > data_len) gen_fill_zero("rdi", 0, array_size-data_len);
         return;
     }
 
@@ -274,31 +293,32 @@ static void gen_array_init_sub(Type *tp, Node *init, int offset) {
     // int  b[]={1, 2, 4, 8}
     int type_size = size_of(tp->ptr_of);   //左辺の型のサイズ
     data_len = init->lst->len;
-    if (array_size > data_len) array_size = data_len;
-    char *data = get_byte_string(init, array_size, type_size, tp->ptr_of->type);
+    if (array_size < data_len) data_len = array_size;
+    char *data = get_byte_string(init, data_len, type_size, tp->ptr_of->type);
     if (data) { //定数のみの初期値
+        int i;
         printf("  mov rdi, QWORD PTR [rsp]\n");
         switch (type_size) {
         case 1:
-            for (int i=0; i<array_size; i++) {
+            for (i=0; i<data_len; i++) {
                 printf("  movb BYTE PTR [rdi+%d], %d\n", i*type_size+offset, data[i]);
             }
             break;
         case 2: ;
             short *datas = (short*)data;
-            for (int i=0; i<array_size; i++) {
+            for (i=0; i<data_len; i++) {
                 printf("  mov WORD PTR [rdi+%d], %d\n", i*type_size+offset, datas[i]);
             }
             break;
         case 4: ;
             int *datai = (int*)data;
-            for (int i=0; i<array_size; i++) {
+            for (i=0; i<data_len; i++) {
                 printf("  mov DWORD PTR [rdi+%d], %d\n", i*type_size+offset, datai[i]);
             }
             break;
         case 8: ;
             long *datal = (long*)data;
-            for (int i=0; i<array_size; i++) {
+            for (i=0; i<data_len; i++) {
                 printf("  mov QWORD PTR [rdi+%d], %ld\n", i*type_size+offset, datal[i]);
             }
             break;
@@ -306,9 +326,11 @@ static void gen_array_init_sub(Type *tp, Node *init, int offset) {
             _ERROR_;
             break;
         }
+        if (array_size > data_len) gen_fill_zero("rdi", i*type_size+offset, (array_size-data_len)*type_size);
     } else {    //初期値に定数でない式を含む場合
         Node **nodes = (Node**)init->lst->data;
-        for (int i=0; i<array_size; i++) {
+        int i;
+        for (i=0; i<data_len; i++) {
             gen(nodes[i]);
             printf("  pop rax\n");
             printf("  mov rdi, QWORD PTR [rsp]\n");
@@ -318,6 +340,7 @@ static void gen_array_init_sub(Type *tp, Node *init, int offset) {
                 reg_name_of_type("rax", tp->ptr_of));
             printf("  push rdi\n");
         }
+        if (array_size > data_len) gen_fill_zero("rdi", i*type_size+offset, (array_size-data_len)*type_size);
     }
 }
 static void gen_array_init(Node *node) {

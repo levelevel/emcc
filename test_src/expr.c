@@ -596,33 +596,38 @@ static int af2(int *a){return a[0]+a[1]+a[2];}
 static int array2() {
     int a[4]={1,2,3,4}, *p=a, *q=&a[2], *r=a+3;
     int b[4]={1,2,3,a[3]};
-    return af2(a)==6 && p[1]==2 && *q==3 && *r==4 && b[3]==4;
+    int c[4]={1};
+    return af2(a)==6 && p[1]==2 && *q==3 && *r==4 && b[3]==4 && af2(c)==1;
 }
 static _Bool af2b(_Bool *a){return a[0]+a[1]+a[2];}
 static int array2b() {
     _Bool a[4]={1,2,3,4}, *p=a, *q=&a[2], *r=a+3;
     _Bool b[4]={1,2,3,a[3]};
-    return af2b(a)==1 && p[1]==1 && *q==1 && *r==1 && b[3]==1;
+    _Bool c[4]={1};
+    return af2b(a)==1 && p[1]==1 && *q==1 && *r==1 && b[3]==1 && af2b(c)==1;
 }
 static char af2c(char *a){return a[0]+a[1]+a[2];}
 static int array2c() {
     char a[4]={1,2,3,4}, *p=a, *q=&a[2], *r=a+3;
     char b[4]={1,2,3,a[3]};
+    char c[4]={1};
     char s1[]="ab" "c", s2[4]={'A', 'B', 'C', 0};
-    return af2c(a)==6 && p[1]==2 && *q==3 && *r==4 && b[3]==4
+    return af2c(a)==6 && p[1]==2 && *q==3 && *r==4 && b[3]==4 && af2c(c)==1
         && strcmp(s1, "abc")==0 && strcmp(s2, "ABC")==0;
 }
 static short af2s(short *a){return a[0]+a[1]+a[2];}
 static int array2s() {
     short a[4]={1,2,3,4}, *p=a, *q=&a[2], *r=a+3;
     short b[4]={1,2,3,a[3]};
-    return af2s(a)==6 && p[1]==2 && *q==3 && *r==4 && b[3]==4;
+    short c[4]={1};
+    return af2s(a)==6 && p[1]==2 && *q==3 && *r==4 && b[3]==4 && af2s(c)==1;
 }
 static long af2l(long *a){return a[0]+a[1]+a[2];}
 static int array2l() {
     long a[4]={1,2,3,4}, *p=a, *q=&a[2], *r=a+3;
     long b[4]={1,2,3,a[3]};
-    return af2l(a)==6 && p[1]==2 && *q==3 && *r==4 && b[3]==4;
+    long c[4]={1};
+    return af2l(a)==6 && p[1]==2 && *q==3 && *r==4 && b[3]==4 && af2l(c)==1;
 }
 static int array3() {   //2次元
     int a[4][5], *p=(int*)a, b[4][5][6], *q=(int*)b;
@@ -661,8 +666,9 @@ static int array3l() {
 }
 static int array4() {   //2次元+初期化
     int x=5, a[2][3]={{0,1,2},{3,4,x}};
+    int c[2][2]={{1},{2}};
     return
-        a[0][0]==0 && a[1][0]==3 && a[1][2]==5;
+        a[0][0]==0 && a[1][0]==3 && a[1][2]==5 && c[0][1]+c[1][1]==0;
 }
 static int array4c() {
     char x=5, a[2][3]={{0,1,2},{3,4,x}};
@@ -670,11 +676,12 @@ static int array4c() {
         {{1,2,3},{4,5,6}},
         {"ab", "AB"},
     };
+    char c[2][2]={{1},{2}};
     char s[][4]={"abc", "ABC"};
     char *sp[]={"abc", "ABC"};
     return
         a[0][0]==0 && a[1][0]==3 && a[1][2]==5 &&
-        b[0][1][1]==5 && b[1][1][1]=='B' && strcmp(b[1][0],"ab")==0 &&
+        b[0][1][1]==5 && b[1][1][1]=='B' && strcmp(b[1][0],"ab")==0 && c[0][1]+c[1][1]==0 &&
         s[0][0]=='a' && s[1][2]=='C' && strcmp(s[0],"abc")==0 && strcmp(s[1],"ABC")==0 &&
         sp[0][2]=='c' && strcmp(sp[1], "ABC")==0;
 }
@@ -774,7 +781,7 @@ static int array() {
     return 1;
 }
 
-GLOBAL char sg1_str1[5];
+GLOBAL char sg1_str1[4];
 static int string1(void) {
     char buf[20];
     strcpy(buf, "abc");
@@ -783,10 +790,12 @@ static int string1(void) {
     p[0] = 0;
     p[1] = "ABCD";
 
-    char str1[5] = "ABC";
+    char str1[4] = "ABC";   //短い
     char str2[ ] = "ABC";
     char str3[4] = "ABCDE"; //長すぎる
     char str4[3] = "A\0B";  //途中にnul、最後がnulでない
+    char str5[19] = "ABC";  //短い
+    char str6[19] = "ABC\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0";
 
     return
         strcmp(buf, "abc")==0 &&
@@ -795,11 +804,12 @@ static int string1(void) {
         strcmp(str2, "ABC")==0 && strlen(str2)==3 &&
         strncmp(str3, "ABCD", 4)==0 &&
         str4[1]==0 && str4[2]=='B' &&
-        strcmp(str1, sg1_str1)==0;
+        strcmp(str1, sg1_str1)==0 &&
+        memcmp(str5, str6, sizeof(str5))==0;
 }
 GLOBAL char sg1_buf[20];
 GLOBAL char*sg1_p[4];
-GLOBAL char sg1_str1[5] = "ABC";
+GLOBAL char sg1_str1[4] = "ABC";
 GLOBAL char sg1_str2[ ] = "ABC";
 GLOBAL char sg1_str3[4] = "ABCDE"; //長すぎる
 GLOBAL char sg1_str4[3] = "A\0B";  //途中にnul、最後がnulでない

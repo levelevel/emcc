@@ -10,7 +10,9 @@
                                      ^ 未宣言の関数コールです。
 9cc:Warning: tmp/test_src.c:495:     return 0;
                                      ^ static int**型の関数pointer3がint型を返しています
-9cc:Warning: tmp/test_src.c:1114: }
+9cc:Warning: tmp/test_src.c:792:         memcmp(str5, str6, sizeof(str5))==0;
+                                         ^ 未宣言の関数コールです。
+9cc:Warning: tmp/test_src.c:1124: }
                                    ^ 関数が戻り値を返していません
   OK: addsub1
   OK: addsub1b
