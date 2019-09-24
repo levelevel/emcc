@@ -595,21 +595,21 @@ static int array1l() {
 static int af2(int *a){return a[0]+a[1]+a[2];}
 static int array2() {
     int a[4]={1,2,3,4}, *p=a, *q=&a[2], *r=a+3;
-    int b[4]={1,2,3,a[3]};
+    int b[4]={1,2,{3,99},a[3]};
     int c[4]={1};
     return af2(a)==6 && p[1]==2 && *q==3 && *r==4 && b[3]==4 && af2(c)==1;
 }
 static _Bool af2b(_Bool *a){return a[0]+a[1]+a[2];}
 static int array2b() {
     _Bool a[4]={1,2,3,4}, *p=a, *q=&a[2], *r=a+3;
-    _Bool b[4]={1,2,3,a[3]};
+    _Bool b[4]={1,2,{3,99},a[3]};
     _Bool c[4]={1};
     return af2b(a)==1 && p[1]==1 && *q==1 && *r==1 && b[3]==1 && af2b(c)==1;
 }
 static char af2c(char *a){return a[0]+a[1]+a[2];}
 static int array2c() {
     char a[4]={1,2,3,4}, *p=a, *q=&a[2], *r=a+3;
-    char b[4]={1,2,3,a[3]};
+    char b[4]={1,2,{3,99},a[3]};
     char c[4]={1};
     char s1[]="ab" "c", s2[4]={'A', 'B', 'C', 0};
     return af2c(a)==6 && p[1]==2 && *q==3 && *r==4 && b[3]==4 && af2c(c)==1
@@ -618,14 +618,14 @@ static int array2c() {
 static short af2s(short *a){return a[0]+a[1]+a[2];}
 static int array2s() {
     short a[4]={1,2,3,4}, *p=a, *q=&a[2], *r=a+3;
-    short b[4]={1,2,3,a[3]};
+    short b[4]={1,2,{3,99},a[3]};
     short c[4]={1};
     return af2s(a)==6 && p[1]==2 && *q==3 && *r==4 && b[3]==4 && af2s(c)==1;
 }
 static long af2l(long *a){return a[0]+a[1]+a[2];}
 static int array2l() {
     long a[4]={1,2,3,4}, *p=a, *q=&a[2], *r=a+3;
-    long b[4]={1,2,3,a[3]};
+    long b[4]={1,2,{3,99},a[3]};
     long c[4]={1};
     return af2l(a)==6 && p[1]==2 && *q==3 && *r==4 && b[3]==4 && af2l(c)==1;
 }
@@ -687,12 +687,12 @@ static int array4c() {
 }
 
 GLOBAL int ga2_a[4]={1,2,3,4};
-static int ga2_b[4]={1,2,3,4}, *ga2_p=&ga2_a, *ga2_q=&ga2_b[2], *ga2_r=ga2_a+3;
+static int ga2_b[4]={1,2,{3,99},4}, *ga2_p=&ga2_a, *ga2_q=&ga2_b[2], *ga2_r=ga2_a+3;
 static int garray2() {
     return af2(ga2_a)==6 && ga2_p[1]==2 && *ga2_q==3 && *ga2_r==4;
 }
 GLOBAL char ga2c_a[4]={1,2,3,4};
-static char ga2c_b[4]={1,2,3,4}, *ga2c_p=&ga2c_a, *ga2c_q=&ga2c_b[2], *ga2c_r=ga2c_a+3;
+static char ga2c_b[4]={1,2,{3,99},4}, *ga2c_p=&ga2c_a, *ga2c_q=&ga2c_b[2], *ga2c_r=ga2c_a+3;
 static char ga2c_s1[]="ab" "c", ga2c_s2[4]={'A', 'B', 'C', 0};
 static int garray2c() {
     return af2c(ga2c_a)==6 && ga2c_p[1]==2 && *ga2c_q==3 && *ga2c_r==4
@@ -700,11 +700,11 @@ static int garray2c() {
 }
 
 static int sarray2() {
-    static int a[4]={1,2,3,4}, *p=a, *q=&a[2], *r=a+3;
+    static int a[4]={1,2,{3,99},4}, *p=a, *q=&a[2], *r=a+3;
     return af2(a)==6 && p[1]==2 && *q==3 && *r==4;
 }
 static int sarray2c() { //static 1次元+初期化
-    static char a[4]={1,2,3,4}, *p=a, *q=&a[2], *r=a+3;
+    static char a[4]={1,2,{3,99},4}, *p=a, *q=&a[2], *r=a+3;
     static char s1[]="ab" "c", s2[4]={'A', 'B', 'C', 0};
     return af2c(a)==6 && p[1]==2 && *q==3 && *r==4
         && strcmp(s1, "abc")==0 && strcmp(s2, "ABC")==0;

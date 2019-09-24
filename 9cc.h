@@ -18,6 +18,7 @@ typedef struct {
 #define vec_data(vec,i) ((vec)->data[i])
 #define lst_len vec_len
 #define lst_data vec_data
+#define get_lst_node(vec,i) ((Node*)vec_data(vec,i))
 
 //マップ --------------------------------------------
 typedef struct {

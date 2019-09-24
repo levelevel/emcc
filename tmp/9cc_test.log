@@ -703,7 +703,84 @@ int main(){char *p[]="ABC";}
 int main(){int a; a[1];}
 9cc:Error: selftest:1: int main(){int a; a[1];}
                                             ^ ここでは配列を指定できません
+# selftest ----------------
+int main(){char a[3]="abc"; return 0;}
+9cc:Warning: selftest:1: int main(){char a[3]="abc"; return 0;}
+                                                  ^ 初期化リストが配列サイズを超えています
+# selftest ----------------
+int main(){int a[2]={1,2,3}; return 0;}
+9cc:Warning: selftest:1: int main(){int a[2]={1,2,3}; return 0;}
+                                                  ^ 初期化リストが配列サイズを超えています
+# selftest ----------------
+# [LOCAL配列の初期化:非定数式]
+int main(){int x, a[2]={x,2,3}; return 0;}
+9cc:Warning: selftest:1: int main(){int x, a[2]={x,2,3}; return 0;}
+                                                     ^ 初期化リストが配列サイズを超えています
+# selftest ----------------
+int main(){int a[2][2]={{1,2,3},{4,5,6}}; return 0;}
+9cc:Warning: selftest:1: int main(){int a[2][2]={{1,2,3},{4,5,6}}; return 0;}
+                                                      ^ 初期化リストが配列サイズを超えています
+# selftest ----------------
+int main(){int a[2][2]={{1,2},{3,4},{5,6}}; return 0;}
+9cc:Warning: selftest:1: int main(){int a[2][2]={{1,2},{3,4},{5,6}}; return 0;}
+                                                              ^ 初期化リストが配列サイズを超えています
+# selftest ----------------
+int main(){char a[2][2]={"ab","cd"}; return 0;}
+9cc:Warning: selftest:1: int main(){char a[2][2]={"ab","cd"}; return 0;}
+                                                     ^ 初期化リストが配列サイズを超えています
+# selftest ----------------
+int main(){int a[3]={1,{2,99},3}; return 0;}
+9cc:Warning: selftest:1: int main(){int a[3]={1,{2,99},3}; return 0;}
+                                                 ^ スカラーがリストで初期化されています
+# selftest ----------------
+int main(){static char a[3]="abc"; return 0;}
+9cc:Warning: selftest:1: int main(){static char a[3]="abc"; return 0;}
+                                                         ^ 初期化リストが配列サイズを超えています
+# selftest ----------------
+int main(){static int a[2]={1,2,3}; return 0;}
+9cc:Warning: selftest:1: int main(){static int a[2]={1,2,3}; return 0;}
+                                                         ^ 初期化リストが配列サイズを超えています
+# selftest ----------------
+int main(){static int a[2][2]={{1,2,3},{4,5,6}}; return 0;}
+9cc:Warning: selftest:1: int main(){static int a[2][2]={{1,2,3},{4,5,6}}; return 0;}
+                                                             ^ 初期化リストが配列サイズを超えています
+# selftest ----------------
+int main(){static int a[2][2]={{1,2},{3,4},{5,6}}; return 0;}
+9cc:Warning: selftest:1: int main(){static int a[2][2]={{1,2},{3,4},{5,6}}; return 0;}
+                                                                     ^ 初期化リストが配列サイズを超えています
+# selftest ----------------
+int main(){static char a[2][2]={"ab","cd"}; return 0;}
+9cc:Warning: selftest:1: int main(){static char a[2][2]={"ab","cd"}; return 0;}
+                                                            ^ 初期化リストが配列サイズを超えています
+# selftest ----------------
+int main(){static int a[3]={1,{2,99},3}; return 0;}
+9cc:Warning: selftest:1: int main(){static int a[3]={1,{2,99},3}; return 0;}
+                                                        ^ スカラーがリストで初期化されています
+# selftest ----------------
+char a[3]="abc"; void main(){}
+9cc:Warning: selftest:1: char a[3]="abc"; void main(){}
+                                       ^ 初期化リストが配列サイズを超えています
+# selftest ----------------
+int a[2]={1,2,3}; void main(){}
+9cc:Warning: selftest:1: int a[2]={1,2,3}; void main(){}
+                                       ^ 初期化リストが配列サイズを超えています
+# selftest ----------------
+int a[2][2]={{1,2,3},{4,5,6}}; void main(){}
+9cc:Warning: selftest:1: int a[2][2]={{1,2,3},{4,5,6}}; void main(){}
+                                           ^ 初期化リストが配列サイズを超えています
+# selftest ----------------
+int a[2][2]={{1,2},{3,4},{5,6}}; void main(){}
+9cc:Warning: selftest:1: int a[2][2]={{1,2},{3,4},{5,6}}; void main(){}
+                                                   ^ 初期化リストが配列サイズを超えています
+# selftest ----------------
+char a[2][2]={"ab","cd"}; void main(){}
+9cc:Warning: selftest:1: char a[2][2]={"ab","cd"}; void main(){}
+                                          ^ 初期化リストが配列サイズを超えています
+# selftest ----------------
+int a[3]={1,{2,99},3}; void main(){}
+9cc:Warning: selftest:1: int a[3]={1,{2,99},3}; void main(){}
+                                      ^ スカラーがリストで初期化されています
 9cc self test
-Total : 153
-   Ok : 153
+Total : 172
+   Ok : 172
    NG : 0

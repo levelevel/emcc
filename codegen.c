@@ -209,19 +209,24 @@ static void gen_fill_zero(const char *reg, int offset, int len) {
         }
     }
 }
-//array_size個のノード(ND_LIST)をarray_size*data_sizeのtype型のバイト列に変換して返す。
+//ND_LISTのarray_size個のノードをarray_size*data_sizeのtype型のバイト列に変換して返す。
 //定数でないノードがあればNULLを返す。
-static char *get_byte_string(Node *node, int array_size, int data_size, TPType type) {
+static char *get_byte_string(Node *node, int start_idx, int array_size, int data_size, TPType type) {
+    int end_idx = start_idx + array_size;
     assert(node->type==ND_LIST);
+    assert(node->lst->len>=end_idx);
     int byte_len = array_size * data_size;
     char *byte_string = malloc(byte_len);
     char *p = byte_string;
     long val;
     Node **nodes = (Node**)node->lst->data;
-    for (int i=0; i<array_size; i++) {
+    for (int i=start_idx; i<end_idx; i++) {
         if (nodes[i]->type==ND_LIST) {
-            _ERROR_;
-        } else if (!node_is_const(nodes[i],&val)) {
+            warning_at(nodes[i]->input, "スカラーがリストで初期化されています");
+            if (!node_is_const(lst_data(nodes[i]->lst,0), &val)) return NULL;
+            if (lst_len(nodes[i]->lst)>1) warning_at(get_lst_node(nodes[i]->lst,1)->input,
+                "初期化リストが配列サイズを超えています");
+        } else if (!node_is_const(nodes[i], &val)) {
             return NULL;
         }
         if (type==BOOL) {
@@ -263,15 +268,37 @@ static int gen(Node*node);
 static void gen_op2(Node *node);
 
 //ローカル変数の配列の初期化。スタックトップに変数のアドレスが設定されている前提。
-static void gen_array_init_sub(Type *tp, Node *init, int offset) {
+//戻り値は初期値を設定した要素数。
+// [2]   ={1,2,3,4,5,6}
+// [2][2]={1,2,3,4,5,6}
+// [2][2]={{1,2},{3,4},{5,6}}
+static int gen_array_init_local_sub(Type *tp, Node *init, int start_idx, int offset) {
     int array_size = tp->array_size;  //配列のサイズ
     int data_len;
 
     if (tp->ptr_of->type==ARRAY) {
+        //ネストした配列
+        int idx = 0;
         for (int i=0; i<array_size; i++) {
-            gen_array_init_sub(tp->ptr_of, init->lst?lst_data(init->lst, i):init, offset+i*size_of(tp->ptr_of));
+            int new_offset = offset + i*size_of(tp->ptr_of);
+            if (init->type==ND_STRING) {
+                gen_array_init_local_sub(tp->ptr_of, init, 0, new_offset);
+                idx++;
+            } else {
+                Node *node = lst_data(init->lst, idx);
+                if (node->type==ND_LIST||node->type==ND_STRING) {
+                    int cnt = gen_array_init_local_sub(tp->ptr_of, node, 0, new_offset);
+                    idx++;
+                    if (node->type==ND_LIST && cnt < lst_len(node->lst)) {
+                        warning_at(get_lst_node(node->lst, cnt)->input, "初期化リストが配列サイズを超えています");
+                    }
+                } else {
+                    gen_array_init_local_sub(tp->ptr_of, init, idx, new_offset);
+                    idx += tp->ptr_of->array_size;
+                }
+            }
         }
-        return;
+        return array_size;
     }
 
     if (tp->ptr_of->type==CHAR && init->type==ND_STRING) {
@@ -285,7 +312,10 @@ static void gen_array_init_sub(Type *tp, Node *init, int offset) {
         printf("  mov rcx, %d\n", data_len);
         printf("  rep movsb\n");
         if (array_size > data_len) gen_fill_zero("rdi", 0, array_size-data_len);
-        return;
+        if (array_size < init->tp->array_size) {
+            warning_at(init->input+array_size+1, "初期化リストが配列サイズを超えています");
+        }
+        return array_size;
     }
 
     assert(init->type==ND_LIST);
@@ -294,9 +324,9 @@ static void gen_array_init_sub(Type *tp, Node *init, int offset) {
     int type_size = size_of(tp->ptr_of);   //左辺の型のサイズ
     data_len = init->lst->len;
     if (array_size < data_len) data_len = array_size;
-    char *data = get_byte_string(init, data_len, type_size, tp->ptr_of->type);
+    char *data = get_byte_string(init, start_idx, data_len, type_size, tp->ptr_of->type);
+    int i;
     if (data) { //定数のみの初期値
-        int i;
         printf("  mov rdi, QWORD PTR [rsp]\n");
         switch (type_size) {
         case 1:
@@ -326,10 +356,8 @@ static void gen_array_init_sub(Type *tp, Node *init, int offset) {
             _ERROR_;
             break;
         }
-        if (array_size > data_len) gen_fill_zero("rdi", i*type_size+offset, (array_size-data_len)*type_size);
     } else {    //初期値に定数でない式を含む場合
         Node **nodes = (Node**)init->lst->data;
-        int i;
         for (i=0; i<data_len; i++) {
             gen(nodes[i]);
             printf("  pop rax\n");
@@ -340,27 +368,50 @@ static void gen_array_init_sub(Type *tp, Node *init, int offset) {
                 reg_name_of_type("rax", tp->ptr_of));
             printf("  push rdi\n");
         }
-        if (array_size > data_len) gen_fill_zero("rdi", i*type_size+offset, (array_size-data_len)*type_size);
     }
+    if (array_size > data_len) gen_fill_zero("rdi", i*type_size+offset, (array_size-data_len)*type_size);
+    return array_size;
 }
-static void gen_array_init(Node *node) {
+static void gen_array_init_local(Node *node) {
     assert(node->type=='=');
     assert(node->lhs->type==ND_LOCAL_VAR);
     assert(node->lhs->tp->type==ARRAY);
-    gen_array_init_sub(node->lhs->tp, node->rhs, 0);
+    Node *init = node->rhs; //ND_LIST/ND_STRING
+    int cnt = gen_array_init_local_sub(node->lhs->tp, init, 0, 0);
+    if (init->type==ND_LIST && cnt < lst_len(init->lst)) {
+        warning_at(get_lst_node(init->lst, cnt)->input, "初期化リストが配列サイズを超えています");
+    }
     printf("  pop rax\n");
 }
 
 //グローバル変数の配列の初期化
-static void gen_array_init_global_sub(Type *tp, Node *init) {
+//戻り値は初期値を設定した要素数。
+static int gen_array_init_global_sub(Type *tp, Node *init, int start_idx) {
     int array_size  = tp->array_size;  //配列のサイズ
     int data_len;
 
     if (tp->ptr_of->type==ARRAY) {
+        //ネストした配列
+        int idx = 0;
         for (int i=0; i<array_size; i++) {
-            gen_array_init_global_sub(tp->ptr_of, init->lst?lst_data(init->lst, i):init);
+            if (init->type==ND_STRING) {
+                gen_array_init_global_sub(tp->ptr_of, init, 0);
+                idx++;
+            } else {
+                Node *node = lst_data(init->lst, idx);
+                if (node->type==ND_LIST||node->type==ND_STRING) {
+                    int cnt = gen_array_init_global_sub(tp->ptr_of, node, 0);
+                    idx++;
+                    if (node->type==ND_LIST && cnt < lst_len(node->lst)) {
+                        warning_at(get_lst_node(node->lst, cnt)->input, "初期化リストが配列サイズを超えています");
+                    }
+                } else {
+                    gen_array_init_global_sub(tp->ptr_of, init, idx);
+                    idx += tp->ptr_of->array_size;
+                }
+            }
         }
-        return;
+        return array_size;
     }
 
     if (tp->ptr_of->type==CHAR &&
@@ -378,7 +429,10 @@ static void gen_array_init_global_sub(Type *tp, Node *init) {
             printf("  .string \"%s\"\n", escape_string(string));
         }
         if (array_size > data_len) printf("  .zero %d\n", array_size-data_len);
-        return;
+        if (array_size < init->tp->array_size) {
+            warning_at(init->input+array_size+1, "初期化リストが配列サイズを超えています");
+        }
+        return array_size;
     }
 
     assert(init->type==ND_LIST);
@@ -394,7 +448,13 @@ static void gen_array_init_global_sub(Type *tp, Node *init) {
         var = NULL;
         //nodes[i]がアドレス+定数の形式になっているかどうかを調べる。
         //varにND_ADDRESS(&var)のノード、valに定数を返す
-        if (!node_is_const_or_address(nodes[i], &val, &var)) {
+        if (nodes[i]->type==ND_LIST) {
+            warning_at(nodes[i]->input, "スカラーがリストで初期化されています");
+            if (!node_is_const_or_address(lst_data(nodes[i]->lst,0), &val, &var)) {
+                error_at(nodes[i]->input, "初期値が定数式ではありません");
+            }
+            if (lst_len(nodes[i]->lst)>1) warning_at(((Node*)lst_data(nodes[i]->lst,1))->input, "初期化リストが配列サイズを超えています");
+        } else if (!node_is_const_or_address(nodes[i], &val, &var)) {
             error_at(nodes[i]->input, "初期値が定数式ではありません");
         }
         if (var && val) {
@@ -412,13 +472,18 @@ static void gen_array_init_global_sub(Type *tp, Node *init) {
         }
     }
     if (array_size > data_len) printf("  .zero %d\n", (array_size-data_len)*type_size);
+    return array_size;
 }
 
-static void gen_array_init_global(Node *node) {
+static void gen_array_init_local_global(Node *node) {
     assert(node->type=='=');
     assert(node->lhs->type==ND_GLOBAL_VAR || node_is_local_static_var(node->lhs));
     assert(node->lhs->tp->type==ARRAY);
-    gen_array_init_global_sub(node->lhs->tp, node->rhs);
+    Node *init = node->rhs; //ND_LIST/ND_STRING
+    int cnt = gen_array_init_global_sub(node->lhs->tp, init, 0);
+    if (init->type==ND_LIST && cnt < lst_len(init->lst)) {
+        warning_at(get_lst_node(init->lst, cnt)->input, "初期化リストが配列サイズを超えています");
+    }
 }
 
 //式を左辺値として評価し、そのアドレスをPUSHする
@@ -766,7 +831,7 @@ static int gen(Node*node) {
         if (node->lhs->tp->type==ARRAY) {   //ローカル変数の配列の初期値
             //ここに到達するのはローカル変数の配列の初期化のはず
             gen_lval(node->lhs);
-            gen_array_init(node);
+            gen_array_init_local(node);
             return 0;
         } else {
             gen(node->rhs);
@@ -1148,7 +1213,7 @@ static void gen_global_var(Node *node) {
             }
             break;
         case ARRAY:
-            gen_array_init_global(node->rhs);
+            gen_array_init_local_global(node->rhs);
             return;
         default:
             _NOT_YET_(node);
