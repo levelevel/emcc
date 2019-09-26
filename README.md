@@ -12,9 +12,11 @@
 
 ## セルフホストに向けたTODOリスト
 
-- 多次元配列の初期化
+- _Static_assert
+- 引数の数が6より多い関数
 - より厳密なC標準準拠（GCCの-std=c11 -pedantic-errors相当）
 - **構造体・共用体の実装**
+  - 定義
   - `.`
   - `->`
   - メンバのアラインメント
@@ -23,11 +25,12 @@
 - プリプロセッサを通す
 - セルフホスト用に最低限のヘッダファイルを用意する
 
-## 実装予定なし
+## 当面実装予定なし
 
 - ローカル配列のサイズが定数でないケース。
 - [指示付きの初期化子 (Designated Initializer)](http://seclan.dll.jp/c99d/c99d07.htm#dt19991025)
-- 実数
+- [複合リテラル (Compound Literal)](http://seclan.dll.jp/c99d/c99d07.htm#dt19991101)
+- 実数（float, double, long double, _Complex, _Imaginar）
 
 ## 独自拡張
 - 関数の最後に明示的なreturnが無い場合でも、最後に評価した値を返す。

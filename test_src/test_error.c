@@ -163,11 +163,13 @@ struct {
     //LOCAL配列の初期化
     {WR, "char a[3]=\"abc\"; return 0;"},
     {WR, "int a[2]={1,2,3}; return 0;"},
-    {WR, "int x, a[2]={x,2,3}; return 0;",     "LOCAL配列の初期化:非定数式"},
     {WR, "int a[2][2]={{1,2,3},{4,5,6}}; return 0;"},
     {WR, "int a[2][2]={{1,2},{3,4},{5,6}}; return 0;"},
     {WR, "char a[2][2]={\"ab\",\"cd\"}; return 0;"},
     {WR, "int a[3]={1,{2,99},3}; return 0;"},
+    {WR, "int x=1, a[2]={x,2,3}; return 0;",     "LOCAL配列の初期化:非定数式"},
+    {WR, "int x=1, a[2][2]={{x,2,3},{4,5,6}}; return 0;"},
+    {WR, "int x=1, a[2][2]={{x,2},{3,4},{5,6}}; return 0;"},
     //LOCAL STATIC配列の初期化
     {WR, "static char a[3]=\"abc\"; return 0;"},
     {WR, "static int a[2]={1,2,3}; return 0;"},

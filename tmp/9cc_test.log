@@ -712,11 +712,6 @@ int main(){int a[2]={1,2,3}; return 0;}
 9cc:Warning: selftest:1: int main(){int a[2]={1,2,3}; return 0;}
                                                   ^ 初期化リストが配列サイズを超えています
 # selftest ----------------
-# [LOCAL配列の初期化:非定数式]
-int main(){int x, a[2]={x,2,3}; return 0;}
-9cc:Warning: selftest:1: int main(){int x, a[2]={x,2,3}; return 0;}
-                                                     ^ 初期化リストが配列サイズを超えています
-# selftest ----------------
 int main(){int a[2][2]={{1,2,3},{4,5,6}}; return 0;}
 9cc:Warning: selftest:1: int main(){int a[2][2]={{1,2,3},{4,5,6}}; return 0;}
                                                       ^ 初期化リストが配列サイズを超えています
@@ -732,6 +727,19 @@ int main(){char a[2][2]={"ab","cd"}; return 0;}
 int main(){int a[3]={1,{2,99},3}; return 0;}
 9cc:Warning: selftest:1: int main(){int a[3]={1,{2,99},3}; return 0;}
                                                  ^ スカラーがリストで初期化されています
+# selftest ----------------
+# [LOCAL配列の初期化:非定数式]
+int main(){int x=1, a[2]={x,2,3}; return 0;}
+9cc:Warning: selftest:1: int main(){int x=1, a[2]={x,2,3}; return 0;}
+                                                       ^ 初期化リストが配列サイズを超えています
+# selftest ----------------
+int main(){int x=1, a[2][2]={{x,2,3},{4,5,6}}; return 0;}
+9cc:Warning: selftest:1: int main(){int x=1, a[2][2]={{x,2,3},{4,5,6}}; return 0;}
+                                                           ^ 初期化リストが配列サイズを超えています
+# selftest ----------------
+int main(){int x=1, a[2][2]={{x,2},{3,4},{5,6}}; return 0;}
+9cc:Warning: selftest:1: int main(){int x=1, a[2][2]={{x,2},{3,4},{5,6}}; return 0;}
+                                                                   ^ 初期化リストが配列サイズを超えています
 # selftest ----------------
 int main(){static char a[3]="abc"; return 0;}
 9cc:Warning: selftest:1: int main(){static char a[3]="abc"; return 0;}
@@ -781,6 +789,6 @@ int a[3]={1,{2,99},3}; void main(){}
 9cc:Warning: selftest:1: int a[3]={1,{2,99},3}; void main(){}
                                       ^ スカラーがリストで初期化されています
 9cc self test
-Total : 172
-   Ok : 172
+Total : 174
+   Ok : 174
    NG : 0

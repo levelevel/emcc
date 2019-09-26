@@ -39,7 +39,11 @@ typedef enum {
     TK_SHORT,       //short
     TK_INT,         //int
     TK_LONG,        //long
+//  TK_FLOAT,       //float
+//  TK_DOUBLE,      //double
     TK_ENUM,        //enum
+    TK_STRUCT,      //struct
+    TK_UNION,       //union
     TK_TYPEOF,      //typeof（非標準）
     TK_SIGNED,      //signed
     TK_UNSIGNED,    //unsigned
@@ -77,6 +81,7 @@ typedef enum {
     TK_FOR,         //for
     TK_SIZEOF,      //sizeof
     TK_ALIGNOF,     //_Alignof (C11)
+    TK_POINTER,     //st->a
     TK_3DOTS,       // ...
     TK_EOF,         //入力の終わり
 } TKtype;
@@ -120,6 +125,8 @@ typedef enum {
     ND_ENUM_DEF,    //enum定義          name=enum名/NULL, lst=node(ND_ENUM)/NULL
     ND_ENUM,        //enum要素          name=要素名, val=値, lhs=node(ND_ENUN_DEF)
     ND_TYPEDEF,     //typedef           name=typedef名, tp->sclass=SC_TYPEDEF
+    ND_STRUCT_DEF,  //struct            name=struct名/NULL, lst=node
+    ND_UNION_DEF,   //union             name=union名/NULL, lst=node
     ND_LOCAL_VAR,   //ローカル変数の参照
     ND_GLOBAL_VAR,  //グローバル変数の参照
     ND_CAST,        //キャスト
@@ -141,6 +148,7 @@ typedef enum {
     ND_MINUS_ASSIGN,// -=
     ND_LOCAL_VAR_DEF,   //int A=B;      name=A, rhs=Node（"A=B"の形式の初期化式、初期値がない場合はNULL）
     ND_GLOBAL_VAR_DEF,  //int A=B;      同上
+    ND_MMEMBER_DEF, // struct {int A;}; name=A
     ND_IF,          // if(A)B else C    lhs->lhs=A, lhs->rhs=B, rhs=C
     ND_SWITCH,      // switch(A)B       lhs=A, rhs=B, lst=node(ND_CASE,ND_DEFAULT)
     ND_LABEL,       // label:B          name=label, rhs=B
@@ -171,7 +179,12 @@ typedef enum {
     INT,
     LONG,
     LONGLONG,
+    FLOAT,
+    DOUBLE,
+    LONGDOUBLE,
     ENUM,
+    STRUCT,
+    UNION,
     PTR,
     ARRAY,
     VARARGS,        //...

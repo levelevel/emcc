@@ -16,7 +16,9 @@
     init_declarator         = declarator ( "=" initializer )?
     storage_class_specifier = "typedef" | "static" | "extern" | "auto" | "register"
     type_specifier          = "void" | "_Bool" | "char" | "short" | "int" | "long" | "signed" | "unsigned"
-                            | enum_specifier | typedef_name
+                            | struct_or_union_specifier | enum_specifier | typedef_name
+    struct_or_union_specifier = ( "struct" | "union" ) identifier? "{" struct_declaration* "}"
+                            | ( "struct" | "union" ) identifier
     enum_specifier          = "enum" identifier? "{" enumerator ( "," enumerator )* ","? "}"
                             | "enum" identifier
     enumerator              = enumeration_constant ( "=" constant-expression )?
