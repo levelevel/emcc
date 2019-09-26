@@ -85,6 +85,7 @@ TokenDef TokenLst2[] = {
     {TK("sizeof"),   TK_SIZEOF},
     {TK("typeof"),   TK_TYPEOF},
     {TK("_Alignof"), TK_ALIGNOF},
+    {TK("_Static_assert"), TK_SASSERT},
     {NULL, 0, 0}
 };
 
@@ -413,6 +414,16 @@ void expect(TKtype type) {
     } else {
         error_at(input_str(), "%sが期待されています", get_NDtype_str(type));
     }
+}
+
+//次のトークンが識別子(TK_STRING)である場合stringを取得し、入力を1トークン読み進める。
+// それ以外の場合にはエラーを報告する。
+void expect_string(String *string) {
+    if (tokens[token_pos]->type != TK_STRING) {
+        error_at(input_str(), "文字列リテラルが期待されています");
+    }
+    *string = tokens[token_pos]->string;
+    token_pos++;
 }
 
 //次のトークンが識別子(TK_IDENT)であればnameを取得し、トークンを1つ読み進める。

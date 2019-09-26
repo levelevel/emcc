@@ -9,6 +9,7 @@
     function_definition     = declaration_specifiers declarator compound_statement
 - A.2.2 Declarations          http://port70.net/~nsz/c/c11/n1570.html#A.2.2
     declaration             = declaration_specifiers ( init_declarator ( "," init_declarator )* )? ";"
+                            | static_assert_declaration
     declaration_specifiers  = "typeof" "(" identifier ")"
                             | type_specifier          declaration_specifiers*
                             | storage_class_specifier declaration_specifiers*
@@ -32,6 +33,7 @@
                             | "{" init_list "," "}"
     init_list               = initializer
                             | init_list "," initializer
+    static_assert_declaration = "_Static_assert" "(" constant_expression "," string_literal ")" ";"
     //配列のサイズは定数の場合のみサポートする
     array_def               = "[" constant_expression? "]" ( "[" constant_expression "]" )*
     pointer                 = ( "*" type_qualifier* )*
@@ -93,11 +95,11 @@
                             | primary_expression "++"
                             | primary_expression "--"
     primary_expression      = num
-                            | string
+                            | string_literal
                             | identifier
                             |  "(" expression ")"
 */
-static Node *external_declaration(void);
+static void external_declaration(void);
 static Node *function_definition(Type *tp, char *name);
 static Node *declaration(Type *tp, char *name);
 static Node *init_declarator(Type *decl_spec, Type *tp, char *name);
@@ -107,6 +109,7 @@ static Node *parameter_type_list(void);
 static Node *parameter_declaration(void);
 static Node *initializer(void);
 static Node *init_list(void);
+static Node* static_assert_declaration(void);
 static Type *array_def(Type *tp);
 static Type *pointer(Type *tp);
 static Type *type_name(void);
@@ -147,8 +150,7 @@ void translation_unit(void) {
 //    external_declaration    = function_definition | declaration
 //    function_definition     = declaration_specifiers declarator compound_statement
 //    declaration             = declaration_specifiers init_declarator ( "," init_declarator )* ";"
-static Node *external_declaration(void) {
-    Node *node;
+static void external_declaration(void) {
     Type *tp;
     char *name;
     //          <-> declaration_specifiers
@@ -167,25 +169,26 @@ static Node *external_declaration(void) {
     if (token_is_type_spec()) {
         tp = declaration_specifiers();
         if (consume(';')) {
-            node = new_node(ND_TYPE_DECL, NULL, NULL, tp, input_str());
-            return node;
+            new_node(ND_TYPE_DECL, NULL, NULL, tp, input_str());
+            return;
         }
         tp = pointer(tp);
         if (token_is('(')) {    //int * ()
-            node = declaration(tp, NULL);
+            declaration(tp, NULL);
         } else if (!consume_ident(&name)) {
             error_at(input_str(), "型名の後に識別名がありません");
         } else if (token_is('(')) {
-            node = function_definition(tp, name);
+            function_definition(tp, name);
         } else {
-            node = declaration(tp, name);
+            declaration(tp, name);
         }
+    } else if (token_is(TK_SASSERT)) {
+        declaration(NULL, NULL);
     } else if (consume(';')) {
         //仕様書に記載はない？が、空の ; を読み飛ばす。
     } else {
         error_at(input_str(), "関数・変数の定義がありません");
     }
-    return node;
 }
 
 //関数の定義: lhs=引数(ND_LIST)、rhs=ブロック(ND_BLOCK)
@@ -216,6 +219,7 @@ static Node *function_definition(Type *tp, char *name) {
 }
 
 //    declaration             = declaration_specifiers ( init_declarator ( "," init_declarator )* )? ";"
+//                            | static_assert_declaration
 //    init_declarator         = declarator ( "=" initializer )?
 //    declarator              = pointer? direct_declarator
 //declaration_specifiers, pointer, identifierまで先読み済み
@@ -224,6 +228,9 @@ static Node *declaration(Type *tp, char *name) {
     Type *decl_spec;
 
     if (tp==NULL) {
+        if (token_is(TK_SASSERT)) {
+            return static_assert_declaration();
+        }
         //declaration_specifiers, pointer, identifierを先読みしていなければdecl_specを読む
         decl_spec = declaration_specifiers();
         if (consume(';')) {
@@ -485,6 +492,21 @@ static Node *init_list(void) {
     node->tp = last_node->tp;
 
     return node;
+}
+
+//    static_assert_declaration = "_Static_assert" "(" constant_expression "," string_literal ")" ";"
+static Node* static_assert_declaration(void) {
+    char *input = input_str();
+    expect(TK_SASSERT);
+    expect('(');
+    Node *node = constant_expression();
+    expect(',');
+    String string;
+    expect_string(&string);
+    expect(')');
+    expect(';');
+    if (node->val==0) error_at(input, "static assertionに失敗しました: %s", string.buf);
+    return new_node_empty(input);
 }
 
 //    配列のサイズは定数の場合のみサポートする
@@ -885,7 +907,7 @@ static Node *compound_statement(int is_func_body) {
 
     while (!consume('}')) {
         Node *block_item;
-        if (token_is_type_spec()) {
+        if (token_is_type_spec() || token_is(TK_SASSERT)) {
             block_item = declaration(NULL, NULL);
         } else {
             block_item = statement();
@@ -919,6 +941,7 @@ static Node *expression(void) {
 }
 
 //    constant_expression     = conditional_expression
+// 戻り値のnode->valに評価された低数値を設定
 static Node *constant_expression(void) {
     char *input = input_str();
     Node *node = conditional_expression();

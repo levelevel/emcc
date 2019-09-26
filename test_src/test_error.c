@@ -182,6 +182,10 @@ struct {
     {WR, "int a[2][2]={{1,2},{3,4},{5,6}}; void main(){}"},
     {WR, "char a[2][2]={\"ab\",\"cd\"}; void main(){}"},
     {WR, "int a[3]={1,{2,99},3}; void main(){}"},
+
+    {ER, "_Static_assert(0,\"aaa\");"},
+    {ER, "_Static_assert(0,\"aaa\"); void main(){}"},
+    {ER, "int a; _Static_assert(a,\"aaa\");"},
     {ER, NULL}
 };
 
