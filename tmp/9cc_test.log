@@ -788,7 +788,19 @@ char a[2][2]={"ab","cd"}; void main(){}
 int a[3]={1,{2,99},3}; void main(){}
 9cc:Warning: selftest:1: int a[3]={1,{2,99},3}; void main(){}
                                       ^ スカラーがリストで初期化されています
+# selftest ----------------
+int main(){_Static_assert(0,"aaa");}
+9cc:Error: selftest:1: int main(){_Static_assert(0,"aaa");}
+                                  ^ static assertionに失敗しました: aaa
+# selftest ----------------
+_Static_assert(0,"aaa"); void main(){}
+9cc:Error: selftest:1: _Static_assert(0,"aaa"); void main(){}
+                       ^ static assertionに失敗しました: aaa
+# selftest ----------------
+int main(){int a; _Static_assert(a,"aaa");}
+9cc:Error: selftest:1: int main(){int a; _Static_assert(a,"aaa");}
+                                                        ^ 定数式が必要です
 9cc self test
-Total : 174
-   Ok : 174
+Total : 177
+   Ok : 177
    NG : 0

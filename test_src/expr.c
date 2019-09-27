@@ -1618,6 +1618,12 @@ static int Typedef(void) {
     return 1;
 }
 
+static int Assert(void) {
+    _Static_assert(1+2,"");
+    _Static_assert(1!=2,"");
+    return 1;
+}
+
 int main() {
     TEST(addsub);
     TEST(eq_rel);
@@ -1640,6 +1646,6 @@ int main() {
     TEST(cast);
     TEST(Enum);
     TEST(Typedef);
-    //printf("%s:%d func=%s\n",__FILE__, __LINE__, __func__);
+    TEST(Assert);
     return 0;
 }

@@ -112,6 +112,8 @@ static const char *SClassStr[] = {
     "extern ",
     "typedef",
     };
+_Static_assert(NEST==sizeof(TypeStr)/sizeof(char*),"TypeStr");
+_Static_assert(SC_TYPEDEF+1==sizeof(SClassStr)/sizeof(char*), "SClassStr");
 
 static void strcat_word(char *buf, const char *str) {
     char last_char = 0;

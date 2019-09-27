@@ -81,6 +81,7 @@ typedef enum {
     TK_FOR,         //for
     TK_SIZEOF,      //sizeof
     TK_ALIGNOF,     //_Alignof (C11)
+    TK_SASSERT,     //_Static_assert
     TK_POINTER,     //st->a
     TK_3DOTS,       // ...
     TK_EOF,         //入力の終わり
@@ -354,6 +355,7 @@ int consume_num(long *valp);
 int consume_string(String *string);
 int consume_ident(char**name);
 void expect(TKtype type);
+void expect_string(String *string);
 void expect_ident(char**name, const char*str);
 #endif
 
