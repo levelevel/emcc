@@ -11,15 +11,23 @@
     declaration             = declaration_specifiers ( init_declarator ( "," init_declarator )* )? ";"
                             | static_assert_declaration
     declaration_specifiers  = "typeof" "(" identifier ")"
-                            | type_specifier          declaration_specifiers*
                             | storage_class_specifier declaration_specifiers*
+                            | type_specifier          declaration_specifiers*
                             | type_qualifier          declaration_specifiers*
+                            | function_specifier      declaration_specifiers* (未実装)
+                            | alignment_specifier     declaration_specifiers* (未実装)
     init_declarator         = declarator ( "=" initializer )?
     storage_class_specifier = "typedef" | "static" | "extern" | "auto" | "register"
     type_specifier          = "void" | "_Bool" | "char" | "short" | "int" | "long" | "signed" | "unsigned"
                             | struct_or_union_specifier | enum_specifier | typedef_name
     struct_or_union_specifier = ( "struct" | "union" ) identifier? "{" struct_declaration* "}"
                             | ( "struct" | "union" ) identifier
+    struct_declaration      = specifier_qualifier_list struct_declarator*
+                            | static_assert_declaration
+    specifier_qualifier_list = type_specifier specifier_qualifier_list*
+                            | type_qualifier specifier_qualifier_list*
+    struct_declarator       = declarator
+                            | declarator? ":" constant_expression
     enum_specifier          = "enum" identifier? "{" enumerator ( "," enumerator )* ","? "}"
                             | "enum" identifier
     enumerator              = enumeration_constant ( "=" constant-expression )?
@@ -40,8 +48,7 @@
     array_def               = "[" constant_expression? "]" ( "[" constant_expression "]" )*
     pointer                 = ( "*" type_qualifier* )*
     type_name               = "typeof" "(" identifier ")"
-                            | type_specifier abstract_declarator*
-                            | type_qualifier abstract_declarator*
+                            | specifier_qualifier_list abstract_declarator*
     abstract_declarator     = pointer? direct_abstract_declarator
     direct_abstract_declarator = "(" abstract_declarator ")"
                             | direct_abstract_declarator? "[" assignment_expression? "]"
@@ -118,7 +125,11 @@ static Type *type_name(void);
 static Type *abstract_declarator(Type *tp);
 static Type *direct_abstract_declarator(Type *tp);
 static Type *declaration_specifiers(void);
+static Node *struct_or_union_specifier(TPType type);
+static Type *specifier_qualifier_list(void);
 static Node *enum_specifier(void);
+static Node *struct_declaration(void);
+static Node *struct_declarator(Type *tp);
 static Node *enumerator(Node *enum_def, int default_val);
 
 static Node *statement(void);
@@ -571,15 +582,13 @@ static Type *pointer(Type *tp) {
 }
 
 //    type_name               = "typeof" "(" identifier ")"
-//                            | type_specifier abstract_declarator*
-//                            | type_qualifier abstract_declarator*
+//                            | specifier_qualifier_list abstract_declarator*
 //    abstract_declarator     = pointer? direct_abstract_declarator
 //    direct_abstract_declarator = "(" abstract_declarator ")"
 //                            | direct_abstract_declarator? "[" assignment_expression "]"
 //                            | direct_abstract_declarator? "(" parameter_type_list? ")"  //関数
 static Type *type_name(void) {
-    Type *tp = declaration_specifiers();
-    if (tp->sclass!=SC_UNDEF) error_at(input_str(), "storage classは指定できません");
+    Type *tp = specifier_qualifier_list();
     tp = abstract_declarator(tp);
     return tp;
 }
@@ -598,9 +607,13 @@ static Type *direct_abstract_declarator(Type *tp) {
 }
 
 //    declaration_specifiers  = "typeof" "(" identifier ")"
-//                            | type_specifier         declaration_specifiers*
 //                            | storage_class_specifier declaration_specifiers*
-//                            | type_qualifier         declaration_specifiers*
+//                            | type_specifier          declaration_specifiers*
+//                            | type_qualifier          declaration_specifiers*
+//    storage_class_specifier = "typedef" | "static" | "extern" | "auto" | "register"
+//    type_specifier          = "void" | "_Bool" | "char" | "short" | "int" | "long" | "signed" | "unsigned"
+//                            | struct_or_union_specifier | enum_specifier | typedef_name
+//    type_qualifier          = "const"
 static Type *declaration_specifiers(void) {
     Type *tp;
 
@@ -624,6 +637,7 @@ static Type *declaration_specifiers(void) {
 
     while (1) {
         char *input = input_str();
+        //type_specifier
         if (consume(TK_VOID)) {
             if (type) error_at(input, "型指定が不正です\n");
             type = VOID;
@@ -643,6 +657,14 @@ static Type *declaration_specifiers(void) {
             if (type==LONG) type = LONGLONG;
             else if (type && type!=INT) error_at(input, "型指定が不正です\n");
             else type = LONG;
+        } else if (consume(TK_STRUCT)) {
+            if (type) error_at(input, "型指定が不正です\n");
+            type = STRUCT;
+            node = struct_or_union_specifier(type);
+        } else if (consume(TK_UNION)) {
+            if (type) error_at(input, "型指定が不正です\n");
+            type = UNION;
+            node = struct_or_union_specifier(type);
         } else if (consume(TK_ENUM)) {
             if (type) error_at(input, "型指定が不正です\n");
             type = ENUM;
@@ -658,6 +680,7 @@ static Type *declaration_specifiers(void) {
             if (is_unsigned>=0) error_at(input, "型指定が不正です\n");
             is_unsigned = 1;
             us_input = input;
+        //storage_class_specifier
         } else if (consume(TK_AUTO)) {
             if (sclass) error_at(input, "strage classが重複しています\n");
             sclass = SC_AUTO;
@@ -673,6 +696,7 @@ static Type *declaration_specifiers(void) {
         } else if (consume(TK_TYPEDEF)) {
             if (sclass) error_at(input, "strage classが重複しています\n");
             sclass = SC_TYPEDEF;
+        //type_qualifier
         } else if (consume(TK_CONST)) {
             if (type == 0) pre_const = 1;
             else           post_const = 1;
@@ -686,7 +710,7 @@ static Type *declaration_specifiers(void) {
     }
 
     Type *top_tp;
-    if (node) { //enum,typedef_name
+    if (node) { //enum,typedef_name,struct,union
         if (is_unsigned>=0) error_at(us_input, "enum/typedef/struct/union名に対してsigned/unsignedの指定はできません\n");
         top_tp = tp = node->tp;
         while (tp->ptr_of) tp = tp->ptr_of; //PTRとARRAYを飛ばす
@@ -706,6 +730,78 @@ static Type *declaration_specifiers(void) {
         top_tp = tmp;
     }
     return top_tp;
+}
+
+//    struct_or_union_specifier = ( "struct" | "union" ) identifier? "{" struct_declaration* "}"
+//                            | ( "struct" | "union" ) identifier
+//    struct_declaration      = specifier_qualifier_list struct_declarator*
+//                            | static_assert_declaration
+//    specifier_qualifier_list = type_specifier specifier_qualifier_list*
+//                            | type_qualifier specifier_qualifier_list*
+//    struct_declarator       = declarator
+//                            | declarator? "," constant_expression
+static Node *struct_or_union_specifier(TPType type) {
+    Node *node;
+    if (type==STRUCT) node = new_node(ND_STRUCT_DEF, NULL, NULL, new_type(STRUCT, 0), input_str());
+    else              node = new_node(ND_UNION_DEF,  NULL, NULL, new_type(UNION,  0), input_str());
+    char *name = NULL;
+    if (consume_ident(&name)) {
+        node->name = name;
+    } else {
+        //node->name = "(anonymouse)";
+    }
+    Node *old_cur_structdef = cur_structdef;
+    cur_structdef = node;
+
+    if (consume('{')) {
+        node->lst = new_vector();
+        node->map = new_map();
+        if (name) regist_tagname(node);
+        do {
+            Node *struc = struct_declaration();
+            if (struc->type==ND_LIST) vec_copy(node->lst, struc->lst);
+            else vec_push(node->lst, struc);
+        } while (!consume('}'));
+    } else if (name==NULL) {
+        expect('{');    //error
+    } else {
+        regist_tagname(node);
+    }
+    node->tp->node = node;
+    if (type==STRUCT) set_struct_size(node);
+    //dump_type(node->tp,__func__);
+    cur_structdef = old_cur_structdef;
+    return node;
+}
+static Node *struct_declaration(void) {
+    if (token_is(TK_SASSERT)) {
+        return static_assert_declaration();
+    }
+    Type *decl_spec = specifier_qualifier_list();
+    Node *node = struct_declarator(decl_spec);
+    if (consume(',')) {
+        Node *last_node;
+        node = new_node_list(node, node->input);
+        Vector *lists = node->lst;
+        vec_push(lists, last_node=struct_declarator(decl_spec));
+        while (consume(',')) {
+            vec_push(lists, last_node=struct_declarator(decl_spec));
+        }
+        node->tp = last_node->tp;
+    }
+    expect(';');
+    return node;
+}
+static Type *specifier_qualifier_list(void) {
+    Type *tp = declaration_specifiers();
+    if (tp->sclass!=SC_UNDEF) error_at(input_str(), "storage classは指定できません");
+    return tp;
+}
+static Node *struct_declarator(Type *tp) {
+    Node *node = declarator(tp, NULL, NULL);
+    node->type = ND_MEMBER_DEF;
+    regist_var_def(node);
+    return node;
 }
 
 //    enum_specifier          = "enum" identifier? "{" enumerator ( "," enumerator )* ","? "}"
@@ -730,7 +826,7 @@ static Node *enum_specifier(void) {
         }
         expect('}');
     } else if (name==NULL) {
-        expect('{');
+        expect('{');    //error
     }
     node->tp->node = node;
     if (name) regist_tagname(node);
@@ -914,6 +1010,7 @@ static Node *compound_statement(int is_func_body) {
         } else {
             block_item = statement();
         }
+        if (block_item->type==ND_EMPTY) continue;
         vec_push(node->lst, block_item);
     }
     stack_pop(symbol_stack);

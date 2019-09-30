@@ -193,6 +193,10 @@
   OK: enum1e
   OK: enum1g
   OK: Enum
+  OK: Struct1
+  OK: Struct
+  OK: Union1
+  OK: Union
   OK: typedef1
   OK: typedef1p
   OK: typedef1a

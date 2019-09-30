@@ -11,7 +11,6 @@ WR=Warning
 rm -f $EXE.log
 
 GDB=""
-test_er_only=0
 cnt=0
 
 test_src() {
@@ -67,8 +66,7 @@ try1() {
 
 while [ $# -gt 0 ]; do
   case $1 in
-  -d*) GDB=gdb;;
-  -e*) test_er_only=1;;
+  -gdb) GDB=gdb;;
   *) try1 "$@";;
   esac
   shift

@@ -16,6 +16,8 @@ long size_of(const Type *tp) {
     case LONG:     return sizeof(long);
     case LONGLONG: return sizeof(long long);
     case ENUM:     return sizeof(int);
+    case STRUCT:
+    case UNION:    return tp->node->val;
     case PTR:      return sizeof(void*);
     case ARRAY:
         if (tp->array_size<0) return 0;
@@ -35,6 +37,35 @@ int align_of(const Type *tp) {
     assert(tp);
     if (tp->type==ARRAY) return align_of(tp->ptr_of);
     return size_of(tp);
+}
+
+//ローカル変数のRBPからのoffset（バイト数）を返し、var_stack_sizeを更新する。
+int get_var_offset(const Type *tp) {
+    int size = size_of(tp);
+    int align_size = align_of(tp);
+    cur_funcdef->var_stack_size += size;
+    // アラインメント（align_sizeバイト単位に切り上げ）
+    if (size>0) cur_funcdef->var_stack_size = (cur_funcdef->var_stack_size + (align_size-1))/align_size * align_size;
+    return cur_funcdef->var_stack_size;
+}
+
+//構造体メンバのoffset(memb->offset)と、構造体のサイズを設定する(node->val)。
+void set_struct_size(Node *node) {
+    assert(node->type==ND_STRUCT_DEF || node->type==ND_UNION_DEF);
+    if (node->lst==NULL) return;
+    int max_align_size = 0, offset = 0;
+    for (int i=0; i<lst_len(node->lst); i++) {
+        Node *memb = get_lst_node(node->lst, i);
+        int size = size_of(memb->tp);        
+        int align_size = align_of(memb->tp);
+        if (size>max_align_size) max_align_size = size;
+        assert(size>0);
+        offset = (offset +(align_size-1))/align_size * align_size;
+        memb->offset = offset;
+        offset += size;
+    }
+    offset = (offset +(max_align_size-1))/max_align_size * max_align_size;
+    node->val = offset;
 }
 
 static long calc_node(Node *node, long val1, long val2) {
@@ -225,7 +256,20 @@ void regist_var_def(Node *node) {
     char *name = node->name;
     Node *reg_node;
 
-    if (cur_funcdef!=NULL) {        //関数内であればローカル
+    if (cur_structdef!=NULL) {      //構造体内であればメンバ
+        if (map_get(cur_structdef->map, node->name, (void**)&reg_node)==0) {
+            map_put(cur_structdef->map, name, node);
+        } else if (!type_eq(reg_node->tp, node->tp)) {
+            SET_ERROR_WITH_NOTE;
+            error_at(node->input, "型が一致しません");
+            note_at(reg_node->input, "以前の宣言はここです");
+        } else {
+            SET_ERROR_WITH_NOTE;
+            error_at(node->input, "%sはメンバの重複定義です", name);
+            note_at(reg_node->input, "以前の宣言はここです");
+        }
+        return;
+    } else if (cur_funcdef!=NULL) { //関数内であればローカル
         Map *symbol_map = stack_top(symbol_stack); 
         if (map_get(symbol_map, name, (void**)&reg_node)==0) {
             StorageClass sclass = get_storage_class(node->tp);
@@ -326,7 +370,9 @@ void regist_symbol(Node *node) {
     if (map_get(symbol_map, name, (void**)&node2)==0) {
         map_put(symbol_map, name, node);
     } else {
-        error_at(node->input, "'%s'はシンボルの重複定義です", name);
+        SET_ERROR_WITH_NOTE;
+        error_at(node->input, "'%s'はenum値の重複定義です", name);
+        note_at(node2->input, "以前の定義はここです");
     }
 }
 
@@ -338,10 +384,26 @@ void regist_tagname(Node *node) {
     if (map_get(tagname_map, name, (void**)&node2)==0) {
         map_put(tagname_map, name, node);
     } else if (node2->type==ND_ENUM_DEF && node->type==ND_ENUM_DEF) {
-        if (node2->lst!=NULL && node->lst!=NULL)
+        if (node2->lst!=NULL && node->lst!=NULL) {
+            SET_ERROR_WITH_NOTE;
             error_at(node->input, "enumの重複定義です");
+            note_at(node2->input, "以前の定義はここです");
+        } else if (node2->lst==NULL && node->lst!=NULL) {
+            map_put(tagname_map, name, node);
+        }
+    } else if ((node2->type==ND_STRUCT_DEF && node->type==ND_STRUCT_DEF) ||
+               (node2->type==ND_UNION_DEF  && node->type==ND_UNION_DEF)) {
+        if (node2->lst!=NULL && node->lst!=NULL) {
+            SET_ERROR_WITH_NOTE;
+            error_at(node->input, "struct/unionの重複定義です");
+            note_at(node2->input, "以前の定義はここです");
+        } else if (node2->lst==NULL && node->lst!=NULL) {
+            map_put(tagname_map, name, node);
+        }
     } else {
+        SET_ERROR_WITH_NOTE;
         error_at(node->input, "'%s'はシンボルの重複定義です", name);
+        note_at(node2->input, "以前の定義はここです");
     }
 }
 
@@ -559,16 +621,6 @@ int type_eq_assign(const Type *tp1, const Type *tp2) {
     }  
     if (tp1->ptr_of) return type_eq_assign(tp1->ptr_of, tp2->ptr_of);
     return 1;
-}
-
-//ローカル変数のRBPからのoffset（バイト数）を返し、var_stack_sizeを更新する。
-int get_var_offset(const Type *tp) {
-    int size = size_of(tp);
-    int align_size = align_of(tp);
-    cur_funcdef->var_stack_size += size;
-    // アラインメント（align_sizeバイト単位に切り上げ）
-    if (size>0) cur_funcdef->var_stack_size = (cur_funcdef->var_stack_size + (size-1))/align_size * align_size;
-    return cur_funcdef->var_stack_size;
 }
 
 //関数定義のroot生成

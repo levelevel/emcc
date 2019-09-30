@@ -1515,6 +1515,7 @@ static int enum1g(void) {
 }
 static int enum1(void) {
     enum ABC ;
+    enum ABC ;
     enum ABC {A,B,C=10,D,E=C,} e=E;
     static enum {P=-1,Q=-2,R=-3} ae; ae = R;
     int x=0;
@@ -1551,6 +1552,42 @@ static int Enum(void) {
     TEST(enum1);
     TEST(enum1e);
     TEST(enum1g);
+    return 1;
+}
+
+static int Struct1(void) {
+    struct S;
+    struct S {
+        int a,b;
+        char c;
+    };
+    struct S;
+    struct {
+        char s[5];
+        int a[3];
+    };
+    return 1;
+}
+static int Struct(void) {
+    TEST(Struct1);
+    return 1;
+}
+
+static int Union1(void) {
+    union U;
+    union U {
+        int a,b;
+        char c;
+    };
+    union U;
+    union {
+        char s[5];
+        int a[3];
+    };
+    return 1;
+}
+static int Union(void) {
+    TEST(Union1);
     return 1;
 }
 
@@ -1645,6 +1682,8 @@ int main() {
     TEST(declarate);
     TEST(cast);
     TEST(Enum);
+    TEST(Struct);
+    TEST(Union);
     TEST(Typedef);
     TEST(Assert);
     return 0;

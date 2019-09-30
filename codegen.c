@@ -810,7 +810,7 @@ static int gen(Node*node) {
         Vector *blocks = node->lst;
         Node **nodes = (Node**)blocks->data;
         for (int i=0; i < blocks->len; i++) {
-            comment("BLOCK[%d]\n", i);
+            comment("BLOCK[%d] %s\n", i, get_NDtype_str(nodes[i]->type));
             if (gen(nodes[i])) printf("  pop rax\n");
         }
         return 0;
@@ -860,7 +860,7 @@ static int gen(Node*node) {
             printf("  mov rax, rdi\n");
         }
         printf("  pop rdi\n");  //lhsのアドレス
-        if (node->lhs->tp->type==BOOL) gen_bool();
+        if (node->lhs->tp->type==BOOL) gen_bool_rax();
         gen_write_reg("rdi", "rax", node->lhs->tp, NULL);
         printf("  push rax\n"); //戻り値
         break;
@@ -1141,9 +1141,11 @@ static void gen_global_var(Node *node) {
             printf(".global %s\n", node->name);
         return;
     case ND_GLOBAL_VAR_DEF:
+        if (g_dump_node) dump_node(node, __func__);
         break;
     case ND_ENUM:
     case ND_TYPEDEF:
+        if (g_dump_node) dump_node(node, __func__);
         return;
     default:
         assert(type_is_static(node->tp));
@@ -1297,6 +1299,7 @@ void gen_program(void) {
         }
 
         // 関数本体のコード生成
+        if (g_dump_node) dump_node(funcdef[i]->node, __func__);
         gen(funcdef[i]->node->rhs);
 
         // エピローグ

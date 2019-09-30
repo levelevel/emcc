@@ -22,6 +22,12 @@ void *vec_get(Vector *vec, int idx) {
     return vec->data[idx];
 }
 
+void vec_copy(Vector *dst, Vector *src) {
+    for (int i=0; i<vec_len(src); i++) {
+        vec_push(dst, vec_data(src, i));
+    }
+}
+
 //マップ --------------------------------------------
 Map *new_map(void) {
     Map *map = malloc(sizeof(Map));
@@ -225,6 +231,8 @@ const char *get_NDtype_str(NDtype type) {
     ENUM2STR(ND_ENUM_DEF);
     ENUM2STR(ND_ENUM);
     ENUM2STR(ND_TYPEDEF);
+    ENUM2STR(ND_STRUCT_DEF);
+    ENUM2STR(ND_UNION_DEF);
     ENUM2STR(ND_LOCAL_VAR);
     ENUM2STR(ND_GLOBAL_VAR);
     ENUM2STR(ND_CAST);
@@ -244,6 +252,7 @@ const char *get_NDtype_str(NDtype type) {
     ENUM2STR(ND_MINUS_ASSIGN);
     ENUM2STR(ND_LOCAL_VAR_DEF);
     ENUM2STR(ND_GLOBAL_VAR_DEF);
+    ENUM2STR(ND_MEMBER_DEF);
     ENUM2STR(ND_RETURN);
     ENUM2STR(ND_IF);
     ENUM2STR(ND_WHILE);
@@ -269,6 +278,7 @@ static const char *get_TPType_str(TPType type) {
     ENUM2STR(LONG);
     ENUM2STR(LONGLONG);
     ENUM2STR(ENUM);
+    ENUM2STR(STRUCT);
     ENUM2STR(PTR);
     ENUM2STR(ARRAY);
     ENUM2STR(FUNC);
@@ -288,6 +298,8 @@ static const char *get_StorageClass_str(StorageClass type) {
     default: return "SC_???";
     }
 }
+
+static void dump_type_indent(FILE *fp, const Type *tp, const char *str, int indent);
 
 static void dump_node_indent(FILE *fp, const Node *node, const char *str, int indent) {
     fprintf(fp, "#%*s", indent, "");
@@ -313,6 +325,7 @@ static void dump_node_indent(FILE *fp, const Node *node, const char *str, int in
             dump_node_indent(fp, nodes[i], buf, indent+2);
         }
     }
+    if (node->type==ND_TYPE_DECL) dump_type_indent(fp, node->tp, NULL, indent+2);
 }
 
 void dump_node(const Node *node, const char *str) {

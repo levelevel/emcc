@@ -30,11 +30,14 @@ static ErCtrl get_ctrl(const char*opt) {
 }
 
 static void read_opt(int argc, char*argv[]) {
+    g_dump_node = 0;
     for (; argc>1;  argc--, argv++) {
         if (strncmp(argv[1], "-e", 2)==0) {
             error_ctrl = get_ctrl(argv[1]);
         } else if (strncmp(argv[1], "-w", 2)==0) {
             warning_ctrl = get_ctrl(argv[1]);
+        } else if (strncmp(argv[1], "-d", 2)==0) {
+            g_dump_node = 1;
         } else if (strcmp(argv[1], "-test")==0) {
             run_test();
             exit(0);
@@ -99,6 +102,7 @@ void compile(void) {
     funcdef_map        = new_map();
     cur_funcdef        = NULL;
     global_index       = 0;
+    cur_structdef      = NULL;
     cur_switch         = NULL;
     // パース
     translation_unit();

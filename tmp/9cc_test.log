@@ -494,39 +494,6 @@ int main(){switch(1){default:; default:;}}
 9cc:Error: selftest:1: int main(){switch(1){default:; default:;}}
                                                       ^ Defaultは重複しています
 # selftest ----------------
-int main(){int e; enum ABC{A,B,C} e;}
-9cc:Error: selftest:1: int main(){int e; enum ABC{A,B,C} e;}
-                                                         ^ 型が一致しません
-9cc:Note: selftest:1: int main(){int e; enum ABC{A,B,C} e;}
-                                     ^ 以前の宣言はここです
-# selftest ----------------
-int main(){enum ABC{A,B,C} e; int e;}
-9cc:Error: selftest:1: int main(){enum ABC{A,B,C} e; int e;}
-                                                         ^ 型が一致しません
-9cc:Note: selftest:1: int main(){enum ABC{A,B,C} e; int e;}
-                                                 ^ 以前の宣言はここです
-# selftest ----------------
-int main(){enum ABC{A,B,A} e;}
-9cc:Error: selftest:1: int main(){enum ABC{A,B,A} e;}
-                                               ^ 'A'はシンボルの重複定義です
-# selftest ----------------
-int main(){enum ABC{A,B,C} e; enum ABC{X,Y,Z} x;}
-9cc:Error: selftest:1: int main(){enum ABC{A,B,C} e; enum ABC{X,Y,Z} x;}
-                                                          ^ enumの重複定義です
-# selftest ----------------
-int main(){enum ABC{A,B,C} e; enum XYZ{A,Y,Z} x;}
-9cc:Error: selftest:1: int main(){enum ABC{A,B,C} e; enum XYZ{A,Y,Z} x;}
-                                                              ^ 'A'はシンボルの重複定義です
-# selftest ----------------
-int main(){enum ABC{A,B,C}; enum ABC{P,Q,R} e;}
-9cc:Error: selftest:1: int main(){enum ABC{A,B,C}; enum ABC{P,Q,R} e;}
-                                                        ^ enumの重複定義です
-# selftest ----------------
-int main(){enum ABC{A,B,C}; unsigned enum ABC abc;}
-9cc:Error: selftest:1: int main(){enum ABC{A,B,C}; unsigned enum ABC abc;}
-                                                   ^ enum/typedef/struct/union名に対してsigned/unsignedの指定はできません
-
-# selftest ----------------
 int main(void); int main(int x){return 1:}
 9cc:Error: selftest:1: int main(void); int main(int x){return 1:}
                                                ^ 関数の型が一致しません
@@ -800,7 +767,138 @@ _Static_assert(0,"aaa"); void main(){}
 int main(){int a; _Static_assert(a,"aaa");}
 9cc:Error: selftest:1: int main(){int a; _Static_assert(a,"aaa");}
                                                         ^ 定数式が必要です
+# selftest ----------------
+int main(){struct E; enum E;}
+9cc:Error: selftest:1: int main(){struct E; enum E;}
+                                                 ^ 'E'はシンボルの重複定義です
+9cc:Note: selftest:1: int main(){struct E; enum E;}
+                                        ^ 以前の定義はここです
+# selftest ----------------
+int main(){enum E{};}
+9cc:Error: selftest:1: int main(){enum E{};}
+                                         ^ 識別子（enum名）が期待されています
+# selftest ----------------
+int main(){enum E{A}; enum E{A};}
+9cc:Error: selftest:1: int main(){enum E{A}; enum E{A};}
+                                                    ^ 'A'はenum値の重複定義です
+9cc:Note: selftest:1: int main(){enum E{A}; enum E{A};}
+                                        ^ 以前の定義はここです
+# selftest ----------------
+int main(){enum E{A}; enum E{B};}
+9cc:Error: selftest:1: int main(){enum E{A}; enum E{B};}
+                                                  ^ enumの重複定義です
+9cc:Note: selftest:1: int main(){enum E{A}; enum E{B};}
+                                      ^ 以前の定義はここです
+# selftest ----------------
+int main(){enum E; enum E{A,B}; enum E{C,D};}
+9cc:Error: selftest:1: int main(){enum E; enum E{A,B}; enum E{C,D};}
+                                                            ^ enumの重複定義です
+9cc:Note: selftest:1: int main(){enum E; enum E{A,B}; enum E{C,D};}
+                                              ^ 以前の定義はここです
+# selftest ----------------
+int main(){int e; enum ABC{A,B,C} e;}
+9cc:Error: selftest:1: int main(){int e; enum ABC{A,B,C} e;}
+                                                         ^ 型が一致しません
+9cc:Note: selftest:1: int main(){int e; enum ABC{A,B,C} e;}
+                                     ^ 以前の宣言はここです
+# selftest ----------------
+int main(){enum ABC{A,B,C} e; int e;}
+9cc:Error: selftest:1: int main(){enum ABC{A,B,C} e; int e;}
+                                                         ^ 型が一致しません
+9cc:Note: selftest:1: int main(){enum ABC{A,B,C} e; int e;}
+                                                 ^ 以前の宣言はここです
+# selftest ----------------
+int main(){enum ABC{A,B,A} e;}
+9cc:Error: selftest:1: int main(){enum ABC{A,B,A} e;}
+                                               ^ 'A'はenum値の重複定義です
+9cc:Note: selftest:1: int main(){enum ABC{A,B,A} e;}
+                                          ^ 以前の定義はここです
+# selftest ----------------
+int main(){enum ABC{A,B,C} e; enum ABC{X,Y,Z} x;}
+9cc:Error: selftest:1: int main(){enum ABC{A,B,C} e; enum ABC{X,Y,Z} x;}
+                                                          ^ enumの重複定義です
+9cc:Note: selftest:1: int main(){enum ABC{A,B,C} e; enum ABC{X,Y,Z} x;}
+                                      ^ 以前の定義はここです
+# selftest ----------------
+int main(){enum ABC{A,B,C} e; enum XYZ{A,Y,Z} x;}
+9cc:Error: selftest:1: int main(){enum ABC{A,B,C} e; enum XYZ{A,Y,Z} x;}
+                                                              ^ 'A'はenum値の重複定義です
+9cc:Note: selftest:1: int main(){enum ABC{A,B,C} e; enum XYZ{A,Y,Z} x;}
+                                          ^ 以前の定義はここです
+# selftest ----------------
+int main(){enum ABC{A,B,C}; enum ABC{P,Q,R} e;}
+9cc:Error: selftest:1: int main(){enum ABC{A,B,C}; enum ABC{P,Q,R} e;}
+                                                        ^ enumの重複定義です
+9cc:Note: selftest:1: int main(){enum ABC{A,B,C}; enum ABC{P,Q,R} e;}
+                                      ^ 以前の定義はここです
+# selftest ----------------
+int main(){enum ABC{A,B,C}; unsigned enum ABC abc;}
+9cc:Error: selftest:1: int main(){enum ABC{A,B,C}; unsigned enum ABC abc;}
+                                                   ^ enum/typedef/struct/union名に対してsigned/unsignedの指定はできません
+
+# selftest ----------------
+int main(){enum S; struct S;}
+9cc:Error: selftest:1: int main(){enum S; struct S;}
+                                                 ^ 'S'はシンボルの重複定義です
+9cc:Note: selftest:1: int main(){enum S; struct S;}
+                                      ^ 以前の定義はここです
+# selftest ----------------
+int main(){struct S{}e;}
+9cc:Error: selftest:1: int main(){struct S{}e;}
+                                           ^ 型名がありません
+
+# selftest ----------------
+int main(){struct S{int a;}e; struct S{int a;}e2;}
+9cc:Error: selftest:1: int main(){struct S{int a;}e; struct S{int a;}e2;}
+                                                            ^ struct/unionの重複定義です
+9cc:Note: selftest:1: int main(){struct S{int a;}e; struct S{int a;}e2;}
+                                        ^ 以前の定義はここです
+# selftest ----------------
+int main(){struct S{int a; int a;}s;}
+9cc:Error: selftest:1: int main(){struct S{int a; int a;}s;}
+                                                      ^ aはメンバの重複定義です
+9cc:Note: selftest:1: int main(){struct S{int a; int a;}s;}
+                                              ^ 以前の宣言はここです
+# selftest ----------------
+int main(){struct S{int a; int b;}; unsigned struct S s;}
+9cc:Error: selftest:1: int main(){struct S{int a; int b;}; unsigned struct S s;}
+                                                           ^ enum/typedef/struct/union名に対してsigned/unsignedの指定はできません
+
+# selftest ----------------
+int main(){struct U; union U;}
+9cc:Error: selftest:1: int main(){struct U; union U;}
+                                                  ^ 'U'はシンボルの重複定義です
+9cc:Note: selftest:1: int main(){struct U; union U;}
+                                        ^ 以前の定義はここです
+# selftest ----------------
+int main(){union U{};}
+9cc:Error: selftest:1: int main(){union U{};}
+                                          ^ 型名がありません
+
+# selftest ----------------
+int main(){union U{int a;}; union U{int a;};}
+9cc:Error: selftest:1: int main(){union U{int a;}; union U{int a;};}
+                                                         ^ struct/unionの重複定義です
+9cc:Note: selftest:1: int main(){union U{int a;}; union U{int a;};}
+                                       ^ 以前の定義はここです
+# selftest ----------------
+int main(){union U{int a; int a;};}
+9cc:Error: selftest:1: int main(){union U{int a; int a;};}
+                                                     ^ aはメンバの重複定義です
+9cc:Note: selftest:1: int main(){union U{int a; int a;};}
+                                             ^ 以前の宣言はここです
+# selftest ----------------
+int main(){union U{int a; int b;}u; int u;}
+9cc:Error: selftest:1: int main(){union U{int a; int b;}u; int u;}
+                                                               ^ 型が一致しません
+9cc:Note: selftest:1: int main(){union U{int a; int b;}u; int u;}
+                                                       ^ 以前の宣言はここです
+# selftest ----------------
+int main(){union U{int a; int b;}; signed union U u;}
+9cc:Error: selftest:1: int main(){union U{int a; int b;}; signed union U u;}
+                                                          ^ enum/typedef/struct/union名に対してsigned/unsignedの指定はできません
+
 9cc self test
-Total : 177
-   Ok : 177
+Total : 193
+   Ok : 193
    NG : 0

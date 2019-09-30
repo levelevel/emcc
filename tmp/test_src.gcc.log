@@ -122,9 +122,17 @@ test_src/expr.c:949:54: warning: excess elements in array initializer
                                                       ^
 test_src/expr.c:949:54: note: (near initialization for ‘i2g_ac’)
 test_src/expr.c: In function ‘enum1e’:
-test_src/expr.c:1545:22: warning: empty declaration with storage class specifier does not redeclare tag
+test_src/expr.c:1546:22: warning: empty declaration with storage class specifier does not redeclare tag
          typedef enum ABC;
                       ^~~
+test_src/expr.c: In function ‘Struct1’:
+test_src/expr.c:1568:5: warning: unnamed struct/union that defines no instances
+     };
+     ^
+test_src/expr.c: In function ‘Union1’:
+test_src/expr.c:1586:5: warning: unnamed struct/union that defines no instances
+     };
+     ^
   OK: addsub1
   OK: addsub1b
   OK: addsub1c
@@ -256,6 +264,10 @@ test_src/expr.c:1545:22: warning: empty declaration with storage class specifier
   OK: enum1e
   OK: enum1g
   OK: Enum
+  OK: Struct1
+  OK: Struct
+  OK: Union1
+  OK: Union
   OK: typedef1
   OK: typedef1p
   OK: typedef1a

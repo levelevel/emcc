@@ -121,13 +121,13 @@ typedef enum {
     ND_BNOT  = '~',
     ND_NUM,         //整数のノードの型
     ND_STRING,      //文字列リテラル    name=文字列, val=string_vecのindex
-    ND_TYPE_DECL,   //型の宣言　例：int; enum ABC {A,B,C}; enum ABC; struct ST; 
+    ND_TYPE_DECL,   //型の宣言　例：int; enum ABC {A,B,C}; enum ABC; struct ST {...}; struct ST; 
     ND_IDENT,       //IDENT:中間的なタイプであり、最終的にND_LOCAL_VARなどに置き換わる
     ND_ENUM_DEF,    //enum定義          name=enum名/NULL, lst=node(ND_ENUM)/NULL
     ND_ENUM,        //enum要素          name=要素名, val=値, lhs=node(ND_ENUN_DEF)
     ND_TYPEDEF,     //typedef           name=typedef名, tp->sclass=SC_TYPEDEF
-    ND_STRUCT_DEF,  //struct            name=struct名/NULL, lst=node
-    ND_UNION_DEF,   //union             name=union名/NULL, lst=node
+    ND_STRUCT_DEF,  //struct            name=struct名/NULL, lst=node(ND_MEMBER_DEF)
+    ND_UNION_DEF,   //union             name=union名/NULL, lst=node(ND_MEMBER_DEF)
     ND_LOCAL_VAR,   //ローカル変数の参照
     ND_GLOBAL_VAR,  //グローバル変数の参照
     ND_CAST,        //キャスト
@@ -149,7 +149,7 @@ typedef enum {
     ND_MINUS_ASSIGN,// -=
     ND_LOCAL_VAR_DEF,   //int A=B;      name=A, rhs=Node（"A=B"の形式の初期化式、初期値がない場合はNULL）
     ND_GLOBAL_VAR_DEF,  //int A=B;      同上
-    ND_MMEMBER_DEF, // struct {int A;}; name=A
+    ND_MEMBER_DEF,  // struct {int A;}; name=A
     ND_IF,          // if(A)B else C    lhs->lhs=A, lhs->rhs=B, rhs=C
     ND_SWITCH,      // switch(A)B       lhs=A, rhs=B, lst=node(ND_CASE,ND_DEFAULT)
     ND_LABEL,       // label:B          name=label, rhs=B
@@ -224,15 +224,17 @@ struct Node {
     char unused;    //無効（重複した宣言など：コード生成時には無視する）
     int offset;     //auto変数：ベースポインタからのoffset
                     //static変数：識別用index（global_index）
+                    //構造体のメンバ：先頭アドレスからのoffset
     long val;       //typeがND_NUMの場合の値
                     //typeがND_STRINGの場合のstring_vecのインデックス
+                    //typeがND_STRUCT/UNION_DEFの場合のサイズ
     Node *lhs;
     Node *rhs;
-    union {
     Vector *lst;    //typeがND_BLOCKの場合のstatementのリスト
                     //typeがND_LISTの場合のassignmentのリスト
+                    //typeがND_STRUCT/UNION_DEFの場合のメンバのリスト
     Map *map;       //typeがND_SWITCHの場合のND_CASEのマップ: key=node->val, val=node(ND_CASE)
-    };
+                    //typeがND_STRUCT/UNION_DEFの場合のND_MEMBER_DEFのマップ: key=node->name, val=node
     union {
     char *name;     //typeがND_LOCAL|GLOBAL_VAR[_DEF]の場合の変数名
                     //typeがND_FUNC_CALL|DEF|DECLの場合の関数名
@@ -305,6 +307,9 @@ EXTERN Funcdef *cur_funcdef;
 //プログラム（関数定義）の管理
 EXTERN Map *funcdef_map;    //key=name, value=Funcdef
 
+//現在の構造体定義
+EXTERN Node *cur_structdef;
+
 //ラベル・static変数のユニークなIDを生成するためのindex
 EXTERN int global_index;
 
@@ -325,6 +330,8 @@ EXTERN int error_cnt;
 EXTERN int warning_cnt;
 EXTERN int note_cnt;
 #define SET_ERROR_WITH_NOTE  {note_ctrl = error_ctrl; error_ctrl = ERC_CONTINUE;}
+
+EXTERN int g_dump_node; //関数をダンプする
 
 //現在のトークン（エラー箇所）の入力文字列
 #define input_str() (tokens[token_pos]->input)
@@ -362,6 +369,8 @@ void expect_ident(char**name, const char*str);
 // parse_util.c
 long size_of(const Type *tp);
 int align_of(const Type *tp);
+int get_var_offset(const Type *tp);
+void set_struct_size(Node *node);
 int node_is_const(Node *node, long *val);
 int node_is_const_or_address(Node *node, long *valp, Node **varp);
 #define type_is_static(tp) (get_storage_class(tp)==SC_STATIC)
@@ -392,7 +401,6 @@ int type_eq(const Type *tp1, const Type *tp2);
 int type_eq_global_local(const Type *tp1, const Type *tp2);
 int type_eq_func(const Type *tp1, const Type *tp2);
 int type_eq_assign(const Type *tp1, const Type *tp2);
-int get_var_offset(const Type *tp);
 Funcdef *new_funcdef(void);
 Type *new_type_ptr(Type*ptr);
 Type *new_type_func(Type*ptr, Node *node);
@@ -421,6 +429,7 @@ void gen_program(void);
 Vector *new_vector(void);
 void vec_push(Vector *vec, void *elem);
 void *vec_get(Vector *vec, int idx);
+void vec_copy(Vector *dst, Vector *src);
 
 Map *new_map(void);
 void map_put(Map *map, const char *key, void *val);
