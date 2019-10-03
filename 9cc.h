@@ -33,6 +33,7 @@ typedef enum {
     TK_NUM = 256,   //整数トークン
     TK_STRING,      //文字列
     TK_IDENT,       //識別子
+    //ここから型
     TK_VOID,        //void
     TK_BOOL,        //_Bool
     TK_CHAR,        //char
@@ -55,6 +56,7 @@ typedef enum {
     TK_STATIC,      //storage_class
     TK_EXTERN,      //storage_class
     TK_TYPEDEF,     //storage_class
+    //ここまで型
     TK_INC,         // ++
     TK_DEC,         // --
     TK_EQ,          // ==
@@ -385,6 +387,7 @@ Vector *get_func_args(Node *node);
 
 #ifdef _PARSE_C_
 Node *search_symbol(const char *name);
+Node *search_tagname(const char *name);
 void regist_var_def(Node *node);
 void regist_func(Node *node, int full_check);
 void regist_symbol(Node *node);

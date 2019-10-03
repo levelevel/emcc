@@ -88,7 +88,9 @@ static char* ptr_name_of_type(const Type *tp) {
     case 4: return "DWORD";
     case 2: return "WORD";
     case 1: return "BYTE";
-    default: _ERROR_;
+    default:
+        dump_type(tp, __func__);
+        _ERROR_;
     }
     return NULL;
 }
@@ -101,7 +103,9 @@ static char* val_name_of_type(const Type *tp) {
     case 4: return "long";
     case 2: return "value";
     case 1: return "byte";
-    default: _ERROR_;
+    default:
+        dump_type(tp, __func__);
+        _ERROR_;
     }
     return NULL;
 }

@@ -1555,18 +1555,30 @@ static int Enum(void) {
     return 1;
 }
 
+    struct S;
+    struct S {
+        int a,b;
+        char c;
+        long d;
+        struct S *p;
+    };
+    static struct S s1g_a;
+
 static int Struct1(void) {
     struct S;
     struct S {
         int a,b;
         char c;
+        long d;
+        struct S *p;
     };
+    struct S a;
     struct S;
     struct {
         char s[5];
         int a[3];
-    };
-    return 1;
+    }s2;
+    return sizeof(struct S)==32 && sizeof(a)==32;
 }
 static int Struct(void) {
     TEST(Struct1);
@@ -1578,13 +1590,16 @@ static int Union1(void) {
     union U {
         int a,b;
         char c;
+        long d;
+        union U *p;
     };
+    union U a;
     union U;
     union {
         char s[5];
         int a[3];
-    };
-    return 1;
+    }u2;
+    return sizeof(union U)==8 && sizeof(a)==8;
 }
 static int Union(void) {
     TEST(Union1);

@@ -367,7 +367,7 @@ static Node *init_declarator(Type *decl_spec, Type *tp, char *name) {
 
 //    declarator              = pointer* direct_declarator
 //    direct_declarator       = identifier | "(" declarator ")"
-//                            = direct_declarator "[" assignment_expression? "]"
+//                            | direct_declarator "[" assignment_expression? "]"
 //                            | direct_abstract_declarator? "(" parameter_type_list? ")"  //関数宣言
 //declaration_specifiers, pointer, identifierまで先読み済みの可能性あり
 //戻り値のnodeはname、lhs（関数の場合の引数）、tp以外未設定
@@ -425,13 +425,26 @@ static Node *direct_declarator(Type *tp, char *name) {
         tp->node = node;
         expect(')');
         if (node->type==ND_FUNC_DECL) regist_func(node, 1);
-        return node;
+    } else {    //変数
+        if (token_is('[')) tp = array_def(tp);
+        node = new_node(ND_UNDEF, lhs, NULL, tp, NULL);
+        node->name = name;
+        node->input = input;
+
+        switch (tp->type) {
+        case ENUM:
+        case STRUCT:
+        case UNION:
+            if (tp->node->lst==NULL) {
+                SET_ERROR_WITH_NOTE;
+                error_at(node->input, "%sの型は不完全です", name);
+                note_at(tp->node->input, "型の宣言はここです");
+            }
+            break;
+        default:
+            break;
+        }
     }
-    
-    if (token_is('[')) tp = array_def(tp);
-    node = new_node(ND_UNDEF, lhs, NULL, tp, NULL);
-    node->name = name;
-    node->input = input;
     return node;
 }
 
@@ -590,6 +603,16 @@ static Type *pointer(Type *tp) {
 static Type *type_name(void) {
     Type *tp = specifier_qualifier_list();
     tp = abstract_declarator(tp);
+    switch (tp->type) {
+    case ENUM:
+    case STRUCT:
+    case UNION:
+        if (tp->node->lst==NULL) {
+            error_at(tp->node->input, "不完全な型の定義です");
+        }
+    default:
+        break;
+    }
     return tp;
 }
 static Type *abstract_declarator(Type *tp) {
@@ -768,7 +791,7 @@ static Node *struct_or_union_specifier(TPType type) {
         regist_tagname(node);
     }
     node->tp->node = node;
-    if (type==STRUCT) set_struct_size(node);
+    set_struct_size(node);
     //dump_type(node->tp,__func__);
     cur_structdef = old_cur_structdef;
     return node;
@@ -1365,6 +1388,7 @@ static Node *unary_expression(void) {
             if (next_token_is_type_spec()) {
                 consume('(');
                 tp = type_name();
+                //dump_type(tp,__func__);
                 expect(')');
             } else {
                 node = unary_expression();

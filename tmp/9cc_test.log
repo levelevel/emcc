@@ -770,9 +770,19 @@ int main(){int a; _Static_assert(a,"aaa");}
 # selftest ----------------
 int main(){struct E; enum E;}
 9cc:Error: selftest:1: int main(){struct E; enum E;}
-                                                 ^ 'E'はシンボルの重複定義です
+                                                 ^ 'E'はタグの重複定義です
 9cc:Note: selftest:1: int main(){struct E; enum E;}
                                         ^ 以前の定義はここです
+# selftest ----------------
+int main(){enum E e;}
+9cc:Error: selftest:1: int main(){enum E e;}
+                                         ^ eの型は不完全です
+9cc:Note: selftest:1: int main(){enum E e;}
+                                      ^ 型の宣言はここです
+# selftest ----------------
+int main(){return sizeof(enum E);}
+9cc:Error: selftest:1: int main(){return sizeof(enum E);}
+                                                     ^ 不完全な型の定義です
 # selftest ----------------
 int main(){enum E{};}
 9cc:Error: selftest:1: int main(){enum E{};}
@@ -839,9 +849,15 @@ int main(){enum ABC{A,B,C}; unsigned enum ABC abc;}
 # selftest ----------------
 int main(){enum S; struct S;}
 9cc:Error: selftest:1: int main(){enum S; struct S;}
-                                                 ^ 'S'はシンボルの重複定義です
+                                                 ^ 'S'はタグの重複定義です
 9cc:Note: selftest:1: int main(){enum S; struct S;}
                                       ^ 以前の定義はここです
+# selftest ----------------
+int main(){struct S e;}
+9cc:Error: selftest:1: int main(){struct S e;}
+                                           ^ eの型は不完全です
+9cc:Note: selftest:1: int main(){struct S e;}
+                                        ^ 型の宣言はここです
 # selftest ----------------
 int main(){struct S{}e;}
 9cc:Error: selftest:1: int main(){struct S{}e;}
@@ -867,9 +883,15 @@ int main(){struct S{int a; int b;}; unsigned struct S s;}
 # selftest ----------------
 int main(){struct U; union U;}
 9cc:Error: selftest:1: int main(){struct U; union U;}
-                                                  ^ 'U'はシンボルの重複定義です
+                                                  ^ 'U'はタグの重複定義です
 9cc:Note: selftest:1: int main(){struct U; union U;}
                                         ^ 以前の定義はここです
+# selftest ----------------
+int main(){union U u;}
+9cc:Error: selftest:1: int main(){union U u;}
+                                          ^ uの型は不完全です
+9cc:Note: selftest:1: int main(){union U u;}
+                                       ^ 型の宣言はここです
 # selftest ----------------
 int main(){union U{};}
 9cc:Error: selftest:1: int main(){union U{};}
@@ -899,6 +921,6 @@ int main(){union U{int a; int b;}; signed union U u;}
                                                           ^ enum/typedef/struct/union名に対してsigned/unsignedの指定はできません
 
 9cc self test
-Total : 193
-   Ok : 193
+Total : 197
+   Ok : 197
    NG : 0

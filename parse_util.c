@@ -53,19 +53,20 @@ int get_var_offset(const Type *tp) {
 void set_struct_size(Node *node) {
     assert(node->type==ND_STRUCT_DEF || node->type==ND_UNION_DEF);
     if (node->lst==NULL) return;
-    int max_align_size = 0, offset = 0;
+    int max_align_size = 0, max_size = 0, offset = 0;
     for (int i=0; i<lst_len(node->lst); i++) {
         Node *memb = get_lst_node(node->lst, i);
         int size = size_of(memb->tp);        
+        assert(size>0);
         int align_size = align_of(memb->tp);
         if (size>max_align_size) max_align_size = size;
-        assert(size>0);
+        if (size>max_size)       max_size       = size;
         offset = (offset +(align_size-1))/align_size * align_size;
-        memb->offset = offset;
+        if (node->type==ND_STRUCT_DEF) memb->offset = offset;
         offset += size;
     }
     offset = (offset +(max_align_size-1))/max_align_size * max_align_size;
-    node->val = offset;
+    node->val = node->type==ND_STRUCT_DEF ? offset : max_size;
 }
 
 static long calc_node(Node *node, long val1, long val2) {
@@ -250,6 +251,16 @@ Node *search_symbol(const char *name) {
     }
     return NULL;
 }
+Node *search_tagname(const char *name) {
+    Node *node = NULL;
+    for (int i=stack_len(tagname_stack)-1; i>=0; i--) {
+        Map *tagname_map = (Map*)stack_get(tagname_stack, i);
+        if (map_get(tagname_map, name, (void**)&node)!=0) {
+            return node;
+        }
+    }
+    return NULL;
+}
 
 //未登録の変数であればローカル変数またはグローバル変数として登録する
 void regist_var_def(Node *node) {
@@ -379,30 +390,28 @@ void regist_symbol(Node *node) {
 //タグ名を登録
 void regist_tagname(Node *node) {
     char *name = node->name;
-    Node *node2;
+    Node *node2 = search_tagname(node->name);
     Map *tagname_map = stack_top(tagname_stack); 
-    if (map_get(tagname_map, name, (void**)&node2)==0) {
+    if (node2==NULL) {
         map_put(tagname_map, name, node);
-    } else if (node2->type==ND_ENUM_DEF && node->type==ND_ENUM_DEF) {
-        if (node2->lst!=NULL && node->lst!=NULL) {
-            SET_ERROR_WITH_NOTE;
-            error_at(node->input, "enumの重複定義です");
-            note_at(node2->input, "以前の定義はここです");
-        } else if (node2->lst==NULL && node->lst!=NULL) {
-            map_put(tagname_map, name, node);
-        }
-    } else if ((node2->type==ND_STRUCT_DEF && node->type==ND_STRUCT_DEF) ||
+    } else if ((node2->type==ND_ENUM_DEF   && node->type==ND_ENUM_DEF) ||
+               (node2->type==ND_STRUCT_DEF && node->type==ND_STRUCT_DEF) ||
                (node2->type==ND_UNION_DEF  && node->type==ND_UNION_DEF)) {
-        if (node2->lst!=NULL && node->lst!=NULL) {
-            SET_ERROR_WITH_NOTE;
-            error_at(node->input, "struct/unionの重複定義です");
-            note_at(node2->input, "以前の定義はここです");
+        if (node2->lst!=NULL && node->lst!=NULL) {  //共に完全型
+            if (map_get(tagname_map, name, (void**)&node2)) {
+                //同一スコープ内での再定義はできない
+                SET_ERROR_WITH_NOTE;
+                error_at(node->input, "%sの重複定義です", node->type==ND_ENUM_DEF?"enum":"struct/union");
+                note_at(node2->input, "以前の定義はここです");
+            } 
         } else if (node2->lst==NULL && node->lst!=NULL) {
             map_put(tagname_map, name, node);
+        } else if (node2->lst!=NULL && node->lst==NULL) {
+            node->lst = node2->lst;
         }
     } else {
         SET_ERROR_WITH_NOTE;
-        error_at(node->input, "'%s'はシンボルの重複定義です", name);
+        error_at(node->input, "'%s'はタグの重複定義です", name);
         note_at(node2->input, "以前の定義はここです");
     }
 }

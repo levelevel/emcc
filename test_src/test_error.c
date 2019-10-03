@@ -183,6 +183,8 @@ struct {
     {ER, "int a; _Static_assert(a,\"aaa\");"},
     //enum
     {ER, "struct E; enum E;"},
+    {ER, "enum E e;"},
+    {ER, "return sizeof(enum E);"},
     {ER, "enum E{};"},
     {ER, "enum E{A}; enum E{A};"},
     {ER, "enum E{A}; enum E{B};"},
@@ -196,12 +198,14 @@ struct {
     {ER, "enum ABC{A,B,C}; unsigned enum ABC abc;"},
     //struct
     {ER, "enum S; struct S;"},
+    {ER, "struct S e;"},
     {ER, "struct S{}e;"},
     {ER, "struct S{int a;}e; struct S{int a;}e2;"},
     {ER, "struct S{int a; int a;}s;"},
     {ER, "struct S{int a; int b;}; unsigned struct S s;"},
     //union
     {ER, "struct U; union U;"},
+    {ER, "union U u;"},
     {ER, "union U{};"},
     {ER, "union U{int a;}; union U{int a;};"},
     {ER, "union U{int a; int a;};"},
