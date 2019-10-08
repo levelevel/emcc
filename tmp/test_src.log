@@ -1,66 +1,66 @@
-9cc:Warning: tmp/test_src.c:17: static int f42() {42; ;;;;;}
+9cc:Warning: tmp/test_src.c:32: static int f42() {42; ;;;;;}
                                                             ^ 関数が戻り値を返していません
-9cc:Warning: tmp/test_src.c:187: }
+9cc:Warning: tmp/test_src.c:202: }
                                   ^ 関数が戻り値を返していません
-9cc:Warning: tmp/test_src.c:333: }
+9cc:Warning: tmp/test_src.c:348: }
                                   ^ 関数が戻り値を返していません
-9cc:Warning: tmp/test_src.c:338: }
+9cc:Warning: tmp/test_src.c:353: }
                                   ^ 関数が戻り値を返していません
-9cc:Warning: tmp/test_src.c:389:     fd3_func();
+9cc:Warning: tmp/test_src.c:404:     fd3_func();
                                      ^ 未宣言の関数コールです。
-9cc:Warning: tmp/test_src.c:495:     return 0;
+9cc:Warning: tmp/test_src.c:510:     return 0;
                                      ^ static int**型の関数pointer3がint型を返しています
-9cc:Warning: tmp/test_src.c:792:         memcmp(str5, str6, sizeof(str5))==0;
+9cc:Warning: tmp/test_src.c:844:         memcmp(str5, str6, sizeof(str5))==0;
                                          ^ 未宣言の関数コールです。
-9cc:Warning: tmp/test_src.c:1124: }
+9cc:Warning: tmp/test_src.c:1190: }
                                    ^ 関数が戻り値を返していません
-9cc:Warning: tmp/test_src.c:674: static int ga2_b[4]={1,2,{3,99},4}, *ga2_p=&ga2_a, *ga2_q=&ga2_b[2], *ga2_r=ga2_a+3;
+9cc:Warning: tmp/test_src.c:726: static int ga2_b[4]={1,2,{3,99},4}, *ga2_p=&ga2_a, *ga2_q=&ga2_b[2], *ga2_r=ga2_a+3;
                                                            ^ スカラーがリストで初期化されています
-9cc:Warning: tmp/test_src.c:674: static int ga2_b[4]={1,2,{3,99},4}, *ga2_p=&ga2_a, *ga2_q=&ga2_b[2], *ga2_r=ga2_a+3;
+9cc:Warning: tmp/test_src.c:726: static int ga2_b[4]={1,2,{3,99},4}, *ga2_p=&ga2_a, *ga2_q=&ga2_b[2], *ga2_r=ga2_a+3;
                                                              ^ 初期化リストが配列サイズを超えています
-9cc:Warning: tmp/test_src.c:679: static char ga2c_b[4]={1,2,{3,99},4}, *ga2c_p=&ga2c_a, *ga2c_q=&ga2c_b[2], *ga2c_r=ga2c_a+3;
+9cc:Warning: tmp/test_src.c:731: static char ga2c_b[4]={1,2,{3,99},4}, *ga2c_p=&ga2c_a, *ga2c_q=&ga2c_b[2], *ga2c_r=ga2c_a+3;
                                                              ^ スカラーがリストで初期化されています
-9cc:Warning: tmp/test_src.c:679: static char ga2c_b[4]={1,2,{3,99},4}, *ga2c_p=&ga2c_a, *ga2c_q=&ga2c_b[2], *ga2c_r=ga2c_a+3;
+9cc:Warning: tmp/test_src.c:731: static char ga2c_b[4]={1,2,{3,99},4}, *ga2c_p=&ga2c_a, *ga2c_q=&ga2c_b[2], *ga2c_r=ga2c_a+3;
                                                                ^ 初期化リストが配列サイズを超えています
-9cc:Warning: tmp/test_src.c:798:  char sg1_str3[4] = "ABCDE";
+9cc:Warning: tmp/test_src.c:850:  char sg1_str3[4] = "ABCDE";
                                                           ^ 初期化リストが配列サイズを超えています
-9cc:Warning: tmp/test_src.c:799:  char sg1_str4[3] = "A\0B";
+9cc:Warning: tmp/test_src.c:851:  char sg1_str4[3] = "A\0B";
                                                          ^ 初期化リストが配列サイズを超えています
-9cc:Warning: tmp/test_src.c:933:  char i2g_c, *i2g_ac[3] = {0,&i2g_c+1,(char*)3,(char*)4};
+9cc:Warning: tmp/test_src.c:999:  char i2g_c, *i2g_ac[3] = {0,&i2g_c+1,(char*)3,(char*)4};
                                                                                 ^ 初期化リストが配列サイズを超えています
-9cc:Warning: tmp/test_src.c:687:     static int a[4]={1,2,{3,99},4}, *p=a, *q=&a[2], *r=a+3;
+9cc:Warning: tmp/test_src.c:739:     static int a[4]={1,2,{3,99},4}, *p=a, *q=&a[2], *r=a+3;
                                                            ^ スカラーがリストで初期化されています
-9cc:Warning: tmp/test_src.c:687:     static int a[4]={1,2,{3,99},4}, *p=a, *q=&a[2], *r=a+3;
+9cc:Warning: tmp/test_src.c:739:     static int a[4]={1,2,{3,99},4}, *p=a, *q=&a[2], *r=a+3;
                                                              ^ 初期化リストが配列サイズを超えています
-9cc:Warning: tmp/test_src.c:691:     static char a[4]={1,2,{3,99},4}, *p=a, *q=&a[2], *r=a+3;
+9cc:Warning: tmp/test_src.c:743:     static char a[4]={1,2,{3,99},4}, *p=a, *q=&a[2], *r=a+3;
                                                             ^ スカラーがリストで初期化されています
-9cc:Warning: tmp/test_src.c:691:     static char a[4]={1,2,{3,99},4}, *p=a, *q=&a[2], *r=a+3;
+9cc:Warning: tmp/test_src.c:743:     static char a[4]={1,2,{3,99},4}, *p=a, *q=&a[2], *r=a+3;
                                                               ^ 初期化リストが配列サイズを超えています
-9cc:Warning: tmp/test_src.c:825:     static char str3[4] = "ABCDE";
+9cc:Warning: tmp/test_src.c:877:     static char str3[4] = "ABCDE";
                                                                 ^ 初期化リストが配列サイズを超えています
-9cc:Warning: tmp/test_src.c:582:     int b[4]={1,2,{3,99},a[3]};
+9cc:Warning: tmp/test_src.c:597:     int b[4]={1,2,{3,99},a[3]};
                                                     ^ スカラーがリストで初期化されています
-9cc:Warning: tmp/test_src.c:582:     int b[4]={1,2,{3,99},a[3]};
+9cc:Warning: tmp/test_src.c:597:     int b[4]={1,2,{3,99},a[3]};
                                                       ^ 初期化リストが配列サイズを超えています
-9cc:Warning: tmp/test_src.c:589:     _Bool b[4]={1,2,{3,99},a[3]};
+9cc:Warning: tmp/test_src.c:615:     _Bool b[4]={1,2,{3,99},a[3]};
                                                       ^ スカラーがリストで初期化されています
-9cc:Warning: tmp/test_src.c:589:     _Bool b[4]={1,2,{3,99},a[3]};
+9cc:Warning: tmp/test_src.c:615:     _Bool b[4]={1,2,{3,99},a[3]};
                                                         ^ 初期化リストが配列サイズを超えています
-9cc:Warning: tmp/test_src.c:596:     char b[4]={1,2,{3,99},a[3]};
+9cc:Warning: tmp/test_src.c:626:     char b[4]={1,2,{3,99},a[3]};
                                                      ^ スカラーがリストで初期化されています
-9cc:Warning: tmp/test_src.c:596:     char b[4]={1,2,{3,99},a[3]};
+9cc:Warning: tmp/test_src.c:626:     char b[4]={1,2,{3,99},a[3]};
                                                        ^ 初期化リストが配列サイズを超えています
-9cc:Warning: tmp/test_src.c:605:     short b[4]={1,2,{3,99},a[3]};
+9cc:Warning: tmp/test_src.c:646:     short b[4]={1,2,{3,99},a[3]};
                                                       ^ スカラーがリストで初期化されています
-9cc:Warning: tmp/test_src.c:605:     short b[4]={1,2,{3,99},a[3]};
+9cc:Warning: tmp/test_src.c:646:     short b[4]={1,2,{3,99},a[3]};
                                                         ^ 初期化リストが配列サイズを超えています
-9cc:Warning: tmp/test_src.c:612:     long b[4]={1,2,{3,99},a[3]};
+9cc:Warning: tmp/test_src.c:653:     long b[4]={1,2,{3,99},a[3]};
                                                      ^ スカラーがリストで初期化されています
-9cc:Warning: tmp/test_src.c:612:     long b[4]={1,2,{3,99},a[3]};
+9cc:Warning: tmp/test_src.c:653:     long b[4]={1,2,{3,99},a[3]};
                                                        ^ 初期化リストが配列サイズを超えています
-9cc:Warning: tmp/test_src.c:779:     char str3[4] = "ABCDE";
+9cc:Warning: tmp/test_src.c:831:     char str3[4] = "ABCDE";
                                                          ^ 初期化リストが配列サイズを超えています
-9cc:Warning: tmp/test_src.c:780:     char str4[3] = "A\0B";
+9cc:Warning: tmp/test_src.c:832:     char str4[3] = "A\0B";
                                                         ^ 初期化リストが配列サイズを超えています
   OK: addsub1
   OK: addsub1b
@@ -144,6 +144,7 @@
   OK: chara1
   OK: func_name
   OK: string
+  OK: integer
   OK: init1
   OK: init1s
   OK: init1g

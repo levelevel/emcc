@@ -13,13 +13,13 @@
 ## セルフホストに向けたTODOリスト
 
 - 引数の数が6より多い関数
-- より厳密なC標準準拠（GCCの-std=c11 -pedantic-errors相当）
+- 暗黙の型変換
 - **構造体・共用体の実装**
   - 定義
+  - メンバのアラインメント
   - `.`
   - `->`
   - ビットフィールド
-  - メンバのアラインメント
   - 初期値
   - 配列の初期値（構造体）
   - 値の代入
@@ -28,6 +28,7 @@
 
 ## 当面実装予定なし
 
+- より厳密なC標準準拠（GCCの-std=c11 -pedantic-errors相当）
 - ローカル配列のサイズが定数でないケース。
 - [指示付きの初期化子 (Designated Initializer)](http://seclan.dll.jp/c99d/c99d07.htm#dt19991025)
 - [複合リテラル (Compound Literal)](http://seclan.dll.jp/c99d/c99d07.htm#dt19991101)

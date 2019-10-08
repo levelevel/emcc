@@ -101,6 +101,8 @@
     postfix_expression      = primary_expression 
                             | primary_expression "[" expression "]"
                             | primary_expression "(" assignment_expression? ( "," assignment_expression )* ")"
+                            | primary_expression "." identifier
+                            | primary_expression "->" identifier
                             | primary_expression "++"
                             | primary_expression "--"
     primary_expression      = num
@@ -1359,7 +1361,11 @@ static Node *unary_expression(void) {
         node = cast_expression();
     } else if (consume('-')) {
         node = cast_expression();
-        node = new_node('-', new_node_num(0, input), node, node->tp, input);
+        if (node->type==ND_NUM) {
+            node->val = -(node->val);
+        } else {
+            node = new_node(ND_NEG, NULL, node, node->tp, input);
+        }
     } else if (consume('!')) {
         node = new_node('!', NULL, cast_expression(), new_type(INT, 0), input);
     } else if (consume('~')) {
@@ -1416,6 +1422,8 @@ static Node *unary_expression(void) {
 //    postfix_expression      = primary_expression 
 //                            | primary_expression "[" expression "]"
 //                            | primary_expression "(" assignment_expression? ( "," assignment_expression )* ")"
+//                            | primary_expression "." identifier
+//                            | primary_expression "->" identifier
 //                            | primary_expression "++"
 //                            | primary_expression "--"
 static Node *postfix_expression(void) {
@@ -1438,10 +1446,6 @@ static Node *postfix_expression(void) {
             check_funccall(node);
         } else if (node->type==ND_IDENT) {
             error_at(node->input, "'%s'は未定義の変数です", node->name);
-        } else if (consume(TK_INC)) {
-            node = new_node(ND_INC, node, NULL, node->tp, input);
-        } else if (consume(TK_DEC)) {
-            node = new_node(ND_DEC, node, NULL, node->tp, input);
         } else if (consume('[')) {
             // a[3] => *(a+3)
             // a[3][2] => *(*(a+3)+2)
@@ -1452,6 +1456,15 @@ static Node *postfix_expression(void) {
             if (tp==NULL) error_at(input_str(), "ここでは配列を指定できません");
             node = new_node(ND_INDIRECT, NULL, node, tp, input);
             expect(']');
+        } else if (consume('.')) {
+            char *name;
+            expect_ident(&name, "struct/unionのメンバ名");
+
+            node = new_node(ND_DOT, node, NULL, node->tp, input);
+        } else if (consume(TK_INC)) {
+            node = new_node(ND_INC, node, NULL, node->tp, input);
+        } else if (consume(TK_DEC)) {
+            node = new_node(ND_DEC, node, NULL, node->tp, input);
         } else {
             break;
         }

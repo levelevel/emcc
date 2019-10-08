@@ -286,7 +286,7 @@ void regist_var_def(Node *node) {
             StorageClass sclass = get_storage_class(node->tp);
             switch (sclass) {
             case SC_STATIC:
-                node->offset = global_index++;
+                node->index = global_index++;
                 break;
             case SC_TYPEDEF:
                 break;
@@ -706,7 +706,7 @@ Node *new_node_string(String *string, char *input) {
     Type *tp = new_type_array(new_type(CHAR, 0), string->size);
     Node *node = new_node(ND_STRING, NULL, NULL, tp, input);
     node->string = *string;
-    node->val = new_string_literal(string); //インデックス
+    node->index = new_string_literal(string); //インデックス
 
     return node;
 }
@@ -717,6 +717,7 @@ Node *new_node_ident(char *name, char *input) {
     NDtype type;
     Type *tp;
     long offset = 0;
+    int index = 0;
 
     //定義済みの変数であるかをスコープの内側からチェック
     var_def = search_symbol(name);
@@ -738,6 +739,7 @@ Node *new_node_ident(char *name, char *input) {
         }
         tp = var_def->tp;
         offset = var_def->offset;
+        index  = var_def->index;
     } else {
         type = ND_IDENT;
         tp = NULL;
@@ -746,6 +748,7 @@ Node *new_node_ident(char *name, char *input) {
     node = new_node(type, NULL, NULL, tp, input);
     node->name   = name;
     node->offset = offset;
+    node->index  = index;
     //dump_node(node, __func__);
 
     return node;

@@ -140,6 +140,15 @@ struct {
     {ER, "static int a, b=a;",                 "静的ローカル変数を静的ローカル変数で初期化"},
     {ER, "int a; static int b=a;",             "静的ローカル変数を自動変数で初期化"},
     {ER, "int a[4]; static int *b=a;",         "静的ローカル変数を自動変数で初期化"},
+    //数値
+    {ER, "return 0xx5;",                       "不正な16進"},
+    {ER, "return 08;",                         "不正な8進"},
+    {ER, "return 5uu;",                        "uの重複"},
+    {ER, "return 5ulu;",                       "uの重複"},
+    {ER, "return 5llul;",                      "lの重複"},
+    {ER, "return 5x;",                         "ゴミ"},
+    {ER, "return 5LUx;",                       "ゴミ"},
+    //文字
     {ER, "return 'ab';",                       "複数文字"},
     {WR, "return '\\N';",                      "未定義のエスケープシーケンス"},
     {ER, "return '\\0123';",                   "4文字以上のoctal"},

@@ -181,6 +181,19 @@ static void gen_write_reg(const char*dst, const char*src, const Type *tp, const 
     else         printf("\n");
 }
 
+//[dst]レジスタが指すアドレスに即値をwriteする。
+static void gen_write_reg_const_val(const char*dst, long val, const Type *tp, const char* comment) {
+    if (tp->type==BOOL) val = val ? 1 : 0;
+    if (val>INT_MAX || val<INT_MIN) {
+        printf("  mov rax, %ld\n", val);
+        printf("  %s %s PTR [%s], %s", write_command_of_type(tp), ptr_name_of_type(tp), dst, reg_name_of_type("rax", tp));
+    } else {
+        printf("  %s %s PTR [%s], %ld", write_command_of_type(tp), ptr_name_of_type(tp), dst, val);
+    }
+    if (comment) printf("\t# %s\n", comment);
+    else         printf("\n");
+}
+
 //dstレジスタにsrcレジスタが指すアドレスからreadする。
 //型(tp)に応じてsrcの修飾子を調整する。例：intならDWORD PTR
 static void gen_read_reg(const char*dst, const char*src, const Type *tp, const char* comment) {
@@ -250,7 +263,7 @@ static char *get_asm_var_name(Node *node) {
     switch (node->type) {
     case ND_LOCAL_VAR:
         if (type_is_static(node->tp)) {
-            sprintf(buf, "%s.%03d", node->name, node->offset);
+            sprintf(buf, "%s.%03d", node->name, node->index);
         } else {
             sprintf(buf, "rbp-%d", node->offset);
         }
@@ -312,7 +325,7 @@ static int gen_array_init_local_sub(Type *tp, Node *init, int start_idx, int off
         // [rdi++] = [rsi++] を rcx回繰り返す
         printf("  mov rdi, QWORD PTR [rsp]\n");
         if (offset) printf("  add rdi, %d\n", offset);
-        printf("  lea rsi, BYTE PTR .LC%03ld\n", init->val);
+        printf("  lea rsi, BYTE PTR .LC%03d\n", init->index);
         printf("  mov rcx, %d\n", data_len);
         printf("  rep movsb\n");
         if (array_size > data_len) gen_fill_zero("rdi", 0, array_size-data_len);
@@ -328,32 +341,36 @@ static int gen_array_init_local_sub(Type *tp, Node *init, int start_idx, int off
     int type_size = size_of(tp->ptr_of);   //左辺の型のサイズ
     data_len = init->lst->len;
     if (array_size < data_len) data_len = array_size;
+    //data_len個のデータをdata_len*type_sizeのtype型のバイト列に変換
     char *data = get_byte_string(init, start_idx, data_len, type_size, tp->ptr_of->type);
-    int i;
+    int idx;
     if (data) { //定数のみの初期値
         printf("  mov rdi, QWORD PTR [rsp]\n");
         switch (type_size) {
         case 1:
-            for (i=0; i<data_len; i++) {
-                printf("  movb BYTE PTR [rdi+%d], %d\n", i*type_size+offset, data[i]);
+            for (idx=0; idx<data_len; idx++) {
+                printf("  movb BYTE PTR [rdi+%d], %d\n", idx*type_size+offset, data[idx]);
             }
             break;
         case 2: ;
             short *datas = (short*)data;
-            for (i=0; i<data_len; i++) {
-                printf("  mov WORD PTR [rdi+%d], %d\n", i*type_size+offset, datas[i]);
+            for (idx=0; idx<data_len; idx++) {
+                printf("  mov WORD PTR [rdi+%d], %d\n", idx*type_size+offset, datas[idx]);
             }
             break;
         case 4: ;
             int *datai = (int*)data;
-            for (i=0; i<data_len; i++) {
-                printf("  mov DWORD PTR [rdi+%d], %d\n", i*type_size+offset, datai[i]);
+            for (idx=0; idx<data_len; idx++) {
+                printf("  mov DWORD PTR [rdi+%d], %d\n", idx*type_size+offset, datai[idx]);
             }
             break;
         case 8: ;
             long *datal = (long*)data;
-            for (i=0; i<data_len; i++) {
-                printf("  mov QWORD PTR [rdi+%d], %ld\n", i*type_size+offset, datal[i]);
+            for (idx=0; idx<data_len; idx++) {
+                char buf[32];
+                sprintf(buf, "rdi+%d", idx*type_size+offset);
+                gen_write_reg_const_val(buf, datal[idx], tp, NULL);
+                //printf("  mov QWORD PTR [rdi+%d], %ld\n", i*type_size+offset, datal[i]);
             }
             break;
         default:
@@ -362,18 +379,18 @@ static int gen_array_init_local_sub(Type *tp, Node *init, int start_idx, int off
         }
     } else {    //初期値に定数でない式を含む場合
         Node **nodes = (Node**)init->lst->data;
-        for (i=0; i<data_len; i++) {
-            gen(nodes[i]);
+        for (idx=0; idx<data_len; idx++) {
+            gen(nodes[idx]);
             printf("  pop rax\n");
             printf("  mov rdi, QWORD PTR [rsp]\n");
             printf("  %s %s PTR [rdi+%d], %s\n", 
                 write_command_of_type(tp->ptr_of),
-                ptr_name_of_type(tp->ptr_of), i*type_size+offset,
+                ptr_name_of_type(tp->ptr_of), idx*type_size+offset,
                 reg_name_of_type("rax", tp->ptr_of));
             printf("  push rdi\n");
         }
     }
-    if (array_size > data_len) gen_fill_zero("rdi", i*type_size+offset, (array_size-data_len)*type_size);
+    if (array_size > data_len) gen_fill_zero("rdi", idx*type_size+offset, (array_size-data_len)*type_size);
     return array_size;
 }
 static void gen_array_init_local(Node *node) {
@@ -422,8 +439,8 @@ static int gen_array_init_global_sub(Type *tp, Node *init, int start_idx) {
         init->type==ND_STRING) {
         //文字列リテラルによる初期化: char a[]="ABC";
         data_len = init->tp->array_size;
-        String *string = get_string_literal(init->val);
-        unuse_string_literal(init->val);
+        String *string = get_string_literal(init->index);
+        unuse_string_literal(init->index);
         if (array_size < data_len) {
             string->size = array_size;
         }
@@ -466,7 +483,7 @@ static int gen_array_init_global_sub(Type *tp, Node *init, int start_idx) {
         } else if (var) {
             printf("  .%s %s\n", val_name, var->rhs->name);
         } else if (nodes[i]->type==ND_STRING) {
-            printf("   .quad .LC%03ld\n", nodes[i]->val);
+            printf("   .quad .LC%03d\n", nodes[i]->index);
             //abort();
         } else {
             if (tp->ptr_of->type==BOOL) {
@@ -479,7 +496,7 @@ static int gen_array_init_global_sub(Type *tp, Node *init, int start_idx) {
     return array_size;
 }
 
-static void gen_array_init_local_global(Node *node) {
+static void gen_array_init_global(Node *node) {
     assert(node->type=='=');
     assert(node->lhs->type==ND_GLOBAL_VAR || node_is_local_static_var(node->lhs));
     assert(node->lhs->tp->type==ARRAY);
@@ -541,6 +558,13 @@ static void gen_write_var(Node *node, char *reg) {
     }
 }
 
+//即値を変数にwriteする。raxは保存されない
+static void gen_write_var_const_val(Node *node, long val) {
+    char cbuf[256];
+    sprintf(cbuf, "%s(%s)", node->name, get_type_str(node->tp));
+    gen_write_reg_const_val(get_asm_var_name(node), val, node->tp, cbuf);
+}
+
 //raxを_Boolに変換する。
 static void gen_bool_rax(void) {
     printf("  cmp rax, 0\n");
@@ -577,7 +601,7 @@ static int gen(Node*node) {
         printf("  push %d\t# %s (%s)\n", (int)node->val, node->name, get_type_str(node->lhs->tp));
         break;
     case ND_STRING:         //文字列リテラル
-        sprintf(buf, ".LC%03ld", node->val);
+        sprintf(buf, ".LC%03d", node->index);
         printf("  lea rax, BYTE PTR %s\n", buf);
         printf("  push rax\n");             //文字列リテラルのアドレスを返す
         break;
@@ -837,6 +861,9 @@ static int gen(Node*node) {
             gen_lval(node->lhs);
             gen_array_init_local(node);
             return 0;
+        } else if (node->rhs->type==ND_NUM && node->lhs->type==ND_LOCAL_VAR) {
+            gen_write_var_const_val(node->lhs, node->rhs->val);
+            printf("  push rax\n");
         } else {
             gen(node->rhs);
             if (node->lhs->tp->type==BOOL) gen_bool();
@@ -938,6 +965,13 @@ static int gen(Node*node) {
             if (node->tp->type==BOOL) gen_bool_rax();
         }
         gen_write_reg("rdi", "rax", node->lhs->tp, NULL);
+        break;
+    case ND_NEG:            //-a
+        comment("'-A'\n");
+        gen(node->rhs);
+        printf("  pop rax\n");
+        printf("  neg rax\n");
+        printf("  push rax\n");
         break;
     case ND_NOT:            //否定('!')
         comment("'!'\n");
@@ -1163,7 +1197,7 @@ static void gen_global_var(Node *node) {
         printf(".global %s\n", node->name);
     if (align_size > 1) printf(".align %d\n", align_size);
     if (node->type == ND_LOCAL_VAR_DEF && type_is_static(node->tp)) {
-        printf("%s.%03d:\t# %s\n", node->name, node->offset, get_type_str(node->tp));
+        printf("%s.%03d:\t# %s\n", node->name, node->index, get_type_str(node->tp));
     } else {
         printf("%s:\t# %s\n", node->name, get_type_str(node->tp));
     }
@@ -1209,7 +1243,7 @@ static void gen_global_var(Node *node) {
                 gen_single_val("quad", rhs);
                 break;
             case ND_STRING:
-                printf("  .quad .LC%03ld\n", rhs->val);
+                printf("  .quad .LC%03d\n", rhs->index);
                 break;
             case '+':
                 printf("  .quad %s%+ld\n", get_asm_var_name(rhs->lhs), size_of(node->tp->ptr_of)*rhs->rhs->val);
@@ -1219,7 +1253,7 @@ static void gen_global_var(Node *node) {
             }
             break;
         case ARRAY:
-            gen_array_init_local_global(node->rhs);
+            gen_array_init_global(node->rhs);
             return;
         default:
             _NOT_YET_(node);

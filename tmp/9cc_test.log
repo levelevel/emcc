@@ -616,6 +616,41 @@ int main(){int a[4]; static int *b=a;}
 9cc:Error: selftest:1: int main(){int a[4]; static int *b=a;}
                                                           ^ 静的ローカル変数の初期値が定数ではありません
 # selftest ----------------
+# [不正な16進]
+int main(){return 0xx5;}
+9cc:Error: selftest:1: int main(){return 0xx5;}
+                                          ^ 不正な整数サフィックスです
+# selftest ----------------
+# [不正な8進]
+int main(){return 08;}
+9cc:Error: selftest:1: int main(){return 08;}
+                                         ^ 不正な8進表記です
+# selftest ----------------
+# [uの重複]
+int main(){return 5uu;}
+9cc:Error: selftest:1: int main(){return 5uu;}
+                                          ^ 不正な整数サフィックスです
+# selftest ----------------
+# [uの重複]
+int main(){return 5ulu;}
+9cc:Error: selftest:1: int main(){return 5ulu;}
+                                          ^ 不正な整数サフィックスです
+# selftest ----------------
+# [lの重複]
+int main(){return 5llul;}
+9cc:Error: selftest:1: int main(){return 5llul;}
+                                          ^ 不正な整数サフィックスです
+# selftest ----------------
+# [ゴミ]
+int main(){return 5x;}
+9cc:Error: selftest:1: int main(){return 5x;}
+                                          ^ 不正な整数サフィックスです
+# selftest ----------------
+# [ゴミ]
+int main(){return 5LUx;}
+9cc:Error: selftest:1: int main(){return 5LUx;}
+                                          ^ 不正な整数サフィックスです
+# selftest ----------------
 # [複数文字]
 int main(){return 'ab';}
 9cc:Error: selftest:1: int main(){return 'ab';}
@@ -921,6 +956,6 @@ int main(){union U{int a; int b;}; signed union U u;}
                                                           ^ enum/typedef/struct/union名に対してsigned/unsignedの指定はできません
 
 9cc self test
-Total : 197
-   Ok : 197
+Total : 204
+   Ok : 204
    NG : 0

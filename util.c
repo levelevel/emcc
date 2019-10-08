@@ -236,10 +236,13 @@ const char *get_NDtype_str(NDtype type) {
     ENUM2STR(ND_LOCAL_VAR);
     ENUM2STR(ND_GLOBAL_VAR);
     ENUM2STR(ND_CAST);
+    ENUM2STR(ND_DOT);
+    ENUM2STR(ND_POINTER);
     ENUM2STR(ND_INC);
     ENUM2STR(ND_DEC);
     ENUM2STR(ND_INC_PRE);
     ENUM2STR(ND_DEC_PRE);
+    ENUM2STR(ND_NEG);
     ENUM2STR(ND_INDIRECT);
     ENUM2STR(ND_ADDRESS);
     ENUM2STR(ND_EQ);
@@ -308,12 +311,12 @@ static void dump_node_indent(FILE *fp, const Node *node, const char *str, int in
         fprintf(fp, "Node[null]\n");
         return;        
     }
-    fprintf(fp, "Node[%p]:type=%s, name=\"%s\", tp=%s, offset=%d, val=%ld, unused=%d\n", 
+    fprintf(fp, "Node[%p]:type=%s, name=\"%s\", tp=%s, offset=%d, index=%d, val=%ld, unused=%d\n", 
         (void*)node,
         get_NDtype_str(node->type),
         node->name?node->name:"",
         get_type_str(node->tp),
-        node->offset, node->val, node->unused);
+        node->offset, node->index, node->val, node->unused);
     if (node->lhs) dump_node_indent(fp, node->lhs, "lhs=", indent+2);
     if (node->rhs) dump_node_indent(fp, node->rhs, "rhs=", indent+2);
     if (node->lst && indent<10) {

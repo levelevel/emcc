@@ -57,6 +57,7 @@ typedef enum {
     TK_EXTERN,      //storage_class
     TK_TYPEDEF,     //storage_class
     //ここまで型
+    TK_POINTER,     // ->
     TK_INC,         // ++
     TK_DEC,         // --
     TK_EQ,          // ==
@@ -84,7 +85,6 @@ typedef enum {
     TK_SIZEOF,      //sizeof
     TK_ALIGNOF,     //_Alignof (C11)
     TK_SASSERT,     //_Static_assert
-    TK_POINTER,     //st->a
     TK_3DOTS,       // ...
     TK_EOF,         //入力の終わり
 } TKtype;
@@ -98,6 +98,8 @@ typedef struct String {
 typedef struct {
     TKtype type;    //トークンの型
     long val;       //typeがTK_TOKENの場合、値
+    char is_unsigned;   //123U
+    char is_long;       //123L
     union {
     char *ident;    //typeがTK_IDENTの場合、その文字列
     String string;  //typeがTK_STRINGの場合、その文字列
@@ -130,13 +132,16 @@ typedef enum {
     ND_TYPEDEF,     //typedef           name=typedef名, tp->sclass=SC_TYPEDEF
     ND_STRUCT_DEF,  //struct            name=struct名/NULL, lst=node(ND_MEMBER_DEF)
     ND_UNION_DEF,   //union             name=union名/NULL, lst=node(ND_MEMBER_DEF)
-    ND_LOCAL_VAR,   //ローカル変数の参照
-    ND_GLOBAL_VAR,  //グローバル変数の参照
+    ND_LOCAL_VAR,   //ローカル変数の参照    name=変数名、offset=RBPからのオフセット(AUTO)/global_index(STATIC)
+    ND_GLOBAL_VAR,  //グローバル変数の参照  name=変数名、offset=0
     ND_CAST,        //キャスト
+    ND_DOT,         // st.memb
+    ND_POINTER,     // st->memb
     ND_INC,         // a++
     ND_DEC,         // a--
     ND_INC_PRE,     // ++a
     ND_DEC_PRE,     // --a
+    ND_NEG,         // -a
     ND_INDIRECT,    // *（間接参照）
     ND_ADDRESS,     // &（アドレス演算子）
     ND_EQ,          // ==
@@ -150,7 +155,8 @@ typedef enum {
     ND_PLUS_ASSIGN, // +=
     ND_MINUS_ASSIGN,// -=
     ND_LOCAL_VAR_DEF,   //int A=B;      name=A, rhs=Node（"A=B"の形式の初期化式、初期値がない場合はNULL）
-    ND_GLOBAL_VAR_DEF,  //int A=B;      同上
+                        //              offset=RBPからのオフセット(AUTO)/global_index(STATIC)
+    ND_GLOBAL_VAR_DEF,  //int A=B;      同上、offset=0
     ND_MEMBER_DEF,  // struct {int A;}; name=A
     ND_IF,          // if(A)B else C    lhs->lhs=A, lhs->rhs=B, rhs=C
     ND_SWITCH,      // switch(A)B       lhs=A, rhs=B, lst=node(ND_CASE,ND_DEFAULT)
@@ -225,10 +231,10 @@ struct Node {
     NDtype type;    //nodeの型：演算子、ND_INDENTなど
     char unused;    //無効（重複した宣言など：コード生成時には無視する）
     int offset;     //auto変数：ベースポインタからのoffset
-                    //static変数：識別用index（global_index）
-                    //構造体のメンバ：先頭アドレスからのoffset
-    long val;       //typeがND_NUMの場合の値
+                    //typeがND_MEMBER_DEFの場合の先頭アドレスからのoffset。UNIONの場合は常に0
+    int index;      //static変数：識別用index（global_index）
                     //typeがND_STRINGの場合のstring_vecのインデックス
+    long val;       //typeがND_NUMの場合の値
                     //typeがND_STRUCT/UNION_DEFの場合のサイズ
     Node *lhs;
     Node *rhs;

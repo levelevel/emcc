@@ -18,6 +18,8 @@ size_t strlen(const char *s);
 #include <stdarg.h>
 #endif
 
+#include <limits.h>
+
 #define GLOBAL
 static int test_cnt = 0;
 #define TEST(f) test_cnt++;if(!f()) {printf("Error at %s:%d:%s\n",__FILE__,__LINE__,#f);exit(1);} else {printf("  OK: %s\n",#f);}
@@ -597,22 +599,30 @@ static int array2() {
     int a[4]={1,2,3,4}, *p=a, *q=&a[2], *r=a+3;
     int b[4]={1,2,{3,99},a[3]};
     int c[4]={1};
-    return af2(a)==6 && p[1]==2 && *q==3 && *r==4 && b[3]==4 && af2(c)==1;
+    int d[]={INT_MIN, INT_MAX};
+    unsigned int du[] = {UINT_MAX};
+    return af2(a)==6 && p[1]==2 && *q==3 && *r==4 && b[3]==4 && af2(c)==1
+        && d[0]==INT_MIN && d[1]==INT_MAX && du[0]==UINT_MAX;
 }
 static _Bool af2b(_Bool *a){return a[0]+a[1]+a[2];}
 static int array2b() {
     _Bool a[4]={1,2,3,4}, *p=a, *q=&a[2], *r=a+3;
     _Bool b[4]={1,2,{3,99},a[3]};
     _Bool c[4]={1};
-    return af2b(a)==1 && p[1]==1 && *q==1 && *r==1 && b[3]==1 && af2b(c)==1;
+    _Bool d[]={INT_MIN, INT_MAX};
+    return af2b(a)==1 && p[1]==1 && *q==1 && *r==1 && b[3]==1 && af2b(c)==1
+        && d[0]==1 && d[1]==1;
 }
 static char af2c(char *a){return a[0]+a[1]+a[2];}
 static int array2c() {
     char a[4]={1,2,3,4}, *p=a, *q=&a[2], *r=a+3;
     char b[4]={1,2,{3,99},a[3]};
     char c[4]={1};
+    char d[]={CHAR_MIN, CHAR_MAX};
+    unsigned char du[] = {UCHAR_MAX};
     char s1[]="ab" "c", s2[4]={'A', 'B', 'C', 0};
     return af2c(a)==6 && p[1]==2 && *q==3 && *r==4 && b[3]==4 && af2c(c)==1
+        && d[0]==CHAR_MIN && d[1]==CHAR_MAX && du[0]==UCHAR_MAX
         && strcmp(s1, "abc")==0 && strcmp(s2, "ABC")==0;
 }
 static short af2s(short *a){return a[0]+a[1]+a[2];}
@@ -627,7 +637,10 @@ static int array2l() {
     long a[4]={1,2,3,4}, *p=a, *q=&a[2], *r=a+3;
     long b[4]={1,2,{3,99},a[3]};
     long c[4]={1};
-    return af2l(a)==6 && p[1]==2 && *q==3 && *r==4 && b[3]==4 && af2l(c)==1;
+    long d[]={LONG_MIN, LONG_MAX};
+    unsigned long du[] = {ULONG_MAX};
+    return af2l(a)==6 && p[1]==2 && *q==3 && *r==4 && b[3]==4 && af2l(c)==1
+        && d[0]==LONG_MIN && d[1]==LONG_MAX && du[0]==ULONG_MAX;
 }
 static int array3() {   //2次元
     int a[4][5], *p=(int*)a, b[4][5][6], *q=(int*)b;
@@ -868,6 +881,20 @@ static int string() {
     TEST(chara1);
     TEST(func_name);
     return 1;
+}
+
+static int integer(void) {
+    int a[]={1U, 1L, 1LL, 1UL, 1LU,
+             0x1u, 0x1l, 0x1ll, 0x1ul, 0x1lu,
+             01Ul, 01uL, 01uL, 01Ul};
+    long b[]={-1U, -1L, -1LL, -1UL, -1LU};
+    int size_a = sizeof(a)/sizeof(a[0]);
+    int total_a = 0;
+    for (int i=0;i<size_a;i++) total_a += a[i];
+    int size_b = sizeof(b)/sizeof(b[0]);
+    long total_b = -1;
+    for (int i=1;i<size_b;i++) total_b += b[i];
+    return size_a==total_a && size_b==-total_b;// && b[0]==★;
 }
 
 static int init1() {
@@ -1686,6 +1713,7 @@ int main() {
     TEST(pointer);
     TEST(array);
     TEST(string);
+    TEST(integer);
     TEST(init);
     TEST(align);
     TEST(size_of);
