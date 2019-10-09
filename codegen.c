@@ -507,22 +507,23 @@ static void gen_array_init_global(Node *node) {
     }
 }
 
-//式を左辺値として評価し、そのアドレスをPUSHする
-static void gen_lval(Node*node) {
+//式を左辺値として評価し、rdiにセットする。push!=0ならばさらにPUSHする
+static void gen_lval(Node*node, int push) {
     if (node->type == ND_LOCAL_VAR) {   //ローカル変数
         comment("LVALUE:%s (LOCAL:%s)\n", node->name, get_type_str(node->tp));
-        printf("  lea rax, [%s]\n", get_asm_var_name(node));
-        printf("  push rax\n");
+        printf("  lea rdi, [%s]\n", get_asm_var_name(node));
+        if (push) printf("  push rdi\n");
     } else if (node->type == ND_GLOBAL_VAR) {   //グローバル変数
         comment("LVALUE:%s (GLOBAL:%s)\n", node->name, get_type_str(node->tp));
-        printf("  lea rax, %s\n", node->name);
-        printf("  push rax\n");
+        printf("  lea rdi, %s\n", node->name);
+        if (push) printf("  push rdi\n");
     } else if (node->type == ND_INDIRECT) {
         comment("LVALUE:*var\n");
         gen(node->rhs);     //rhsのアドレスを生成する
+        if (!push) printf("  pop rdi\n");
     } else if (node->type == ND_CAST) {
         comment("LVALUE (%s)var\n", get_type_str(node->tp));
-        gen_lval(node->rhs);
+        gen_lval(node->rhs, push);
     } else {
         error_at(node->input, "アドレスを生成できません");
     }
@@ -536,8 +537,8 @@ static void gen_read_var(Node *node, const char *reg) {
     if (node->type==ND_LOCAL_VAR || node->type==ND_GLOBAL_VAR) {
         gen_read_reg(reg, get_asm_var_name(node), node->tp, cbuf);
     } else {
-        gen_lval(node);
-        printf("  pop rax\n");  //rhsのアドレス=戻り値
+        gen_lval(node, 0);  //raxにrhsのアドレスがセットされる
+        //printf("  pop rax\n");  //rhsのアドレス=戻り値
         gen_read_reg(reg, "rax", node->tp, cbuf);
     }
 }
@@ -551,10 +552,11 @@ static void gen_write_var(Node *node, char *reg) {
         printf("  pop %s\n", reg);  //writeする値
         gen_write_reg(get_asm_var_name(node), reg, node->tp, cbuf);
     } else {
-        gen_lval(node);
-        printf("  pop rcx\n");  //変数のアドレス
+        assert(strcmp("rdi", reg)!=0);
+        gen_lval(node, 0);  //nodeのアドレスをrdiにセット
+        //printf("  pop rdi\n");  //変数のアドレス
         printf("  pop %s\n", reg);  //writeする値
-        gen_write_reg("rcx", reg, node->tp, cbuf);
+        gen_write_reg("rdi", reg, node->tp, cbuf);
     }
 }
 
@@ -620,7 +622,7 @@ static int gen(Node*node) {
         if (node->tp->type==ARRAY) {
             //アドレスをそのまま返す
             comment("%s_VAR:%s(%s)\n", node->type==ND_LOCAL_VAR?"LOCAL":"GLOBAL", node->name, get_type_str(node->tp));
-            gen_lval(node);
+            gen_lval(node, 1);  //nodeのアドレスをpush
         } else {
             gen_read_var(node, "rax");
             printf("  push rax\n");
@@ -858,7 +860,7 @@ static int gen(Node*node) {
         comment("'='\n");
         if (node->lhs->tp->type==ARRAY) {   //ローカル変数の配列の初期値
             //ここに到達するのはローカル変数の配列の初期化のはず
-            gen_lval(node->lhs);
+            gen_lval(node->lhs, 1); //lhsのアドレスをpush
             gen_array_init_local(node);
             return 0;
         } else if (node->rhs->type==ND_NUM && node->lhs->type==ND_LOCAL_VAR) {
@@ -874,7 +876,7 @@ static int gen(Node*node) {
     case ND_PLUS_ASSIGN:    //+=
     case ND_MINUS_ASSIGN:   //-=
         comment("'A+=B'\n");
-        gen_lval(node->lhs);
+        gen_lval(node->lhs, 1); //lhsのアドレスをpush
         printf("  mov rdi, QWORD PTR [rsp]\n");  //lhsのアドレス
         gen_read_reg("rax", "rdi", node->lhs->tp, NULL);    //lhsの値
         printf("  push rax\n"); //lhsの値
@@ -908,12 +910,11 @@ static int gen(Node*node) {
         break;
     case ND_ADDRESS:        //&a（アドレス演算子）
         comment("'&A'\n");
-        gen_lval(node->rhs);
+        gen_lval(node->rhs, 1); //rhsのアドレスをpush
         break;
     case ND_INC_PRE:        //++a
         comment("'++A'\n");
-        gen_lval(node->rhs);
-        printf("  pop rdi\n");  //rhsのアドレス
+        gen_lval(node->rhs, 0); //rdiにrhsのアドレスをセット
         gen_read_reg("rax", "rdi", node->rhs->tp, NULL);
         if (node_is_ptr(node)) {
             printf("  add rax, %ld\n", size_of(node->tp->ptr_of));
@@ -926,8 +927,7 @@ static int gen(Node*node) {
         break;
     case ND_DEC_PRE:        //--a
         comment("'--A'\n");
-        gen_lval(node->rhs);
-        printf("  pop rdi\n");  //rhsのアドレス
+        gen_lval(node->rhs, 0); //rdiにrhsのアドレスをセット
         gen_read_reg("rax", "rdi", node->rhs->tp, NULL);
         if (node_is_ptr(node)) {
             printf("  sub rax, %ld\n", size_of(node->tp->ptr_of));
@@ -940,8 +940,7 @@ static int gen(Node*node) {
         break;
     case ND_INC:            //a++
         comment("'A++'\n");
-        gen_lval(node->lhs);
-        printf("  pop rdi\n");  //lhsのアドレス
+        gen_lval(node->lhs, 0); //rdiにlhsのアドレスをセット
         gen_read_reg("rax", "rdi", node->lhs->tp, NULL);
         printf("  push rax\n"); //INCする前に戻り値を設定
         if (node_is_ptr(node)) {
@@ -954,8 +953,7 @@ static int gen(Node*node) {
         break;
     case ND_DEC:            //a--
         comment("'A--'\n");
-        gen_lval(node->lhs);
-        printf("  pop rdi\n");  //lhsのアドレス
+        gen_lval(node->lhs, 0); //rdiにlhsのアドレスをセット
         gen_read_reg("rax", "rdi", node->lhs->tp, NULL);
         printf("  push rax\n"); //DECする前に戻り値を設定
         if (node_is_ptr(node)) {
