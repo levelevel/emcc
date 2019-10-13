@@ -214,6 +214,7 @@ struct {
     {ER, "struct S{int a; int b;}; unsigned struct S s;"},
     {ER, "int a; return a.b;"},
     {ER, "struct S{int a;}s; return s.x"},
+    {ER, "typedef struct ST st_t;{struct ST{int a,b;}; st_t st;}", "スコープの違い"},
     //union
     {ER, "struct U; union U;"},
     {ER, "union U u;"},
@@ -223,6 +224,7 @@ struct {
     {ER, "union U{int a; int b;}u; int u;"},
     {ER, "union U{int a; int b;}; signed union U u;"},
     {ER, "union U{int a; int b;}u; return u.x;"},
+    {ER, "typedef union UN un_t;{union UN{int a,b;}; un_t un;}", "スコープの違い"},
     {ER, NULL}
 };
 

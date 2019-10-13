@@ -924,6 +924,13 @@ int main(){struct S{int a;}s; return s.x}
 9cc:Error: selftest:1: int main(){struct S{int a;}s; return s.x}
                                                               ^ struct/union Sにxは存在しません
 # selftest ----------------
+# [スコープの違い]
+int main(){typedef struct ST st_t;{struct ST{int a,b;}; st_t st;}}
+9cc:Error: selftest:1: int main(){typedef struct ST st_t;{struct ST{int a,b;}; st_t st;}}
+                                                                                    ^ stの型は不完全です
+9cc:Note: selftest:1: int main(){typedef struct ST st_t;{struct ST{int a,b;}; st_t st;}}
+                                                ^ 型の宣言はここです
+# selftest ----------------
 int main(){struct U; union U;}
 9cc:Error: selftest:1: int main(){struct U; union U;}
                                                   ^ 'U'はタグの重複定義です
@@ -967,7 +974,14 @@ int main(){union U{int a; int b;}; signed union U u;}
 int main(){union U{int a; int b;}u; return u.x;}
 9cc:Error: selftest:1: int main(){union U{int a; int b;}u; return u.x;}
                                                                     ^ struct/union Uにxは存在しません
+# selftest ----------------
+# [スコープの違い]
+int main(){typedef union UN un_t;{union UN{int a,b;}; un_t un;}}
+9cc:Error: selftest:1: int main(){typedef union UN un_t;{union UN{int a,b;}; un_t un;}}
+                                                                                  ^ unの型は不完全です
+9cc:Note: selftest:1: int main(){typedef union UN un_t;{union UN{int a,b;}; un_t un;}}
+                                               ^ 型の宣言はここです
 9cc self test
-Total : 207
-   Ok : 207
+Total : 209
+   Ok : 209
    NG : 0

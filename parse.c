@@ -406,7 +406,13 @@ static Node *direct_declarator(Type *tp, char *name) {
         Funcdef *org_funcdef = cur_funcdef;
         tp = new_type_func(tp, node);
         if (nest_tp) {  //関数のポインタ定義 int(*fp)();
+            cur_funcdef = new_funcdef();    //一時的にcur_funcdefを作成しスコープを生成
+            stack_push(symbol_stack, cur_funcdef->symbol_map);
+            stack_push(tagname_stack, cur_funcdef->tagname_map);
             node->lhs = parameter_type_list();
+            cur_funcdef = org_funcdef;      //一時的なcur_funcdefはここで捨てる
+            stack_pop(symbol_stack);
+            stack_pop(tagname_stack);
             Type *p = nest_tp;
             for (;;) {
                 if (p->type==PTR) {
@@ -425,12 +431,12 @@ static Node *direct_declarator(Type *tp, char *name) {
             if (cur_funcdef && type_is_static(tp)) {
                 error_at(input, "ブロック内のstatic関数");
             }
-            node = new_node_func(name, tp, input);
+            node = new_node_func(name, tp, input);  //ここで新たなcur_funcdef設定
             stack_push(symbol_stack,  cur_funcdef->symbol_map);
-            //stack_push(tagname_stack, cur_funcdef->tagname_map);
+            stack_push(tagname_stack, cur_funcdef->tagname_map);
             node->lhs = parameter_type_list();
             stack_pop(symbol_stack);
-            //stack_pop(tagname_stack);
+            stack_pop(tagname_stack);
             if (org_funcdef) cur_funcdef = org_funcdef;
         }
         tp->node = node;
