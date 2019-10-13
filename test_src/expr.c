@@ -104,6 +104,31 @@ static int addsub() {
         8<<2==32;
 }
 
+static int assign1(void) {
+    int a,b,c, x,y,z;
+    a = b = (c = 1);
+    x = (y=1, z=2);
+    return a==1 && b==1 && c==1 && x==2, y==1, z==2;
+}
+static int assign1b(void) {
+    _Bool a,b,c, x,y,z;
+    a = b = (c = 5);
+    x = (y=0, z=2);
+    return a==1 && b==1 && c==1 && x==1, y==0, z==1;
+}
+static int assign1l(void) {
+    long a,b,c, x,y,z;
+    a = (b = c = 1);
+    x = (y=1, z=2);
+    return a==1 && b==1 && c==1 && x==2L && y==1L && z==2L;
+}
+static int assign(void) {
+    TEST(assign1);
+    TEST(assign1b);
+    TEST(assign1l);
+    return 1;
+}
+
 static int eq_rel1() {
     return
         (5 == 5) == 1 &&
@@ -1235,10 +1260,29 @@ static int scope3(void) {
     return
         a==1 && sa==2 && a2==100 && sa2==200;
 }
+
+    struct LS;
+    struct LS {char c,d,e;} gsc4_a;
+    void gc4_func(struct LS*p){};
+static int scope4(void) {
+    int sum = 0;
+    struct LS;
+    struct LS {int a,b;} a;
+    sum += (a.a=1);
+    {
+        union LS {int x,y;} a;
+        sum += (a.x=3);
+        sum += (a.y=4);
+    }
+    sum += (a.b=2);
+    gc4_func(&a);   //引数のLSはスコープが異なる
+    return sum==10;
+}
 static int scope(void) {
     TEST(scope1);
     TEST(scope2);
     TEST(scope3);
+    TEST(scope4);
     return 1;
 }
 
@@ -1761,11 +1805,12 @@ static int Assert(void) {
 
 int main() {
     TEST(addsub);
+    TEST(assign);
     TEST(eq_rel);
-    TEST(func);
     TEST(iterate);
     TEST(selection);
     TEST(incdec);
+    TEST(func);
     TEST(pointer);
     TEST(array);
     TEST(string);

@@ -408,6 +408,7 @@ void regist_symbol(Node *node) {
 void regist_tagname(Node *node) {
     char *name = node->name;
     Node *node2 = search_tagname(node->name);
+    Node *node3;
     Map *tagname_map = stack_top(tagname_stack); 
     if (node2==NULL) {
         map_put(tagname_map, name, node);
@@ -415,11 +416,11 @@ void regist_tagname(Node *node) {
                (node2->type==ND_STRUCT_DEF && node->type==ND_STRUCT_DEF) ||
                (node2->type==ND_UNION_DEF  && node->type==ND_UNION_DEF)) {
         if (node2->lst!=NULL && node->lst!=NULL) {  //共に完全型
-            if (map_get(tagname_map, name, (void**)&node2)) {
+            if (map_get(tagname_map, name, (void**)&node3)) {
                 //同一スコープ内での再定義はできない
                 SET_ERROR_WITH_NOTE;
                 error_at(node->input, "%sの重複定義です", node->type==ND_ENUM_DEF?"enum":"struct/union");
-                note_at(node2->input, "以前の定義はここです");
+                note_at(node3->input, "以前の定義はここです");
             } 
             map_put(tagname_map, name, node);
         } else if (node2->lst==NULL && node->lst!=NULL) {
@@ -429,10 +430,14 @@ void regist_tagname(Node *node) {
             node->lst = node2->lst;
             node->map = node2->map;
         }
-    } else {
+    } else if (map_get(tagname_map, name, (void**)&node3)) {
+        //同一スコープ内での再定義はできない
         SET_ERROR_WITH_NOTE;
         error_at(node->input, "'%s'はタグの重複定義です", name);
-        note_at(node2->input, "以前の定義はここです");
+        note_at(node3->input, "以前の定義はここです");
+    } else {
+        //異なるスコープであれば問題ない
+        map_put(tagname_map, name, node);
     }
 }
 

@@ -183,10 +183,10 @@ static void gen_write_reg(const char*dst, const char*src, const Type *tp, const 
     else         printf("\n");
 }
 
-//[dst]レジスタが指すアドレスに即値をwriteする。
-static void gen_write_reg_const_val(const char*dst, long val, const Type *tp, const char* comment) {
+//[dst]レジスタが指すアドレスに即値をwriteする。ret_rax=1の場合は常に即値をraxに設定する。
+static void gen_write_reg_const_val(const char*dst, long val, const Type *tp, const char* comment, int ret_rax) {
     if (tp->type==BOOL) val = val ? 1 : 0;
-    if (val>INT_MAX || val<INT_MIN) {
+    if (ret_rax || val>INT_MAX || val<INT_MIN) {
         printf("  mov rax, %ld\n", val);
         printf("  %s %s PTR [%s], %s", write_command_of_type(tp), ptr_name_of_type(tp), dst, reg_name_of_type("rax", tp));
     } else {
@@ -371,7 +371,7 @@ static int gen_array_init_local_sub(Type *tp, Node *init, int start_idx, int off
             for (idx=0; idx<data_len; idx++) {
                 char buf[32];
                 sprintf(buf, "rdi+%d", idx*type_size+offset);
-                gen_write_reg_const_val(buf, datal[idx], tp, NULL);
+                gen_write_reg_const_val(buf, datal[idx], tp, NULL, 0);
                 //printf("  mov QWORD PTR [rdi+%d], %ld\n", i*type_size+offset, datal[i]);
             }
             break;
@@ -562,11 +562,11 @@ static void gen_write_var(Node *node, char *reg) {
     }
 }
 
-//即値を変数にwriteする。raxは保存されない
+//即値を変数にwriteする。即値はraxは保存される。
 static void gen_write_var_const_val(Node *node, long val) {
     char cbuf[256];
     sprintf(cbuf, "%s(%s)", display_name(node), get_type_str(node->tp));
-    gen_write_reg_const_val(get_asm_var_name(node), val, node->tp, cbuf);
+    gen_write_reg_const_val(get_asm_var_name(node), val, node->tp, cbuf, 1);
 }
 
 //raxを_Boolに変換する。
