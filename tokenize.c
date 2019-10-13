@@ -309,7 +309,7 @@ void tokenize(char *p) {
             token = new_token(TK_NUM, p);
             char *p0 = p;
             char *suffix;
-            int is_unsigned = 0, is_long = 0;
+            int is_U = 0, is_L = 0;
             if (strncmp(p, "0x", 2)==0 || strncmp(p, "0X", 2)==0) {
                 token->val = strtoul(p, &p, 0);    //16進
             } else {
@@ -318,23 +318,23 @@ void tokenize(char *p) {
             suffix = p;
             for (;;) {
                 if (*p=='u' || *p=='U') {
-                    if (is_unsigned) error_at(suffix, "不正な整数サフィックスです");
+                    if (is_U) error_at(suffix, "不正な整数サフィックスです");
                     token->val = strtoul(p0, NULL, 0);  //unsignedで読み直す
-                    p++; is_unsigned = 1; continue;
+                    p++; is_U = 1; continue;
                 } else if (strncmp(p, "ll", 2)==0 || strncmp(p, "LL", 2)==0) {     //LLは無視
-                    if (is_long) error_at(suffix, "不正な整数サフィックスです");
-                    p += 2; is_long = 1; continue;
+                    if (is_L) error_at(suffix, "不正な整数サフィックスです");
+                    p += 2; is_L = 1; continue;
                 } else if (*p=='l' || *p=='L') {        //Lは無視
-                    if (is_long) error_at(suffix, "不正な整数サフィックスです");
-                    p++; is_long = 1; continue;
+                    if (is_L) error_at(suffix, "不正な整数サフィックスです");
+                    p++; is_L = 1; continue;
                 } else if (is_alnum(*p)) {
                     if (*suffix=='8' || *suffix=='9') error_at(p0, "不正な8進表記です");
                     error_at(suffix, "不正な整数サフィックスです");
                 }
                 break;
             }
-            token->is_unsigned = is_unsigned;
-            token->is_long     = is_long;
+            token->is_U = is_U;
+            token->is_L = is_L;
         } else if (*p == '"') {     //文字列
             token = new_token(TK_STRING, p++);
             get_string(&p, &token->string);

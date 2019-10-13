@@ -1522,8 +1522,10 @@ static int cast(void) {
 }
 
     enum ABC ;
+    typedef enum ABC ABC_t;
     enum ABC {AA,BB,C=100,D,E=C,} e1g_e=E;
     enum ABC ;
+    ABC_t e1g_b = AA;
     static enum {P=-1,Q=-2,R=-3} e1g_ae;
     static int ABC;    //変数名とタグ名は名前空間が別
 static int enum1g(void) {
@@ -1582,14 +1584,18 @@ static int Enum(void) {
     return 1;
 }
 
-    struct S;
+    typedef struct S S;
+    typedef struct S2 { int x; long y; char z; } S2;
     struct S {
-        int a,b;
+        int a,b,a2,b2;
         char c;
         long d;
-        struct S *p;
+        S *p;
+        short e;
+        S2 s2;
     };
     static struct S s1g_a;
+    static S s1g_b;
 
 static int Struct1(void) {
     struct S;
@@ -1598,19 +1604,50 @@ static int Struct1(void) {
         char c;
         long d;
         struct S *p;
+        short e;
+        S2 s2;
     };
+    typedef struct S S_t;
     struct S a;
     struct S;
     struct {
         char s[5];
         int a[3];
-    }s2;
-    return sizeof(struct S)==32 && sizeof(a)==32;
+    } s3;
+    a.a = 1;
+    a.b = 2;
+    a.c = 3;
+    a.d = 4;
+    a.e = 5;
+    a.s2.x = 10;
+    a.s2.y = 11;
+    a.s2.z = 12;
+    s3.a[0]=1;
+    s3.a[1]=2;
+    s3.a[2]=3;
+    return sizeof(struct S)==64 && sizeof(a)==64 && sizeof(a.a)==4 && sizeof(S_t)==64
+        && sizeof(s3)==20 && sizeof(s3.s)==5
+        && _Alignof(struct S)==8 && _Alignof(a)==8 && _Alignof(a.c)==1 && _Alignof(S_t)==8 && _Alignof(s3)==4
+        && a.a+a.b+a.c+a.d+a.e==15 && a.s2.x+a.s2.y+a.s2.z==33
+        && s3.a[0]+s3.a[1]+s3.a[2]==6;
 }
 static int Struct(void) {
     TEST(Struct1);
     return 1;
 }
+
+    typedef union U U;
+    typedef union U2 { int x; long y; char z; } U2;
+    union U {
+        int a,b,a2,b2;
+        char c;
+        long d;
+        U *p;
+        short e;
+        U2 u2;
+    };
+    static U u1g_a;
+    static union U u1g_b;
 
 static int Union1(void) {
     union U;
@@ -1619,14 +1656,33 @@ static int Union1(void) {
         char c;
         long d;
         union U *p;
+        short e;
+        U2 u2;
     };
     union U a;
     union U;
+    typedef union U U_t;
     union {
         char s[5];
         int a[3];
-    }u2;
-    return sizeof(union U)==8 && sizeof(a)==8;
+    } u3;
+    a.u2.x = 10;
+    a.u2.y = 11;
+    a.u2.z = 12;
+    int xyz = a.u2.x+a.u2.y+a.u2.z;
+    a.a = 1;
+    a.b = 2;
+    a.c = 3;
+    a.d = 4;
+    a.e = 5;
+    u3.a[0]=1;
+    u3.a[1]=2;
+    u3.a[2]=3;
+    return sizeof(union U)==8 && sizeof(a)==8 && sizeof(a.c)==1 && sizeof(U_t)==8
+        && sizeof(u3)==12 && sizeof(u3.s)==5
+        && _Alignof(union U)==8 && _Alignof(a)==8 && _Alignof(a.c)==1 && _Alignof(U_t)==8 && _Alignof(u3)==4
+        && a.a==5 && a.b==5 && a.c==5 && a.d==5 && a.e==5 && xyz==36 && a.u2.x==5
+        && u3.a[0]+u3.a[1]+u3.a[2]==6;
 }
 static int Union(void) {
     TEST(Union1);

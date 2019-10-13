@@ -122,7 +122,7 @@ test_src/expr.c:976:54: warning: excess elements in array initializer
                                                       ^
 test_src/expr.c:976:54: note: (near initialization for ‘i2g_ac’)
 test_src/expr.c: In function ‘enum1e’:
-test_src/expr.c:1573:22: warning: empty declaration with storage class specifier does not redeclare tag
+test_src/expr.c:1575:22: warning: empty declaration with storage class specifier does not redeclare tag
          typedef enum ABC;
                       ^~~
   OK: addsub1

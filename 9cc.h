@@ -98,8 +98,8 @@ typedef struct String {
 typedef struct {
     TKtype type;    //トークンの型
     long val;       //typeがTK_TOKENの場合、値
-    char is_unsigned;   //123U
-    char is_long;       //123L
+    char is_U;      //123U
+    char is_L;      //123L
     union {
     char *ident;    //typeがTK_IDENTの場合、その文字列
     String string;  //typeがTK_STRINGの場合、その文字列
@@ -135,7 +135,6 @@ typedef enum {
     ND_LOCAL_VAR,   //ローカル変数の参照    name=変数名、offset=RBPからのオフセット(AUTO)/global_index(STATIC)
     ND_GLOBAL_VAR,  //グローバル変数の参照  name=変数名、offset=0
     ND_CAST,        //キャスト
-    ND_DOT,         // st.memb
     ND_POINTER,     // st->memb
     ND_INC,         // a++
     ND_DEC,         // a--
@@ -248,6 +247,7 @@ struct Node {
                     //typeがND_FUNC_CALL|DEF|DECLの場合の関数名
     String string;  //typeがND_STRINGの場合の文字列（NULL終端でなくてもよい）
     };
+    char *disp_name;//nameの代わりの表示名(構造体のメンバ名アクセス:st.a)
     Type *tp;       //型情報
     char *input;    //トークン文字列（エラーメッセージ用）。Token.inputと同じ。
 };
@@ -351,6 +351,7 @@ EXTERN int g_dump_node; //関数をダンプする
 #define next_token_ident()  (tokens[token_pos+1]->ident)
 #define next_token_type()   (tokens[token_pos+1]->type)
 #define next_token_is(_tp)  (next_token_type()==(_tp))
+#define last_token_type()   (tokens[token_pos-1]->type)
 
 // main.c
 void compile(void);
@@ -460,6 +461,8 @@ char* get_func_args_str(const Node *node);
 const char *get_NDtype_str(NDtype type);
 void dump_node(const Node *node, const char *str);
 void dump_type(const Type *tp, const char *str);
+void dump_symbol(int idx, const char *str);
+void dump_tagname(void);
 
 EXTERN char *filename;
 EXTERN char *user_input;

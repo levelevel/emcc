@@ -97,6 +97,7 @@
                             | ( "++" | "--" )? unary_expression
                             | "sizeof" unary_expression
                             | "sizeof" "(" type_name ")"
+                            | "_Alignof" unary_expression
                             | "_Alignof" "(" type_name ")"
     postfix_expression      = primary_expression 
                             | primary_expression "[" expression "]"
@@ -217,10 +218,14 @@ static Node *function_definition(Type *tp, char *name) {
     node = declarator(decl_spec, tp, name);
     if (token_is('{')) {    //関数定義
         check_funcargs(node->lhs, 1);   //引数リストの妥当性を確認（定義モード）
+
+        stack_push(symbol_stack,  cur_funcdef->symbol_map);
+        stack_push(tagname_stack, cur_funcdef->tagname_map);
         node->rhs = compound_statement(1);
-        map_put(funcdef_map, node->name, cur_funcdef);
         stack_pop(symbol_stack);
         stack_pop(tagname_stack);
+
+        map_put(funcdef_map, node->name, cur_funcdef);
         check_func_return(cur_funcdef);        //関数の戻り値を返しているかチェック
         node->type = ND_FUNC_DEF;
     } else {                //関数宣言
@@ -421,7 +426,11 @@ static Node *direct_declarator(Type *tp, char *name) {
                 error_at(input, "ブロック内のstatic関数");
             }
             node = new_node_func(name, tp, input);
+            stack_push(symbol_stack,  cur_funcdef->symbol_map);
+            //stack_push(tagname_stack, cur_funcdef->tagname_map);
             node->lhs = parameter_type_list();
+            stack_pop(symbol_stack);
+            //stack_pop(tagname_stack);
             if (org_funcdef) cur_funcdef = org_funcdef;
         }
         tp->node = node;
@@ -437,7 +446,7 @@ static Node *direct_declarator(Type *tp, char *name) {
         case ENUM:
         case STRUCT:
         case UNION:
-            if (tp->node->lst==NULL) {
+            if (tp->node->lst==NULL && tp->sclass!=SC_TYPEDEF) {
                 SET_ERROR_WITH_NOTE;
                 error_at(node->input, "%sの型は不完全です", name);
                 note_at(tp->node->input, "型の宣言はここです");
@@ -757,6 +766,7 @@ static Type *declaration_specifiers(void) {
     return top_tp;
 }
 
+static void refresh_typedef(Node *struc);
 //    struct_or_union_specifier = ( "struct" | "union" ) identifier? "{" struct_declaration* "}"
 //                            | ( "struct" | "union" ) identifier
 //    struct_declaration      = specifier_qualifier_list struct_declarator*
@@ -773,12 +783,14 @@ static Node *struct_or_union_specifier(TPType type) {
     if (consume_ident(&name)) {
         node->name = name;
     } else {
-        //node->name = "(anonymouse)";
+        node->name = "<anonymouse>";
     }
+    node->tp->node = node;
+
     Node *old_cur_structdef = cur_structdef;
     cur_structdef = node;
 
-    if (consume('{')) {
+    if (consume('{')) { //完全定義
         node->lst = new_vector();
         node->map = new_map();
         if (name) regist_tagname(node);
@@ -787,13 +799,17 @@ static Node *struct_or_union_specifier(TPType type) {
             if (struc->type==ND_LIST) vec_copy(node->lst, struc->lst);
             else vec_push(node->lst, struc);
         } while (!consume('}'));
+        refresh_typedef(node);  //不完全定義typedefがあれば完全定義に置き換える
     } else if (name==NULL) {
         expect('{');    //error
-    } else {
+    } else {            //不完全定義
         regist_tagname(node);
     }
-    node->tp->node = node;
+    //構造体メンバのoffset(memb->offset)と、構造体のサイズを設定する(node->val)。
     set_struct_size(node);
+
+    //dump_symbol(-1, __func__);
+    //dump_tagname();
     //dump_type(node->tp,__func__);
     cur_structdef = old_cur_structdef;
     return node;
@@ -829,6 +845,22 @@ static Node *struct_declarator(Type *tp) {
     return node;
 }
 
+//不完全定義のtypedefがあれば完全定義に置き換える(enum/struct/union)
+static void refresh_typedef(Node *struc) {
+    assert(struc->lst!=NULL);
+    Map *symbol_map = stack_top(symbol_stack); 
+    int size = lst_len(symbol_map->vals);
+    Node **nodes = (Node**)symbol_map->vals->data;
+    for (int i=0; i<size; i++) {
+        Node *typdef = nodes[i];
+        if (typdef->type!=ND_TYPEDEF) continue;
+        if (strcmp(struc->name, typdef->tp->node->name)==0) {
+            assert(struc->tp->type==typdef->tp->type);
+            typdef->tp->node = struc;
+        }
+    }
+}
+
 //    enum_specifier          = "enum" identifier? "{" enumerator ( "," enumerator )* ","? "}"
 //                            | "enum" identifier
 //    enumerator              = enumeration_constant ( "=" constant-expression )?
@@ -838,7 +870,7 @@ static Node *enum_specifier(void) {
     if (consume_ident(&name)) {
         node->name = name;
     } else {
-        //node->name = "(anonymouse)";
+        node->name = "<anonymouse>";
     }
     if (consume('{')) {
         Node *em = enumerator(node, 0);
@@ -850,6 +882,7 @@ static Node *enum_specifier(void) {
             vec_push(node->lst, em);
         }
         expect('}');
+        refresh_typedef(node);  //不完定義typedefがあれば完全定義に置き換える
     } else if (name==NULL) {
         expect('{');    //error
     }
@@ -1353,6 +1386,7 @@ static Node *cast_expression(void) {
 //                            | ( "++" | "--" )? unary_expression
 //                            | "sizeof" unary_expression
 //                            | "sizeof"   "(" type_name ")"
+//                            | "_Alignof" unary_expression
 //                            | "_Alignof" "(" type_name ")"
 static Node *unary_expression(void) {
     Node *node;
@@ -1387,7 +1421,8 @@ static Node *unary_expression(void) {
     } else if (consume('&')) {
         node = cast_expression();
         node = new_node(ND_ADDRESS, NULL, node, new_type_ptr(node->tp), input);
-    } else if (consume(TK_SIZEOF)) {
+    } else if (consume(TK_SIZEOF) || consume(TK_ALIGNOF)) {
+        int is_sizeof = (last_token_type()==TK_SIZEOF);
         Type *tp;
         char *input = input_str();
         if (token_is('(')) {
@@ -1405,13 +1440,7 @@ static Node *unary_expression(void) {
             tp = node->tp;
         }
         if (tp->type==ARRAY && tp->array_size<=0) error_at(input, "不完全型のサイズは未定義です");
-        node = new_node_num(size_of(tp), input);
-    } else if (consume(TK_ALIGNOF)) {
-        Type *tp;
-        expect('(');
-        tp = type_name();
-        expect(')');
-        node = new_node_num(align_of(tp), input);
+        node = new_node_num(is_sizeof?size_of(tp):align_of(tp), input);
     } else {
         node = postfix_expression();
     }
@@ -1457,10 +1486,23 @@ static Node *postfix_expression(void) {
             node = new_node(ND_INDIRECT, NULL, node, tp, input);
             expect(']');
         } else if (consume('.')) {
+            if (node->tp->type!=STRUCT && node->tp->type!=UNION) error_at(input, "ここでメンバ名の指定はできません");
             char *name;
             expect_ident(&name, "struct/unionのメンバ名");
-
-            node = new_node(ND_DOT, node, NULL, node->tp, input);
+            input++;
+            Node *struct_def = node->tp->node; assert(struct_def!=NULL);    //STRUCT/UNION
+            Node *member_def;
+            if (map_get(struct_def->map, name, (void**)&member_def)==0) error_at(input, "struct/union %sに%sは存在しません", struct_def->name, name);
+            //dump_node(struct_def,"struct_def");
+            //dump_node(node,"node");
+            node->tp = member_def->tp;
+            node->offset -= member_def->offset;
+            assert(node->offset-sizeof(node->tp)>=0);
+            if (node->disp_name==NULL) node->disp_name = node->name;
+            char *buf = malloc(strlen(node->disp_name)+strlen(member_def->name)+2);
+            sprintf(buf, "%s.%s", node->disp_name, member_def->name);
+            node->disp_name = buf;
+            //dump_node(node,"node:new");
         } else if (consume(TK_INC)) {
             node = new_node(ND_INC, node, NULL, node->tp, input);
         } else if (consume(TK_DEC)) {

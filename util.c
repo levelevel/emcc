@@ -64,16 +64,15 @@ int stack_push(Stack *stack, void*elem) {
 
 //スタックトップをpopする。
 void *stack_pop(Stack *stack) {
-    if (stack->len>0) {
-        return stack->data[--stack->len];
-    }
-    assert(0);
-    return NULL;
+    assert(stack->len>0);
+    stack->len--;
+    //fprintf(stderr, "stack_pop: %d\n", stack->len);
+    return stack->data[stack->len];
 }
 
-//スタックトップの要素を取り出す。スタックは変化しない。
+//スタックのidx番目の要素を取り出す。スタックは変化しない。
 void *stack_get(Stack *stack, int idx) {
-    assert (idx < stack->len);
+    assert(idx < stack->len && idx >= 0);
     return stack->data[idx];
 }
 
@@ -155,6 +154,7 @@ static void sprintC_type(char *buf, const Type *tp) {
     if (tp->is_unsigned&& tp->type!=BOOL) strcat_word(buf, "unsigned");
     if (tp->is_const) strcat_word(buf, "const");
     strcat_word(buf, TypeStr[tp->type]);
+    if ((tp->type==STRUCT || tp->type==ENUM) && tp->node) strcat_word(buf, tp->node->name);
     if (tp->type==ARRAY) {
         char tmp[20];
         if (tp->array_size>=0) sprintf(tmp, "%ld]", tp->array_size);
@@ -236,7 +236,6 @@ const char *get_NDtype_str(NDtype type) {
     ENUM2STR(ND_LOCAL_VAR);
     ENUM2STR(ND_GLOBAL_VAR);
     ENUM2STR(ND_CAST);
-    ENUM2STR(ND_DOT);
     ENUM2STR(ND_POINTER);
     ENUM2STR(ND_INC);
     ENUM2STR(ND_DEC);
@@ -302,6 +301,8 @@ static const char *get_StorageClass_str(StorageClass type) {
     }
 }
 
+static int f_dump_enum_lst = 0;   //ND_ENUM_DEFのlst(ND_ENUM)をダンプする
+
 static void dump_type_indent(FILE *fp, const Type *tp, const char *str, int indent);
 
 static void dump_node_indent(FILE *fp, const Node *node, const char *str, int indent) {
@@ -311,15 +312,17 @@ static void dump_node_indent(FILE *fp, const Node *node, const char *str, int in
         fprintf(fp, "Node[null]\n");
         return;        
     }
-    fprintf(fp, "Node[%p]:type=%s, name=\"%s\", tp=%s, offset=%d, index=%d, val=%ld, unused=%d\n", 
+    fprintf(fp, "Node[%p]:type=%s, name=\"%s\"", 
         (void*)node,
         get_NDtype_str(node->type),
-        node->name?node->name:"",
+        node->name?node->name:"");
+    if (node->disp_name) fprintf(fp, "(%s)", node->disp_name);
+    fprintf(fp, ", tp=%s, offset=%d, index=%d, val=%ld, unused=%d\n", 
         get_type_str(node->tp),
         node->offset, node->index, node->val, node->unused);
     if (node->lhs) dump_node_indent(fp, node->lhs, "lhs=", indent+2);
     if (node->rhs) dump_node_indent(fp, node->rhs, "rhs=", indent+2);
-    if (node->lst && indent<10) {
+    if (node->lst && indent<10 && (node->type!=ND_ENUM_DEF || f_dump_enum_lst)) {
         char buf[16];
         Vector *lists = node->lst;
         Node **nodes = (Node**)lists->data;
@@ -353,6 +356,32 @@ static void dump_type_indent(FILE *fp, const Type *tp, const char *str, int inde
 
 void dump_type(const Type *tp, const char *str) {
     dump_type_indent(stderr, tp, str, 1);
+}
+
+void dump_symbol(int idx, const char *str) {
+    if (idx<0) idx = symbol_stack->len-1;
+    if (str) fprintf(stderr, "# == symbol[%d]: %s ==\n", idx, str);
+    Map *symbol_map = stack_get(symbol_stack, idx); 
+    int size = lst_len(symbol_map->vals);
+    char **names = (char**)symbol_map->keys->data;
+    Node **nodes = (Node**)symbol_map->vals->data;
+    char buf[128];
+    for (int i=0; i<size; i++) {
+        sprintf(buf, "symbol[%d]=\"%s\"", i, names[i]);
+        dump_node_indent(stderr, nodes[i], buf, 1);
+    }
+}
+
+void dump_tagname(void) {
+    Map *tagname_map = stack_top(tagname_stack); 
+    int size = lst_len(tagname_map->vals);
+    char **names = (char**)tagname_map->keys->data;
+    Node **nodes = (Node**)tagname_map->vals->data;
+    char buf[128];
+    for (int i=0; i<size; i++) {
+        sprintf(buf, "tganame[%d]=\"%s\"", i, names[i]);
+        dump_node(nodes[i], buf);
+    }
 }
 
 // エラーの起きた場所を報告するための関数

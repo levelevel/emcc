@@ -916,6 +916,14 @@ int main(){struct S{int a; int b;}; unsigned struct S s;}
                                                            ^ enum/typedef/struct/union名に対してsigned/unsignedの指定はできません
 
 # selftest ----------------
+int main(){int a; return a.b;}
+9cc:Error: selftest:1: int main(){int a; return a.b;}
+                                                 ^ ここでメンバ名の指定はできません
+# selftest ----------------
+int main(){struct S{int a;}s; return s.x}
+9cc:Error: selftest:1: int main(){struct S{int a;}s; return s.x}
+                                                              ^ struct/union Sにxは存在しません
+# selftest ----------------
 int main(){struct U; union U;}
 9cc:Error: selftest:1: int main(){struct U; union U;}
                                                   ^ 'U'はタグの重複定義です
@@ -955,7 +963,11 @@ int main(){union U{int a; int b;}; signed union U u;}
 9cc:Error: selftest:1: int main(){union U{int a; int b;}; signed union U u;}
                                                           ^ enum/typedef/struct/union名に対してsigned/unsignedの指定はできません
 
+# selftest ----------------
+int main(){union U{int a; int b;}u; return u.x;}
+9cc:Error: selftest:1: int main(){union U{int a; int b;}u; return u.x;}
+                                                                    ^ struct/union Uにxは存在しません
 9cc self test
-Total : 204
-   Ok : 204
+Total : 207
+   Ok : 207
    NG : 0

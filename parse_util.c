@@ -34,9 +34,26 @@ long size_of(const Type *tp) {
 // - 配列の場合、要素のアラインメント
 // - 構造体の場合、メンバー内の最大のアラインメント
 int align_of(const Type *tp) {
+    int align = -1;
     assert(tp);
-    if (tp->type==ARRAY) return align_of(tp->ptr_of);
-    return size_of(tp);
+    switch (tp->type) {
+    case ARRAY:
+        align = align_of(tp->ptr_of);
+        break;
+    case STRUCT:
+    case UNION:;
+        int size = tp->node->lst->len;
+        Node **nodes = (Node**)tp->node->lst->data;
+        for (int i=0; i<size; i++) {
+            int n = align_of(nodes[i]->tp);
+            if (n>align) align = n;
+        }        
+        break;
+    default:
+        align = size_of(tp);
+        break;
+    }
+    return align;
 }
 
 //ローカル変数のRBPからのoffset（バイト数）を返し、var_stack_sizeを更新する。
@@ -59,14 +76,14 @@ void set_struct_size(Node *node) {
         int size = size_of(memb->tp);        
         assert(size>0);
         int align_size = align_of(memb->tp);
-        if (size>max_align_size) max_align_size = size;
-        if (size>max_size)       max_size       = size;
+        if (align_size>max_align_size) max_align_size = align_size;
+        if (      size>max_size)       max_size       = size;
         offset = (offset +(align_size-1))/align_size * align_size;
         if (node->type==ND_STRUCT_DEF) memb->offset = offset;
         offset += size;
     }
-    offset = (offset +(max_align_size-1))/max_align_size * max_align_size;
-    node->val = node->type==ND_STRUCT_DEF ? offset : max_size;
+    int total_size = (offset +(max_align_size-1))/max_align_size * max_align_size;
+    node->val = node->type==ND_STRUCT_DEF ? total_size : max_size;
 }
 
 static long calc_node(Node *node, long val1, long val2) {
@@ -387,7 +404,7 @@ void regist_symbol(Node *node) {
     }
 }
 
-//タグ名を登録
+//タグ名を登録(enum/struct/union)
 void regist_tagname(Node *node) {
     char *name = node->name;
     Node *node2 = search_tagname(node->name);
@@ -404,10 +421,13 @@ void regist_tagname(Node *node) {
                 error_at(node->input, "%sの重複定義です", node->type==ND_ENUM_DEF?"enum":"struct/union");
                 note_at(node2->input, "以前の定義はここです");
             } 
+            map_put(tagname_map, name, node);
         } else if (node2->lst==NULL && node->lst!=NULL) {
             map_put(tagname_map, name, node);
+            node2->tp = node->tp;
         } else if (node2->lst!=NULL && node->lst==NULL) {
             node->lst = node2->lst;
+            node->map = node2->map;
         }
     } else {
         SET_ERROR_WITH_NOTE;
@@ -806,8 +826,6 @@ Node *new_node_func(char *name, Type *tp, char *input) {
     cur_funcdef->tp = tp;
     cur_funcdef->node = node;
     cur_funcdef->func_name = node->name;
-    stack_push(symbol_stack,  cur_funcdef->symbol_map);     //popはfunction_definition()で行う
-    stack_push(tagname_stack, cur_funcdef->tagname_map);    //popはfunction_definition()で行う
 
     //関数をシンボルとして仮登録する
     regist_func(node, 0);

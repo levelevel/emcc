@@ -212,6 +212,8 @@ struct {
     {ER, "struct S{int a;}e; struct S{int a;}e2;"},
     {ER, "struct S{int a; int a;}s;"},
     {ER, "struct S{int a; int b;}; unsigned struct S s;"},
+    {ER, "int a; return a.b;"},
+    {ER, "struct S{int a;}s; return s.x"},
     //union
     {ER, "struct U; union U;"},
     {ER, "union U u;"},
@@ -220,6 +222,7 @@ struct {
     {ER, "union U{int a; int a;};"},
     {ER, "union U{int a; int b;}u; int u;"},
     {ER, "union U{int a; int b;}; signed union U u;"},
+    {ER, "union U{int a; int b;}u; return u.x;"},
     {ER, NULL}
 };
 

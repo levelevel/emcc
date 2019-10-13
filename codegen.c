@@ -1,5 +1,7 @@
 #include "9cc.h"
 
+#define display_name(_node) ((_node)->disp_name ? (_node)->disp_name : (_node)->name)
+
 //レジスタ ---------------------------------------------
 static char *arg_regs[] = {  //関数の引数で用いるレジスタ
     "rdi", "rsi", "rdx", "rcx", "r8", "r9", NULL
@@ -533,7 +535,7 @@ static void gen_lval(Node*node, int push) {
 //スタックは変化しない
 static void gen_read_var(Node *node, const char *reg) {
     char cbuf[256];
-    sprintf(cbuf, "%s(%s)", node->name, get_type_str(node->tp));
+    sprintf(cbuf, "%s(%s)", display_name(node), get_type_str(node->tp));
     if (node->type==ND_LOCAL_VAR || node->type==ND_GLOBAL_VAR) {
         gen_read_reg(reg, get_asm_var_name(node), node->tp, cbuf);
     } else {
@@ -547,7 +549,7 @@ static void gen_read_var(Node *node, const char *reg) {
 //結果は指定したregに残る
 static void gen_write_var(Node *node, char *reg) {
     char cbuf[256];
-    sprintf(cbuf, "%s(%s)", node->name, get_type_str(node->tp));
+    sprintf(cbuf, "%s(%s)", display_name(node), get_type_str(node->tp));
     if (node->type==ND_LOCAL_VAR) {
         printf("  pop %s\n", reg);  //writeする値
         gen_write_reg(get_asm_var_name(node), reg, node->tp, cbuf);
@@ -563,7 +565,7 @@ static void gen_write_var(Node *node, char *reg) {
 //即値を変数にwriteする。raxは保存されない
 static void gen_write_var_const_val(Node *node, long val) {
     char cbuf[256];
-    sprintf(cbuf, "%s(%s)", node->name, get_type_str(node->tp));
+    sprintf(cbuf, "%s(%s)", display_name(node), get_type_str(node->tp));
     gen_write_reg_const_val(get_asm_var_name(node), val, node->tp, cbuf);
 }
 
@@ -600,7 +602,7 @@ static int gen(Node*node) {
         }
         break;
     case ND_ENUM:
-        printf("  push %d\t# %s (%s)\n", (int)node->val, node->name, get_type_str(node->lhs->tp));
+        printf("  push %d\t# %s (%s)\n", (int)node->val, display_name(node), get_type_str(node->lhs->tp));
         break;
     case ND_STRING:         //文字列リテラル
         sprintf(buf, ".LC%03d", node->index);
@@ -621,7 +623,7 @@ static int gen(Node*node) {
     case ND_GLOBAL_VAR:     //変数参照
         if (node->tp->type==ARRAY) {
             //アドレスをそのまま返す
-            comment("%s_VAR:%s(%s)\n", node->type==ND_LOCAL_VAR?"LOCAL":"GLOBAL", node->name, get_type_str(node->tp));
+            comment("%s_VAR:%s(%s)\n", node->type==ND_LOCAL_VAR?"LOCAL":"GLOBAL", display_name(node), get_type_str(node->tp));
             gen_lval(node, 1);  //nodeのアドレスをpush
         } else {
             gen_read_var(node, "rax");
