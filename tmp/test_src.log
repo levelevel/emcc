@@ -10,33 +10,33 @@
                                      ^ 未宣言の関数コールです。
 9cc:Warning: tmp/test_src.c:535:     return 0;
                                      ^ static int**型の関数pointer3がint型を返しています
-9cc:Warning: tmp/test_src.c:869:         memcmp(str5, str6, sizeof(str5))==0;
+9cc:Warning: tmp/test_src.c:875:         memcmp(str5, str6, sizeof(str5))==0;
                                          ^ 未宣言の関数コールです。
-9cc:Warning: tmp/test_src.c:1215: }
+9cc:Warning: tmp/test_src.c:1221: }
                                    ^ 関数が戻り値を返していません
-9cc:Warning: tmp/test_src.c:751: static int ga2_b[4]={1,2,{3,99},4}, *ga2_p=&ga2_a, *ga2_q=&ga2_b[2], *ga2_r=ga2_a+3;
+9cc:Warning: tmp/test_src.c:756: static int ga2_b[4]={1,2,{3,99},4}, *ga2_p=&ga2_a, *ga2_q=&ga2_b[2], *ga2_r=ga2_a+3;
                                                            ^ スカラーがリストで初期化されています
-9cc:Warning: tmp/test_src.c:751: static int ga2_b[4]={1,2,{3,99},4}, *ga2_p=&ga2_a, *ga2_q=&ga2_b[2], *ga2_r=ga2_a+3;
+9cc:Warning: tmp/test_src.c:756: static int ga2_b[4]={1,2,{3,99},4}, *ga2_p=&ga2_a, *ga2_q=&ga2_b[2], *ga2_r=ga2_a+3;
                                                              ^ 初期化リストが配列サイズを超えています
-9cc:Warning: tmp/test_src.c:756: static char ga2c_b[4]={1,2,{3,99},4}, *ga2c_p=&ga2c_a, *ga2c_q=&ga2c_b[2], *ga2c_r=ga2c_a+3;
+9cc:Warning: tmp/test_src.c:761: static char ga2c_b[4]={1,2,{3,99},4}, *ga2c_p=&ga2c_a, *ga2c_q=&ga2c_b[2], *ga2c_r=ga2c_a+3;
                                                              ^ スカラーがリストで初期化されています
-9cc:Warning: tmp/test_src.c:756: static char ga2c_b[4]={1,2,{3,99},4}, *ga2c_p=&ga2c_a, *ga2c_q=&ga2c_b[2], *ga2c_r=ga2c_a+3;
+9cc:Warning: tmp/test_src.c:761: static char ga2c_b[4]={1,2,{3,99},4}, *ga2c_p=&ga2c_a, *ga2c_q=&ga2c_b[2], *ga2c_r=ga2c_a+3;
                                                                ^ 初期化リストが配列サイズを超えています
-9cc:Warning: tmp/test_src.c:875:  char sg1_str3[4] = "ABCDE";
+9cc:Warning: tmp/test_src.c:881:  char sg1_str3[4] = "ABCDE";
                                                           ^ 初期化リストが配列サイズを超えています
-9cc:Warning: tmp/test_src.c:876:  char sg1_str4[3] = "A\0B";
+9cc:Warning: tmp/test_src.c:882:  char sg1_str4[3] = "A\0B";
                                                          ^ 初期化リストが配列サイズを超えています
-9cc:Warning: tmp/test_src.c:1024:  char i2g_c, *i2g_ac[3] = {0,&i2g_c+1,(char*)3,(char*)4};
+9cc:Warning: tmp/test_src.c:1030:  char i2g_c, *i2g_ac[3] = {0,&i2g_c+1,(char*)3,(char*)4};
                                                                                  ^ 初期化リストが配列サイズを超えています
-9cc:Warning: tmp/test_src.c:764:     static int a[4]={1,2,{3,99},4}, *p=a, *q=&a[2], *r=a+3;
+9cc:Warning: tmp/test_src.c:769:     static int a[4]={1,2,{3,99},4}, *p=a, *q=&a[2], *r=a+3;
                                                            ^ スカラーがリストで初期化されています
-9cc:Warning: tmp/test_src.c:764:     static int a[4]={1,2,{3,99},4}, *p=a, *q=&a[2], *r=a+3;
+9cc:Warning: tmp/test_src.c:769:     static int a[4]={1,2,{3,99},4}, *p=a, *q=&a[2], *r=a+3;
                                                              ^ 初期化リストが配列サイズを超えています
-9cc:Warning: tmp/test_src.c:768:     static char a[4]={1,2,{3,99},4}, *p=a, *q=&a[2], *r=a+3;
+9cc:Warning: tmp/test_src.c:773:     static char a[4]={1,2,{3,99},4}, *p=a, *q=&a[2], *r=a+3;
                                                             ^ スカラーがリストで初期化されています
-9cc:Warning: tmp/test_src.c:768:     static char a[4]={1,2,{3,99},4}, *p=a, *q=&a[2], *r=a+3;
+9cc:Warning: tmp/test_src.c:773:     static char a[4]={1,2,{3,99},4}, *p=a, *q=&a[2], *r=a+3;
                                                               ^ 初期化リストが配列サイズを超えています
-9cc:Warning: tmp/test_src.c:902:     static char str3[4] = "ABCDE";
+9cc:Warning: tmp/test_src.c:908:     static char str3[4] = "ABCDE";
                                                                 ^ 初期化リストが配列サイズを超えています
 9cc:Warning: tmp/test_src.c:622:     int b[4]={1,2,{3,99},a[3]};
                                                     ^ スカラーがリストで初期化されています
@@ -58,10 +58,48 @@
                                                      ^ スカラーがリストで初期化されています
 9cc:Warning: tmp/test_src.c:678:     long b[4]={1,2,{3,99},a[3]};
                                                        ^ 初期化リストが配列サイズを超えています
-9cc:Warning: tmp/test_src.c:856:     char str3[4] = "ABCDE";
+9cc:Warning: tmp/test_src.c:751:     char a[]={1,(2,3),4};
+                                                  ^ スカラーがリストで初期化されています
+9cc:Warning: tmp/test_src.c:751:     char a[]={1,(2,3),4};
+                                                    ^ 初期化リストが配列サイズを超えています
+9cc:Warning: tmp/test_src.c:862:     char str3[4] = "ABCDE";
                                                          ^ 初期化リストが配列サイズを超えています
-9cc:Warning: tmp/test_src.c:857:     char str4[3] = "A\0B";
+9cc:Warning: tmp/test_src.c:863:     char str4[3] = "A\0B";
                                                         ^ 初期化リストが配列サイズを超えています
+# == gen_struct_init_local ==
+# top=:Node[0x1fe2220]:type=ND_ASSIGN, name="", tp=struct ST, offset=0, index=0, val=0, unused=0
+#   lhs=:Node[0x1fe2290]:type=ND_LOCAL_VAR, name="st", tp=struct ST, offset=56, index=0, val=0, unused=0
+#   rhs=:Node[0x1fe1900]:type=ND_LIST, name="", tp=int, offset=0, index=0, val=0, unused=0
+#     lst[0]:Node[0x1fe1a50]:type=ND_NUM, name="", tp=int, offset=0, index=0, val=2, unused=0
+#     lst[1]:Node[0x1fe1af0]:type=ND_NUM, name="", tp=int, offset=0, index=0, val=2, unused=0
+#     lst[2]:Node[0x1fe1b90]:type=ND_NUM, name="", tp=int, offset=0, index=0, val=3, unused=0
+#     lst[3]:Node[0x1fe1c30]:type=ND_NUM, name="", tp=int, offset=0, index=0, val=4, unused=0
+#     lst[4]:Node[0x1fe1cd0]:type=ND_NUM, name="", tp=int, offset=0, index=0, val=5, unused=0
+#     lst[5]:Node[0x1fe1d70]:type=ND_NUM, name="", tp=int, offset=0, index=0, val=6, unused=0
+#     lst[6]:Node[0x1fe1de0]:type=ND_LIST, name="", tp=int, offset=0, index=0, val=0, unused=0
+#       lst[0]:Node[0x1fe1f30]:type=ND_NUM, name="", tp=int, offset=0, index=0, val=10, unused=0
+#       lst[1]:Node[0x1fe1fd0]:type=ND_NUM, name="", tp=int, offset=0, index=0, val=11, unused=0
+#     lst[7]:Node[0x1fe2070]:type=ND_NUM, name="", tp=int, offset=0, index=0, val=20, unused=0
+#     lst[8]:Node[0x1fe2110]:type=ND_NUM, name="", tp=int, offset=0, index=0, val=21, unused=0
+#     lst[9]:Node[0x1fe21b0]:type=ND_NUM, name="", tp=int, offset=0, index=0, val=22, unused=0
+# == elm ==
+# top=:Node[0x1fe15f0]:type=ND_MEMBER_DEF, name="x", tp=struct XYZ, offset=24, index=0, val=0, unused=0
+# == val_node ==
+# top=:Node[0x1fe1de0]:type=ND_LIST, name="", tp=int, offset=0, index=0, val=0, unused=0
+#   lst[0]:Node[0x1fe1f30]:type=ND_NUM, name="", tp=int, offset=0, index=0, val=10, unused=0
+#   lst[1]:Node[0x1fe1fd0]:type=ND_NUM, name="", tp=int, offset=0, index=0, val=11, unused=0
+# == gen_struct_init_local ==
+# top=:Node[0x1fe2a90]:type=ND_ASSIGN, name="", tp=struct XYZ, offset=0, index=0, val=0, unused=0
+#   lhs=:Node[0x1fe2b00]:type=ND_LOCAL_VAR, name="xyz", tp=struct XYZ, offset=68, index=0, val=0, unused=0
+#   rhs=:Node[0x1fe2370]:type=ND_LIST, name="", tp=int, offset=0, index=0, val=0, unused=0
+#     lst[0]:Node[0x1fe2490]:type=ND_LIST, name="", tp=int, offset=0, index=0, val=0, unused=0
+#       lst[0]:Node[0x1fe25e0]:type=ND_NUM, name="", tp=int, offset=0, index=0, val=1, unused=0
+#       lst[1]:Node[0x1fe2680]:type=ND_NUM, name="", tp=int, offset=0, index=0, val=2, unused=0
+#       lst[2]:Node[0x1fe2720]:type=ND_NUM, name="", tp=int, offset=0, index=0, val=3, unused=0
+#     lst[1]:Node[0x1fe27c0]:type=ND_NUM, name="", tp=int, offset=0, index=0, val=4, unused=0
+#     lst[2]:Node[0x1fe2830]:type=ND_LIST, name="", tp=int, offset=0, index=0, val=0, unused=0
+#       lst[0]:Node[0x1fe2980]:type=ND_NUM, name="", tp=int, offset=0, index=0, val=5, unused=0
+#       lst[1]:Node[0x1fe2a20]:type=ND_NUM, name="", tp=int, offset=0, index=0, val=6, unused=0
   OK: addsub1
   OK: addsub1b
   OK: addsub1c
@@ -133,6 +171,7 @@
   OK: array3l
   OK: array4
   OK: array4c
+  OK: array5
   OK: garray2
   OK: garray2c
   OK: garray4
@@ -200,6 +239,9 @@
   OK: enum1g
   OK: Enum
   OK: Struct1
+xyz.y=4
+xyz.z=6
+  OK: Struct2
   OK: Struct
   OK: Union1
   OK: Union

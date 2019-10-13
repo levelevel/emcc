@@ -60,78 +60,106 @@ test_src/expr.c:678:48: warning: initialization from incompatible pointer type [
      _Bool a[4][5], *p=(char*)a, b[4][5][6], *q=(char*)b;
                                                 ^
 test_src/expr.c: At top level:
-test_src/expr.c:728:1: warning: braces around scalar initializer
+test_src/expr.c:733:1: warning: braces around scalar initializer
  static int ga2_b[4]={1,2,{3,99},4}, *ga2_p=&ga2_a, *ga2_q=&ga2_b[2], *ga2_r=ga2_a+3;
  ^~~~~~
-test_src/expr.c:728:1: note: (near initialization for ‘ga2_b[2]’)
-test_src/expr.c:728:29: warning: excess elements in scalar initializer
+test_src/expr.c:733:1: note: (near initialization for ‘ga2_b[2]’)
+test_src/expr.c:733:29: warning: excess elements in scalar initializer
  static int ga2_b[4]={1,2,{3,99},4}, *ga2_p=&ga2_a, *ga2_q=&ga2_b[2], *ga2_r=ga2_a+3;
                              ^~
-test_src/expr.c:728:29: note: (near initialization for ‘ga2_b[2]’)
-test_src/expr.c:728:44: warning: initialization from incompatible pointer type [-Wincompatible-pointer-types]
+test_src/expr.c:733:29: note: (near initialization for ‘ga2_b[2]’)
+test_src/expr.c:733:44: warning: initialization from incompatible pointer type [-Wincompatible-pointer-types]
  static int ga2_b[4]={1,2,{3,99},4}, *ga2_p=&ga2_a, *ga2_q=&ga2_b[2], *ga2_r=ga2_a+3;
                                             ^
-test_src/expr.c:733:1: warning: braces around scalar initializer
+test_src/expr.c:738:1: warning: braces around scalar initializer
  static char ga2c_b[4]={1,2,{3,99},4}, *ga2c_p=&ga2c_a, *ga2c_q=&ga2c_b[2], *ga2c_r=ga2c_a+3;
  ^~~~~~
-test_src/expr.c:733:1: note: (near initialization for ‘ga2c_b[2]’)
-test_src/expr.c:733:31: warning: excess elements in scalar initializer
+test_src/expr.c:738:1: note: (near initialization for ‘ga2c_b[2]’)
+test_src/expr.c:738:31: warning: excess elements in scalar initializer
  static char ga2c_b[4]={1,2,{3,99},4}, *ga2c_p=&ga2c_a, *ga2c_q=&ga2c_b[2], *ga2c_r=ga2c_a+3;
                                ^~
-test_src/expr.c:733:31: note: (near initialization for ‘ga2c_b[2]’)
-test_src/expr.c:733:47: warning: initialization from incompatible pointer type [-Wincompatible-pointer-types]
+test_src/expr.c:738:31: note: (near initialization for ‘ga2c_b[2]’)
+test_src/expr.c:738:47: warning: initialization from incompatible pointer type [-Wincompatible-pointer-types]
  static char ga2c_b[4]={1,2,{3,99},4}, *ga2c_p=&ga2c_a, *ga2c_q=&ga2c_b[2], *ga2c_r=ga2c_a+3;
                                                ^
 test_src/expr.c: In function ‘sarray2’:
-test_src/expr.c:741:5: warning: braces around scalar initializer
+test_src/expr.c:746:5: warning: braces around scalar initializer
      static int a[4]={1,2,{3,99},4}, *p=a, *q=&a[2], *r=a+3;
      ^~~~~~
-test_src/expr.c:741:5: note: (near initialization for ‘a[2]’)
-test_src/expr.c:741:29: warning: excess elements in scalar initializer
+test_src/expr.c:746:5: note: (near initialization for ‘a[2]’)
+test_src/expr.c:746:29: warning: excess elements in scalar initializer
      static int a[4]={1,2,{3,99},4}, *p=a, *q=&a[2], *r=a+3;
                              ^~
-test_src/expr.c:741:29: note: (near initialization for ‘a[2]’)
+test_src/expr.c:746:29: note: (near initialization for ‘a[2]’)
 test_src/expr.c: In function ‘sarray2c’:
-test_src/expr.c:745:5: warning: braces around scalar initializer
+test_src/expr.c:750:5: warning: braces around scalar initializer
      static char a[4]={1,2,{3,99},4}, *p=a, *q=&a[2], *r=a+3;
      ^~~~~~
-test_src/expr.c:745:5: note: (near initialization for ‘a[2]’)
-test_src/expr.c:745:30: warning: excess elements in scalar initializer
+test_src/expr.c:750:5: note: (near initialization for ‘a[2]’)
+test_src/expr.c:750:30: warning: excess elements in scalar initializer
      static char a[4]={1,2,{3,99},4}, *p=a, *q=&a[2], *r=a+3;
                               ^~
-test_src/expr.c:745:30: note: (near initialization for ‘a[2]’)
+test_src/expr.c:750:30: note: (near initialization for ‘a[2]’)
 test_src/expr.c: In function ‘string1’:
-test_src/expr.c:833:20: warning: initializer-string for array of chars is too long
+test_src/expr.c:839:20: warning: initializer-string for array of chars is too long
      char str3[4] = "ABCDE"; //長すぎる
                     ^~~~~~~
 test_src/expr.c: At top level:
-test_src/expr.c:852:27: warning: initializer-string for array of chars is too long
+test_src/expr.c:858:27: warning: initializer-string for array of chars is too long
  GLOBAL char sg1_str3[4] = "ABCDE"; //長すぎる
                            ^~~~~~~
 test_src/expr.c: In function ‘string1s’:
-test_src/expr.c:879:27: warning: initializer-string for array of chars is too long
+test_src/expr.c:885:27: warning: initializer-string for array of chars is too long
      static char str3[4] = "ABCDE"; //長すぎる
                            ^~~~~~~
 test_src/expr.c: In function ‘chara1’:
-test_src/expr.c:893:34: warning: hex escape sequence out of range
+test_src/expr.c:899:34: warning: hex escape sequence out of range
      char h0='\x0', h1='\xFF', h2='\xffff';
                                   ^~~~~~~~
 test_src/expr.c: At top level:
-test_src/expr.c:1001:54: warning: excess elements in array initializer
+test_src/expr.c:1007:54: warning: excess elements in array initializer
  GLOBAL char i2g_c, *i2g_ac[3] = {0,&i2g_c+1,(char*)3,(char*)4};    //初期値多い
                                                       ^
-test_src/expr.c:1001:54: note: (near initialization for ‘i2g_ac’)
+test_src/expr.c:1007:54: note: (near initialization for ‘i2g_ac’)
 test_src/expr.c: In function ‘scope4’:
-test_src/expr.c:1278:14: warning: passing argument 1 of ‘gc4_func’ from incompatible pointer type [-Wincompatible-pointer-types]
-     gc4_func(&a);
+test_src/expr.c:1284:14: warning: passing argument 1 of ‘gc4_func’ from incompatible pointer type [-Wincompatible-pointer-types]
+     gc4_func(&a);   //引数のLSはスコープが異なる
               ^
-test_src/expr.c:1266:10: note: expected ‘struct LS *’ but argument is of type ‘struct LS *’
+test_src/expr.c:1272:10: note: expected ‘struct LS *’ but argument is of type ‘struct LS *’
      void gc4_func(struct LS*p){};
           ^~~~~~~~
 test_src/expr.c: In function ‘enum1e’:
-test_src/expr.c:1619:22: warning: empty declaration with storage class specifier does not redeclare tag
+test_src/expr.c:1625:22: warning: empty declaration with storage class specifier does not redeclare tag
          typedef enum ABC;
                       ^~~
+test_src/expr.c: In function ‘Struct2’:
+test_src/expr.c:1697:23: warning: initialization makes pointer from integer without a cast [-Wint-conversion]
+     } st = {2,2,3,4,5,6, {10,11,}, 20,21,22,};
+                       ^
+test_src/expr.c:1697:23: note: (near initialization for ‘st.p’)
+test_src/expr.c:1698:5: warning: braces around scalar initializer
+     XYZ xyz = {{1,2,3},4,{5,6}};
+     ^~~
+test_src/expr.c:1698:5: note: (near initialization for ‘xyz.x’)
+test_src/expr.c:1698:19: warning: excess elements in scalar initializer
+     XYZ xyz = {{1,2,3},4,{5,6}};
+                   ^
+test_src/expr.c:1698:19: note: (near initialization for ‘xyz.x’)
+test_src/expr.c:1698:21: warning: excess elements in scalar initializer
+     XYZ xyz = {{1,2,3},4,{5,6}};
+                     ^
+test_src/expr.c:1698:21: note: (near initialization for ‘xyz.x’)
+test_src/expr.c:1698:5: warning: braces around scalar initializer
+     XYZ xyz = {{1,2,3},4,{5,6}};
+     ^~~
+test_src/expr.c:1698:5: note: (near initialization for ‘xyz.z’)
+test_src/expr.c:1698:29: warning: excess elements in scalar initializer
+     XYZ xyz = {{1,2,3},4,{5,6}};
+                             ^
+test_src/expr.c:1698:29: note: (near initialization for ‘xyz.z’)
+test_src/expr.c:1701:71: warning: comparison between pointer and integer
+     return st.b==1 && st.c==2 && st.s==3 && st.i==4 && st.l==5 && st.p==0x06
+                                                                       ^~
   OK: addsub1
   OK: addsub1b
   OK: addsub1c
@@ -203,6 +231,7 @@ test_src/expr.c:1619:22: warning: empty declaration with storage class specifier
   OK: array3l
   OK: array4
   OK: array4c
+  OK: array5
   OK: garray2
   OK: garray2c
   OK: garray4
@@ -270,6 +299,9 @@ test_src/expr.c:1619:22: warning: empty declaration with storage class specifier
   OK: enum1g
   OK: Enum
   OK: Struct1
+xyz.y=4
+xyz.z=5
+  OK: Struct2
   OK: Struct
   OK: Union1
   OK: Union

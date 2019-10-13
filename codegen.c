@@ -509,6 +509,86 @@ static void gen_array_init_global(Node *node) {
     }
 }
 
+static void gen_bool_rax(void);
+static void gen_bool(void);
+static void gen_write_var(Node *node, char *reg);
+static void gen_write_var_const_val(Node *node, long val);
+
+//ローカル変数の構造体を初期化
+//戻り値:消費したinitの数
+static int gen_struct_init_local_sub(Node *node, int offset, Node *init, int idx) {
+    Node zero_node = {ND_NUM};  //定数0のノード
+    char buf[32];
+    char cbuf[128];
+    int cnt;
+    Node *val_node;
+    switch (node->tp->type) {
+    case STRUCT:
+        offset += node->offset;
+        if (node->lst==NULL) node = node->tp->node;
+        int size = node->lst->len;
+        Node **nodes = (Node**)node->lst->data;
+        cnt = 0;
+        for (int i=0;i<size;i++) {
+            Node *elm = nodes[i];
+            int ret;
+            if (lst_len(init->lst) > idx+i) {
+                val_node = lst_data(init->lst, idx+i);
+            } else {
+                val_node = &zero_node;
+            }
+            if (elm->tp->type==STRUCT && val_node->type==ND_LIST) {
+                dump_node(elm,"elm");
+                dump_node(val_node,"val_node");
+                gen_struct_init_local_sub(elm, offset, val_node, 0);
+                cnt++;
+            } else {
+                ret = gen_struct_init_local_sub(elm, offset, init, idx+i);
+                cnt += ret;
+                idx += ret-1;
+            }
+        }
+        break;
+    case UNION:
+        _NOT_YET_(node);
+        break;
+    case ARRAY:
+        _NOT_YET_(node);
+        break;
+    default:
+        if (lst_len(init->lst) > idx) {
+            val_node = lst_data(init->lst, idx);
+            cnt = 1;
+        } else {
+            val_node = &zero_node;
+            cnt = 0;
+        }
+        sprintf(buf, "rdi+%d", offset + node->offset);
+        sprintf(cbuf, "%s(%s)", node->name, get_type_str(node->tp));
+        if (val_node->type==ND_NUM) {
+            gen_write_reg_const_val(buf, val_node->val, node->tp, cbuf, 0);
+        } else {
+            gen(val_node);
+            printf("  pop rax\n");
+            printf("  mov rdi, [rsp]\n");
+            if (val_node->tp->type==BOOL) gen_bool_rax();
+            gen_write_reg(buf, "rax", node->tp, cbuf);
+        }
+        break;
+    }
+    return cnt;
+}
+//スタックトップとrdiに構造体のベースアドレスが設定されている前提
+static void gen_struct_init_local(Node *node) {
+    assert(node->type=='=');
+    assert(node->lhs->type==ND_LOCAL_VAR);
+    assert(node->lhs->tp->type==STRUCT);
+    Node *init = node->rhs; //ND_LIST
+    Node *strct_def = node->lhs->tp->node;
+    dump_node(node,__func__);
+    gen_struct_init_local_sub(strct_def, 0, init, 0);
+}
+
 //式を左辺値として評価し、rdiにセットする。push!=0ならばさらにPUSHする
 static void gen_lval(Node*node, int push) {
     if (node->type == ND_LOCAL_VAR) {   //ローカル変数
@@ -859,12 +939,15 @@ static int gen(Node*node) {
         break;
     }
     case ND_ASSIGN:         //代入('=')
-        comment("'='\n");
+        comment("%s=\n", display_name(node->lhs));
         if (node->lhs->tp->type==ARRAY) {   //ローカル変数の配列の初期値
             //ここに到達するのはローカル変数の配列の初期化のはず
             gen_lval(node->lhs, 1); //lhsのアドレスをpush
             gen_array_init_local(node);
             return 0;
+        } else if (node->lhs->tp->type==STRUCT) {   //ローカル変数の構造体の初期値
+            gen_lval(node->lhs, 1); //lhsのアドレスをpush
+            gen_struct_init_local(node);
         } else if (node->rhs->type==ND_NUM && node->lhs->type==ND_LOCAL_VAR) {
             gen_write_var_const_val(node->lhs, node->rhs->val);
             printf("  push rax\n");

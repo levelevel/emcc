@@ -724,6 +724,11 @@ static int array4c() {
         sp[0][2]=='c' && strcmp(sp[1], "ABC")==0;
 }
 
+static int array5() {
+    char a[]={1,(2,3),4};
+    return sizeof(a)==3 ;//&& a[1]==3;★
+}
+
 GLOBAL int ga2_a[4]={1,2,3,4};
 static int ga2_b[4]={1,2,{3,99},4}, *ga2_p=&ga2_a, *ga2_q=&ga2_b[2], *ga2_r=ga2_a+3;
 static int garray2() {
@@ -806,6 +811,7 @@ static int array() {
     TEST(array3l);
     TEST(array4);   //2次元+初期化
     TEST(array4c);
+    TEST(array5);
     //global
     TEST(garray2);
     TEST(garray2c);
@@ -1675,8 +1681,31 @@ static int Struct1(void) {
         && a.a+a.b+a.c+a.d+a.e==15 && a.s2.x+a.s2.y+a.s2.z==33
         && s3.a[0]+s3.a[1]+s3.a[2]==6;
 }
+static int Struct2(void) {
+    typedef struct XYZ {
+        int x,y,z;
+    } XYZ;
+    struct ST {
+        _Bool b;
+        char  c;
+        short s;
+        int   i;
+        long  l;
+        char *p;
+        XYZ   x,y;
+        int   z;
+    } st = {2,2,3,4,5,6, {10,11,}, 20,21,22,};
+    XYZ xyz = {{1,2,3},4,{5,6}};
+    printf("xyz.y=%d\n",xyz.y);
+    printf("xyz.z=%d\n",xyz.z);
+    return st.b==1 && st.c==2 && st.s==3 && st.i==4 && st.l==5 && st.p==0x06
+        && st.x.x==10 && st.x.y==11 && st.x.z==0
+        && st.y.x==20 && st.y.y==21 && st.y.z==22 && st.z==0 
+        /*&& xyz.x==1*/ && xyz.y==4 ;//&& xyz.z==5;//★
+}
 static int Struct(void) {
     TEST(Struct1);
+    TEST(Struct2);
     return 1;
 }
 
