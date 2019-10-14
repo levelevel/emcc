@@ -170,7 +170,8 @@ typedef enum {
     ND_BREAK,
     ND_RETURN,      // rhs=expression
     ND_BLOCK,       //{ }               lst=ノード(declaration/statement)
-    ND_LIST,        //コンマリスト
+    ND_LIST,        //コンマリスト(a,b,c)
+    ND_INIT_LIST,   //初期値リスト{a,b,c}
     ND_FUNC_CALL,   //関数コール        name=関数名, lhs=引数リスト(ND_LIST)/NULL, 
                     //                 rhs=ND_FUNC_DEF|DECL/ND_LOCAL|GLOBAL_VAR_DEF(FUNC)
     ND_FUNC_DEF,    //関数定義          lhs=引数リスト(ND_LIST), rhs=ブロック(ND_BLOCK：関数本体)
@@ -427,6 +428,7 @@ Node *new_node_func(char *name, Type *tp, char *input);
 Node *new_node_empty(char *input);
 Node *new_node_block(char *input);
 Node *new_node_list(Node *item, char *input);
+Node *new_node_init_list(Node *item, char *input);
 #endif
 
 // parse.c

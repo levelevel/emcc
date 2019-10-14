@@ -134,6 +134,7 @@ int node_is_const(Node *node, long *valp) {
     case ND_CAST:
         return node_is_const(node->rhs, valp);
     case ND_LIST:
+    case ND_INIT_LIST:
         //if (vec_len(node->lst))
         //    return node_is_const(vec_data(node->lst, vec_len(node->lst)-1), valp);
         //return 0;
@@ -171,8 +172,17 @@ int node_is_const_or_address(Node *node, long *valp, Node **varp) {
         val = node->val;
         break;
     case ND_LIST:
+        if (vec_len(node->lst)) {
+            int size = vec_len(node->lst);
+            for (int i=0; i<size; i++) {
+                if (node_is_const_or_address(vec_data(node->lst, i), valp, varp)==0) return 0;
+            }
+            return 1;
+        }
+        return 0;
+    case ND_INIT_LIST:
         if (vec_len(node->lst))
-            return node_is_const_or_address(vec_data(node->lst, vec_len(node->lst)-1), valp, varp);
+            return node_is_const_or_address(vec_data(node->lst, 0), valp, varp);
         return 0;
     case ND_LOCAL_VAR:
     case ND_GLOBAL_VAR:
@@ -855,6 +865,14 @@ Node *new_node_block(char *input) {
 //型は最後の要素の型であるべきだがここでは設定しない
 Node *new_node_list(Node *item, char *input) {
     Node *node = new_node(ND_LIST, NULL, NULL, NULL, input);
+    node->lst  = new_vector();
+    if (item) vec_push(node->lst, item);
+    return node;
+}
+
+//抽象構文木の生成（初期化リスト）
+Node *new_node_init_list(Node *item, char *input) {
+    Node *node = new_node(ND_INIT_LIST, NULL, NULL, NULL, input);
     node->lst  = new_vector();
     if (item) vec_push(node->lst, item);
     return node;

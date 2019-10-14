@@ -314,13 +314,13 @@ static Node *init_declarator(Type *decl_spec, Type *tp, char *name) {
                 if (rhs->type==ND_STRING && tp->ptr_of->type!=CHAR)
                     error_at(rhs->input, "%sを文字列リテラルで初期化できません", get_type_str(tp));
                 if (tp->array_size<0) {
-                    if (rhs->type==ND_LIST) {
+                    if (rhs->type==ND_INIT_LIST) {
                         tp->array_size = rhs->lst->len;
                     } else {
                         tp->array_size = rhs->tp->array_size;
                     }
                 }
-            } else if (rhs->type==ND_LIST) {
+            } else if (rhs->type==ND_INIT_LIST) {
                 if (tp->array_size<0) {
                     tp->array_size = rhs->lst->len;
                 }
@@ -525,7 +525,7 @@ static Node *initializer(void) {
 //    init_list   = initializer
 //                | init_list "," initializer
 static Node *init_list(void) {
-    Node *node = new_node_list(NULL, input_str());
+    Node *node = new_node_init_list(NULL, input_str());
     Node *last_node;
 
     vec_push(node->lst, last_node=initializer());

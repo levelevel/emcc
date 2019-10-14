@@ -726,7 +726,7 @@ static int array4c() {
 
 static int array5() {
     char a[]={1,(2,3),4};
-    return sizeof(a)==3 ;//&& a[1]==3;★
+    return sizeof(a)==3 && a[1]==3;
 }
 
 GLOBAL int ga2_a[4]={1,2,3,4};
@@ -1701,7 +1701,7 @@ static int Struct2(void) {
     return st.b==1 && st.c==2 && st.s==3 && st.i==4 && st.l==5 && st.p==0x06
         && st.x.x==10 && st.x.y==11 && st.x.z==0
         && st.y.x==20 && st.y.y==21 && st.y.z==22 && st.z==0 
-        /*&& xyz.x==1*/ && xyz.y==4 ;//&& xyz.z==5;//★
+        && xyz.x==1 && xyz.y==4 && xyz.z==5;
 }
 static int Struct(void) {
     TEST(Struct1);
