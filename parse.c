@@ -163,6 +163,21 @@ void translation_unit(void) {
     }
 }
 
+//関数のスコープの開始
+static void begin_func_scope(void) {
+    stack_push(symbol_stack,  cur_funcdef->symbol_map);
+    stack_push(tagname_stack, cur_funcdef->tagname_map);
+}
+//ローカルスコープの開始
+static void begin_local_scope(void) {
+    stack_push(symbol_stack,  new_map());
+    stack_push(tagname_stack, new_map());
+}
+static void end_scope(void) {
+    stack_pop(symbol_stack);
+    stack_pop(tagname_stack);
+}
+
 //    external_declaration    = function_definition | declaration
 //    function_definition     = declaration_specifiers declarator compound_statement
 //    declaration             = declaration_specifiers init_declarator ( "," init_declarator )* ";"
@@ -219,11 +234,9 @@ static Node *function_definition(Type *tp, char *name) {
     if (token_is('{')) {    //関数定義
         check_funcargs(node->lhs, 1);   //引数リストの妥当性を確認（定義モード）
 
-        stack_push(symbol_stack,  cur_funcdef->symbol_map);
-        stack_push(tagname_stack, cur_funcdef->tagname_map);
+        begin_func_scope();
         node->rhs = compound_statement(1);
-        stack_pop(symbol_stack);
-        stack_pop(tagname_stack);
+        end_scope();
 
         map_put(funcdef_map, node->name, cur_funcdef);
         check_func_return(cur_funcdef);        //関数の戻り値を返しているかチェック
@@ -407,12 +420,10 @@ static Node *direct_declarator(Type *tp, char *name) {
         tp = new_type_func(tp, node);
         if (nest_tp) {  //関数のポインタ定義 int(*fp)();
             cur_funcdef = new_funcdef();    //一時的にcur_funcdefを作成しスコープを生成
-            stack_push(symbol_stack, cur_funcdef->symbol_map);
-            stack_push(tagname_stack, cur_funcdef->tagname_map);
+            begin_func_scope();
             node->lhs = parameter_type_list();
+            end_scope();
             cur_funcdef = org_funcdef;      //一時的なcur_funcdefはここで捨てる
-            stack_pop(symbol_stack);
-            stack_pop(tagname_stack);
             Type *p = nest_tp;
             for (;;) {
                 if (p->type==PTR) {
@@ -432,11 +443,9 @@ static Node *direct_declarator(Type *tp, char *name) {
                 error_at(input, "ブロック内のstatic関数");
             }
             node = new_node_func(name, tp, input);  //ここで新たなcur_funcdef設定
-            stack_push(symbol_stack,  cur_funcdef->symbol_map);
-            stack_push(tagname_stack, cur_funcdef->tagname_map);
+            begin_func_scope();
             node->lhs = parameter_type_list();
-            stack_pop(symbol_stack);
-            stack_pop(tagname_stack);
+            end_scope();
             if (org_funcdef) cur_funcdef = org_funcdef;
         }
         tp->node = node;
@@ -942,50 +951,67 @@ static Node *statement(void) {
         return compound_statement(0);    //{ ブロック }
 
     //selection_statement
-    } else if (consume(TK_IF)) {        //if(A)B else C
+    } else if (consume(TK_IF)) {        //if(A)B else C = {if(A){B}else{C}}
         Node *node_A, *node_B;
+        begin_local_scope();
         expect('(');
-        node_A = expression();
+        node_A = expression();          //A
         expect(')');
         input = input_str();
-        node_B = statement();
+        begin_local_scope();
+        node_B = statement();           //B
+        end_scope();
         node = new_node(ND_UNDEF, node_A, node_B, NULL, input); //lhs
         input = input_str();
         if (consume(TK_ELSE)) {
-            node = new_node(ND_IF, node, statement(), NULL, input);
+            begin_local_scope();
+            node = new_node(ND_IF, node, statement(), NULL, input); //C
+            end_scope();
         } else {
             node = new_node(ND_IF, node, NULL, NULL, input);
         }
+        end_scope();
         return node;
-    } else if (consume(TK_SWITCH)) {    //switch (A) B
+    } else if (consume(TK_SWITCH)) {    //switch(A)B = {switch(A){B}}
+        begin_local_scope();
         expect('(');
-        node = expression();
+        node = expression();            //A
         expect(')');
-        node = new_node(ND_SWITCH, node, NULL, NULL, input);
+        node = new_node(ND_SWITCH, node, NULL, NULL, input);    //B
         node->map = new_map();
         Node *org_cur_switch = cur_switch;
         cur_switch = node;
+        begin_local_scope();
         node->rhs = statement();
+        end_scope();
         cur_switch = org_cur_switch;
+        end_scope();
         return node;
 
     //iteration_statement
-    } else if (consume(TK_WHILE)) { //while(A)B         lhs=A, rhs=B
+    } else if (consume(TK_WHILE)) { //while(A)B = {while(A){B}}       lhs=A, rhs=B
+        begin_local_scope();
         expect('(');
-        node = expression();
+        node = expression();            //A
         expect(')');
-        node = new_node(ND_WHILE, node, statement(), NULL, input);
+        begin_local_scope();
+        node = new_node(ND_WHILE, node, statement(), NULL, input);  //B
+        end_scope();
+        end_scope();
         return node;
-    } else if (consume(TK_DO)) {    //do A while(B);    lhs=A, rhs=B
-        node = statement();
+    } else if (consume(TK_DO)) {    //do A while(B) = {do{A}while(B)}    lhs=A, rhs=B
+        begin_local_scope();
+        begin_local_scope();
+        node = statement();             //A
+        end_scope();
         if (!consume(TK_WHILE)) error_at(input_str(), "doに対応するwhileがありません");
         expect('(');
-        node = new_node(ND_DO, node, expression(), NULL, input);
+        node = new_node(ND_DO, node, expression(), NULL, input);    //B
+        end_scope();
         expect(')');
-    } else if (consume(TK_FOR)) {   //for(A;B;C)D       lhs->lhs=A, lhs->rhs=B, rhs->lhs=C, rhs->rhs=D
+    } else if (consume(TK_FOR)) {   //for(A;B;C)D = {for(A;B;C){D}}      lhs->lhs=A, lhs->rhs=B, rhs->lhs=C, rhs->rhs=D
         Node *node1, *node2;
-        stack_push(symbol_stack, new_map());
-        stack_push(tagname_stack, new_map());
+        begin_local_scope();
         expect('(');
         if (consume(';')) {
             node1 = new_node_empty(input_str());
@@ -1008,10 +1034,11 @@ static Node *statement(void) {
             node1 = expression();         //C
             expect(')');
         }
+        begin_local_scope();
         node2 = new_node(ND_UNDEF, node1, statement(), NULL, input);     //C,D
+        end_scope();
         node = new_node(ND_FOR, node, node2, NULL, input);   //(A,B),(C,D)
-        stack_pop(symbol_stack);
-        stack_pop(tagname_stack);
+        end_scope();
         return node;
 
     //jump_statement
@@ -1049,9 +1076,8 @@ static Node *compound_statement(int is_func_body) {
     Node *node;
     assert (consume('{'));
 
+    begin_local_scope();
     node = new_node_block(input_str());
-    stack_push(symbol_stack, new_map());
-    stack_push(tagname_stack, new_map());
 
     if (is_func_body) {
         //関数の先頭に static const char __func__[]="function name"; 相当の変数を登録する
@@ -1077,8 +1103,7 @@ static Node *compound_statement(int is_func_body) {
         if (block_item->type==ND_EMPTY) continue;
         vec_push(node->lst, block_item);
     }
-    stack_pop(symbol_stack);
-    stack_pop(tagname_stack);
+    end_scope();
     return node;
 }
 

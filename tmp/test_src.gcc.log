@@ -129,35 +129,35 @@ test_src/expr.c:1272:10: note: expected ‘struct LS *’ but argument is of typ
      void gc4_func(struct LS*p){};
           ^~~~~~~~
 test_src/expr.c: In function ‘enum1e’:
-test_src/expr.c:1625:22: warning: empty declaration with storage class specifier does not redeclare tag
+test_src/expr.c:1661:22: warning: empty declaration with storage class specifier does not redeclare tag
          typedef enum ABC;
                       ^~~
 test_src/expr.c: In function ‘Struct2’:
-test_src/expr.c:1697:23: warning: initialization makes pointer from integer without a cast [-Wint-conversion]
+test_src/expr.c:1733:23: warning: initialization makes pointer from integer without a cast [-Wint-conversion]
      } st = {2,2,3,4,5,6, {10,11,}, 20,21,22,};
                        ^
-test_src/expr.c:1697:23: note: (near initialization for ‘st.p’)
-test_src/expr.c:1698:5: warning: braces around scalar initializer
+test_src/expr.c:1733:23: note: (near initialization for ‘st.p’)
+test_src/expr.c:1734:5: warning: braces around scalar initializer
      XYZ xyz = {{1,2,3},4,{5,6}};
      ^~~
-test_src/expr.c:1698:5: note: (near initialization for ‘xyz.x’)
-test_src/expr.c:1698:19: warning: excess elements in scalar initializer
+test_src/expr.c:1734:5: note: (near initialization for ‘xyz.x’)
+test_src/expr.c:1734:19: warning: excess elements in scalar initializer
      XYZ xyz = {{1,2,3},4,{5,6}};
                    ^
-test_src/expr.c:1698:19: note: (near initialization for ‘xyz.x’)
-test_src/expr.c:1698:21: warning: excess elements in scalar initializer
+test_src/expr.c:1734:19: note: (near initialization for ‘xyz.x’)
+test_src/expr.c:1734:21: warning: excess elements in scalar initializer
      XYZ xyz = {{1,2,3},4,{5,6}};
                      ^
-test_src/expr.c:1698:21: note: (near initialization for ‘xyz.x’)
-test_src/expr.c:1698:5: warning: braces around scalar initializer
+test_src/expr.c:1734:21: note: (near initialization for ‘xyz.x’)
+test_src/expr.c:1734:5: warning: braces around scalar initializer
      XYZ xyz = {{1,2,3},4,{5,6}};
      ^~~
-test_src/expr.c:1698:5: note: (near initialization for ‘xyz.z’)
-test_src/expr.c:1698:29: warning: excess elements in scalar initializer
+test_src/expr.c:1734:5: note: (near initialization for ‘xyz.z’)
+test_src/expr.c:1734:29: warning: excess elements in scalar initializer
      XYZ xyz = {{1,2,3},4,{5,6}};
                              ^
-test_src/expr.c:1698:29: note: (near initialization for ‘xyz.z’)
-test_src/expr.c:1701:71: warning: comparison between pointer and integer
+test_src/expr.c:1734:29: note: (near initialization for ‘xyz.z’)
+test_src/expr.c:1737:71: warning: comparison between pointer and integer
      return st.b==1 && st.c==2 && st.s==3 && st.i==4 && st.l==5 && st.p==0x06
                                                                        ^~
   OK: addsub1
@@ -273,6 +273,7 @@ test_src/expr.c:1701:71: warning: comparison between pointer and integer
   OK: scope2
   OK: scope3
   OK: scope4
+  OK: scope5
   OK: scope
   OK: overflow1
   OK: overflow1b

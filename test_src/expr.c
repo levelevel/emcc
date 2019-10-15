@@ -1284,11 +1284,47 @@ static int scope4(void) {
     gc4_func(&a);   //引数のLSはスコープが異なる
     return sum==10;
 }
+static int scope5(void) {
+    //- [選択文と反復文のブロック化](http://seclan.dll.jp/c99d/c99d07.htm#dt19991108)
+    enum {A,B};
+    int ret_if1, ret_if2, ret_if3, ret_sw, ret_wh, ret_do1, ret_do2, ret_for;
+    {
+        if (sizeof(enum {B,A})==0);
+        ret_if1 = A;
+    }
+    {
+        if (0) sizeof(enum {B,A}); else ret_if2 = A;
+    }
+    {
+        switch (sizeof(enum {B,A})) {
+        default:
+            break;
+        }
+        ret_sw = A;
+    }
+    {
+        while (sizeof(enum {B,A})==0);
+        ret_wh = A;
+    }
+    {
+        do ; while(sizeof(enum {B,A})==0);
+        ret_do1 = A;
+    }
+    {
+        do sizeof(enum {B,A}); while(ret_do2 = A, 0);
+    }
+    {
+        for (;0;) sizeof(enum {B,A});
+        ret_for = A;
+    }
+    return ret_if1==0 && ret_if2==0 && ret_sw==0 && ret_wh==0 && ret_do1==0 && ret_do2==0 && ret_for==0;
+}
 static int scope(void) {
     TEST(scope1);
     TEST(scope2);
     TEST(scope3);
     TEST(scope4);
+    TEST(scope5);
     return 1;
 }
 

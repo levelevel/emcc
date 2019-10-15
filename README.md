@@ -30,7 +30,6 @@
 - より厳密なC標準準拠（GCCの-std=c11 -pedantic-errors相当）
 - ローカル配列のサイズが定数でないケース。
 - [指示付きの初期化子 (Designated Initializer)](http://seclan.dll.jp/c99d/c99d07.htm#dt19991025)
-- [複合リテラル (Compound Literal)](http://seclan.dll.jp/c99d/c99d07.htm#dt19991101)
 - 実数（float, double, long double, _Complex, _Imaginar）
 - プリプロセッサ
 
@@ -41,6 +40,7 @@
 
 ## その他、制限事項・バグなど
 
+- [複合リテラル (Compound Literal)](http://seclan.dll.jp/c99d/c99d07.htm#dt19991101)
 - 暗黙の型変換
 - 戻り値のない非void関数のチェックが雑。
 - ローカル変数の初期値として文字列リテラルを指定すると.dataにコピーが作られ、実行時にそこからコピーする動作になっている。
