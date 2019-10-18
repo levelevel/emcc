@@ -1730,14 +1730,12 @@ static int Struct2(void) {
         char *p;
         XYZ   x,y;
         int   z;
-    } st = {2,2,3,4,5,6, {10,11,}, 20,21,22,};
+    } st0 = {2,2,3,4,5,(void*)6, {10,11,}, 20,21,22,}, st=st0;
     XYZ xyz = {{1,2,3},4,{5,6}};
-    printf("xyz.y=%d\n",xyz.y);
-    printf("xyz.z=%d\n",xyz.z);
-    return st.b==1 && st.c==2 && st.s==3 && st.i==4 && st.l==5 && st.p==0x06
+    return st.b==1 && st.c==2 && st.s==3 && st.i==4 && st.l==5 && st.p==(void*)6
         && st.x.x==10 && st.x.y==11 && st.x.z==0
         && st.y.x==20 && st.y.y==21 && st.y.z==22 && st.z==0 
-        && xyz.x==1 && xyz.y==4 && xyz.z==5;
+        && xyz.x==1 && xyz.y==4 && xyz.z==5 && memcmp(&st0, &st, sizeof(st))==0;
 }
 static int Struct(void) {
     TEST(Struct1);
@@ -1793,8 +1791,27 @@ static int Union1(void) {
         && a.a==5 && a.b==5 && a.c==5 && a.d==5 && a.e==5 && xyz==36 && a.u2.x==5
         && u3.a[0]+u3.a[1]+u3.a[2]==6;
 }
+static int Union2(void) {
+    union U1 {
+        char  c;
+        short s;
+        int   i;
+        long  l;
+        void *p;
+    } u10 = {1,2}, u1=u10;
+    union U2 {
+        long  l;
+        char  c;
+        short s;
+        int   i;
+        void *p;
+    } u20 = {2}, u2=u20;
+    return u1.c==1 && memcmp(&u1, &u10, sizeof(u1))==0
+        && u2.l==2 && memcmp(&u2, &u20, sizeof(u2))==0;
+}
 static int Union(void) {
     TEST(Union1);
+    TEST(Union2);
     return 1;
 }
 

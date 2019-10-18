@@ -791,6 +791,14 @@ int a[3]={1,{2,99},3}; void main(){}
 9cc:Warning: selftest:1: int a[3]={1,{2,99},3}; void main(){}
                                       ^ スカラーがリストで初期化されています
 # selftest ----------------
+int main(){struct {int a,b;}st1={1,2,3};}
+9cc:Warning: selftest:1: int main(){struct {int a,b;}st1={1,2,3};}
+                                                                 ^ 関数が戻り値を返していません
+# selftest ----------------
+int main(){struct {int a,b;}st1={1,{2,3}};}
+9cc:Warning: selftest:1: int main(){struct {int a,b;}st1={1,{2,3}};}
+                                                                   ^ 関数が戻り値を返していません
+# selftest ----------------
 int main(){_Static_assert(0,"aaa");}
 9cc:Error: selftest:1: int main(){_Static_assert(0,"aaa");}
                                   ^ static assertionに失敗しました: aaa
@@ -982,6 +990,6 @@ int main(){typedef union UN un_t;{union UN{int a,b;}; un_t un;}}
 9cc:Note: selftest:1: int main(){typedef union UN un_t;{union UN{int a,b;}; un_t un;}}
                                                ^ 型の宣言はここです
 9cc self test
-Total : 209
-   Ok : 209
+Total : 211
+   Ok : 211
    NG : 0

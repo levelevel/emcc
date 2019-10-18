@@ -977,12 +977,12 @@ static Node *statement(void) {
         expect('(');
         node = expression();            //A
         expect(')');
-        node = new_node(ND_SWITCH, node, NULL, NULL, input);    //B
+        node = new_node(ND_SWITCH, node, NULL, NULL, input);
         node->map = new_map();
         Node *org_cur_switch = cur_switch;
         cur_switch = node;
         begin_local_scope();
-        node->rhs = statement();
+        node->rhs = statement();        //B
         end_scope();
         cur_switch = org_cur_switch;
         end_scope();

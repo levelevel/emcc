@@ -524,9 +524,10 @@ static int gen_struct_init_local_sub(Node *node, int offset, Node *init, int idx
     Node *val_node;
     switch (node->tp->type) {
     case STRUCT:
+    case UNION:
         offset += node->offset;
         if (node->lst==NULL) node = node->tp->node;
-        int size = node->lst->len;
+        int size = node->tp->type==STRUCT ? node->lst->len : 1;
         Node **nodes = (Node**)node->lst->data;
         cnt = 0;
         for (int i=0;i<size;i++) {
@@ -538,8 +539,6 @@ static int gen_struct_init_local_sub(Node *node, int offset, Node *init, int idx
                 val_node = &zero_node;
             }
             if (elm->tp->type==STRUCT && val_node->type==ND_INIT_LIST) {
-                dump_node(elm,"elm");
-                dump_node(val_node,"val_node");
                 gen_struct_init_local_sub(elm, offset, val_node, 0);
                 cnt++;
             } else {
@@ -548,9 +547,7 @@ static int gen_struct_init_local_sub(Node *node, int offset, Node *init, int idx
                 idx += ret-1;
             }
         }
-        break;
-    case UNION:
-        _NOT_YET_(node);
+        if (cnt < lst_len(init->lst)) warning_at(get_lst_node(init->lst, cnt)->input, "初期化リストが要素数を超えています");
         break;
     case ARRAY:
         _NOT_YET_(node);
@@ -568,6 +565,7 @@ static int gen_struct_init_local_sub(Node *node, int offset, Node *init, int idx
         if (val_node->type==ND_NUM) {
             gen_write_reg_const_val(buf, val_node->val, node->tp, cbuf, 0);
         } else {
+            if (val_node->type==ND_INIT_LIST) warning_at(val_node->input, "スカラーがリストで初期化されています");
             gen(val_node);
             printf("  pop rax\n");
             printf("  mov rdi, [rsp]\n");
@@ -582,10 +580,9 @@ static int gen_struct_init_local_sub(Node *node, int offset, Node *init, int idx
 static void gen_struct_init_local(Node *node) {
     assert(node->type=='=');
     assert(node->lhs->type==ND_LOCAL_VAR);
-    assert(node->lhs->tp->type==STRUCT);
+    assert(node->lhs->tp->type==STRUCT || node->lhs->tp->type==UNION);
     Node *init = node->rhs; //ND_INIT_LIST
     Node *strct_def = node->lhs->tp->node;
-    dump_node(node,__func__);
     gen_struct_init_local_sub(strct_def, 0, init, 0);
 }
 
@@ -701,7 +698,7 @@ static int gen(Node*node) {
         return gen(node->rhs);  //代入
     case ND_LOCAL_VAR:
     case ND_GLOBAL_VAR:     //変数参照
-        if (node->tp->type==ARRAY) {
+        if (node->tp->type==ARRAY || node->tp->type==STRUCT) {
             //アドレスをそのまま返す
             comment("%s_VAR:%s(%s)\n", node->type==ND_LOCAL_VAR?"LOCAL":"GLOBAL", display_name(node), get_type_str(node->tp));
             gen_lval(node, 1);  //nodeのアドレスをpush
@@ -950,9 +947,19 @@ static int gen(Node*node) {
             gen_lval(node->lhs, 1); //lhsのアドレスをpush
             gen_array_init_local(node);
             return 0;
-        } else if (node->lhs->tp->type==STRUCT) {   //ローカル変数の構造体の初期値
-            gen_lval(node->lhs, 1); //lhsのアドレスをpush
-            gen_struct_init_local(node);
+        } else if (node->lhs->tp->type==STRUCT || node->lhs->tp->type==UNION) {
+            if (node->rhs->type==ND_INIT_LIST) {    //初期値または複合リテラルの代入
+                gen_lval(node->lhs, 1); //lhsのアドレスをpush
+                gen_struct_init_local(node);
+            } else {
+                // [rdi++] = [rsi++] を rcx回繰り返す
+                gen_lval(node->rhs, 1); //rhsのアドレスをpush
+                gen_lval(node->lhs, 0); //lhsのアドレスをrdiにセット
+                printf("  pop rsi\n");  //rhsのアドレス
+                printf("  mov rcx, %ld\n", size_of(node->lhs->tp));
+                printf("  rep movsb\n");
+                return 0;
+            }
         } else if (node->rhs->type==ND_NUM && node->lhs->type==ND_LOCAL_VAR) {
             gen_write_var_const_val(node->lhs, node->rhs->val);
             printf("  push rax\n");

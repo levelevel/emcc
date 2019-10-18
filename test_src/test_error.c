@@ -186,6 +186,9 @@ struct {
     {WR, "int a[2][2]={{1,2},{3,4},{5,6}}; void main(){}"},
     {WR, "char a[2][2]={\"ab\",\"cd\"}; void main(){}"},
     {WR, "int a[3]={1,{2,99},3}; void main(){}"},
+    //LOCAL構造体の初期化
+    {WR, "struct {int a,b;}st1={1,2,3};"},
+    {WR, "struct {int a,b;}st1={1,{2,3}};"},
 
     {ER, "_Static_assert(0,\"aaa\");"},
     {ER, "_Static_assert(0,\"aaa\"); void main(){}"},

@@ -133,10 +133,6 @@ test_src/expr.c:1661:22: warning: empty declaration with storage class specifier
          typedef enum ABC;
                       ^~~
 test_src/expr.c: In function ‘Struct2’:
-test_src/expr.c:1733:23: warning: initialization makes pointer from integer without a cast [-Wint-conversion]
-     } st = {2,2,3,4,5,6, {10,11,}, 20,21,22,};
-                       ^
-test_src/expr.c:1733:23: note: (near initialization for ‘st.p’)
 test_src/expr.c:1734:5: warning: braces around scalar initializer
      XYZ xyz = {{1,2,3},4,{5,6}};
      ^~~
@@ -157,9 +153,11 @@ test_src/expr.c:1734:29: warning: excess elements in scalar initializer
      XYZ xyz = {{1,2,3},4,{5,6}};
                              ^
 test_src/expr.c:1734:29: note: (near initialization for ‘xyz.z’)
-test_src/expr.c:1737:71: warning: comparison between pointer and integer
-     return st.b==1 && st.c==2 && st.s==3 && st.i==4 && st.l==5 && st.p==0x06
-                                                                       ^~
+test_src/expr.c: In function ‘Union2’:
+test_src/expr.c:1801:16: warning: excess elements in union initializer
+     } u10 = {1,2}, u1=u10;
+                ^
+test_src/expr.c:1801:16: note: (near initialization for ‘u10’)
   OK: addsub1
   OK: addsub1b
   OK: addsub1c
@@ -300,11 +298,10 @@ test_src/expr.c:1737:71: warning: comparison between pointer and integer
   OK: enum1g
   OK: Enum
   OK: Struct1
-xyz.y=4
-xyz.z=5
   OK: Struct2
   OK: Struct
   OK: Union1
+  OK: Union2
   OK: Union
   OK: typedef1
   OK: typedef1p
