@@ -498,15 +498,20 @@ void check_return(Node *node) {
     assert(cur_funcdef->tp->type==FUNC);
     Type *func_tp = cur_funcdef->tp->ptr_of;
     Type *ret_tp = node->tp;
+    Status sts;
     if (func_tp->type==VOID) {
         if (ret_tp==NULL) return;
         if (ret_tp->type==VOID) return;
         warning_at(node->input, "void型関数が値を返しています");
     } else if (ret_tp==NULL || ret_tp->type==VOID) {
         warning_at(node->input, "非void関数%sが値を返していません", cur_funcdef->func_name);
-    } else if (!type_eq_assign(func_tp, ret_tp)) {
-        warning_at(node->input, "%s型の関数%sが%s型を返しています",
-            get_type_str(func_tp), cur_funcdef->func_name, get_type_str(ret_tp));
+    } else if ((sts=type_eq_check(func_tp, ret_tp))!=ST_OK) {
+        if (sts==ST_WARN)
+            warning_at(node->input, "%s型の関数%sが%s型を返しています",
+                get_type_str(func_tp), cur_funcdef->func_name, get_type_str(ret_tp));
+        if (sts==ST_ERR)
+            error_at(node->input, "%s型の関数%sが%s型を返しています",
+                get_type_str(func_tp), cur_funcdef->func_name, get_type_str(ret_tp));
     }
 }
 
@@ -582,12 +587,22 @@ void check_funccall(Node *node) {
     } else {
         for (int i=0;i<decl_size && i<call_size;i++) {
             if (decl_args[i]->type==ND_VARARGS) return; //唯一引数の数が一致しないケース
-            if (!type_eq_assign(decl_args[i]->tp, call_args[i]->tp)) {
+            switch (type_eq_check(decl_args[i]->tp, call_args[i]->tp)) {
+            case ST_ERR:
                 SET_ERROR_WITH_NOTE;
-                error_at(call_args[i]->input, "引数の型(%s:%s)が一致しません",
+                error_at(call_args[i]->input, "引数[%d]の型(%s:%s)が一致しません", i,
                     get_type_str(decl_args[i]->tp),
                     get_type_str(call_args[i]->tp));
                 note_at(decl_args[i]->input, "関数の定義はここです");
+                break;
+            case ST_WARN:
+                warning_at(call_args[i]->input, "引数[%d]の型(%s:%s)が一致しません", i,
+                    get_type_str(decl_args[i]->tp),
+                    get_type_str(call_args[i]->tp));
+                note_at(decl_args[i]->input, "関数の定義はここです");
+                break;
+            default:
+                break;
             }
         }
         if (decl_size>call_size) {
@@ -627,6 +642,7 @@ int type_eq(const Type *tp1, const Type *tp2) {
     if (tp1->sclass != tp2->sclass) return 0;
     if (tp1->array_size != tp2->array_size) return 0;
     if (tp1->type==FUNC && !func_arg_eq(tp1->node, tp2->node)) return 0;
+    if (type_is_struct_or_union(tp1) && tp1->node!=tp2->node) return 0;
     if (tp1->ptr_of) return type_eq(tp1->ptr_of, tp2->ptr_of);
     return 1;
 }
@@ -653,18 +669,21 @@ int type_eq_func(const Type *tp1, const Type *tp2) {
 }
 
 //node1=node2の代入の観点で型の一致を判定する
-int type_eq_assign(const Type *tp1, const Type *tp2) {
+Status type_eq_check(const Type *tp1, const Type *tp2) {
     if ((tp1->type==PTR && tp2->type==ARRAY) ||
         (type_is_integer(tp1) && type_is_integer(tp2))) {
         ;
     } else if (tp1->type==PTR && tp1->ptr_of->type==FUNC &&
                tp2->type==FUNC) {   //関数ポインタに対する関数名の代入
         tp1 = tp1->ptr_of;
-    } else {
-        if (tp1->type != tp2->type) return 0;
+    } else if (type_is_struct_or_union(tp1) || type_is_struct_or_union(tp2)) {
+        if (!type_eq(tp1, tp2)) return ST_ERR;
+    } else if (tp1->type != tp2->type) {
+        if (tp1->type==VOID) return ST_ERR;
+        return ST_WARN;
     }  
-    if (tp1->ptr_of) return type_eq_assign(tp1->ptr_of, tp2->ptr_of);
-    return 1;
+    if (tp1->ptr_of) return type_eq_check(tp1->ptr_of, tp2->ptr_of)==ST_OK ? ST_OK : ST_WARN;
+    return ST_OK;
 }
 
 //関数定義のroot生成

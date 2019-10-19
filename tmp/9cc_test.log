@@ -573,7 +573,7 @@ int func(int a){return 1;}; int main(){return func(1,2);}
 # [引数0個(void)に対して1個でコール]
 int func(void){return 1;}; int main(){return func(1);}
 9cc:Error: selftest:1: int func(void){return 1;}; int main(){return func(1);}
-                                                                         ^ 引数の型(void:int)が一致しません
+                                                                         ^ 引数[0]の型(void:int)が一致しません
 9cc:Note: selftest:1: int func(void){return 1;}; int main(){return func(1);}
                                ^ 関数の定義はここです
 # selftest ----------------
@@ -585,11 +585,14 @@ int func(int a, int b, ...){return 1;}; void main(){func(1);}
                                       ^ 関数の定義はここです
 # selftest ----------------
 # [int*に対してintでコール]
-int func(int *a){return 1;}; int main(){return func(1);}
-9cc:Error: selftest:1: int func(int *a){return 1;}; int main(){return func(1);}
-                                                                           ^ 引数の型(int*:int)が一致しません
-9cc:Note: selftest:1: int func(int *a){return 1;}; int main(){return func(1);}
-                                     ^ 関数の定義はここです
+int func(int*a){return 1;}; int main(){return func(1);}
+9cc:Warning: selftest:1: int func(int*a){return 1;}; int main(){return func(1);}
+                                                                            ^ 引数[0]の型(int*:int)が一致しません
+# selftest ----------------
+# [intに対してint*でコール]
+int func(int a){return 1;}; int main(){int a; return func(&a);}
+9cc:Warning: selftest:1: int func(int a){return 1;}; int main(){int a; return func(&a);}
+                                                                                   ^ 引数[0]の型(int:int*)が一致しません
 # selftest ----------------
 # [グローバル変数をグローバル変数で初期化]
 int a, b=a; void main(){}
@@ -939,6 +942,56 @@ int main(){typedef struct ST st_t;{struct ST{int a,b;}; st_t st;}}
 9cc:Note: selftest:1: int main(){typedef struct ST st_t;{struct ST{int a,b;}; st_t st;}}
                                                 ^ 型の宣言はここです
 # selftest ----------------
+int main(){struct{int a;}st; st=1;}
+9cc:Error: selftest:1: int main(){struct{int a;}st; st=1;}
+                                                      ^ =の左右の型(struct<anonymouse>:int)が異なります
+# selftest ----------------
+int main(){struct{int a;}st; int b=st;}
+9cc:Error: selftest:1: int main(){struct{int a;}st; int b=st;}
+                                                        ^ =の左右の型(int:struct<anonymouse>)が異なります
+# selftest ----------------
+int main(){struct{int a;}st; int b; b=st;}
+9cc:Error: selftest:1: int main(){struct{int a;}st; int b; b=st;}
+                                                            ^ =の左右の型(int:struct<anonymouse>)が異なります
+# selftest ----------------
+int main(){struct{int a;}st1; struct{int b;}st2=st1;}
+9cc:Error: selftest:1: int main(){struct{int a;}st1; struct{int b;}st2=st1;}
+                                                                   ^ =の左右の型(struct<anonymouse>:struct<anonymouse>)が異なります
+# selftest ----------------
+int main(){struct{int a;}st1; struct{int b;}st2; st1=st2;}
+9cc:Error: selftest:1: int main(){struct{int a;}st1; struct{int b;}st2; st1=st2;}
+                                                                           ^ =の左右の型(struct<anonymouse>:struct<anonymouse>)が異なります
+# selftest ----------------
+int main(){struct{int a;}st; return st;}
+9cc:Error: selftest:1: int main(){struct{int a;}st; return st;}
+                                                    ^ int型の関数mainがstruct<anonymouse>型を返しています
+# selftest ----------------
+int main(){struct{int a;}st; return &st;}
+9cc:Warning: selftest:1: int main(){struct{int a;}st; return &st;}
+                                                      ^ int型の関数mainがstruct<anonymouse>*型を返しています
+# selftest ----------------
+int main(){typedef struct{int a;}ST; ST st; void func(int); func(st);}
+9cc:Error: selftest:1: int main(){typedef struct{int a;}ST; ST st; void func(int); func(st);}
+                                                                                        ^ 引数[0]の型(int:struct<anonymouse>)が一致しません
+9cc:Note: selftest:1: int main(){typedef struct{int a;}ST; ST st; void func(int); func(st);}
+                                                                            ^ 関数の定義はここです
+# selftest ----------------
+int main(){typedef struct{int a;}ST; ST st; void func(int); func(&st);}
+9cc:Warning: selftest:1: int main(){typedef struct{int a;}ST; ST st; void func(int); func(&st);}
+                                                                                          ^ 引数[0]の型(int:struct<anonymouse>*)が一致しません
+# selftest ----------------
+int main(){typedef struct{int a;}ST; ST st; void func(ST); func(1);}
+9cc:Error: selftest:1: int main(){typedef struct{int a;}ST; ST st; void func(ST); func(1);}
+                                                                                       ^ 引数[0]の型(struct<anonymouse>:int)が一致しません
+9cc:Note: selftest:1: int main(){typedef struct{int a;}ST; ST st; void func(ST); func(1);}
+                                                                            ^ 関数の定義はここです
+# selftest ----------------
+int main(){typedef struct{int a;}ST; ST st; void func(ST); func(&st);}
+9cc:Error: selftest:1: int main(){typedef struct{int a;}ST; ST st; void func(ST); func(&st);}
+                                                                                       ^ 引数[0]の型(struct<anonymouse>:struct<anonymouse>*)が一致しません
+9cc:Note: selftest:1: int main(){typedef struct{int a;}ST; ST st; void func(ST); func(&st);}
+                                                                            ^ 関数の定義はここです
+# selftest ----------------
 int main(){struct U; union U;}
 9cc:Error: selftest:1: int main(){struct U; union U;}
                                                   ^ 'U'はタグの重複定義です
@@ -989,7 +1042,41 @@ int main(){typedef union UN un_t;{union UN{int a,b;}; un_t un;}}
                                                                                   ^ unの型は不完全です
 9cc:Note: selftest:1: int main(){typedef union UN un_t;{union UN{int a,b;}; un_t un;}}
                                                ^ 型の宣言はここです
+# selftest ----------------
+int main(){union{int a;}un1; union{int b;}un2; un1=un2;}
+9cc:Error: selftest:1: int main(){union{int a;}un1; union{int b;}un2; un1=un2;}
+                                                                         ^ =の左右の型(union:union)が異なります
+# selftest ----------------
+int main(){union{int a;}un; return un;}
+9cc:Error: selftest:1: int main(){union{int a;}un; return un;}
+                                                   ^ int型の関数mainがunion型を返しています
+# selftest ----------------
+int main(){union{int a;}un; return &un;}
+9cc:Warning: selftest:1: int main(){union{int a;}un; return &un;}
+                                                     ^ int型の関数mainがunion*型を返しています
+# selftest ----------------
+int main(){typedef union{int a;}UN; UN un; void func(int); func(un);}
+9cc:Error: selftest:1: int main(){typedef union{int a;}UN; UN un; void func(int); func(un);}
+                                                                                       ^ 引数[0]の型(int:union)が一致しません
+9cc:Note: selftest:1: int main(){typedef union{int a;}UN; UN un; void func(int); func(un);}
+                                                                           ^ 関数の定義はここです
+# selftest ----------------
+int main(){typedef union{int a;}UN; UN un; void func(int); func(&un);}
+9cc:Warning: selftest:1: int main(){typedef union{int a;}UN; UN un; void func(int); func(&un);}
+                                                                                         ^ 引数[0]の型(int:union*)が一致しません
+# selftest ----------------
+int main(){typedef union{int a;}UN; UN un; void func(UN); func(1);}
+9cc:Error: selftest:1: int main(){typedef union{int a;}UN; UN un; void func(UN); func(1);}
+                                                                                      ^ 引数[0]の型(union:int)が一致しません
+9cc:Note: selftest:1: int main(){typedef union{int a;}UN; UN un; void func(UN); func(1);}
+                                                                           ^ 関数の定義はここです
+# selftest ----------------
+int main(){typedef union{int a;}UN; UN un; void func(UN); func(&un);}
+9cc:Error: selftest:1: int main(){typedef union{int a;}UN; UN un; void func(UN); func(&un);}
+                                                                                      ^ 引数[0]の型(union:union*)が一致しません
+9cc:Note: selftest:1: int main(){typedef union{int a;}UN; UN un; void func(UN); func(&un);}
+                                                                           ^ 関数の定義はここです
 9cc self test
-Total : 211
-   Ok : 211
+Total : 230
+   Ok : 230
    NG : 0

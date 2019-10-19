@@ -344,6 +344,17 @@ static Node *init_declarator(Type *decl_spec, Type *tp, char *name) {
         if (node_is_const(rhs, &val)) {
             rhs = new_node_num(val, rhs->input);
         }
+        Status sts;
+        if (!(rhs->type==ND_NUM && rhs->val==0) &&  //右辺が0の場合は無条件にOK
+            rhs->type!=ND_INIT_LIST &&
+            (sts=type_eq_check(node->tp, rhs->tp))!=ST_OK) {
+            if (sts==ST_ERR)
+                error_at(input, "=の左右の型(%s:%s)が異なります", 
+                    get_type_str(node->tp), get_type_str(rhs->tp));
+            if (sts==ST_WARN)
+                warning_at(input, "=の左右の型(%s:%s)が異なります", 
+                    get_type_str(node->tp), get_type_str(rhs->tp));
+        }
     }
 
     if (rhs) node->rhs = new_node('=', NULL, rhs, tp, input);
@@ -1129,7 +1140,7 @@ static Node *expression(void) {
 }
 
 //    constant_expression     = conditional_expression
-// 戻り値のnode->valに評価された低数値を設定
+// 戻り値のnode->valに評価された定数を設定
 static Node *constant_expression(void) {
     char *input = input_str();
     Node *node = conditional_expression();
@@ -1164,10 +1175,16 @@ static Node *assignment_expression(void) {
     if (consume('=')) {
         if (!is_lvalue || node->tp->type==ARRAY) error_at(node->input, "左辺値ではありません");
         rhs = assignment_expression(); 
+        Status sts;
         if (!(rhs->type==ND_NUM && rhs->val==0) &&  //右辺が0の場合は無条件にOK
-            !type_eq_assign(node->tp, rhs->tp))
-            warning_at(input, "=の左右の型(%s:%s)が異なります", 
-                get_type_str(node->tp), get_type_str(rhs->tp));
+            (sts=type_eq_check(node->tp, rhs->tp))!=ST_OK) {
+            if (sts==ST_ERR)
+                error_at(input, "=の左右の型(%s:%s)が異なります", 
+                    get_type_str(node->tp), get_type_str(rhs->tp));
+            if (sts==ST_WARN)
+                warning_at(input, "=の左右の型(%s:%s)が異なります", 
+                    get_type_str(node->tp), get_type_str(rhs->tp));
+        }
         node = new_node('=', node, rhs, node->tp, input); //ND_ASIGN
     } else if (consume(TK_PLUS_ASSIGN)) { //+=
         if (!is_lvalue || node->tp->type==ARRAY) error_at(node->input, "左辺値ではありません");

@@ -8,6 +8,13 @@
 #include <limits.h>
 #include <setjmp.h>
 
+//エラー状態
+typedef enum {
+    ST_ERR=0,
+    ST_OK=1,
+    ST_WARN=2,
+}Status;
+
 //可変長ベクタ ---------------------------------------
 typedef struct {
     void **data;
@@ -182,16 +189,16 @@ typedef enum {
 
 typedef enum {
     VOID = 1,
-    BOOL,
+    BOOL,           //ここからtype_is_integer
     CHAR,
     SHORT,
     INT,
     LONG,
     LONGLONG,
+    ENUM,           //ここまでtype_is_integer
     FLOAT,
     DOUBLE,
     LONGDOUBLE,
-    ENUM,
     STRUCT,
     UNION,
     PTR,
@@ -265,6 +272,7 @@ typedef struct {
 
 //型がinteger型であるか
 #define type_is_integer(_tp) (BOOL<=(_tp)->type && (_tp)->type<=ENUM)
+#define type_is_struct_or_union(_tp) ((_tp)->type==STRUCT || (_tp)->type==UNION)
 
 //型・ノードがポインタ型（PTR||ARRAY）であるか
 #define type_is_ptr(_tp) ((_tp)->type==PTR || (_tp)->type==ARRAY)
@@ -411,7 +419,7 @@ void check_funcargs(Node *node, int def_mode);
 int type_eq(const Type *tp1, const Type *tp2);
 int type_eq_global_local(const Type *tp1, const Type *tp2);
 int type_eq_func(const Type *tp1, const Type *tp2);
-int type_eq_assign(const Type *tp1, const Type *tp2);
+Status type_eq_check(const Type *tp1, const Type *tp2);
 Funcdef *new_funcdef(void);
 Type *new_type_ptr(Type*ptr);
 Type *new_type_func(Type*ptr, Node *node);

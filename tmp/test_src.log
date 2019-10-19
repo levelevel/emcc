@@ -10,10 +10,20 @@
                                      ^ 未宣言の関数コールです。
 9cc:Warning: tmp/test_src.c:535:     return 0;
                                      ^ static int**型の関数pointer3がint型を返しています
+9cc:Warning: tmp/test_src.c:756: static int ga2_b[4]={1,2,{3,99},4}, *ga2_p=&ga2_a, *ga2_q=&ga2_b[2], *ga2_r=ga2_a+3;
+                                                                     ^ =の左右の型(static int*:int[4]*)が異なります
+9cc:Warning: tmp/test_src.c:761: static char ga2c_b[4]={1,2,{3,99},4}, *ga2c_p=&ga2c_a, *ga2c_q=&ga2c_b[2], *ga2c_r=ga2c_a+3;
+                                                                       ^ =の左右の型(static char*:char[4]*)が異なります
 9cc:Warning: tmp/test_src.c:875:         memcmp(str5, str6, sizeof(str5))==0;
                                          ^ 未宣言の関数コールです。
+9cc:Warning: tmp/test_src.c:1029:  int i2g_x, *i2g_p = 2 + &i2g_x - 1;
+                                              ^ =の左右の型(int*:int)が異なります
 9cc:Warning: tmp/test_src.c:1221: }
                                    ^ 関数が戻り値を返していません
+9cc:Warning: tmp/test_src.c:1307:     gc4_func(&a);
+                                               ^ 引数[0]の型(struct LS*:struct LS*)が一致しません
+9cc:Note: tmp/test_src.c:1295:     void gc4_func(struct LS*p){};
+                                                            ^ 関数の定義はここです
 9cc:Warning: tmp/test_src.c:1752:         && xyz.x==1 && xyz.y==4 && xyz.z==5 && memcmp(&st0, &st, sizeof(st))==0;
                                                                                  ^ 未宣言の関数コールです。
 9cc:Warning: tmp/test_src.c:1823:     return u1.c==1 && memcmp(&u1, &u10, sizeof(u1))==0
