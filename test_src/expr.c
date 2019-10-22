@@ -1694,7 +1694,8 @@ static int Struct1(void) {
         S2 s2;
     };
     typedef struct S S_t;
-    struct S a;
+    struct S a={0};
+    struct S b={11,22,33,44,&a,55,{66,77,88}};
     struct S;
     struct {
         char s[5];
@@ -1715,7 +1716,46 @@ static int Struct1(void) {
         && sizeof(s3)==20 && sizeof(s3.s)==5
         && _Alignof(struct S)==8 && _Alignof(a)==8 && _Alignof(a.c)==1 && _Alignof(S_t)==8 && _Alignof(s3)==4
         && a.a+a.b+a.c+a.d+a.e==15 && a.s2.x+a.s2.y+a.s2.z==33
-        && s3.a[0]+s3.a[1]+s3.a[2]==6;
+        && s3.a[0]+s3.a[1]+s3.a[2]==6
+        && b.p->b==2 && b.p->s2.z==12;
+}
+static int Struct1arrow(void) {
+    struct S;
+    struct S {
+        int a,b;
+        char c;
+        long d;
+        struct S *p;
+        short e;
+        S2 s2;
+    };
+    typedef struct S S_t;
+    struct S a, *ap=&a;
+    struct S b={11,22,33,44,&a,55,{66,77,88}}, *bp=&b;
+    struct S;
+    struct {
+        char s[5];
+        int a[3];
+    } s3, *s3p=&s3;
+    ap->a = 1;
+    ap->b = 2;
+    ap->c = 3;
+    ap->d = 4;
+    ap->e = 5;
+    ap->s2.x = 10;
+    ap->s2.y = 11;
+    ap->s2.z = 12;
+    s3p->a[0]=1;
+    s3p->a[1]=2;
+    s3p->a[2]=3;
+    return sizeof(struct S)==64 && sizeof(a)==64 && sizeof(ap->a)==4 && sizeof(S_t)==64
+        && sizeof(s3)==20 && sizeof(s3p->s)==5
+        && _Alignof(struct S)==8 && _Alignof(a)==8 && _Alignof(ap->c)==1 && _Alignof(S_t)==8 && _Alignof(s3)==4
+        && a.a+a.b+a.c+a.d+a.e==15 && a.s2.x+a.s2.y+a.s2.z==33
+        && s3.a[0]+s3.a[1]+s3.a[2]==6
+        && ap->a+ap->b+ap->c+ap->d+ap->e==15 && ap->s2.x+ap->s2.y+ap->s2.z==33
+        && s3p->a[0]+s3p->a[1]+s3p->a[2]==6
+        && bp->p->b==2 && bp->p->s2.z==12;
 }
 static int Struct2(void) {
     typedef struct XYZ {
@@ -1739,6 +1779,7 @@ static int Struct2(void) {
 }
 static int Struct(void) {
     TEST(Struct1);
+    TEST(Struct1arrow);
     TEST(Struct2);
     return 1;
 }

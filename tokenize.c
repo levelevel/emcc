@@ -24,7 +24,7 @@ TokenDef TokenLst1[] = {
     {TK("<<"),  TK_SHIFTL},
     {TK("+="),  TK_PLUS_ASSIGN},
     {TK("-="),  TK_MINUS_ASSIGN},
-    {TK("->"),  TK_POINTER},
+    {TK("->"),  TK_ARROW},
     {TK("..."), TK_3DOTS},
     {TK("!"),   '!'},
     {TK("%"),   '%'},

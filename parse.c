@@ -1466,6 +1466,11 @@ static Node *unary_expression(void) {
         if (!type_is_ptr(node->tp))
             error_at(node->input, "'*'は非ポインタ型(%s)を参照しています", get_type_str(node->tp));
         node = new_node(ND_INDIRECT, NULL, node, node->tp->ptr_of, input);
+        if (display_name(node)) {
+            char *buf = malloc(strlen(display_name(node))+2);
+            sprintf(buf, "*%s", display_name(node));
+            node->disp_name = buf;
+        }
     } else if (consume('&')) {
         node = cast_expression();
         node = new_node(ND_ADDRESS, NULL, node, new_type_ptr(node->tp), input);
@@ -1534,15 +1539,13 @@ static Node *postfix_expression(void) {
             node = new_node(ND_INDIRECT, NULL, node, tp, input);
             expect(']');
         } else if (consume('.')) {
-            if (node->tp->type!=STRUCT && node->tp->type!=UNION) error_at(input, "ここでメンバ名の指定はできません");
+            if (!type_is_struct_or_union(tp)) error_at(input, "ここでメンバ名の指定はできません");
             char *name;
             expect_ident(&name, "struct/unionのメンバ名");
             input++;
-            Node *struct_def = node->tp->node; assert(struct_def!=NULL);    //STRUCT/UNION
+            Node *struct_def = tp->node; assert(struct_def!=NULL);    //STRUCT/UNION
             Node *member_def;
             if (map_get(struct_def->map, name, (void**)&member_def)==0) error_at(input, "struct/union %sに%sは存在しません", struct_def->name, name);
-            //dump_node(struct_def,"struct_def");
-            //dump_node(node,"node");
             node->tp = member_def->tp;
             node->offset -= member_def->offset;
             assert(node->offset-sizeof(node->tp)>=0);
@@ -1550,7 +1553,25 @@ static Node *postfix_expression(void) {
             char *buf = malloc(strlen(node->disp_name)+strlen(member_def->name)+2);
             sprintf(buf, "%s.%s", node->disp_name, member_def->name);
             node->disp_name = buf;
-            //dump_node(node,"node:new");
+        } else if (consume(TK_ARROW)) {
+            input = input_str();
+            if (tp->type!=PTR || !type_is_struct_or_union(tp->ptr_of)) error_at(input, "ここでメンバ名の指定はできません");
+            char *name;
+            expect_ident(&name, "struct/unionのメンバ名");
+            input++;
+            Node *struct_def = tp->ptr_of->node; assert(struct_def!=NULL);    //STRUCT/UNION
+            Node *member_def;
+            if (map_get(struct_def->map, name, (void**)&member_def)==0) error_at(input, "struct/union %sに%sは存在しません", struct_def->name, name);
+            node->tp = new_type_ptr(member_def->tp);
+            assert(node->offset-sizeof(node->tp)>=0);
+            if (node->disp_name==NULL) node->disp_name = node->name;
+            char *buf = malloc(strlen(node->disp_name)+strlen(member_def->name)+3);
+            sprintf(buf, "%s->%s", node->disp_name, member_def->name);
+            node->disp_name = buf;
+            node = new_node(ND_INDIRECT, NULL, node, member_def->tp, input);
+            node->name = node->rhs->name;
+            node->offset = -member_def->offset;
+            dump_node(node,__func__);
         } else if (consume(TK_INC)) {
             node = new_node(ND_INC, node, NULL, node->tp, input);
         } else if (consume(TK_DEC)) {

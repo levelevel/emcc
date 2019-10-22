@@ -24,11 +24,106 @@
                                                ^ 引数[0]の型(struct LS*:struct LS*)が一致しません
 9cc:Note: tmp/test_src.c:1295:     void gc4_func(struct LS*p){};
                                                             ^ 関数の定義はここです
-9cc:Warning: tmp/test_src.c:1752:         && xyz.x==1 && xyz.y==4 && xyz.z==5 && memcmp(&st0, &st, sizeof(st))==0;
+# == postfix_expression ==
+# top=:Node[0x172b8c0]:type=ND_INDIRECT, name="b", tp=int, offset=-4, index=0, val=0, unused=0
+#   rhs=:Node[0x172b7e0]:type=ND_LOCAL_VAR, name="b"(b.p->b), tp=int*, offset=104, index=0, val=0, unused=0
+# == postfix_expression ==
+# top=:Node[0x172bc30]:type=ND_INDIRECT, name="b", tp=struct S2, offset=-40, index=0, val=0, unused=0
+#   rhs=:Node[0x172bb50]:type=ND_LOCAL_VAR, name="b"(b.p->s2), tp=struct S2*, offset=104, index=0, val=0, unused=0
+# == postfix_expression ==
+# top=:Node[0x172f690]:type=ND_INDIRECT, name="ap", tp=int, offset=0, index=0, val=0, unused=0
+#   rhs=:Node[0x172f5d0]:type=ND_LOCAL_VAR, name="ap"(ap->a), tp=int*, offset=72, index=0, val=0, unused=0
+# == postfix_expression ==
+# top=:Node[0x172f910]:type=ND_INDIRECT, name="ap", tp=int, offset=-4, index=0, val=0, unused=0
+#   rhs=:Node[0x172f850]:type=ND_LOCAL_VAR, name="ap"(ap->b), tp=int*, offset=72, index=0, val=0, unused=0
+# == postfix_expression ==
+# top=:Node[0x172fb90]:type=ND_INDIRECT, name="ap", tp=char, offset=-8, index=0, val=0, unused=0
+#   rhs=:Node[0x172fad0]:type=ND_LOCAL_VAR, name="ap"(ap->c), tp=char*, offset=72, index=0, val=0, unused=0
+# == postfix_expression ==
+# top=:Node[0x172fe10]:type=ND_INDIRECT, name="ap", tp=long, offset=-16, index=0, val=0, unused=0
+#   rhs=:Node[0x172fd50]:type=ND_LOCAL_VAR, name="ap"(ap->d), tp=long*, offset=72, index=0, val=0, unused=0
+# == postfix_expression ==
+# top=:Node[0x1730090]:type=ND_INDIRECT, name="ap", tp=short, offset=-32, index=0, val=0, unused=0
+#   rhs=:Node[0x172ffd0]:type=ND_LOCAL_VAR, name="ap"(ap->e), tp=short*, offset=72, index=0, val=0, unused=0
+# == postfix_expression ==
+# top=:Node[0x1730310]:type=ND_INDIRECT, name="ap", tp=struct S2, offset=-40, index=0, val=0, unused=0
+#   rhs=:Node[0x1730250]:type=ND_LOCAL_VAR, name="ap"(ap->s2), tp=struct S2*, offset=72, index=0, val=0, unused=0
+# == postfix_expression ==
+# top=:Node[0x17305b0]:type=ND_INDIRECT, name="ap", tp=struct S2, offset=-40, index=0, val=0, unused=0
+#   rhs=:Node[0x17304f0]:type=ND_LOCAL_VAR, name="ap"(ap->s2), tp=struct S2*, offset=72, index=0, val=0, unused=0
+# == postfix_expression ==
+# top=:Node[0x1730850]:type=ND_INDIRECT, name="ap", tp=struct S2, offset=-40, index=0, val=0, unused=0
+#   rhs=:Node[0x1730790]:type=ND_LOCAL_VAR, name="ap"(ap->s2), tp=struct S2*, offset=72, index=0, val=0, unused=0
+# == postfix_expression ==
+# top=:Node[0x1730af0]:type=ND_INDIRECT, name="s3p", tp=int[3], offset=-8, index=0, val=0, unused=0
+#   rhs=:Node[0x1730a30]:type=ND_LOCAL_VAR, name="s3p"(s3p->a), tp=int[3]*, offset=176, index=0, val=0, unused=0
+# == postfix_expression ==
+# top=:Node[0x1730ef0]:type=ND_INDIRECT, name="s3p", tp=int[3], offset=-8, index=0, val=0, unused=0
+#   rhs=:Node[0x1730e30]:type=ND_LOCAL_VAR, name="s3p"(s3p->a), tp=int[3]*, offset=176, index=0, val=0, unused=0
+# == postfix_expression ==
+# top=:Node[0x1731400]:type=ND_INDIRECT, name="s3p", tp=int[3], offset=-8, index=0, val=0, unused=0
+#   rhs=:Node[0x1731340]:type=ND_LOCAL_VAR, name="s3p"(s3p->a), tp=int[3]*, offset=176, index=0, val=0, unused=0
+# == postfix_expression ==
+# top=:Node[0x1731da0]:type=ND_INDIRECT, name="ap", tp=int, offset=0, index=0, val=0, unused=0
+#   rhs=:Node[0x1731ce0]:type=ND_LOCAL_VAR, name="ap"(ap->a), tp=int*, offset=72, index=0, val=0, unused=0
+# == postfix_expression ==
+# top=:Node[0x1732700]:type=ND_INDIRECT, name="s3p", tp=char[5], offset=0, index=0, val=0, unused=0
+#   rhs=:Node[0x1732640]:type=ND_LOCAL_VAR, name="s3p"(s3p->s), tp=char[5]*, offset=176, index=0, val=0, unused=0
+# == postfix_expression ==
+# top=:Node[0x1733100]:type=ND_INDIRECT, name="ap", tp=char, offset=-8, index=0, val=0, unused=0
+#   rhs=:Node[0x1733040]:type=ND_LOCAL_VAR, name="ap"(ap->c), tp=char*, offset=72, index=0, val=0, unused=0
+# == postfix_expression ==
+# top=:Node[0x1734e90]:type=ND_INDIRECT, name="ap", tp=int, offset=0, index=0, val=0, unused=0
+#   rhs=:Node[0x1734dd0]:type=ND_LOCAL_VAR, name="ap"(ap->a), tp=int*, offset=72, index=0, val=0, unused=0
+# == postfix_expression ==
+# top=:Node[0x1735000]:type=ND_INDIRECT, name="ap", tp=int, offset=-4, index=0, val=0, unused=0
+#   rhs=:Node[0x1734f40]:type=ND_LOCAL_VAR, name="ap"(ap->b), tp=int*, offset=72, index=0, val=0, unused=0
+# == postfix_expression ==
+# top=:Node[0x17351e0]:type=ND_INDIRECT, name="ap", tp=char, offset=-8, index=0, val=0, unused=0
+#   rhs=:Node[0x1735120]:type=ND_LOCAL_VAR, name="ap"(ap->c), tp=char*, offset=72, index=0, val=0, unused=0
+# == postfix_expression ==
+# top=:Node[0x17353c0]:type=ND_INDIRECT, name="ap", tp=long, offset=-16, index=0, val=0, unused=0
+#   rhs=:Node[0x1735300]:type=ND_LOCAL_VAR, name="ap"(ap->d), tp=long*, offset=72, index=0, val=0, unused=0
+# == postfix_expression ==
+# top=:Node[0x17355a0]:type=ND_INDIRECT, name="ap", tp=short, offset=-32, index=0, val=0, unused=0
+#   rhs=:Node[0x17354e0]:type=ND_LOCAL_VAR, name="ap"(ap->e), tp=short*, offset=72, index=0, val=0, unused=0
+# == postfix_expression ==
+# top=:Node[0x1735960]:type=ND_INDIRECT, name="ap", tp=struct S2, offset=-40, index=0, val=0, unused=0
+#   rhs=:Node[0x17358a0]:type=ND_LOCAL_VAR, name="ap"(ap->s2), tp=struct S2*, offset=72, index=0, val=0, unused=0
+# == postfix_expression ==
+# top=:Node[0x1735af0]:type=ND_INDIRECT, name="ap", tp=struct S2, offset=-40, index=0, val=0, unused=0
+#   rhs=:Node[0x1735a30]:type=ND_LOCAL_VAR, name="ap"(ap->s2), tp=struct S2*, offset=72, index=0, val=0, unused=0
+# == postfix_expression ==
+# top=:Node[0x1735cf0]:type=ND_INDIRECT, name="ap", tp=struct S2, offset=-40, index=0, val=0, unused=0
+#   rhs=:Node[0x1735c30]:type=ND_LOCAL_VAR, name="ap"(ap->s2), tp=struct S2*, offset=72, index=0, val=0, unused=0
+# == postfix_expression ==
+# top=:Node[0x17360d0]:type=ND_INDIRECT, name="s3p", tp=int[3], offset=-8, index=0, val=0, unused=0
+#   rhs=:Node[0x1736010]:type=ND_LOCAL_VAR, name="s3p"(s3p->a), tp=int[3]*, offset=176, index=0, val=0, unused=0
+# == postfix_expression ==
+# top=:Node[0x17363c0]:type=ND_INDIRECT, name="s3p", tp=int[3], offset=-8, index=0, val=0, unused=0
+#   rhs=:Node[0x1736300]:type=ND_LOCAL_VAR, name="s3p"(s3p->a), tp=int[3]*, offset=176, index=0, val=0, unused=0
+# == postfix_expression ==
+# top=:Node[0x1736720]:type=ND_INDIRECT, name="s3p", tp=int[3], offset=-8, index=0, val=0, unused=0
+#   rhs=:Node[0x1736660]:type=ND_LOCAL_VAR, name="s3p"(s3p->a), tp=int[3]*, offset=176, index=0, val=0, unused=0
+# == postfix_expression ==
+# top=:Node[0x1736c60]:type=ND_INDIRECT, name="bp", tp=struct S*, offset=-24, index=0, val=0, unused=0
+#   rhs=:Node[0x1736ba0]:type=ND_LOCAL_VAR, name="bp"(bp->p), tp=struct S**, offset=144, index=0, val=0, unused=0
+# == postfix_expression ==
+# top=:Node[0x1736d60]:type=ND_INDIRECT, name="bp", tp=int, offset=-4, index=0, val=0, unused=0
+#   rhs=:Node[0x1736c60]:type=ND_INDIRECT, name="bp"(bp->b), tp=int*, offset=-24, index=0, val=0, unused=0
+#     rhs=:Node[0x1736ba0]:type=ND_LOCAL_VAR, name="bp"(bp->p), tp=struct S**, offset=144, index=0, val=0, unused=0
+# == postfix_expression ==
+# top=:Node[0x17370d0]:type=ND_INDIRECT, name="bp", tp=struct S*, offset=-24, index=0, val=0, unused=0
+#   rhs=:Node[0x1737010]:type=ND_LOCAL_VAR, name="bp"(bp->p), tp=struct S**, offset=144, index=0, val=0, unused=0
+# == postfix_expression ==
+# top=:Node[0x17371d0]:type=ND_INDIRECT, name="bp", tp=struct S2, offset=-40, index=0, val=0, unused=0
+#   rhs=:Node[0x17370d0]:type=ND_INDIRECT, name="bp"(bp->s2), tp=struct S2*, offset=-24, index=0, val=0, unused=0
+#     rhs=:Node[0x1737010]:type=ND_LOCAL_VAR, name="bp"(bp->p), tp=struct S**, offset=144, index=0, val=0, unused=0
+9cc:Warning: tmp/test_src.c:1792:         && xyz.x==1 && xyz.y==4 && xyz.z==5 && memcmp(&st0, &st, sizeof(st))==0;
                                                                                  ^ 未宣言の関数コールです。
-9cc:Warning: tmp/test_src.c:1823:     return u1.c==1 && memcmp(&u1, &u10, sizeof(u1))==0
+9cc:Warning: tmp/test_src.c:1864:     return u1.c==1 && memcmp(&u1, &u10, sizeof(u1))==0
                                                         ^ 未宣言の関数コールです。
-9cc:Warning: tmp/test_src.c:1824:         && u2.l==2 && memcmp(&u2, &u20, sizeof(u2))==0;
+9cc:Warning: tmp/test_src.c:1865:         && u2.l==2 && memcmp(&u2, &u20, sizeof(u2))==0;
                                                         ^ 未宣言の関数コールです。
 9cc:Warning: tmp/test_src.c:756: static int ga2_b[4]={1,2,{3,99},4}, *ga2_p=&ga2_a, *ga2_q=&ga2_b[2], *ga2_r=ga2_a+3;
                                                            ^ スカラーがリストで初期化されています
@@ -78,13 +173,15 @@
                                                          ^ 初期化リストが配列サイズを超えています
 9cc:Warning: tmp/test_src.c:863:     char str4[3] = "A\0B";
                                                         ^ 初期化リストが配列サイズを超えています
-9cc:Warning: tmp/test_src.c:1747:     } st0 = {2,2,3,4,5,(void*)6, {10,11,}, 20,21,22,}, st=st0;
+9cc:Warning: tmp/test_src.c:1711:     struct S a={0};
+                                                  ^ 初期化リストが要素数を超えています
+9cc:Warning: tmp/test_src.c:1787:     } st0 = {2,2,3,4,5,(void*)6, {10,11,}, 20,21,22,}, st=st0;
                                                      ^ 初期化リストが要素数を超えています
-9cc:Warning: tmp/test_src.c:1748:     XYZ xyz = {{1,2,3},4,{5,6}};
+9cc:Warning: tmp/test_src.c:1788:     XYZ xyz = {{1,2,3},4,{5,6}};
                                                   ^ スカラーがリストで初期化されています
-9cc:Warning: tmp/test_src.c:1748:     XYZ xyz = {{1,2,3},4,{5,6}};
+9cc:Warning: tmp/test_src.c:1788:     XYZ xyz = {{1,2,3},4,{5,6}};
                                                             ^ スカラーがリストで初期化されています
-9cc:Warning: tmp/test_src.c:1815:     } u10 = {1,2}, u1=u10;
+9cc:Warning: tmp/test_src.c:1856:     } u10 = {1,2}, u1=u10;
                                                  ^ 初期化リストが要素数を超えています
   OK: addsub1
   OK: addsub1b
@@ -226,6 +323,7 @@
   OK: enum1g
   OK: Enum
   OK: Struct1
+  OK: Struct1arrow
   OK: Struct2
   OK: Struct
   OK: Union1

@@ -64,7 +64,7 @@ typedef enum {
     TK_EXTERN,      //storage_class
     TK_TYPEDEF,     //storage_class
     //ここまで型
-    TK_POINTER,     // ->
+    TK_ARROW,       // ->
     TK_INC,         // ++
     TK_DEC,         // --
     TK_EQ,          // ==
@@ -142,13 +142,12 @@ typedef enum {
     ND_LOCAL_VAR,   //ローカル変数の参照    name=変数名、offset=RBPからのオフセット(AUTO)/global_index(STATIC)
     ND_GLOBAL_VAR,  //グローバル変数の参照  name=変数名、offset=0
     ND_CAST,        //キャスト
-    ND_POINTER,     // st->memb
     ND_INC,         // a++
     ND_DEC,         // a--
     ND_INC_PRE,     // ++a
     ND_DEC_PRE,     // --a
     ND_NEG,         // -a
-    ND_INDIRECT,    // *（間接参照）
+    ND_INDIRECT,    // * / ->（間接参照）
     ND_ADDRESS,     // &（アドレス演算子）
     ND_EQ,          // ==
     ND_NE,          // !=
@@ -239,6 +238,7 @@ struct Node {
     char unused;    //無効（重複した宣言など：コード生成時には無視する）
     int offset;     //auto変数：ベースポインタからのoffset
                     //typeがND_MEMBER_DEFの場合の先頭アドレスからのoffset。UNIONの場合は常に0
+                    //(ベースアドレス-offset)が変数のアドレスになる
     int index;      //static変数：識別用index（global_index）
                     //typeがND_STRINGの場合のstring_vecのインデックス
     long val;       //typeがND_NUMの場合の値
@@ -259,6 +259,7 @@ struct Node {
     Type *tp;       //型情報
     char *input;    //トークン文字列（エラーメッセージ用）。Token.inputと同じ。
 };
+#define display_name(_node) ((_node)->disp_name ? (_node)->disp_name : (_node)->name)
 
 typedef struct {
     char    *func_name;     //関数名

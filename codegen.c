@@ -1,7 +1,5 @@
 #include "9cc.h"
 
-#define display_name(_node) ((_node)->disp_name ? (_node)->disp_name : (_node)->name)
-
 //レジスタ ---------------------------------------------
 static char *arg_regs[] = {  //関数の引数で用いるレジスタ
     "rdi", "rsi", "rdx", "rcx", "r8", "r9", NULL
@@ -52,8 +50,10 @@ static int shift_size(int val) {
 // レジスタをval倍する。rdxは保存しない。
 static void gen_mul_reg(char *reg_name, int val) {
     int shift = shift_size(val);
-    if (shift>0) {
+    if (shift>0) {  //2^shift倍
         printf("  shl %s, %d\t# %s * %d\n", reg_name, shift, reg_name, val);
+    } else if (shift==0) {  //1倍
+        ;
     } else if (strcmp(reg_name, "rax")==0) {
         printf("  mov rdx, %d\t# start: %s * %d\n", val, reg_name, val);
         printf("  imul rdx\t# end\n");
@@ -70,8 +70,10 @@ static void gen_mul_reg(char *reg_name, int val) {
 // レジスタを1/val倍する。rdx,rdiは保存しない。
 static void gen_div_reg(char *reg_name, int val) {
     int shift = shift_size(val);
-    if (shift>0) {
+    if (shift>0) {  //1/(2^shift)倍
         printf("  shr %s, %d\t# %s / %d\n", reg_name, shift, reg_name, val);
+    } else if (shift==0) {  //1/1倍
+        ;
     } else {
         printf("  mov rdx, 0\n");
         printf("  mov %s, %d\n", reg_name, val);
@@ -591,6 +593,7 @@ static void gen_lval(Node*node, int push) {
     if (node->type == ND_LOCAL_VAR) {   //ローカル変数
         comment("LVALUE:%s (LOCAL:%s)\n", node->name, get_type_str(node->tp));
         printf("  lea rdi, [%s]\n", get_asm_var_name(node));
+        //if (node->offset) printf("  add rdi, %d\n", -node->offset);
         if (push) printf("  push rdi\n");
     } else if (node->type == ND_GLOBAL_VAR) {   //グローバル変数
         comment("LVALUE:%s (GLOBAL:%s)\n", node->name, get_type_str(node->tp));
@@ -599,6 +602,7 @@ static void gen_lval(Node*node, int push) {
     } else if (node->type == ND_INDIRECT) {
         comment("LVALUE:*var\n");
         gen(node->rhs);     //rhsのアドレスを生成する
+        if (node->offset) printf("  add QWORD ptr [rsp], %d\n", -node->offset);
         if (!push) printf("  pop rdi\n");
     } else if (node->type == ND_CAST) {
         comment("LVALUE (%s)var\n", get_type_str(node->tp));
@@ -999,8 +1003,10 @@ static int gen(Node*node) {
         gen(node->rhs);
         if (node->tp->type==ARRAY) {
             //rhsのアドレスをそのまま返す
+            if (node->offset) printf("  add QWORD ptr [rsp], %d\n", -node->offset);
         } else {
             printf("  pop rax\n");  //rhsの値（アドレス）
+            if (node->offset) printf("  add rax, %d\n", -node->offset);
             gen_read_reg("rax", "rax", node->tp, NULL);
             printf("  push rax\n");
         }

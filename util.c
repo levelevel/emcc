@@ -236,7 +236,6 @@ const char *get_NDtype_str(NDtype type) {
     ENUM2STR(ND_LOCAL_VAR);
     ENUM2STR(ND_GLOBAL_VAR);
     ENUM2STR(ND_CAST);
-    ENUM2STR(ND_POINTER);
     ENUM2STR(ND_INC);
     ENUM2STR(ND_DEC);
     ENUM2STR(ND_INC_PRE);
