@@ -24,6 +24,40 @@ size_t strlen(const char *s);
 static int test_cnt = 0;
 #define TEST(f) test_cnt++;if(!f()) {printf("Error at %s:%d:%s\n",__FILE__,__LINE__,#f);exit(1);} else {printf("  OK: %s\n",#f);}
 
+static int logical1(void) {
+#ifdef _9cc
+        42 == f42() &&    //これはCの仕様とは異なる
+#endif
+        14 == 10 + 2 * 3 - 4/2 &&
+        3  == (((2+4)*1)/2) &&
+        2  == +5%-(-3) &&
+        (1,2,3)==3 &&
+        (8|7) == 15 &&
+        (8^9) == 1 &&
+        (15&3) == 3 &&
+        ~0 == -1 &&
+        8>>2==2 &&
+        8<<2==32;
+}
+static int logical2(void) {
+    int x=0,y=1, a[2]={1,2}, b[2], *p=0, *q=a;
+    return a?1:1 
+        && (a || q) && (q || a)
+        && (a && q) && (q && a)
+        && (a == a) && (q == q)
+        && (a != p) && (p != a)
+        && (p <  a) && (a >  p)
+        && (a +  1) && (p +  1) && (1 + a) && (1 + p)
+        && (a -  1) && (p -  1)
+        && 1;
+}
+
+static int logical(void) {
+    TEST(logical1);
+    TEST(logical2);
+    return 1;
+}
+
 static int f42() {42; ;;;;;}
 static int addsub1(){
     int a=10, b=3, c=a+b*(-2), d=a/b, e=a%b;
@@ -88,20 +122,7 @@ static int addsub() {
     TEST(addsub1ll);
     TEST(addsub_mix1);
     TEST(addsub_mix2);
-    return 
-#ifdef _9cc
-        42 == f42() &&    //これはCの仕様とは異なる
-#endif
-        14 == 10 + 2 * 3 - 4/2 &&
-        3  == (((2+4)*1)/2) &&
-        2  == +5%-(-3) &&
-        (1,2,3)==3 &&
-        (8|7) == 15 &&
-        (8^9) == 1 &&
-        (15&3) == 3 &&
-        ~0 == -1 &&
-        8>>2==2 &&
-        8<<2==32;
+    return 1;
 }
 
 static int assign1(void) {
@@ -1992,6 +2013,7 @@ static int Assert(void) {
 }
 
 int main() {
+    TEST(logical);
     TEST(addsub);
     TEST(assign);
     TEST(eq_rel);

@@ -93,19 +93,19 @@ int main(){return --1;}
 # selftest ----------------
 int main(){int a; *a;}
 9cc:Error: selftest:1: int main(){int a; *a;}
-                                          ^ '*'は非ポインタ型(int)を参照しています
+                                         ^ 整数(int)に対して*の指定はできません
 # selftest ----------------
 int main(){int *a; **a;}
 9cc:Error: selftest:1: int main(){int *a; **a;}
-                                           ^ '*'は非ポインタ型(int)を参照しています
+                                          ^ 整数(int)に対して*の指定はできません
 # selftest ----------------
 int main(){*1;}
 9cc:Error: selftest:1: int main(){*1;}
-                                   ^ '*'は非ポインタ型(int)を参照しています
+                                  ^ 整数(int)に対して*の指定はできません
 # selftest ----------------
 int main(){*1=0;}
 9cc:Error: selftest:1: int main(){*1=0;}
-                                   ^ '*'は非ポインタ型(int)を参照しています
+                                  ^ 整数(int)に対して*の指定はできません
 # selftest ----------------
 int main(){&1; return 1;}
 9cc:Error: selftest:1: int main(){&1; return 1;}
@@ -113,11 +113,11 @@ int main(){&1; return 1;}
 # selftest ----------------
 int main(){int a; *a;}
 9cc:Error: selftest:1: int main(){int a; *a;}
-                                          ^ '*'は非ポインタ型(int)を参照しています
+                                         ^ 整数(int)に対して*の指定はできません
 # selftest ----------------
 int main(){int a; *a=0;}
 9cc:Error: selftest:1: int main(){int a; *a=0;}
-                                          ^ '*'は非ポインタ型(int)を参照しています
+                                         ^ 整数(int)に対して*の指定はできません
 # selftest ----------------
 int main(){int a; & &a; return 1;}
 9cc:Error: selftest:1: int main(){int a; & &a; return 1;}
@@ -161,7 +161,7 @@ int main(){int *p; 1-p;}
 # selftest ----------------
 int main(){int *p; return sizeof(**p);}
 9cc:Error: selftest:1: int main(){int *p; return sizeof(**p);}
-                                                         ^ '*'は非ポインタ型(int)を参照しています
+                                                        ^ 整数(int)に対して*の指定はできません
 # selftest ----------------
 int main(){int a[4]; a=1;}
 9cc:Error: selftest:1: int main(){int a[4]; a=1;}
@@ -321,11 +321,11 @@ void func(){} int func;     int main(){}
 # selftest ----------------
 int main(){int func(); *func();}
 9cc:Error: selftest:1: int main(){int func(); *func();}
-                                               ^ '*'は非ポインタ型(int)を参照しています
+                                              ^ 整数(int)に対して*の指定はできません
 # selftest ----------------
 int main(){int func(); int (*fp)()=func; *fp();}
 9cc:Error: selftest:1: int main(){int func(); int (*fp)()=func; *fp();}
-                                                                 ^ '*'は非ポインタ型(int)を参照しています
+                                                                ^ 整数(int)に対して*の指定はできません
 # selftest ----------------
 int main(){int func(); func()();}
 9cc:Error: selftest:1: int main(){int func(); func()();}
@@ -432,27 +432,27 @@ int main(){int a; a<<1=0;}
 # selftest ----------------
 int main(){int*p; p&1;}
 9cc:Error: selftest:1: int main(){int*p; p&1;}
-                                          ^ ポインタに対するビット演算です
+                                          ^ ポインタ(int*)に対してビット論理和&の指定はできません
 # selftest ----------------
 int main(){int*p; p|1;}
 9cc:Error: selftest:1: int main(){int*p; p|1;}
-                                          ^ ポインタに対するビット演算です
+                                          ^ ポインタ(int*)に対してビット論理和|の指定はできません
 # selftest ----------------
 int main(){int*p; p^1;}
 9cc:Error: selftest:1: int main(){int*p; p^1;}
-                                          ^ ポインタに対するビット演算です
+                                          ^ ポインタ(int*)に対してビット排他的論理和^の指定はできません
 # selftest ----------------
 int main(){int*p; ~p;}
 9cc:Error: selftest:1: int main(){int*p; ~p;}
-                                         ^ ポインタに対するビット演算です
+                                         ^ ポインタ(int*)に対して~の指定はできません
 # selftest ----------------
 int main(){int*p; p>>1;}
 9cc:Error: selftest:1: int main(){int*p; p>>1;}
-                                         ^ ポインタによるシフト演算です
+                                          ^ ポインタ(int*)に対して>>の指定はできません
 # selftest ----------------
-int main(){int*p; p<<1;}
-9cc:Error: selftest:1: int main(){int*p; p<<1;}
-                                         ^ ポインタによるシフト演算です
+int main(){int*p; 1<<p;}
+9cc:Error: selftest:1: int main(){int*p; 1<<p;}
+                                          ^ ポインタ(int*)に対して<<の指定はできません
 # selftest ----------------
 void main(){return 1;}
 9cc:Warning: selftest:1: void main(){return 1;}
@@ -929,11 +929,11 @@ int main(){struct S{int a; int b;}; unsigned struct S s;}
 # selftest ----------------
 int main(){int a; return a.b;}
 9cc:Error: selftest:1: int main(){int a; return a.b;}
-                                                 ^ ここでメンバ名の指定はできません
+                                                 ^ 整数(int)に対してメンバ名の指定はできません
 # selftest ----------------
 int main(){int a; return a->b;}
 9cc:Error: selftest:1: int main(){int a; return a->b;}
-                                                   ^ ここでメンバ名の指定はできません
+                                                 ^ 整数(int)に対してメンバ名の指定はできません
 # selftest ----------------
 int main(){struct S{int a;}s; return s.x}
 9cc:Error: selftest:1: int main(){struct S{int a;}s; return s.x}
@@ -941,7 +941,7 @@ int main(){struct S{int a;}s; return s.x}
 # selftest ----------------
 int main(){struct S{int a;}s; return s->x}
 9cc:Error: selftest:1: int main(){struct S{int a;}s; return s->x}
-                                                               ^ ここでメンバ名の指定はできません
+                                                             ^ 構造体(struct S)に対してメンバ名の指定はできません
 # selftest ----------------
 # [スコープの違い]
 int main(){typedef struct ST st_t;{struct ST{int a,b;}; st_t st;}}
@@ -952,7 +952,7 @@ int main(){typedef struct ST st_t;{struct ST{int a,b;}; st_t st;}}
 # selftest ----------------
 int main(){struct{int a;}st; st=1;}
 9cc:Error: selftest:1: int main(){struct{int a;}st; st=1;}
-                                                      ^ =の左右の型(struct<anonymouse>:int)が異なります
+                                                    ^ 左辺値ではありません
 # selftest ----------------
 int main(){struct{int a;}st; int b=st;}
 9cc:Error: selftest:1: int main(){struct{int a;}st; int b=st;}
@@ -968,7 +968,7 @@ int main(){struct{int a;}st1; struct{int b;}st2=st1;}
 # selftest ----------------
 int main(){struct{int a;}st1; struct{int b;}st2; st1=st2;}
 9cc:Error: selftest:1: int main(){struct{int a;}st1; struct{int b;}st2; st1=st2;}
-                                                                           ^ =の左右の型(struct<anonymouse>:struct<anonymouse>)が異なります
+                                                                        ^ 左辺値ではありません
 # selftest ----------------
 int main(){struct{int a;}st; return st;}
 9cc:Error: selftest:1: int main(){struct{int a;}st; return st;}
@@ -977,6 +977,78 @@ int main(){struct{int a;}st; return st;}
 int main(){struct{int a;}st; return &st;}
 9cc:Warning: selftest:1: int main(){struct{int a;}st; return &st;}
                                                       ^ int型の関数mainがstruct<anonymouse>*型を返しています
+# selftest ----------------
+int main(){struct{int a;}st; if(st);}
+9cc:Error: selftest:1: int main(){struct{int a;}st; if(st);}
+                                                       ^ 条件部にはスカラー値が必要です
+# selftest ----------------
+int main(){struct{int a;}st; switch(st){};}
+9cc:Error: selftest:1: int main(){struct{int a;}st; switch(st){};}
+                                                           ^ 条件部にはスカラー値が必要です
+# selftest ----------------
+int main(){struct{int a;}st; while(st)a;}
+9cc:Error: selftest:1: int main(){struct{int a;}st; while(st)a;}
+                                                          ^ 条件部にはスカラー値が必要です
+# selftest ----------------
+int main(){struct{int a;}st; do;while(st);}
+9cc:Error: selftest:1: int main(){struct{int a;}st; do;while(st);}
+                                                             ^ 条件部にはスカラー値が必要です
+# selftest ----------------
+int main(){struct{int a;}st; for(;st;;)break;}
+9cc:Error: selftest:1: int main(){struct{int a;}st; for(;st;;)break;}
+                                                         ^ 条件部にはスカラー値が必要です
+# selftest ----------------
+int main(){struct{int a;}st; st==1; return 0;}
+9cc:Error: selftest:1: int main(){struct{int a;}st; st==1; return 0;}
+                                                      ^ 構造体(struct<anonymouse>)に対して==の指定はできません
+# selftest ----------------
+int main(){struct{int a;}st; st<1; return 0;}
+9cc:Error: selftest:1: int main(){struct{int a;}st; st<1; return 0;}
+                                                      ^ 構造体(struct<anonymouse>)に対して<の指定はできません
+# selftest ----------------
+int main(){struct{int a;}st; st>>1; return 0;}
+9cc:Error: selftest:1: int main(){struct{int a;}st; st>>1; return 0;}
+                                                      ^ 構造体(struct<anonymouse>)に対して>>の指定はできません
+# selftest ----------------
+int main(){struct{int a;}st; 1*st; return 0;}
+9cc:Error: selftest:1: int main(){struct{int a;}st; 1*st; return 0;}
+                                                     ^ 構造体(struct<anonymouse>)に対して乗算*の指定はできません
+# selftest ----------------
+int main(){struct{int a;}st; st/1; return 0;}
+9cc:Error: selftest:1: int main(){struct{int a;}st; st/1; return 0;}
+                                                      ^ 構造体(struct<anonymouse>)に対して除算/の指定はできません
+# selftest ----------------
+int main(){struct{int a;}st; +st; return 0;}
+9cc:Error: selftest:1: int main(){struct{int a;}st; +st; return 0;}
+                                                    ^ 構造体(struct<anonymouse>)に対して単項+の指定はできません
+# selftest ----------------
+int main(){struct{int a;}st; -st; return 0;}
+9cc:Error: selftest:1: int main(){struct{int a;}st; -st; return 0;}
+                                                    ^ 構造体(struct<anonymouse>)に対して単項-の指定はできません
+# selftest ----------------
+int main(){struct{int a;}st; !st; return 0;}
+9cc:Error: selftest:1: int main(){struct{int a;}st; !st; return 0;}
+                                                    ^ 構造体(struct<anonymouse>)に対して!の指定はできません
+# selftest ----------------
+int main(){struct{int a;}st; ~st; return 0;}
+9cc:Error: selftest:1: int main(){struct{int a;}st; ~st; return 0;}
+                                                    ^ 構造体(struct<anonymouse>)に対して~の指定はできません
+# selftest ----------------
+int main(){struct{int a;}st; ++st; return 0;}
+9cc:Error: selftest:1: int main(){struct{int a;}st; ++st; return 0;}
+                                                    ^ 構造体(struct<anonymouse>)に対して++の指定はできません
+# selftest ----------------
+int main(){struct{int a;}st; --st; return 0;}
+9cc:Error: selftest:1: int main(){struct{int a;}st; --st; return 0;}
+                                                    ^ 構造体(struct<anonymouse>)に対して--の指定はできません
+# selftest ----------------
+int main(){struct{int a;}st; st++; return 0;}
+9cc:Error: selftest:1: int main(){struct{int a;}st; st++; return 0;}
+                                                      ^ 構造体(struct<anonymouse>)に対して++の指定はできません
+# selftest ----------------
+int main(){struct{int a;}st; st--; return 0;}
+9cc:Error: selftest:1: int main(){struct{int a;}st; st--; return 0;}
+                                                      ^ 構造体(struct<anonymouse>)に対して--の指定はできません
 # selftest ----------------
 int main(){typedef struct{int a;}ST; ST st; void func(int); func(st);}
 9cc:Error: selftest:1: int main(){typedef struct{int a;}ST; ST st; void func(int); func(st);}
@@ -1046,7 +1118,7 @@ int main(){union U{int a; int b;}u; return u.x;}
 # selftest ----------------
 int main(){union U{int a; int b;}u; return u->x;}
 9cc:Error: selftest:1: int main(){union U{int a; int b;}u; return u->x;}
-                                                                     ^ ここでメンバ名の指定はできません
+                                                                   ^ 共用体(union)に対してメンバ名の指定はできません
 # selftest ----------------
 # [スコープの違い]
 int main(){typedef union UN un_t;{union UN{int a,b;}; un_t un;}}
@@ -1057,7 +1129,7 @@ int main(){typedef union UN un_t;{union UN{int a,b;}; un_t un;}}
 # selftest ----------------
 int main(){union{int a;}un1; union{int b;}un2; un1=un2;}
 9cc:Error: selftest:1: int main(){union{int a;}un1; union{int b;}un2; un1=un2;}
-                                                                         ^ =の左右の型(union:union)が異なります
+                                                                      ^ 左辺値ではありません
 # selftest ----------------
 int main(){union{int a;}un; return un;}
 9cc:Error: selftest:1: int main(){union{int a;}un; return un;}
@@ -1089,6 +1161,6 @@ int main(){typedef union{int a;}UN; UN un; void func(UN); func(&un);}
 9cc:Note: selftest:1: int main(){typedef union{int a;}UN; UN un; void func(UN); func(&un);}
                                                                            ^ 関数の定義はここです
 9cc self test
-Total : 233
-   Ok : 233
+Total : 251
+   Ok : 251
    NG : 0

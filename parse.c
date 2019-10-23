@@ -178,6 +178,36 @@ static void end_scope(void) {
     stack_pop(tagname_stack);
 }
 
+enum {
+    CHK_INTEGER = 0x0001,   //I
+    CHK_STRUCT  = 0x0002,   //S
+    CHK_UNION   = 0x0004,   //U
+    CHK_ARRAY   = 0x0008,   //A
+    CHK_PTR     = 0x0010,   //P
+    CHK_ALL     = 0x0FFF,   //上記すべて
+    CHK_BINARY  = 0x1000,   //2個演算子のlhs/rhsをチェックする。0の場合はそのnode自信をチェックする
+};
+#define CHK_NOT(val) (CHK_ALL & ~(val))
+static void check_arg(Node *node, const char *input, unsigned int check_mode, const char *msg) {
+    if (check_mode & CHK_BINARY) {
+        check_arg(node->lhs, input, check_mode & ~CHK_BINARY, msg);
+        check_arg(node->rhs, input, check_mode & ~CHK_BINARY, msg);
+        return;
+    }
+    Type *tp = node->tp;
+    char *tp_str = get_type_str(tp);
+    if (input==NULL) input = node->input;
+    if ((check_mode & CHK_INTEGER) && type_is_integer(tp)) error_at(input, "整数(%s)に対して%sの指定はできません", tp_str, msg);
+    if ((check_mode & CHK_STRUCT)  && tp->type==STRUCT) error_at(input, "構造体(%s)に対して%sの指定はできません", tp_str, msg);
+    if ((check_mode & CHK_UNION)   && tp->type==UNION)  error_at(input, "共用体(%s)に対して%sの指定はできません",  tp_str, msg);
+    if ((check_mode & CHK_ARRAY)   && tp->type==ARRAY)  error_at(input, "配列(%s)に対して%sの指定はできません", tp_str, msg);
+    if ((check_mode & CHK_PTR)     && tp->type==PTR)    error_at(input, "ポインタ(%s)に対して%sの指定はできません", tp_str, msg);
+}
+static void check_scalar(Node *node, const char *input, const char *msg) {
+    if (input==NULL) input = node->input;
+    if (type_is_struct_or_union(node->tp)) error_at(input, "%sにはスカラー値が必要です", msg);
+}
+
 //    external_declaration    = function_definition | declaration
 //    function_definition     = declaration_specifiers declarator compound_statement
 //    declaration             = declaration_specifiers init_declarator ( "," init_declarator )* ";"
@@ -967,6 +997,7 @@ static Node *statement(void) {
         begin_local_scope();
         expect('(');
         node_A = expression();          //A
+        check_scalar(node_A, NULL, "条件部");
         expect(')');
         input = input_str();
         begin_local_scope();
@@ -987,6 +1018,7 @@ static Node *statement(void) {
         begin_local_scope();
         expect('(');
         node = expression();            //A
+        check_scalar(node, NULL, "条件部");
         expect(')');
         node = new_node(ND_SWITCH, node, NULL, NULL, input);
         node->map = new_map();
@@ -1004,6 +1036,7 @@ static Node *statement(void) {
         begin_local_scope();
         expect('(');
         node = expression();            //A
+        check_scalar(node, NULL, "条件部");
         expect(')');
         begin_local_scope();
         node = new_node(ND_WHILE, node, statement(), NULL, input);  //B
@@ -1018,6 +1051,7 @@ static Node *statement(void) {
         if (!consume(TK_WHILE)) error_at(input_str(), "doに対応するwhileがありません");
         expect('(');
         node = new_node(ND_DO, node, expression(), NULL, input);    //B
+        check_scalar(node->rhs, NULL, "条件部");
         end_scope();
         expect(')');
     } else if (consume(TK_FOR)) {   //for(A;B;C)D = {for(A;B;C){D}}      lhs->lhs=A, lhs->rhs=B, rhs->lhs=C, rhs->rhs=D
@@ -1036,6 +1070,7 @@ static Node *statement(void) {
             node2 = new_node_empty(input_str());
         } else {
             node2 = expression();         //B
+            check_scalar(node2, NULL, "条件部");
             expect(';');
         }
         node = new_node(ND_UNDEF, node1, node2, NULL, input);       //A,B
@@ -1166,7 +1201,7 @@ static Node *assignment_expression(void) {
     case ND_DEC:
     case ND_LOCAL_VAR:
     case ND_GLOBAL_VAR:
-        is_lvalue = 1;
+        is_lvalue = !type_is_struct_or_union(node->tp);
         break;
     default:
         is_lvalue = 0;
@@ -1208,6 +1243,7 @@ static Node *conditional_expression(void) {
     Node *node = logical_OR_expression(), *sub_node, *lhs, *rhs;
     char *input = input_str();
     if (consume('?')) {
+        check_scalar(node, NULL, "条件部");
         lhs = expression();
         expect(':');
         rhs = conditional_expression();
@@ -1225,6 +1261,7 @@ static Node *logical_OR_expression(void) {
         char *input = input_str();
         if (consume(TK_LOR)) {
             node = new_node(ND_LOR, node, logical_AND_expression(), new_type(INT, 0), input);
+            check_arg(node, input, CHK_BINARY|CHK_STRUCT|CHK_UNION, "論理積||");
         } else {
             break;
         }
@@ -1240,6 +1277,7 @@ static Node *logical_AND_expression(void) {
         char *input = input_str();
         if (consume(TK_LAND)) {
             node = new_node(ND_LAND, node, inclusive_OR_expression(), new_type(INT, 0), input);
+            check_arg(node, input, CHK_BINARY|CHK_STRUCT|CHK_UNION, "論理積&&");
         } else {
             break;
         }
@@ -1255,9 +1293,8 @@ static Node *inclusive_OR_expression(void) {
         char *input = input_str();
         if (consume('|')) {
             rhs = exclusive_OR_expression();
-            if (type_is_ptr(node->tp) || type_is_ptr(rhs->tp))
-                error_at(input, "ポインタに対するビット演算です");
             node = new_node('|', node, rhs, new_type(INT, 0), input);
+            check_arg(node, input, CHK_BINARY|CHK_NOT(CHK_INTEGER), "ビット論理和|");
         } else {
             break;
         }
@@ -1273,9 +1310,8 @@ static Node *exclusive_OR_expression(void) {
         char *input = input_str();
         if (consume('^')) {
             rhs = AND_expression();
-            if (type_is_ptr(node->tp) || type_is_ptr(rhs->tp))
-                error_at(input, "ポインタに対するビット演算です");
             node = new_node('^', node, rhs, new_type(INT, 0), input);
+            check_arg(node, input, CHK_BINARY|CHK_NOT(CHK_INTEGER), "ビット排他的論理和^");
         } else {
             break;
         }
@@ -1291,9 +1327,8 @@ static Node *AND_expression(void) {
         char *input = input_str();
         if (consume('&')) {
             rhs = equality_expression();
-            if (type_is_ptr(node->tp) || type_is_ptr(rhs->tp))
-                error_at(input, "ポインタに対するビット演算です");
             node = new_node('&', node, rhs, new_type(INT, 0), input);
+            check_arg(node, input, CHK_BINARY|CHK_NOT(CHK_INTEGER), "ビット論理和&");
         } else {
             break;
         }
@@ -1309,8 +1344,10 @@ static Node *equality_expression(void) {
         char *input = input_str();
         if (consume(TK_EQ)) {
             node = new_node(ND_EQ, node, relational_expression(), new_type(INT, 0), input);
+            check_arg(node, input, CHK_BINARY|CHK_STRUCT|CHK_UNION, "==");
         } else if (consume(TK_NE)) {
             node = new_node(ND_NE, node, relational_expression(), new_type(INT, 0), input);
+            check_arg(node, input, CHK_BINARY|CHK_STRUCT|CHK_UNION, "!=");
         } else {
             break;
         }
@@ -1326,12 +1363,16 @@ static Node *relational_expression(void) {
         char *input = input_str();
         if (consume('<')) {
             node = new_node('<',   node, shift_expression(), new_type(INT, 0), input);
+            check_arg(node, input, CHK_BINARY|CHK_STRUCT|CHK_UNION, "<");
         } else if (consume(TK_LE)) {
             node = new_node(ND_LE, node, shift_expression(), new_type(INT, 0), input);
+            check_arg(node, input, CHK_BINARY|CHK_STRUCT|CHK_UNION, "<=");
         } else if (consume('>')) {
             node = new_node('<',   shift_expression(), node, new_type(INT, 0), input);
+            check_arg(node, input, CHK_BINARY|CHK_STRUCT|CHK_UNION, ">");
         } else if (consume(TK_GE)) {
             node = new_node(ND_LE, shift_expression(), node, new_type(INT, 0), input);
+            check_arg(node, input, CHK_BINARY|CHK_STRUCT|CHK_UNION, ">=");
         } else {
             break;
         }
@@ -1347,14 +1388,12 @@ static Node *shift_expression(void) {
         char *input = input_str();
         if (consume(TK_SHIFTL)) {
             rhs = additive_expression();
-            if (node_is_ptr(node) || node_is_ptr(rhs))
-                error_at(node->input, "ポインタによるシフト演算です");
             node = new_node(ND_SHIFTL, node, rhs, node->tp, input);
+            check_arg(node, input, CHK_BINARY|CHK_NOT(CHK_INTEGER), "<<");
         } else if (consume(TK_SHIFTR)) {
             rhs = additive_expression();
-            if (node_is_ptr(node) || node_is_ptr(rhs))
-                error_at(node->input, "ポインタによるシフト演算です");
             node = new_node(ND_SHIFTR, node, rhs, node->tp, input);
+            check_arg(node, input, CHK_BINARY|CHK_NOT(CHK_INTEGER), ">>");
         } else {
             break;
         }
@@ -1399,10 +1438,13 @@ static Node *multiplicative_expression(void) {
         char *input = input_str();
         if (consume('*')) {
             node = new_node('*', node, cast_expression(), node->tp, input);
+            check_arg(node, input, CHK_BINARY|CHK_NOT(CHK_INTEGER), "乗算*");
         } else if (consume('/')) {
             node = new_node('/', node, cast_expression(), node->tp, input);
+            check_arg(node, input, CHK_BINARY|CHK_NOT(CHK_INTEGER), "除算/");
         } else if (consume('%')) {
             node = new_node('%', node, cast_expression(), node->tp, input);
+            check_arg(node, input, CHK_BINARY|CHK_NOT(CHK_INTEGER), "剰余%");
         } else {
             break;
         }
@@ -1441,28 +1483,34 @@ static Node *unary_expression(void) {
     char *input = input_str();
     if (consume('+')) {
         node = cast_expression();
+        check_arg(node, input, CHK_NOT(CHK_INTEGER), "単項+");
     } else if (consume('-')) {
         node = cast_expression();
+        check_arg(node, input, CHK_NOT(CHK_INTEGER), "単項-");
         if (node->type==ND_NUM) {
             node->val = -(node->val);
         } else {
             node = new_node(ND_NEG, NULL, node, node->tp, input);
         }
     } else if (consume('!')) {
-        node = new_node('!', NULL, cast_expression(), new_type(INT, 0), input);
+        node = cast_expression();
+        check_arg(node, input, CHK_NOT(CHK_INTEGER), "!");
+        node = new_node('!', NULL, node, new_type(INT, 0), input);
     } else if (consume('~')) {
         node = cast_expression();
-        if (type_is_ptr(node->tp))
-            error_at(input, "ポインタに対するビット演算です");
+        check_arg(node, input, CHK_NOT(CHK_INTEGER), "~");
         node = new_node(ND_BNOT, NULL, node, node->tp, input);
     } else if (consume(TK_INC)) {
         node = unary_expression();
+        check_arg(node, input, CHK_STRUCT|CHK_UNION|CHK_ARRAY, "++");
         node = new_node(ND_INC_PRE, NULL, node, node->tp, input);
     } else if (consume(TK_DEC)) {
         node = unary_expression();
+        check_arg(node, input, CHK_STRUCT|CHK_UNION|CHK_ARRAY, "--");
         node = new_node(ND_DEC_PRE, NULL, node, node->tp, input);
     } else if (consume('*')) {
         node = cast_expression();
+        check_arg(node, input, CHK_NOT(CHK_ARRAY|CHK_PTR), "*");
         if (!type_is_ptr(node->tp))
             error_at(node->input, "'*'は非ポインタ型(%s)を参照しています", get_type_str(node->tp));
         node = new_node(ND_INDIRECT, NULL, node, node->tp->ptr_of, input);
@@ -1548,7 +1596,7 @@ static Node *postfix_expression(void) {
             expect(']');
             //dump_node(node,0);
         } else if (consume('.')) {
-            if (!type_is_struct_or_union(tp)) error_at(input, "ここでメンバ名の指定はできません");
+            check_arg(node, input, CHK_NOT(CHK_STRUCT|CHK_UNION), "メンバ名");
             char *name;
             expect_ident(&name, "struct/unionのメンバ名");
             input++;
@@ -1563,8 +1611,8 @@ static Node *postfix_expression(void) {
             sprintf(buf, "%s.%s", node->disp_name, member_def->name);
             node->disp_name = buf;
         } else if (consume(TK_ARROW)) {
-            input = input_str();
-            if (tp->type!=PTR || !type_is_struct_or_union(tp->ptr_of)) error_at(input, "ここでメンバ名の指定はできません");
+            check_arg(node, input, CHK_NOT(CHK_PTR), "メンバ名");
+            if (!type_is_struct_or_union(tp->ptr_of)) error_at(input, "ここでメンバ名の指定はできません");
             char *name;
             expect_ident(&name, "struct/unionのメンバ名");
             input++;
@@ -1582,8 +1630,10 @@ static Node *postfix_expression(void) {
             node->offset = -member_def->offset;
             //dump_node(node,__func__);
         } else if (consume(TK_INC)) {
+            check_arg(node, input, CHK_STRUCT|CHK_UNION|CHK_ARRAY, "++");
             node = new_node(ND_INC, node, NULL, node->tp, input);
         } else if (consume(TK_DEC)) {
+            check_arg(node, input, CHK_STRUCT|CHK_UNION|CHK_ARRAY, "--");
             node = new_node(ND_DEC, node, NULL, node->tp, input);
         } else {
             break;
