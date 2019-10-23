@@ -212,23 +212,34 @@ static void gen_read_reg(const char*dst, const char*src, const Type *tp, const c
     else         printf("\n");
 }
 
-// [reg+offset]からlenバイトを0で埋める
-static void gen_fill_zero(const char *reg, int offset, int len) {
+// [reg+idx]からlenバイトを0で埋める
+static void gen_fill_zero(const char *reg, int idx, int len, int data_size) {
+#if 1
+        if (strcmp("rdi", reg)!=0) printf("  mov rdi, %s\n", reg);
+        printf("  push rdi\n");
+        if (idx) printf("  add rdi, %d\n", idx);
+        printf("  mov rax, 0\n");
+        printf("  mov rcx, %d\n", len*data_size);
+        printf("  rep stosb\n");
+        printf("  pop rdi\n");
+#else
+    len *= data_size;
     while (len) {
         if (len>=8) {
-            printf("  mov QWORD PTR [%s+%d], 0\n", reg, offset);
-            len -= 8; offset += 8;
+            printf("  mov QWORD PTR [%s+%d], 0\n", reg, idx);
+            len -= 8; idx += 8;
         } else if (len>=4) {
-            printf("  mov DWORD PTR [%s+%d], 0\n", reg, offset);
-            len -= 4; offset += 4;
+            printf("  mov DWORD PTR [%s+%d], 0\n", reg, idx);
+            len -= 4; idx += 4;
         } else if (len>=2) {
-            printf("  mov WORD PTR [%s+%d], 0\n", reg, offset);
-            len -= 2; offset += 2;
+            printf("  mov WORD PTR [%s+%d], 0\n", reg, idx);
+            len -= 2; idx += 2;
         } else if (len>=1) {
-            printf("  mov BYTE PTR [%s+%d], 0\n", reg, offset);
-            len -= 1; offset += 1;
+            printf("  mov BYTE PTR [%s+%d], 0\n", reg, idx);
+            len -= 1; idx += 1;
         }
     }
+#endif
 }
 //ND_LISTのarray_size個のノードをarray_size*data_sizeのtype型のバイト列に変換して返す。
 //定数でないノードがあればNULLを返す。
@@ -262,24 +273,25 @@ static char *get_byte_string(Node *node, int start_idx, int array_size, int data
 //変数のアセンブラ上の名前を返す。
 //戻り値は関数内部の静的な領域を指していることがあり、コールする度に上書きされる。
 static char *get_asm_var_name(Node *node) {
-    static char buf[16];
+    static char buf[256];
     char *ret = buf;
     switch (node->type) {
     case ND_LOCAL_VAR:
         if (type_is_static(node->tp)) {
-            sprintf(buf, "%s.%03d", node->name, node->index);
+            if (node->offset) sprintf(buf, "%s.%03d+%d", node->name, node->index, -node->offset);
+            else              sprintf(buf, "%s.%03d",    node->name, node->index);
         } else {
             sprintf(buf, "rbp-%d", node->offset);
         }
         break;
     case ND_GLOBAL_VAR:
-        ret = node->name;
+        if (node->offset) sprintf(buf, "%s+%d", node->name, -node->offset);
+        else ret = node->name;
         break;
     case ND_ADDRESS:
         return get_asm_var_name(node->rhs);
         break;
     default:
-        dump_node(node, __func__);
         _NOT_YET_(node);
     }
     return ret;
@@ -288,13 +300,17 @@ static char *get_asm_var_name(Node *node) {
 static int gen(Node*node);
 static void gen_op2(Node *node);
 
+#define ZERO_INIT_AT_FIRST  //初期化前に全領域を0クリアする。未実装
+
 //ローカル変数の配列の初期化。スタックトップに変数のアドレスが設定されている前提。
 //戻り値は初期値を設定した要素数。
 // [2]   ={1,2,3,4,5,6}
 // [2][2]={1,2,3,4,5,6}
 // [2][2]={{1,2},{3,4},{5,6}}
 static int gen_array_init_local_sub(Type *tp, Node *init, int start_idx, int offset) {
+    assert(tp->type==ARRAY);
     int array_size = tp->array_size;  //配列のサイズ
+    int type_size = size_of(tp->ptr_of);   //左辺の型のサイズ
     int data_len;
 
     if (tp->ptr_of->type==ARRAY) {
@@ -305,6 +321,9 @@ static int gen_array_init_local_sub(Type *tp, Node *init, int start_idx, int off
             if (init->type==ND_STRING) {
                 gen_array_init_local_sub(tp->ptr_of, init, 0, new_offset);
                 idx++;
+            } else if (i>=lst_len(init->lst)) {
+                gen_fill_zero("rdi", i*type_size+offset, array_size-i, type_size);
+                break;
             } else {
                 Node *node = lst_data(init->lst, idx);
                 if (node->type==ND_INIT_LIST||node->type==ND_STRING) {
@@ -332,7 +351,7 @@ static int gen_array_init_local_sub(Type *tp, Node *init, int start_idx, int off
         printf("  lea rsi, BYTE PTR .LC%03d\n", init->index);
         printf("  mov rcx, %d\n", data_len);
         printf("  rep movsb\n");
-        if (array_size > data_len) gen_fill_zero("rdi", 0, array_size-data_len);
+        if (array_size > data_len) gen_fill_zero("rdi", 0, array_size-data_len, sizeof(char));
         if (array_size < init->tp->array_size) {
             warning_at(init->input+array_size+1, "初期化リストが配列サイズを超えています");
         }
@@ -342,8 +361,7 @@ static int gen_array_init_local_sub(Type *tp, Node *init, int start_idx, int off
     assert(init->type==ND_INIT_LIST);
     // char a[]={'A', 'B', 'C', '\0'}
     // int  b[]={1, 2, 4, 8}
-    int type_size = size_of(tp->ptr_of);   //左辺の型のサイズ
-    data_len = init->lst->len;
+    data_len = lst_len(init->lst);
     if (array_size < data_len) data_len = array_size;
     //data_len個のデータをdata_len*type_sizeのtype型のバイト列に変換
     char *data = get_byte_string(init, start_idx, data_len, type_size, tp->ptr_of->type);
@@ -374,7 +392,6 @@ static int gen_array_init_local_sub(Type *tp, Node *init, int start_idx, int off
                 char buf[32];
                 sprintf(buf, "rdi+%d", idx*type_size+offset);
                 gen_write_reg_const_val(buf, datal[idx], tp, NULL, 0);
-                //printf("  mov QWORD PTR [rdi+%d], %ld\n", i*type_size+offset, datal[i]);
             }
             break;
         default:
@@ -394,7 +411,7 @@ static int gen_array_init_local_sub(Type *tp, Node *init, int start_idx, int off
             printf("  push rdi\n");
         }
     }
-    if (array_size > data_len) gen_fill_zero("rdi", idx*type_size+offset, (array_size-data_len)*type_size);
+    if (array_size > data_len) gen_fill_zero("rdi", idx*type_size+offset, array_size-data_len, type_size);
     return array_size;
 }
 static void gen_array_init_local(Node *node) {
@@ -413,6 +430,7 @@ static void gen_array_init_local(Node *node) {
 //戻り値は初期値を設定した要素数。
 static int gen_array_init_global_sub(Type *tp, Node *init, int start_idx) {
     int array_size  = tp->array_size;  //配列のサイズ
+    int type_size = size_of(tp->ptr_of);   //左辺の型のサイズ
     int data_len;
 
     if (tp->ptr_of->type==ARRAY) {
@@ -422,6 +440,9 @@ static int gen_array_init_global_sub(Type *tp, Node *init, int start_idx) {
             if (init->type==ND_STRING) {
                 gen_array_init_global_sub(tp->ptr_of, init, 0);
                 idx++;
+            } else if (i>=lst_len(init->lst)) {
+                printf("  .zero %d\n", (array_size-i)*type_size);
+                break;
             } else {
                 Node *node = lst_data(init->lst, idx);
                 if (node->type==ND_INIT_LIST||node->type==ND_STRING) {
@@ -463,7 +484,6 @@ static int gen_array_init_global_sub(Type *tp, Node *init, int start_idx) {
     assert(init->type==ND_INIT_LIST);
     // char a[]={'A', 'B', 'C', '\0'}
     // int  b[]={1, 2, 4, 8}
-    int type_size = size_of(tp->ptr_of);   //左辺の型のサイズ
     Node **nodes = (Node**)init->lst->data;
     data_len = init->lst->len;
     long val;
@@ -483,9 +503,9 @@ static int gen_array_init_global_sub(Type *tp, Node *init, int start_idx) {
             error_at(nodes[i]->input, "初期値が定数式ではありません");
         }
         if (var && val) {
-            printf("  .%s %s%+ld\n", val_name, var->rhs->name, val*size_of(var->rhs->tp));
+            printf("  .%s %s%+ld\n", val_name, get_asm_var_name(var->rhs), val*size_of(var->rhs->tp));
         } else if (var) {
-            printf("  .%s %s\n", val_name, var->rhs->name);
+            printf("  .%s %s\n", val_name, get_asm_var_name(var->rhs));
         } else if (nodes[i]->type==ND_STRING) {
             printf("   .quad .LC%03d\n", nodes[i]->index);
             //abort();
@@ -593,11 +613,10 @@ static void gen_lval(Node*node, int push) {
     if (node->type == ND_LOCAL_VAR) {   //ローカル変数
         comment("LVALUE:%s (LOCAL:%s)\n", node->name, get_type_str(node->tp));
         printf("  lea rdi, [%s]\n", get_asm_var_name(node));
-        //if (node->offset) printf("  add rdi, %d\n", -node->offset);
         if (push) printf("  push rdi\n");
     } else if (node->type == ND_GLOBAL_VAR) {   //グローバル変数
         comment("LVALUE:%s (GLOBAL:%s)\n", node->name, get_type_str(node->tp));
-        printf("  lea rdi, %s\n", node->name);
+        printf("  lea rdi, %s\n", get_asm_var_name(node));
         if (push) printf("  push rdi\n");
     } else if (node->type == ND_INDIRECT) {
         comment("LVALUE:*var\n");
@@ -1330,6 +1349,7 @@ static void gen_global_var(Node *node) {
             }
             switch (rhs->type) {
             case ND_ADDRESS:
+            case ND_INDIRECT:
                 printf("  .quad %s\n", get_asm_var_name(rhs->rhs));
                 break;
             case ND_GLOBAL_VAR:

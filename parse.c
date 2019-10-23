@@ -1533,11 +1533,20 @@ static Node *postfix_expression(void) {
             // a[3][2] => *(*(a+3)+2)
             input = input_str();
             Node *rhs = expression();
-            node = new_node('+', node, rhs, tp ,input);
-            tp = node->tp->ptr_of ? node->tp->ptr_of : rhs->tp->ptr_of;
-            if (tp==NULL) error_at(input_str(), "ここでは配列を指定できません");
-            node = new_node(ND_INDIRECT, NULL, node, tp, input);
+            long val;
+            if (tp->type==ARRAY && node_is_const(rhs, &val)) {
+                tp = node->tp->ptr_of ? node->tp->ptr_of : rhs->tp->ptr_of;
+                if (tp==NULL) error_at(input_str(), "ここでは配列を指定できません");
+                node->offset -= size_of(tp)*val;
+                node = new_node(ND_INDIRECT, NULL, node, tp, input);
+            } else {
+                node = new_node('+', node, rhs, tp ,input);
+                tp = node->tp->ptr_of ? node->tp->ptr_of : rhs->tp->ptr_of;
+                if (tp==NULL) error_at(input_str(), "ここでは配列を指定できません");
+                node = new_node(ND_INDIRECT, NULL, node, tp, input);
+            }
             expect(']');
+            //dump_node(node,0);
         } else if (consume('.')) {
             if (!type_is_struct_or_union(tp)) error_at(input, "ここでメンバ名の指定はできません");
             char *name;
@@ -1571,7 +1580,7 @@ static Node *postfix_expression(void) {
             node = new_node(ND_INDIRECT, NULL, node, member_def->tp, input);
             node->name = node->rhs->name;
             node->offset = -member_def->offset;
-            dump_node(node,__func__);
+            //dump_node(node,__func__);
         } else if (consume(TK_INC)) {
             node = new_node(ND_INC, node, NULL, node->tp, input);
         } else if (consume(TK_DEC)) {

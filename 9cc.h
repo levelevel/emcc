@@ -236,9 +236,8 @@ struct Type {
 struct Node {
     NDtype type;    //nodeの型：演算子、ND_INDENTなど
     char unused;    //無効（重複した宣言など：コード生成時には無視する）
-    int offset;     //auto変数：ベースポインタからのoffset
+    int offset;     //auto変数：ベースアドレスからのoffset：(ベースアドレス-offset)が実際のアドレスになる
                     //typeがND_MEMBER_DEFの場合の先頭アドレスからのoffset。UNIONの場合は常に0
-                    //(ベースアドレス-offset)が変数のアドレスになる
     int index;      //static変数：識別用index（global_index）
                     //typeがND_STRINGの場合のstring_vecのインデックス
     long val;       //typeがND_NUMの場合の値
@@ -283,7 +282,7 @@ typedef struct {
 //アサーション
 #define COMPILE_ERROR 0
 #define _ERROR_ assert(COMPILE_ERROR)
-#define _NOT_YET_(node) error_at((node)->input, "未実装です（%s:%d in %s）",__FILE__,__LINE__,__func__) 
+#define _NOT_YET_(node) {dump_node(node,__func__); error_at((node)->input, "未実装です（%s:%d in %s）",__FILE__,__LINE__,__func__);} 
 
 //グローバル変数 ----------------------------------------
 #ifndef EXTERN

@@ -159,9 +159,17 @@ int node_is_const_or_address(Node *node, long *valp, Node **varp) {
     long val, val1, val2;
     Node *var1=NULL, *var2=NULL;
 
+    //グローバルな配列、関数は静的なアドレスに変換されるので定数
     if ((node->type==ND_GLOBAL_VAR || node_is_local_static_var(node))
         && (node->tp->type==ARRAY || node->tp->type==FUNC)) {
         if (varp) *varp = new_node(ND_ADDRESS, NULL, node, node->tp->ptr_of, node->input);
+        if (valp) *valp = 0;
+        return 1;
+    }
+    //グローバル配列int a[4][5];に対するa[1]は静的なアドレス
+    if (node->type==ND_INDIRECT && node->tp->type==ARRAY
+        && (node->rhs->type==ND_GLOBAL_VAR || node_is_local_static_var(node->rhs))) {
+        if (varp) *varp = node;
         if (valp) *valp = 0;
         return 1;
     }
@@ -315,10 +323,11 @@ void regist_var_def(Node *node) {
             case SC_STATIC:
                 node->index = global_index++;
                 break;
+            case SC_EXTERN:
             case SC_TYPEDEF:
                 break;
             default:
-                node->offset = get_var_offset(node->tp);
+                node->offset = get_var_offset(node->tp);    //rbp-offset
             }
             if (node->type==ND_UNDEF) node->type = ND_LOCAL_VAR_DEF;
             map_put(symbol_map, name, node);

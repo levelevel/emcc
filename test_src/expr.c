@@ -467,9 +467,11 @@ static int funcp3(void) {
 static char *fp4_str(void){static char str[]="ABC"; return str;}
 static int funcp4(void) {
     char *(*fp)(void) = fp4_str;
+    int n1=1, n2=2;
     return
         strcmp(fp(),"ABC")==0 &&
-        *fp()=='A' && fp()[1]=='B' && fp4_str()[2]=='C';
+        *fp()=='A' && fp()[1] =='B' && fp4_str()[2] =='C'
+                   && fp()[n1]=='B' && fp4_str()[n2]=='C';
 }
 
 static int fp5_func(void){return 10;}
@@ -728,6 +730,66 @@ static int array5() {
     char a[]={1,(2,3),4};
     return sizeof(a)==3 && a[1]==3;
 }
+static int array6() {   //インデックスの即値・変数
+    int a[3]={0}, b[3][3]={0}, c[3]={0}, *cp=c;
+    int*d[]={a,b[0],b[1],b[2],c,cp};
+    int i0=0, i1=1, i2=2, i3=3;
+    a[0] = 1;
+    a[1] = 2;
+    a[i2] = 3;
+    b[1][i2] = 1;
+    b[i2][1] = 2;
+    cp[1] = 1;
+    cp[i2] = 2;
+    d[1][1] = 3;    //b[0][1]
+    d[i1][i2] = 4;  //b[0][2]
+    d[i3][2]++;     //b[2][2]
+    return a[0]==a[i0] && a[1]==a[i1] && a[2]==a[i2]
+        && b[1][i2]==b[1][2] && b[2][i1]==b[i2][i1]
+        && cp[1]==c[i1] && cp[i2]==cp[2]
+        && d[1][i1]==b[0][1] && d[i1][2]==b[0][2]
+        && b[2][2]==1;
+}
+    static int ga6_a[3]={0}, ga6_b[3][3]={0}, ga6_c[3]={0}, *ga6_cp=ga6_c;
+    static int*ga6_d[]={ga6_a,ga6_b[0],ga6_b[1],ga6_b[2],ga6_c};
+static int garray6() {   //インデックスの即値・変数
+    int i0=0, i1=1, i2=2, i3=3;
+    ga6_a[0] = 1;
+    ga6_a[1] = 2;
+    ga6_a[i2] = 3;
+    ga6_b[1][i2] = 1;
+    ga6_b[i2][1] = 2;
+    ga6_cp[1] = 1;
+    ga6_cp[i2] = 2;
+    ga6_d[1][1] = 3;    //ga6_b[0][1]
+    ga6_d[i1][i2] = 4;  //ga6_b[0][2]
+    ga6_d[i3][2]++;     //b[2][2]
+    return ga6_a[0]==ga6_a[i0] && ga6_a[1]==ga6_a[i1] && ga6_a[2]==ga6_a[i2]
+        && ga6_b[1][i2]==ga6_b[1][2] && ga6_b[2][i1]==ga6_b[i2][i1]
+        && ga6_cp[1]==ga6_c[i1] && ga6_cp[i2]==ga6_cp[2]
+        && ga6_d[1][i1]==ga6_b[0][1] && ga6_d[i1][2]==ga6_b[0][2]
+        && ga6_b[2][2]==1;
+}
+static int sarray6() {   //インデックスの即値・変数
+    static int a[3]={0}, b[3][3]={{0}}, c[3]={0}, *cp=c;
+    static int*d[]={a,b[0],b[1],b[2],c};
+    int i0=0, i1=1, i2=2, i3=3;
+    a[0] = 1;
+    a[1] = 2;
+    a[i2] = 3;
+    b[1][i2] = 1;
+    b[i2][1] = 2;
+    cp[1] = 1;
+    cp[i2] = 2;
+    d[1][1] = 3;    //b[0][1]
+    d[i1][i2] = 4;  //b[0][2]
+    d[i3][2]++;     //b[2][2]
+    return a[0]==a[i0] && a[1]==a[i1] && a[2]==a[i2]
+        && b[1][i2]==b[1][2] && b[2][i1]==b[i2][i1]
+        && cp[1]==c[i1] && cp[i2]==cp[2]
+        && d[1][i1]==b[0][1] && d[i1][2]==b[0][2]
+        && b[2][2]==1;
+}
 
 GLOBAL int ga2_a[4]={1,2,3,4};
 static int ga2_b[4]={1,2,{3,99},4}, *ga2_p=&ga2_a, *ga2_q=&ga2_b[2], *ga2_r=ga2_a+3;
@@ -812,16 +874,19 @@ static int array() {
     TEST(array4);   //2次元+初期化
     TEST(array4c);
     TEST(array5);
+    TEST(array6);
     //global
     TEST(garray2);
     TEST(garray2c);
     TEST(garray4);
     TEST(garray4c);
+    TEST(garray6);
     //local static
     TEST(sarray2);  //static 1次元+初期化
     TEST(sarray2c);
     TEST(sarray4);
     TEST(sarray4c);
+    TEST(sarray6);
     return 1;
 }
 
