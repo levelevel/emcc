@@ -40,7 +40,7 @@ static int logical1(void) {
         8<<2==32;
 }
 static int logical2(void) {
-    int x=0,y=1, a[2]={1,2}, b[2], *p=0, *q=a;
+    int a[2]={1,2}, *p=0, *q=a;
     return a?1:1 
         && (a || q) && (q || a)
         && (a && q) && (q && a)
@@ -1863,10 +1863,50 @@ static int Struct2(void) {
         && st.y.x==20 && st.y.y==21 && st.y.z==22 && st.z==0 
         && xyz.x==1 && xyz.y==4 && xyz.z==5 && memcmp(&st0, &st, sizeof(st))==0;
 }
+
+static int sStruct1(void) {
+    struct S;
+    static struct S {
+        int a,b;
+        char c;
+        long d;
+        struct S *p;
+        short e;
+        S2 s2;
+    };
+    typedef struct S S_t;
+    static struct S a;//={0};
+    static struct S b;//={11,22,33,44,&a,55,{66,77,88}};
+    struct S;
+    static struct {
+        char s[5];
+        int a[3];
+    } s3;
+    a.a = 1;
+    a.b = 2;
+    a.c = 3;
+    a.d = 4;
+    a.e = 5;
+    a.s2.x = 10;
+    a.s2.y = 11;
+    a.s2.z = 12;
+    s3.a[0]=1;
+    s3.a[1]=2;
+    s3.a[2]=3;
+    return sizeof(struct S)==64 && sizeof(a)==64 && sizeof(a.a)==4 && sizeof(S_t)==64
+        && sizeof(s3)==20 && sizeof(s3.s)==5
+        && _Alignof(struct S)==8 && _Alignof(a)==8 && _Alignof(a.c)==1 && _Alignof(S_t)==8 && _Alignof(s3)==4
+        && a.a+a.b+a.c+a.d+a.e==15 && a.s2.x+a.s2.y+a.s2.z==33
+        && s3.a[0]+s3.a[1]+s3.a[2]==6
+        //&& b.p->b==2 && b.p->s2.z==12
+        ;
+}
 static int Struct(void) {
     TEST(Struct1);
     TEST(Struct1arrow);
     TEST(Struct2);
+
+    TEST(sStruct1);
     return 1;
 }
 

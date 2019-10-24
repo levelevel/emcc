@@ -153,11 +153,15 @@ test_src/expr.c:1860:29: warning: excess elements in scalar initializer
      XYZ xyz = {{1,2,3},4,{5,6}};
                              ^
 test_src/expr.c:1860:29: note: (near initialization for ‘xyz.z’)
+test_src/expr.c: In function ‘sStruct1’:
+test_src/expr.c:1876:5: warning: useless storage class specifier in empty declaration
+     };
+     ^
 test_src/expr.c: In function ‘Union2’:
-test_src/expr.c:1928:16: warning: excess elements in union initializer
+test_src/expr.c:1968:16: warning: excess elements in union initializer
      } u10 = {1,2}, u1=u10;
                 ^
-test_src/expr.c:1928:16: note: (near initialization for ‘u10’)
+test_src/expr.c:1968:16: note: (near initialization for ‘u10’)
   OK: logical1
   OK: logical2
   OK: logical
@@ -306,6 +310,7 @@ test_src/expr.c:1928:16: note: (near initialization for ‘u10’)
   OK: Struct1
   OK: Struct1arrow
   OK: Struct2
+  OK: sStruct1
   OK: Struct
   OK: Union1
   OK: Union2

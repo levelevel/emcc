@@ -179,19 +179,19 @@ static void end_scope(void) {
 }
 
 enum {
-    CHK_INTEGER = 0x0001,   //I
-    CHK_STRUCT  = 0x0002,   //S
-    CHK_UNION   = 0x0004,   //U
-    CHK_ARRAY   = 0x0008,   //A
-    CHK_PTR     = 0x0010,   //P
+    CHK_INTEGER = 0x0001,
+    CHK_STRUCT  = 0x0002,
+    CHK_UNION   = 0x0004,
+    CHK_ARRAY   = 0x0008,
+    CHK_PTR     = 0x0010,
     CHK_ALL     = 0x0FFF,   //上記すべて
-    CHK_BINARY  = 0x1000,   //2個演算子のlhs/rhsをチェックする。0の場合はそのnode自信をチェックする
+    CHK_BINARY  = 0x1000,   //2項演算子のlhs/rhsをチェックする。0の場合はそのnode自身をチェックする
 };
-#define CHK_NOT(val) (CHK_ALL & ~(val))
+#define CHK_NOT(val) (CHK_ALL ^ (val))
 static void check_arg(Node *node, const char *input, unsigned int check_mode, const char *msg) {
     if (check_mode & CHK_BINARY) {
-        check_arg(node->lhs, input, check_mode & ~CHK_BINARY, msg);
-        check_arg(node->rhs, input, check_mode & ~CHK_BINARY, msg);
+        check_arg(node->lhs, input, check_mode ^ CHK_BINARY, msg);
+        check_arg(node->rhs, input, check_mode ^ CHK_BINARY, msg);
         return;
     }
     Type *tp = node->tp;
@@ -1594,7 +1594,6 @@ static Node *postfix_expression(void) {
                 node = new_node(ND_INDIRECT, NULL, node, tp, input);
             }
             expect(']');
-            //dump_node(node,0);
         } else if (consume('.')) {
             check_arg(node, input, CHK_NOT(CHK_STRUCT|CHK_UNION), "メンバ名");
             char *name;
@@ -1603,7 +1602,12 @@ static Node *postfix_expression(void) {
             Node *struct_def = tp->node; assert(struct_def!=NULL);    //STRUCT/UNION
             Node *member_def;
             if (map_get(struct_def->map, name, (void**)&member_def)==0) error_at(input, "struct/union %sに%sは存在しません", struct_def->name, name);
-            node->tp = member_def->tp;
+            if (type_is_static(node->tp)) {
+                node->tp = dup_type(member_def->tp);
+                set_type_static(node->tp);
+            } else {
+                node->tp = member_def->tp;
+            }
             node->offset -= member_def->offset;
             assert(node->offset-sizeof(node->tp)>=0);
             if (node->disp_name==NULL) node->disp_name = node->name;

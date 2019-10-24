@@ -251,6 +251,10 @@ StorageClass get_storage_class(Type *tp) {
     if (tp->ptr_of) return get_storage_class(tp->ptr_of);
     return tp->sclass;
 }
+void set_type_static(Type *tp) {
+    if (tp->ptr_of) set_type_static(tp->ptr_of);
+    else tp->sclass = SC_STATIC;
+}
 
 int new_string_literal(String *string) {
     StringL *stringL = calloc(1, sizeof(StringL));
@@ -734,6 +738,13 @@ Type *new_type(int type, int is_unsigned) {
     tp->type = type;
     tp->is_unsigned = is_unsigned;
     return tp;
+}
+
+Type *dup_type(const Type *tp) {
+    Type *new_tp = malloc(sizeof(Type));
+    *new_tp = *tp;
+    if (tp->ptr_of) new_tp->ptr_of = dup_type(tp->ptr_of);
+    return new_tp;
 }
 
 //抽象構文木の生成（演算子）

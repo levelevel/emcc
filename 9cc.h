@@ -160,7 +160,7 @@ typedef enum {
     ND_PLUS_ASSIGN, // +=
     ND_MINUS_ASSIGN,// -=
     ND_LOCAL_VAR_DEF,   //int A=B;      name=A, rhs=Node（"A=B"の形式の初期化式、初期値がない場合はNULL）
-                        //              offset=RBPからのオフセット(AUTO)/global_index(STATIC)
+                        //              offset=RBPからのオフセット(AUTO)/index=global_index(STATIC)
     ND_GLOBAL_VAR_DEF,  //int A=B;      同上、offset=0
     ND_MEMBER_DEF,  // struct {int A;}; name=A
     ND_IF,          // if(A)B else C    lhs->lhs=A, lhs->rhs=B, rhs=C
@@ -396,6 +396,7 @@ int node_is_const_or_address(Node *node, long *valp, Node **varp);
 #define type_is_typedef(tp) (get_storage_class(tp)==SC_TYPEDEF)
 #define node_is_local_static_var(node) (((node)->type==ND_LOCAL_VAR||(node)->type==ND_LOCAL_VAR_DEF) && type_is_static((node)->tp))
 StorageClass get_storage_class(Type *tp);
+void set_type_static(Type *tp);
 int new_string_literal(String *string);
 String *get_string_literal(int index);
 void unuse_string_literal(int index);
@@ -425,6 +426,7 @@ Type *new_type_ptr(Type*ptr);
 Type *new_type_func(Type*ptr, Node *node);
 Type *new_type_array(Type*ptr, size_t size);
 Type *new_type(int type, int is_unsigned);
+Type *dup_type(const Type *tp);
 Node *new_node(int type, Node *lhs, Node *rhs, Type *tp, char *input);
 Node *new_node(int type, Node *lhs, Node *rhs, Type *tp, char *input);
 Node *new_node_num(long val, char *input);

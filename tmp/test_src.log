@@ -30,9 +30,9 @@
                                                             ^ 関数の定義はここです
 9cc:Warning: tmp/test_src.c:1878:         && xyz.x==1 && xyz.y==4 && xyz.z==5 && memcmp(&st0, &st, sizeof(st))==0;
                                                                                  ^ 未宣言の関数コールです。
-9cc:Warning: tmp/test_src.c:1950:     return u1.c==1 && memcmp(&u1, &u10, sizeof(u1))==0
+9cc:Warning: tmp/test_src.c:1990:     return u1.c==1 && memcmp(&u1, &u10, sizeof(u1))==0
                                                         ^ 未宣言の関数コールです。
-9cc:Warning: tmp/test_src.c:1951:         && u2.l==2 && memcmp(&u2, &u20, sizeof(u2))==0;
+9cc:Warning: tmp/test_src.c:1991:         && u2.l==2 && memcmp(&u2, &u20, sizeof(u2))==0;
                                                         ^ 未宣言の関数コールです。
 9cc:Warning: tmp/test_src.c:839: static int ga2_b[4]={1,2,{3,99},4}, *ga2_p=&ga2_a, *ga2_q=&ga2_b[2], *ga2_r=ga2_a+3;
                                                            ^ スカラーがリストで初期化されています
@@ -90,7 +90,7 @@
                                                   ^ スカラーがリストで初期化されています
 9cc:Warning: tmp/test_src.c:1874:     XYZ xyz = {{1,2,3},4,{5,6}};
                                                             ^ スカラーがリストで初期化されています
-9cc:Warning: tmp/test_src.c:1942:     } u10 = {1,2}, u1=u10;
+9cc:Warning: tmp/test_src.c:1982:     } u10 = {1,2}, u1=u10;
                                                  ^ 初期化リストが要素数を超えています
   OK: logical1
   OK: logical2
@@ -240,6 +240,7 @@
   OK: Struct1
   OK: Struct1arrow
   OK: Struct2
+  OK: sStruct1
   OK: Struct
   OK: Union1
   OK: Union2
