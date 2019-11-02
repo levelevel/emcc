@@ -122,46 +122,46 @@ test_src/expr.c:1093:54: warning: excess elements in array initializer
                                                       ^
 test_src/expr.c:1093:54: note: (near initialization for ‘i2g_ac’)
 test_src/expr.c: In function ‘scope4’:
-test_src/expr.c:1370:14: warning: passing argument 1 of ‘gc4_func’ from incompatible pointer type [-Wincompatible-pointer-types]
+test_src/expr.c:1397:14: warning: passing argument 1 of ‘gc4_func’ from incompatible pointer type [-Wincompatible-pointer-types]
      gc4_func(&a);   //引数のLSはスコープが異なる
               ^
-test_src/expr.c:1358:10: note: expected ‘struct LS *’ but argument is of type ‘struct LS *’
+test_src/expr.c:1385:10: note: expected ‘struct LS *’ but argument is of type ‘struct LS *’
      void gc4_func(struct LS*p){};
           ^~~~~~~~
 test_src/expr.c: In function ‘enum1e’:
-test_src/expr.c:1747:22: warning: empty declaration with storage class specifier does not redeclare tag
+test_src/expr.c:1774:22: warning: empty declaration with storage class specifier does not redeclare tag
          typedef enum ABC;
                       ^~~
 test_src/expr.c: In function ‘Struct2’:
-test_src/expr.c:1860:5: warning: braces around scalar initializer
+test_src/expr.c:1887:5: warning: braces around scalar initializer
      XYZ xyz = {{1,2,3},4,{5,6}};
      ^~~
-test_src/expr.c:1860:5: note: (near initialization for ‘xyz.x’)
-test_src/expr.c:1860:19: warning: excess elements in scalar initializer
+test_src/expr.c:1887:5: note: (near initialization for ‘xyz.x’)
+test_src/expr.c:1887:19: warning: excess elements in scalar initializer
      XYZ xyz = {{1,2,3},4,{5,6}};
                    ^
-test_src/expr.c:1860:19: note: (near initialization for ‘xyz.x’)
-test_src/expr.c:1860:21: warning: excess elements in scalar initializer
+test_src/expr.c:1887:19: note: (near initialization for ‘xyz.x’)
+test_src/expr.c:1887:21: warning: excess elements in scalar initializer
      XYZ xyz = {{1,2,3},4,{5,6}};
                      ^
-test_src/expr.c:1860:21: note: (near initialization for ‘xyz.x’)
-test_src/expr.c:1860:5: warning: braces around scalar initializer
+test_src/expr.c:1887:21: note: (near initialization for ‘xyz.x’)
+test_src/expr.c:1887:5: warning: braces around scalar initializer
      XYZ xyz = {{1,2,3},4,{5,6}};
      ^~~
-test_src/expr.c:1860:5: note: (near initialization for ‘xyz.z’)
-test_src/expr.c:1860:29: warning: excess elements in scalar initializer
+test_src/expr.c:1887:5: note: (near initialization for ‘xyz.z’)
+test_src/expr.c:1887:29: warning: excess elements in scalar initializer
      XYZ xyz = {{1,2,3},4,{5,6}};
                              ^
-test_src/expr.c:1860:29: note: (near initialization for ‘xyz.z’)
+test_src/expr.c:1887:29: note: (near initialization for ‘xyz.z’)
 test_src/expr.c: In function ‘sStruct1’:
-test_src/expr.c:1876:5: warning: useless storage class specifier in empty declaration
+test_src/expr.c:1903:5: warning: useless storage class specifier in empty declaration
      };
      ^
 test_src/expr.c: In function ‘Union2’:
-test_src/expr.c:1968:16: warning: excess elements in union initializer
+test_src/expr.c:1995:16: warning: excess elements in union initializer
      } u10 = {1,2}, u1=u10;
                 ^
-test_src/expr.c:1968:16: note: (near initialization for ‘u10’)
+test_src/expr.c:1995:16: note: (near initialization for ‘u10’)
   OK: logical1
   OK: logical2
   OK: logical
@@ -274,7 +274,7 @@ test_src/expr.c:1968:16: note: (near initialization for ‘u10’)
   OK: size_of1ll
   OK: size_of1v
   OK: size_of1C
-  OK: size_of2
+  OK: align_of
   OK: size_of
   OK: type_of
   OK: scope1

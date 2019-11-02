@@ -22,17 +22,17 @@
                                          ^ 未宣言の関数コールです。
 9cc:Warning: tmp/test_src.c:1115:  int i2g_x, *i2g_p = 2 + &i2g_x - 1;
                                               ^ =の左右の型(int*:int)が異なります
-9cc:Warning: tmp/test_src.c:1307: }
+9cc:Warning: tmp/test_src.c:1332: }
                                    ^ 関数が戻り値を返していません
-9cc:Warning: tmp/test_src.c:1393:     gc4_func(&a);
+9cc:Warning: tmp/test_src.c:1420:     gc4_func(&a);
                                                ^ 引数[0]の型(struct LS*:struct LS*)が一致しません
-9cc:Note: tmp/test_src.c:1381:     void gc4_func(struct LS*p){};
+9cc:Note: tmp/test_src.c:1408:     void gc4_func(struct LS*p){};
                                                             ^ 関数の定義はここです
-9cc:Warning: tmp/test_src.c:1878:         && xyz.x==1 && xyz.y==4 && xyz.z==5 && memcmp(&st0, &st, sizeof(st))==0;
+9cc:Warning: tmp/test_src.c:1905:         && xyz.x==1 && xyz.y==4 && xyz.z==5 && memcmp(&st0, &st, sizeof(st))==0;
                                                                                  ^ 未宣言の関数コールです。
-9cc:Warning: tmp/test_src.c:1990:     return u1.c==1 && memcmp(&u1, &u10, sizeof(u1))==0
+9cc:Warning: tmp/test_src.c:2017:     return u1.c==1 && memcmp(&u1, &u10, sizeof(u1))==0
                                                         ^ 未宣言の関数コールです。
-9cc:Warning: tmp/test_src.c:1991:         && u2.l==2 && memcmp(&u2, &u20, sizeof(u2))==0;
+9cc:Warning: tmp/test_src.c:2018:         && u2.l==2 && memcmp(&u2, &u20, sizeof(u2))==0;
                                                         ^ 未宣言の関数コールです。
 9cc:Warning: tmp/test_src.c:839: static int ga2_b[4]={1,2,{3,99},4}, *ga2_p=&ga2_a, *ga2_q=&ga2_b[2], *ga2_r=ga2_a+3;
                                                            ^ スカラーがリストで初期化されています
@@ -82,15 +82,15 @@
                                                          ^ 初期化リストが配列サイズを超えています
 9cc:Warning: tmp/test_src.c:949:     char str4[3] = "A\0B";
                                                         ^ 初期化リストが配列サイズを超えています
-9cc:Warning: tmp/test_src.c:1797:     struct S a={0};
+9cc:Warning: tmp/test_src.c:1824:     struct S a={0};
                                                   ^ 初期化リストが要素数を超えています
-9cc:Warning: tmp/test_src.c:1873:     } st0 = {2,2,3,4,5,(void*)6, {10,11,}, 20,21,22,}, st=st0;
+9cc:Warning: tmp/test_src.c:1900:     } st0 = {2,2,3,4,5,(void*)6, {10,11,}, 20,21,22,}, st=st0;
                                                      ^ 初期化リストが要素数を超えています
-9cc:Warning: tmp/test_src.c:1874:     XYZ xyz = {{1,2,3},4,{5,6}};
+9cc:Warning: tmp/test_src.c:1901:     XYZ xyz = {{1,2,3},4,{5,6}};
                                                   ^ スカラーがリストで初期化されています
-9cc:Warning: tmp/test_src.c:1874:     XYZ xyz = {{1,2,3},4,{5,6}};
+9cc:Warning: tmp/test_src.c:1901:     XYZ xyz = {{1,2,3},4,{5,6}};
                                                             ^ スカラーがリストで初期化されています
-9cc:Warning: tmp/test_src.c:1982:     } u10 = {1,2}, u1=u10;
+9cc:Warning: tmp/test_src.c:2009:     } u10 = {1,2}, u1=u10;
                                                  ^ 初期化リストが要素数を超えています
   OK: logical1
   OK: logical2
@@ -204,7 +204,7 @@
   OK: size_of1ll
   OK: size_of1v
   OK: size_of1C
-  OK: size_of2
+  OK: align_of
   OK: size_of
   OK: type_of
   OK: scope1

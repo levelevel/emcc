@@ -1011,7 +1011,7 @@ static int integer(void) {
     int size_b = sizeof(b)/sizeof(b[0]);
     long total_b = -1;
     for (int i=1;i<size_b;i++) total_b += b[i];
-    return size_a==total_a && size_b==-total_b;// && b[0]==★;
+    return size_a==total_a && size_b==-total_b && b[0]==0xffffffff;//★;
 }
 
 static int init1() {
@@ -1139,7 +1139,8 @@ static int size_of1() {
     typedef int INTA[];
     INTA A4={10,20,30,40};
     typedef int INTAA2[][2];
-//    INTAA2 A3A2={{00,01},{10,11},{20,21}};
+    INTAA2 A3A2={{00,01},{10,11},{20,21}};
+    int funci(int);
     return
         sizeof(n)==4 && sizeof(&n)==8 && sizeof(p)==8 &&
         sizeof(a)==4*8 && sizeof(a[0])==4 &&
@@ -1149,14 +1150,19 @@ static int size_of1() {
         sizeof(unsigned int)==4 && sizeof(signed int)==4 &&
         sizeof(int[5])==4*5 && sizeof(int*[3])==8*3 &&
         sizeof(int[5][2])==4*5*2 && sizeof(int*[3][2])==8*3*2 &&
-        sizeof(1)==4 && sizeof(1==1)==4 && sizeof(n=1)==4;
+        sizeof(1)==4 && sizeof(1==1)==4 && sizeof(n=1)==4 &&
+        sizeof(A3A2)==4*6 && sizeof(A3A2[1])==4*2 && sizeof(A3A2[1][1])==4 &&
+        sizeof(funci(1))==4;
 }
 static int size_of1b() {
     _Bool n, *p, a[2*4], a2[2][3];
     typedef _Bool BOOL;
     typedef const BOOL BOOLA3[3];
-    typedef char BOOLA[];
+    typedef _Bool BOOLA[];
     BOOLA A4={10,20,30,40};
+    typedef _Bool BOOLAA2[][2];
+    BOOLAA2 A3A2={{00,01},{10,11},{20,21}};
+    _Bool funcb(void);
     return
         sizeof(n)==1 && sizeof(&n)==8 && sizeof(p)==8 &&
         sizeof(a)==1*8 && sizeof(a[0])==1 &&
@@ -1165,7 +1171,9 @@ static int size_of1b() {
         sizeof(BOOL)==1 && sizeof(BOOLA3)==1*3 && sizeof(A4)==1*4 &&
         sizeof(_Bool[5])==1*5 && sizeof(_Bool*[3])==8*3 &&
         sizeof(_Bool[5][2])==1*5*2 && sizeof(_Bool*[3][2])==8*3*2 &&
-        sizeof(1)==4 && sizeof(1==1)==4 && sizeof(n=1)==1;
+        sizeof(1)==4 && sizeof(1==1)==4 && sizeof(n=1)==1 &&
+        sizeof(A3A2)==1*6 && sizeof(A3A2[1])==1*2 && sizeof(A3A2[1][1])==1 &&
+        sizeof(funcb())==1;
 }
 static int size_of1c() {
     char n, *p, a[2*4], a2[2][3];
@@ -1174,6 +1182,9 @@ static int size_of1c() {
     typedef const CHAR CHARA3[3];
     typedef char CHARA[];
     CHARA A4={10,20,30,40};
+    typedef char CHARAA2[][2];
+    CHARAA2 A3A2={{00,01},{10,11},{20,21}};
+    char funcc(void);
     return
         sizeof(n)==1 && sizeof(&n)==8 && sizeof(p)==8 &&
         sizeof(a)==1*8 && sizeof(a[0])==1 &&
@@ -1183,13 +1194,18 @@ static int size_of1c() {
         sizeof(unsigned char)==1 && sizeof(signed char)==1 &&
         sizeof(char[5])==1*5 && sizeof(char*[3])==8*3 &&
         sizeof(char[5][2])==1*5*2 && sizeof(char*[3][2])==8*3*2 &&
-        sizeof(1)==4 && sizeof(1==1)==4 && sizeof(n=1)==1;
+        sizeof(1)==4 && sizeof(1==1)==4 && sizeof(n=1)==1 &&
+        sizeof(A3A2)==1*6 && sizeof(A3A2[1])==1*2 && sizeof(A3A2[1][1])==1 &&
+        sizeof(funcc())==1;
 }
 static int size_of1s() {
     short n, *p, a[2*4], a2[2][3];
     typedef short SHORT;
     typedef unsigned short* USHORTP;
     typedef const SHORT SHORTA3[3];
+    typedef short SHORTAA2[][2];
+    SHORTAA2 A3A2={{00,01},{10,11},{20,21}};
+    short funcs(void);
     return
         sizeof(n)==2 && sizeof(&n)==8 && sizeof(p)==8 &&
         sizeof(a)==2*8 && sizeof(a[0])==2 &&
@@ -1199,13 +1215,18 @@ static int size_of1s() {
         sizeof(unsigned short)==2 && sizeof(signed short)==2 &&
         sizeof(short[5])==2*5 && sizeof(short*[3])==8*3 &&
         sizeof(short[5][2])==2*5*2 && sizeof(short*[3][2])==8*3*2 &&
-        sizeof(1)==4 && sizeof(1==1)==4 && sizeof(n=1)==2;
+        sizeof(1)==4 && sizeof(1==1)==4 && sizeof(n=1)==2 &&
+        sizeof(A3A2)==2*6 && sizeof(A3A2[1])==2*2 && sizeof(A3A2[1][1])==2 &&
+        sizeof(funcs())==2;
 }
 static int size_of1l() {
     long n, *p, a[2*4], a2[2][3];
     typedef long LONG;
     typedef unsigned long* ULONGP;
     typedef const LONG LONGA3[3];
+    typedef long LONGAA2[][2];
+    LONGAA2 A3A2={{00,01},{10,11},{20,21}};
+    long funcl(void);
     return 
         sizeof(n)==8 && sizeof(&n)==8 && sizeof(p)==8 &&
         sizeof(a)==8*8 && sizeof(a[0])==8 &&
@@ -1215,7 +1236,9 @@ static int size_of1l() {
         sizeof(unsigned long)==8 && sizeof(signed long)==8 &&
         sizeof(long[5])==8*5 && sizeof(long*[3])==8*3 &&
         sizeof(long[5][2])==8*5*2 && sizeof(long*[3][2])==8*3*2 &&
-        sizeof(1)==4 && sizeof(1==1)==4 && sizeof(n=1)==8;
+        sizeof(1)==4 && sizeof(1==1)==4 && sizeof(n=1)==8 &&
+        sizeof(A3A2)==8*6 && sizeof(A3A2[1])==8*2 && sizeof(A3A2[1][1])==8 &&
+        sizeof(funcl())==8;
 }
 static int size_of1ll() {
     long long n, *p, a[2*4], a2[2][3];
@@ -1262,7 +1285,8 @@ static int size_of1C() {
         sizeof(const int[5])==4*5 && sizeof(const int*[3])==8*3 &&
         sizeof(const int[5][2])==4*5*2 && sizeof(int const*[3][2])==8*3*2;
 }
-static int size_of2() {
+static int align_of() {
+    int funci(int);
     return
         _Alignof(_Bool)==1           && _Alignof(_Bool*)==8 &&
         _Alignof(_Bool[5])==1        && _Alignof(_Bool*[3])==8 &&
@@ -1280,7 +1304,8 @@ static int size_of2() {
         _Alignof(long[5])==8         && _Alignof(long*[3])==8;
         _Alignof(long[5][2])==8      && _Alignof(long*[3][2])==8;
         _Alignof(long long)==8       && _Alignof(long long*)==8 &&
-        _Alignof(long long[5][2])==8 && _Alignof(long long*[3][2])==8;
+        _Alignof(long long[5][2])==8 && _Alignof(long long*[3][2])==8 &&
+        _Alignof(funci(1))==4;
 }
 static int size_of() {
     TEST(size_of1);
@@ -1291,7 +1316,7 @@ static int size_of() {
     TEST(size_of1ll);
     TEST(size_of1v);
     TEST(size_of1C);
-    TEST(size_of2);
+    TEST(align_of);
     return 1;
 }
 
@@ -1304,6 +1329,7 @@ static int type_of() {
     long long ll; typeof(ll) ll2;
     char *p; typeof(p) p2;
     static int si;
+    int funci(int);
     return
         sizeof(b) == sizeof(b2) &&
         sizeof(c) == sizeof(c2) &&
@@ -1313,6 +1339,7 @@ static int type_of() {
         sizeof(ll) == sizeof(ll2) &&
         sizeof(p) == sizeof(p2) &&
         sizeof(typeof(si))==4;
+        //sizeof(typeof(funci(1)))==4;★
 }
 
 static int sc_x=0, sc_y=0;
