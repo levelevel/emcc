@@ -31,11 +31,15 @@ static ErCtrl get_ctrl(const char*opt) {
 
 static void read_opt(int argc, char*argv[]) {
     g_dump_node = 0;
+    g_dump_type = 0;
     for (; argc>1;  argc--, argv++) {
         if (strncmp(argv[1], "-e", 2)==0) {
             error_ctrl = get_ctrl(argv[1]);
         } else if (strncmp(argv[1], "-w", 2)==0) {
             warning_ctrl = get_ctrl(argv[1]);
+        } else if (strcmp(argv[1], "-dt")==0) {
+            g_dump_node = 1;
+            g_dump_type = 1;
         } else if (strncmp(argv[1], "-d", 2)==0) {
             g_dump_node = 1;
         } else if (strcmp(argv[1], "-test")==0) {

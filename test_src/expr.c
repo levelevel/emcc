@@ -2079,6 +2079,16 @@ static int Assert(void) {
     return 1;
 }
 
+static int Ignore(void) {
+    volatile int vi;
+    _Atomic int ai;
+    void func_restrict(char * restrict);
+    _Noreturn void func_noreturn(void); 
+
+    return 1;
+}
+static inline void func_inline(void){};
+
 int main() {
     TEST(logical);
     TEST(addsub);
@@ -2107,5 +2117,6 @@ int main() {
     TEST(Union);
     TEST(Typedef);
     TEST(Assert);
+    TEST(Ignore);
     return 0;
 }

@@ -55,9 +55,12 @@ typedef enum {
     TK_TYPEOF,      //typeof（非標準）
     TK_SIGNED,      //signed
     TK_UNSIGNED,    //unsigned
-//  TK_VOLATILE,    //type_qualifier
-//  TK_RESTRICT,    //type_qualifier
+    TK_VOLATILE,    //type_qualifier
+    TK_RESTRICT,    //type_qualifier
+    TK_ATOMIC,      //type_qualifier
     TK_CONST,       //type_qualifier
+    TK_INLINE,      //function_specifier
+    TK_NORETURN,    //function_specifier
     TK_AUTO,        //storage_class
     TK_REGISTER,    //storage_class
     TK_STATIC,      //storage_class
@@ -349,6 +352,7 @@ EXTERN int note_cnt;
 #define SET_ERROR_WITH_NOTE  {note_ctrl = error_ctrl; error_ctrl = ERC_CONTINUE;}
 
 EXTERN int g_dump_node; //関数をダンプする
+EXTERN int g_dump_type; //型をダンプする
 
 //現在のトークン（エラー箇所）の入力文字列
 #define input_str() (tokens[token_pos]->input)

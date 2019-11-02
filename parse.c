@@ -14,7 +14,7 @@
                             | storage_class_specifier declaration_specifiers*
                             | type_specifier          declaration_specifiers*
                             | type_qualifier          declaration_specifiers*
-                            | function_specifier      declaration_specifiers* (未実装)
+                            | function_specifier      declaration_specifiers*
                             | alignment_specifier     declaration_specifiers* (未実装)
     init_declarator         = declarator ( "=" initializer )?
     storage_class_specifier = "typedef" | "static" | "extern" | "auto" | "register"
@@ -31,7 +31,8 @@
     enum_specifier          = "enum" identifier? "{" enumerator ( "," enumerator )* ","? "}"
                             | "enum" identifier
     enumerator              = enumeration_constant ( "=" constant-expression )?
-    type_qualifier          = "const"
+    type_qualifier          = "const" | "restrict" | "volatile" | "_Atomic"
+    function_specifier      = "inline" | "_Noreturn"
     declarator              = pointer? direct_declarator
     direct_declarator       = identifier | "(" declarator ")"
                             | direct_declarator "[" assignment_expression? "]"
@@ -650,7 +651,15 @@ static Type *pointer(Type *tp) {
         tp = new_type_ptr(tp);
         if (is_const) tp->is_const = 1;
         is_const = 0;
-        while (consume(TK_CONST)) is_const = 1;
+        while (1) {
+            if (consume(TK_CONST)) {
+                is_const = 1;
+            } else if (consume(TK_VOLATILE) || consume(TK_RESTRICT) || consume(TK_ATOMIC)) {
+                //無視
+            } else {
+                break;
+            }
+        }
     }
     if (is_const) {
         Type *tmp = tp;
@@ -700,10 +709,12 @@ static Type *direct_abstract_declarator(Type *tp) {
 //                            | storage_class_specifier declaration_specifiers*
 //                            | type_specifier          declaration_specifiers*
 //                            | type_qualifier          declaration_specifiers*
+//                            | function_specifier      declaration_specifiers*
 //    storage_class_specifier = "typedef" | "static" | "extern" | "auto" | "register"
 //    type_specifier          = "void" | "_Bool" | "char" | "short" | "int" | "long" | "signed" | "unsigned"
 //                            | struct_or_union_specifier | enum_specifier | typedef_name
-//    type_qualifier          = "const"
+//    type_qualifier          = "const" | "restrict" | "volatile" | "_Atomic"
+//    function_specifier      = "inline" | "_Noreturn"
 static Type *declaration_specifiers(void) {
     Type *tp;
 
@@ -787,9 +798,14 @@ static Type *declaration_specifiers(void) {
             if (sclass) error_at(input, "strage classが重複しています\n");
             sclass = SC_TYPEDEF;
         //type_qualifier
+        } else if (consume(TK_RESTRICT) || consume(TK_VOLATILE) || consume(TK_ATOMIC)) {
+            //無視
         } else if (consume(TK_CONST)) {
             if (type == 0) pre_const = 1;
             else           post_const = 1;
+        //function_specifier
+        } else if (consume(TK_INLINE) || consume(TK_NORETURN)) {
+            //無視
         } else {
             if (!type && is_unsigned>=0) type = INT;
             if (!type) error_at(input, "型名がありません\n");

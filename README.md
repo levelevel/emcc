@@ -23,7 +23,7 @@
 ## 当面実装予定なし
 
 - より厳密なC標準準拠（GCCの-std=c11 -pedantic-errors相当）
-- ローカル配列のサイズが定数でないケース。
+- 可変長配列（Variable Length Array: VLA）
 - [指示付きの初期化子 (Designated Initializer)](http://seclan.dll.jp/c99d/c99d07.htm#dt19991025)
 - 実数（float, double, long double, _Complex, _Imaginar）
 - プリプロセッサ

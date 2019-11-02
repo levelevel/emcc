@@ -320,6 +320,11 @@ static void dump_node_indent(FILE *fp, const Node *node, const char *str, int in
     fprintf(fp, ", tp=%s, offset=%d, index=%d, val=%ld, unused=%d\n", 
         get_type_str(node->tp),
         node->offset, node->index, node->val, node->unused);
+    if (g_dump_type && (node->type==ND_LOCAL_VAR_DEF||node->type==ND_GLOBAL_VAR_DEF)) {
+        g_dump_type = 0;
+        dump_type_indent(fp, node->tp, NULL, indent+5);
+        g_dump_type = 1;
+    }
     if (node->lhs) dump_node_indent(fp, node->lhs, "lhs=", indent+2);
     if (node->rhs) dump_node_indent(fp, node->rhs, "rhs=", indent+2);
     if (node->lst && indent<10 && (node->type!=ND_ENUM_DEF || f_dump_enum_lst)) {
