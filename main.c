@@ -29,14 +29,28 @@ static ErCtrl get_ctrl(const char*opt) {
     exit(1);
 }
 
+static void usage(void) {
+    fprintf(stderr,"Usage: 9cc [option] {-s 'program' | file}\n");
+    fprintf(stderr,"  -[ew][cea]: error/warnin制御。c:continue, e:exit, a:abort\n");
+    fprintf(stderr,"  -p: parse only (no code generation)\n");
+    fprintf(stderr,"  -d[t]: dump node [and type]\n");
+    fprintf(stderr,"  -test: run self test\n");
+    exit(1);
+}
+
 static void read_opt(int argc, char*argv[]) {
     g_dump_node = 0;
     g_dump_type = 0;
+    
+    if (argc<=1) usage();
+
     for (; argc>1;  argc--, argv++) {
         if (strncmp(argv[1], "-e", 2)==0) {
             error_ctrl = get_ctrl(argv[1]);
         } else if (strncmp(argv[1], "-w", 2)==0) {
             warning_ctrl = get_ctrl(argv[1]);
+        } else if (strcmp(argv[1], "-p")==0) {
+            g_parse_only = 1;
         } else if (strcmp(argv[1], "-dt")==0) {
             g_dump_node = 1;
             g_dump_type = 1;
@@ -59,10 +73,7 @@ static void read_opt(int argc, char*argv[]) {
             user_input = read_file(filename);
             break;
         } else {
-            fprintf(stderr,"Usage: 9cc [option] {-s 'program' | file}\n");
-            fprintf(stderr,"  -[ew][cea]: error/warnin制御。c:continue, e:exit, a:abort\n");
-            fprintf(stderr,"  -test: run self test\n");
-            exit(1);
+            usage();
         }
     }
 }
@@ -108,8 +119,10 @@ void compile(void) {
     global_index       = 0;
     cur_structdef      = NULL;
     cur_switch         = NULL;
+
     // パース
     translation_unit();
+    if (g_parse_only) return;
 
     // 抽象構文木を下りながらコード生成
     gen_program();

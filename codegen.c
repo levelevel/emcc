@@ -1302,11 +1302,9 @@ static void gen_global_var(Node *node) {
             printf(".global %s\n", node->name);
         return;
     case ND_GLOBAL_VAR_DEF:
-        if (g_dump_node) dump_node(node, __func__);
         break;
     case ND_ENUM:
     case ND_TYPEDEF:
-        if (g_dump_node) dump_node(node, __func__);
         return;
     default:
         assert(type_is_static(node->tp));
@@ -1461,7 +1459,6 @@ void gen_program(void) {
         }
 
         // 関数本体のコード生成
-        if (g_dump_node) dump_node(funcdef[i]->node, __func__);
         gen(funcdef[i]->node->rhs);
 
         // エピローグ

@@ -351,8 +351,10 @@ EXTERN int warning_cnt;
 EXTERN int note_cnt;
 #define SET_ERROR_WITH_NOTE  {note_ctrl = error_ctrl; error_ctrl = ERC_CONTINUE;}
 
+//デバッグオプション
 EXTERN int g_dump_node; //関数をダンプする
 EXTERN int g_dump_type; //型をダンプする
+EXTERN int g_parse_only;//パースのみ
 
 //現在のトークン（エラー箇所）の入力文字列
 #define input_str() (tokens[token_pos]->input)

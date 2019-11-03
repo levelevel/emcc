@@ -213,6 +213,7 @@ static void check_scalar(Node *node, const char *input, const char *msg) {
 //    function_definition     = declaration_specifiers declarator compound_statement
 //    declaration             = declaration_specifiers init_declarator ( "," init_declarator )* ";"
 static void external_declaration(void) {
+    Node *node;
     Type *tp;
     char *name;
     //          <-> declaration_specifiers
@@ -236,21 +237,22 @@ static void external_declaration(void) {
         }
         tp = pointer(tp);
         if (token_is('(')) {    //int * ()
-            declaration(tp, NULL);
+            node = declaration(tp, NULL);
         } else if (!consume_ident(&name)) {
             error_at(input_str(), "型名の後に識別名がありません");
         } else if (token_is('(')) {
-            function_definition(tp, name);
+            node = function_definition(tp, name);
         } else {
-            declaration(tp, name);
+            node = declaration(tp, name);
         }
     } else if (token_is(TK_SASSERT)) {
-        declaration(NULL, NULL);
+        node = declaration(NULL, NULL);
     } else if (consume(';')) {
         //仕様書に記載はない？が、空の ; を読み飛ばす。
     } else {
         error_at(input_str(), "関数・変数の定義がありません");
     }
+    if (g_dump_node) dump_node(node, __func__);
 }
 
 //関数の定義: lhs=引数(ND_LIST)、rhs=ブロック(ND_BLOCK)
