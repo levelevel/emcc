@@ -1160,7 +1160,55 @@ int main(){typedef union{int a;}UN; UN un; void func(UN); func(&un);}
                                                                                       ^ 引数[0]の型(union:union*)が一致しません
 9cc:Note: selftest:1: int main(){typedef union{int a;}UN; UN un; void func(UN); func(&un);}
                                                                            ^ 関数の定義はここです
+# selftest ----------------
+int main(){const int ci; ci=1; return ci;}
+9cc:Error: selftest:1: int main(){const int ci; ci=1; return ci;}
+                                                  ^ 読み取り専用変数(const int)に対して代入の実行はできません
+# selftest ----------------
+int main(){static char str[]="abc"; const char*p1=str; *p1='A';}
+9cc:Error: selftest:1: int main(){static char str[]="abc"; const char*p1=str; *p1='A';}
+                                                                                 ^ 読み取り専用変数(const char)に対して代入の実行はできません
+# selftest ----------------
+int main(){static char str[]="abc"; char const*p2=str; *p2='A';}
+9cc:Error: selftest:1: int main(){static char str[]="abc"; char const*p2=str; *p2='A';}
+                                                                                 ^ 読み取り専用変数(const char)に対して代入の実行はできません
+# selftest ----------------
+int main(){static char str[]="abc"; const char const*p12=str; *p12='A';}
+9cc:Error: selftest:1: int main(){static char str[]="abc"; const char const*p12=str; *p12='A';}
+                                                                                         ^ 読み取り専用変数(const char)に対して代入の実行はできません
+# selftest ----------------
+int main(){static char str[]="abc"; char*const p3=str; p3=0;}
+9cc:Error: selftest:1: int main(){static char str[]="abc"; char*const p3=str; p3=0;}
+                                                                                ^ 読み取り専用変数(char const*)に対して代入の実行はできません
+# selftest ----------------
+int main(){static char str[]="abc"; const char*const p13=str; p13=0;}
+9cc:Error: selftest:1: int main(){static char str[]="abc"; const char*const p13=str; p13=0;}
+                                                                                        ^ 読み取り専用変数(const char const*)に対して代入の実行はできません
+# selftest ----------------
+int main(){static char str[]="abc"; const char*p1=str; (*p1)+=1;}
+9cc:Error: selftest:1: int main(){static char str[]="abc"; const char*p1=str; (*p1)+=1;}
+                                                                                   ^ 読み取り専用変数(const char)に対して+=の実行はできません
+# selftest ----------------
+int main(){static char str[]="abc"; const char*p1=str; (*p1)++;}
+9cc:Error: selftest:1: int main(){static char str[]="abc"; const char*p1=str; (*p1)++;}
+                                                                                   ^ 読み取り専用変数(const char)に対して++の実行はできません
+# selftest ----------------
+char*func(void) {static const char str[]="abc"; return str;} void main(){}
+9cc:Warning: selftest:1: char*func(void) {static const char str[]="abc"; return str;} void main(){}
+                                                                         ^ char*型の関数funcがstatic const char[4]型を返しています
+# selftest ----------------
+void func3(char*str){}          void func3(const char*str); void main(){}
+9cc:Error: selftest:1: void func3(char*str){}          void func3(const char*str); void main(){}
+                                                                 ^ 関数の型が一致しません
+9cc:Note: selftest:1: void func3(char*str){}          void func3(const char*str); void main(){}
+                                ^ 以前の関数はここです
+# selftest ----------------
+char*func3(void){return 0;}          const char*func3(void); void main(){}
+9cc:Error: selftest:1: char*func3(void){return 0;}          const char*func3(void); void main(){}
+                                                                            ^ 関数の型が一致しません
+9cc:Note: selftest:1: char*func3(void){return 0;}          const char*func3(void); void main(){}
+                                ^ 以前の関数はここです
 9cc self test
-Total : 251
-   Ok : 251
+Total : 262
+   Ok : 262
    NG : 0

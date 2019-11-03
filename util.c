@@ -107,7 +107,7 @@ static const char *TypeStr[] = {
     "[",
     "...",
     "func(",
-    "CONST",
+    "NEST",
     };
 static const char *SClassStr[] = {
     "", 
@@ -117,7 +117,7 @@ static const char *SClassStr[] = {
     "extern ",
     "typedef",
     };
-_Static_assert(NEST==sizeof(TypeStr)/sizeof(char*),"TypeStr");
+_Static_assert(NEST+1==sizeof(TypeStr)/sizeof(char*),"TypeStr");
 _Static_assert(SC_TYPEDEF+1==sizeof(SClassStr)/sizeof(char*), "SClassStr");
 
 static void strcat_word(char *buf, const char *str) {
@@ -284,7 +284,6 @@ static const char *get_TPType_str(TPType type) {
     ENUM2STR(PTR);
     ENUM2STR(ARRAY);
     ENUM2STR(FUNC);
-    ENUM2STR(CONST);
     ENUM2STR(NEST);
     default: return "???";
     }

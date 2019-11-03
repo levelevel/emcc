@@ -180,13 +180,14 @@ static void end_scope(void) {
 }
 
 enum {
-    CHK_INTEGER = 0x0001,
-    CHK_STRUCT  = 0x0002,
-    CHK_UNION   = 0x0004,
-    CHK_ARRAY   = 0x0008,
-    CHK_PTR     = 0x0010,
+    CHK_INTEGER = 0x0001,   //整数の場合にエラーとする
+    CHK_STRUCT  = 0x0002,   //構造体の場合にエラーとする
+    CHK_UNION   = 0x0004,   //共用体の場合にエラーとする
+    CHK_ARRAY   = 0x0008,   //配列の場合にエラーとする
+    CHK_PTR     = 0x0010,   //ポインタの場合にエラーとする
     CHK_ALL     = 0x0FFF,   //上記すべて
-    CHK_BINARY  = 0x1000,   //2項演算子のlhs/rhsをチェックする。0の場合はそのnode自身をチェックする
+    CHK_BINARY  = 0x1000,   //2項演算子のlhs/rhsに対してチェックする。このビットが0の場合はそのnode自身をチェックする
+    CHK_CONST   = 0x2000,   //constの場合にエラーとする
 };
 #define CHK_NOT(val) (CHK_ALL ^ (val))
 static void check_arg(Node *node, const char *input, unsigned int check_mode, const char *msg) {
@@ -203,6 +204,7 @@ static void check_arg(Node *node, const char *input, unsigned int check_mode, co
     if ((check_mode & CHK_UNION)   && tp->type==UNION)  error_at(input, "共用体(%s)に対して%sの指定はできません",  tp_str, msg);
     if ((check_mode & CHK_ARRAY)   && tp->type==ARRAY)  error_at(input, "配列(%s)に対して%sの指定はできません", tp_str, msg);
     if ((check_mode & CHK_PTR)     && tp->type==PTR)    error_at(input, "ポインタ(%s)に対して%sの指定はできません", tp_str, msg);
+    if ((check_mode & CHK_CONST)   && tp->is_const)     error_at(input, "読み取り専用変数(%s)に対して%sの実行はできません", tp_str, msg);
 }
 static void check_scalar(Node *node, const char *input, const char *msg) {
     if (input==NULL) input = node->input;
@@ -644,29 +646,17 @@ static Type *array_def(Type *tp) {
 
 //    pointer                 = ( "*" type_qualifier* )*
 static Type *pointer(Type *tp) {
-    int is_const = 0;
-    if (tp->type==CONST) {
-        is_const = 1;
-        tp = tp->ptr_of;
-    }
     while (consume('*')) {
         tp = new_type_ptr(tp);
-        if (is_const) tp->is_const = 1;
-        is_const = 0;
         while (1) {
             if (consume(TK_CONST)) {
-                is_const = 1;
+                tp->is_const = 1;
             } else if (consume(TK_VOLATILE) || consume(TK_RESTRICT) || consume(TK_ATOMIC)) {
                 //無視
             } else {
                 break;
             }
         }
-    }
-    if (is_const) {
-        Type *tmp = tp;
-        while (tmp->ptr_of) tmp = tmp->ptr_of;
-        tmp->is_const = 1;       
     }
 
     return tp;
@@ -735,8 +725,7 @@ static Type *declaration_specifiers(void) {
     TPType type = 0;
     StorageClass sclass = SC_UNDEF;
     int is_unsigned = -1;   //-1:未指定、0:signed、1:unsigned
-    int pre_const  = 0;     //型の前にconstがある：const int
-    int post_const = 0;     //型の後にconstがある：int const
+    int is_const  = 0;
 
     while (1) {
         char *input = input_str();
@@ -803,8 +792,7 @@ static Type *declaration_specifiers(void) {
         } else if (consume(TK_RESTRICT) || consume(TK_VOLATILE) || consume(TK_ATOMIC)) {
             //無視
         } else if (consume(TK_CONST)) {
-            if (type == 0) pre_const = 1;
-            else           post_const = 1;
+            is_const = 1;
         //function_specifier
         } else if (consume(TK_INLINE) || consume(TK_NORETURN)) {
             //無視
@@ -831,12 +819,7 @@ static Type *declaration_specifiers(void) {
         top_tp = tp = new_type(type, is_unsigned);
     }
     tp->sclass = sclass;
-    if (pre_const) tp->is_const = 1;
-    if (post_const) {   //先頭にCONSTを挿入
-        Type *tmp = new_type(CONST, 0);
-        tmp->ptr_of = top_tp;
-        top_tp = tmp;
-    }
+    if (is_const) tp->is_const = 1;
     return top_tp;
 }
 
@@ -1227,9 +1210,10 @@ static Node *assignment_expression(void) {
     char *input = input_str();
     if (consume('=')) {
         if (!is_lvalue || node->tp->type==ARRAY) error_at(node->input, "左辺値ではありません");
+        check_arg(node, input, CHK_CONST, "代入");
         rhs = assignment_expression(); 
         Status sts;
-        if (!(rhs->type==ND_NUM && rhs->val==0) &&  //右辺が0の場合は無条件にOK
+        if (!(node->tp->type==PTR && rhs->type==ND_NUM && rhs->val==0) &&  //右辺が0の場合は無条件にOK
             (sts=type_eq_check(node->tp, rhs->tp))!=ST_OK) {
             if (sts==ST_ERR)
                 error_at(input, "=の左右の型(%s:%s)が異なります", 
@@ -1241,12 +1225,14 @@ static Node *assignment_expression(void) {
         node = new_node('=', node, rhs, node->tp, input); //ND_ASIGN
     } else if (consume(TK_PLUS_ASSIGN)) { //+=
         if (!is_lvalue || node->tp->type==ARRAY) error_at(node->input, "左辺値ではありません");
+        check_arg(node, input, CHK_CONST, "+=");
         rhs = assignment_expression(); 
         if (node_is_ptr(node) && node_is_ptr(rhs))
             error_at(node->input, "ポインタ同士の加算です");
         node = new_node(ND_PLUS_ASSIGN, node, rhs, node->tp, input);
     } else if (consume(TK_MINUS_ASSIGN)) { //-=
         if (!is_lvalue || node->tp->type==ARRAY) error_at(node->input, "左辺値ではありません");
+        check_arg(node, input, CHK_CONST, "-=");
         rhs = assignment_expression(); 
         if (node_is_ptr(rhs)) 
             error_at(node->input, "ポインタによる減算です");
@@ -1279,7 +1265,7 @@ static Node *logical_OR_expression(void) {
         char *input = input_str();
         if (consume(TK_LOR)) {
             node = new_node(ND_LOR, node, logical_AND_expression(), new_type(INT, 0), input);
-            check_arg(node, input, CHK_BINARY|CHK_STRUCT|CHK_UNION, "論理積||");
+            check_arg(node, input, CHK_BINARY|CHK_STRUCT|CHK_UNION, "論理和||");
         } else {
             break;
         }
@@ -1520,11 +1506,11 @@ static Node *unary_expression(void) {
         node = new_node(ND_BNOT, NULL, node, node->tp, input);
     } else if (consume(TK_INC)) {
         node = unary_expression();
-        check_arg(node, input, CHK_STRUCT|CHK_UNION|CHK_ARRAY, "++");
+        check_arg(node, input, CHK_STRUCT|CHK_UNION|CHK_ARRAY|CHK_CONST, "++");
         node = new_node(ND_INC_PRE, NULL, node, node->tp, input);
     } else if (consume(TK_DEC)) {
         node = unary_expression();
-        check_arg(node, input, CHK_STRUCT|CHK_UNION|CHK_ARRAY, "--");
+        check_arg(node, input, CHK_STRUCT|CHK_UNION|CHK_ARRAY|CHK_CONST, "--");
         node = new_node(ND_DEC_PRE, NULL, node, node->tp, input);
     } else if (consume('*')) {
         node = cast_expression();
@@ -1652,10 +1638,10 @@ static Node *postfix_expression(void) {
             node->offset = -member_def->offset;
             //dump_node(node,__func__);
         } else if (consume(TK_INC)) {
-            check_arg(node, input, CHK_STRUCT|CHK_UNION|CHK_ARRAY, "++");
+            check_arg(node, input, CHK_STRUCT|CHK_UNION|CHK_ARRAY|CHK_CONST, "++");
             node = new_node(ND_INC, node, NULL, node->tp, input);
         } else if (consume(TK_DEC)) {
-            check_arg(node, input, CHK_STRUCT|CHK_UNION|CHK_ARRAY, "--");
+            check_arg(node, input, CHK_STRUCT|CHK_UNION|CHK_ARRAY|CHK_CONST, "--");
             node = new_node(ND_DEC, node, NULL, node->tp, input);
         } else {
             break;

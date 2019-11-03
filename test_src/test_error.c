@@ -268,6 +268,20 @@ struct {
     {WR, "typedef union{int a;}UN; UN un; void func(int); func(&un);"},
     {ER, "typedef union{int a;}UN; UN un; void func(UN); func(1);"},
     {ER, "typedef union{int a;}UN; UN un; void func(UN); func(&un);"},
+    //Const
+    {ER, "const int ci; ci=1; return ci;"},
+    {ER, "static char str[]=\"abc\"; const char*p1=str; *p1='A';"},
+    {ER, "static char str[]=\"abc\"; char const*p2=str; *p2='A';"},
+    {ER, "static char str[]=\"abc\"; const char const*p12=str; *p12='A';"},
+    {ER, "static char str[]=\"abc\"; char*const p3=str; p3=0;"},
+    {ER, "static char str[]=\"abc\"; const char*const p13=str; p13=0;"},
+    {ER, "static char str[]=\"abc\"; const char*p1=str; (*p1)+=1;"},
+    {ER, "static char str[]=\"abc\"; const char*p1=str; (*p1)++;"},
+    {WR, "char*func(void) {static const char str[]=\"abc\"; return str;} void main(){}"},
+    {ER, "void func3(char*str){}\
+          void func3(const char*str); void main(){}"},
+    {ER, "char*func3(void){return 0;}\
+          const char*func3(void); void main(){}"},
     {ER, NULL}
 };
 

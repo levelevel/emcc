@@ -207,8 +207,6 @@ typedef enum {
     ARRAY,
     VARARGS,        //...
     FUNC,           //関数
-    CONST,          //const処理の一時的なデータ構造でのみ使用し、必ずptr_ofを持つ。
-                    //親をconstで修飾する。親がいないときは型を修飾する。
     NEST,           //ネストした型宣言処理の一時的なデータ構造でのみ使用する。他のメンバーは未使用。
 } TPType;
 
@@ -424,8 +422,8 @@ void check_func_return(Funcdef *funcdef);
 void check_funccall(Node *node);
 void check_funcargs(Node *node, int def_mode);
 int type_eq(const Type *tp1, const Type *tp2);
-int type_eq_global_local(const Type *tp1, const Type *tp2);
-int type_eq_func(const Type *tp1, const Type *tp2);
+int type_eq_global(const Type *tp1, const Type *tp2);
+int type_eq_func_ret(const Type *tp1, const Type *tp2);
 Status type_eq_check(const Type *tp1, const Type *tp2);
 Funcdef *new_funcdef(void);
 Type *new_type_ptr(Type*ptr);

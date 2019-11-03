@@ -1620,13 +1620,15 @@ static int extern4() {
     extern int   g_extern4func(int x);
     return 1;
 }
-static int extern42() {
-    //関数内外で同じextern宣言があってもOK
-    extern int   g_extern4_i;
-    extern int   g_extern4func(int);
-    extern int   g_extern4func(int x);
+extern int   g_extern_i;
+       int   g_extern_i;
+extern int   g_extern5_func(void);
+static int extern5(void) {
+    extern int   g_extern5_func(void);
+           int   g_extern5_func(void);
     return 1;
 }
+
 static int static1() {
     static _Bool g_static_b=1;
     static char  g_static_c=1;
@@ -1695,7 +1697,7 @@ static int ext() {
     TEST(extern1);
     TEST(extern2);
     TEST(extern3);
-//    TEST(extern4);
+    TEST(extern4);
     TEST(static1);
     TEST(static2);
     TEST(static3);
@@ -2079,6 +2081,39 @@ static int Assert(void) {
     return 1;
 }
 
+static char*func_const2(void) {
+    static const char str[]="abc";
+    return str; //warning: return discards 'const' qualifier from pointer target type [-Wdiscarded-qualifiers]
+}
+static char *func_const3(char*str){return str;}
+static int Const(void) {
+    static char str[]="abc";
+
+    const char * p1=str;
+    //*p1 = 'A';  //error: assignment of read-only location '*p1'
+    p1 = 0;
+    func_const3(p1);    //warning
+
+    char const* p2=str;
+    //*p2 = 'A';  //error: assignment of read-only location '*p2'
+    p2 = 0;
+
+    const char const* p12=str;
+    //*p12 = 'A';  //error: assignment of read-only location '*p12'
+    p12 = 0;
+
+    char * const p3=str;
+    *p3 = 'A';
+    //p3 = 0;     //error: assignment of read-only variable 'p3'
+    func_const3(p3);
+
+    const char * const p13=str;
+    //*p13 = 'A'; //error: assignment of read-only location '*p13'
+    //p13 = 0;    //error: assignment of read-only variable 'p13'
+
+    return 1;
+}
+
 static int Ignore(void) {
     volatile int vi;
     _Atomic int ai;
@@ -2117,6 +2152,7 @@ int main() {
     TEST(Union);
     TEST(Typedef);
     TEST(Assert);
+    TEST(Const);
     TEST(Ignore);
     return 0;
 }
