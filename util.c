@@ -281,6 +281,7 @@ static const char *get_TPType_str(TPType type) {
     ENUM2STR(LONGLONG);
     ENUM2STR(ENUM);
     ENUM2STR(STRUCT);
+    ENUM2STR(UNION);
     ENUM2STR(PTR);
     ENUM2STR(ARRAY);
     ENUM2STR(FUNC);
@@ -326,7 +327,7 @@ static void dump_node_indent(FILE *fp, const Node *node, const char *str, int in
     }
     if (node->lhs) dump_node_indent(fp, node->lhs, "lhs=", indent+2);
     if (node->rhs) dump_node_indent(fp, node->rhs, "rhs=", indent+2);
-    if (node->lst && indent<10 && (node->type!=ND_ENUM_DEF || f_dump_enum_lst)) {
+    if (node->lst && indent<20 && (node->type!=ND_ENUM_DEF || f_dump_enum_lst)) {
         char buf[16];
         Vector *lists = node->lst;
         Node **nodes = (Node**)lists->data;

@@ -268,6 +268,13 @@ struct {
     {WR, "typedef union{int a;}UN; UN un; void func(int); func(&un);"},
     {ER, "typedef union{int a;}UN; UN un; void func(UN); func(1);"},
     {ER, "typedef union{int a;}UN; UN un; void func(UN); func(&un);"},
+    //変数名のない無名構造体・共用体
+    {ER, "struct{int a; union U{int ua; long ub;};};"},
+    {ER, "struct{int a; union  {int  a; long ub;};};"},
+    {ER, "struct{int a; union  {int ua; long ub;}; int ua};"},
+    {ER, "union{int a; struct S{int sa; long sb;};};"},
+    {ER, "union{int a; struct  {int  a; long sb;};};"},
+    {ER, "union{int a; struct  {int sa; long sb;}; int sa};"},
     //Const
     {ER, "const int ci; ci=1; return ci;"},
     {ER, "static char str[]=\"abc\"; const char*p1=str; *p1='A';"},

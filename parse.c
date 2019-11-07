@@ -20,12 +20,13 @@
     storage_class_specifier = "typedef" | "static" | "extern" | "auto" | "register"
     type_specifier          = "void" | "_Bool" | "char" | "short" | "int" | "long" | "signed" | "unsigned"
                             | struct_or_union_specifier | enum_specifier | typedef_name
-    struct_or_union_specifier = ( "struct" | "union" ) identifier? "{" struct_declaration* "}"
+    struct_or_union_specifier = ( "struct" | "union" ) identifier? "{" struct_declaration+ "}"
                             | ( "struct" | "union" ) identifier
-    struct_declaration      = specifier_qualifier_list struct_declarator*
+    struct_declaration      = specifier_qualifier_list struct_declarator_list* ";"
                             | static_assert_declaration
     specifier_qualifier_list = type_specifier specifier_qualifier_list*
                             | type_qualifier specifier_qualifier_list*
+    struct_declarator_list  = struct_declarator ( "," struct_declarator )*
     struct_declarator       = declarator
                             | declarator? ":" constant_expression
     enum_specifier          = "enum" identifier? "{" enumerator ( "," enumerator )* ","? "}"
@@ -128,11 +129,12 @@ static Type *pointer(Type *tp);
 static Type *type_name(void);
 static Type *abstract_declarator(Type *tp);
 static Type *direct_abstract_declarator(Type *tp);
-static Type *declaration_specifiers(void);
+static Type *declaration_specifiers(int type_only);
 static Node *struct_or_union_specifier(TPType type);
 static Type *specifier_qualifier_list(void);
 static Node *enum_specifier(void);
 static Node *struct_declaration(void);
+static Node *struct_declarator_list(Type *tp);
 static Node *struct_declarator(Type *tp);
 static Node *enumerator(Node *enum_def, int default_val);
 
@@ -232,7 +234,7 @@ static void external_declaration(void) {
     // ネスト：　int * ( )
     //                ^ここでdeclarationが確定
     if (token_is_type_spec()) {
-        tp = declaration_specifiers();
+        tp = declaration_specifiers(0/*=type_only*/);
         if (consume(';')) {
             new_node(ND_TYPE_DECL, NULL, NULL, tp, input_str());
             return;
@@ -300,7 +302,7 @@ static Node *declaration(Type *tp, char *name) {
             return static_assert_declaration();
         }
         //declaration_specifiers, pointer, identifierを先読みしていなければdecl_specを読む
-        decl_spec = declaration_specifiers();
+        decl_spec = declaration_specifiers(0/*=type_only*/);
         if (consume(';')) {
             node = new_node(ND_TYPE_DECL, NULL, NULL, decl_spec, input_str());
             return node;
@@ -317,18 +319,31 @@ static Node *declaration(Type *tp, char *name) {
         while (decl_spec->ptr_of) decl_spec = decl_spec->ptr_of;
     }
 
-    node = init_declarator(decl_spec, tp, name);
-
-    if (consume(',')) {
-        Node *last_node;
-        node = new_node_list(node, node->input);
-        Vector *lists = node->lst;
-        vec_push(lists, last_node=init_declarator(decl_spec, NULL, NULL));
-        while (consume(',')) {
-            vec_push(lists, last_node=init_declarator(decl_spec, NULL, NULL));
+    if (name==NULL && token_is(';')) {
+        //変数名なしが許されるのは無名構造体・共用体のみ
+        if (!type_is_struct_or_union(decl_spec) || decl_spec->node->name[0]!='<') {
+            expect_ident(NULL, "変数名");
         }
-        node->tp = last_node->tp;
+        node = decl_spec->node;
+    } else {
+        node = init_declarator(decl_spec, tp, name);
+        if (type_is_struct_or_union(decl_spec)) {
+            node->lst = decl_spec->node->lst;
+            node->map = decl_spec->node->map;
+        }
+
+        if (consume(',')) {
+            Node *last_node;
+            node = new_node_list(node, node->input);
+            Vector *lists = node->lst;
+            vec_push(lists, last_node=init_declarator(decl_spec, NULL, NULL));
+            while (consume(',')) {
+                vec_push(lists, last_node=init_declarator(decl_spec, NULL, NULL));
+            }
+            node->tp = last_node->tp;
+        }
     }
+
     expect(';');
     return node;
 }
@@ -549,7 +564,7 @@ static Node *parameter_type_list(void) {
 static Node *parameter_declaration(void) {
     Node *node;
     char *name, *input = input_str();
-    Type *tp = declaration_specifiers();
+    Type *tp = declaration_specifiers(0/*=type_only*/);
     tp = pointer(tp);
     if (consume_ident(&name)) {
         node = declarator(tp, tp, name);
@@ -707,7 +722,8 @@ static Type *direct_abstract_declarator(Type *tp) {
 //                            | struct_or_union_specifier | enum_specifier | typedef_name
 //    type_qualifier          = "const" | "restrict" | "volatile" | "_Atomic"
 //    function_specifier      = "inline" | "_Noreturn"
-static Type *declaration_specifiers(void) {
+//type_only: type_specifierとtype_qualifierのみ認識する（構造体・共用体のメンバ用）
+static Type *declaration_specifiers(int type_only) {
     Type *tp;
 
     if (consume(TK_TYPEOF)) {
@@ -772,6 +788,11 @@ static Type *declaration_specifiers(void) {
             if (is_unsigned>=0) error_at(input, "型指定が不正です\n");
             is_unsigned = 1;
             us_input = input;
+        //type_qualifier
+        } else if (consume(TK_RESTRICT) || consume(TK_VOLATILE) || consume(TK_ATOMIC)) {
+            //無視
+        } else if (consume(TK_CONST)) {
+            is_const = 1;
         //storage_class_specifier
         } else if (consume(TK_AUTO)) {
             if (sclass) error_at(input, "strage classが重複しています\n");
@@ -788,11 +809,6 @@ static Type *declaration_specifiers(void) {
         } else if (consume(TK_TYPEDEF)) {
             if (sclass) error_at(input, "strage classが重複しています\n");
             sclass = SC_TYPEDEF;
-        //type_qualifier
-        } else if (consume(TK_RESTRICT) || consume(TK_VOLATILE) || consume(TK_ATOMIC)) {
-            //無視
-        } else if (consume(TK_CONST)) {
-            is_const = 1;
         //function_specifier
         } else if (consume(TK_INLINE) || consume(TK_NORETURN)) {
             //無視
@@ -801,6 +817,7 @@ static Type *declaration_specifiers(void) {
             if (!type) error_at(input, "型名がありません\n");
             break;
         }
+        if (type_only && sclass!=SC_UNDEF) error_at(input, "storage classは指定できません");
         if (type==VOID && is_unsigned>=0)
             error_at(input, "void型の指定が不正です\n");
     }
@@ -824,14 +841,15 @@ static Type *declaration_specifiers(void) {
 }
 
 static void refresh_typedef(Node *struc);
-//    struct_or_union_specifier = ( "struct" | "union" ) identifier? "{" struct_declaration* "}"
+//    struct_or_union_specifier = ( "struct" | "union" ) identifier? "{" struct_declaration+ "}"
 //                            | ( "struct" | "union" ) identifier
-//    struct_declaration      = specifier_qualifier_list struct_declarator*
+//    struct_declaration      = specifier_qualifier_list struct_declarator_list* ";"
 //                            | static_assert_declaration
 //    specifier_qualifier_list = type_specifier specifier_qualifier_list*
 //                            | type_qualifier specifier_qualifier_list*
+//    struct_declarator_list  = struct_declarator ( "," struct_declarator )*
 //    struct_declarator       = declarator
-//                            | declarator? "," constant_expression
+//                            | declarator? ":" constant_expression
 static Node *struct_or_union_specifier(TPType type) {
     Node *node;
     if (type==STRUCT) node = new_node(ND_STRUCT_DEF, NULL, NULL, new_type(STRUCT, 0), input_str());
@@ -840,7 +858,7 @@ static Node *struct_or_union_specifier(TPType type) {
     if (consume_ident(&name)) {
         node->name = name;
     } else {
-        node->name = "<anonymouse>";
+        node->name = "<noname>";
     }
     node->tp->node = node;
 
@@ -852,9 +870,27 @@ static Node *struct_or_union_specifier(TPType type) {
         node->map = new_map();
         if (name) regist_tagname(node);
         do {
-            Node *struc = struct_declaration();
-            if (struc->type==ND_LIST) vec_copy(node->lst, struc->lst);
-            else vec_push(node->lst, struc);
+            Node *member = struct_declaration();
+            if (member->type==ND_LIST) {
+                //int x,y,z;
+                vec_copy(node->lst, member->lst);
+            } else if (node_is_anonymouse_struct_or_union(member)) {
+                //  struct {            //<==node
+                //      int a;
+                //      union {         //<==member: 無名構造体・共用体
+                //          int  ua;    //スコープを親のレベルに引き上げる
+                //          long ub;
+                //      };
+                //  }
+                Vector *src_lst = member->tp->node->lst;
+                for (int i=0; i<lst_len(src_lst); i++) {
+                    regist_var_def((Node*)lst_data(src_lst,i));
+                }
+                vec_push(node->lst, member);
+            } else {
+                //int a;
+                vec_push(node->lst, member);
+            }
         } while (!consume('}'));
         refresh_typedef(node);  //不完全定義typedefがあれば完全定義に置き換える
     } else if (name==NULL) {
@@ -863,7 +899,7 @@ static Node *struct_or_union_specifier(TPType type) {
         regist_tagname(node);
     }
     //構造体メンバのoffset(memb->offset)と、構造体のサイズを設定する(node->val)。
-    set_struct_size(node);
+    set_struct_size(node, 0/*base_offset*/);
 
     //dump_symbol(-1, __func__);
     //dump_tagname();
@@ -871,11 +907,36 @@ static Node *struct_or_union_specifier(TPType type) {
     cur_structdef = old_cur_structdef;
     return node;
 }
+//    struct_declaration      = specifier_qualifier_list struct_declarator_list* ";"
+//                            | static_assert_declaration
 static Node *struct_declaration(void) {
     if (token_is(TK_SASSERT)) {
         return static_assert_declaration();
     }
     Type *decl_spec = specifier_qualifier_list();
+    Node *node;
+    if (token_is(';')) {
+        //変数名なしが許されるのは無名構造体・共用体のみ
+        if (!type_is_struct_or_union(decl_spec) || decl_spec->node->name[0]!='<') {
+            expect_ident(NULL, "変数名");
+        }
+        node = new_node(ND_MEMBER_DEF, NULL, NULL, decl_spec, decl_spec->node->input);
+        node->lst = decl_spec->node->lst;
+        node->map = decl_spec->node->map;
+    } else {
+        node = struct_declarator_list(decl_spec);
+    }
+    expect(';');
+    return node;
+}
+//    specifier_qualifier_list = type_specifier specifier_qualifier_list*
+//                            | type_qualifier specifier_qualifier_list*
+static Type *specifier_qualifier_list(void) {
+    Type *tp = declaration_specifiers(1/*=type_only*/);
+    return tp;
+}
+//    struct_declarator_list  = struct_declarator ( "," struct_declarator )*
+static Node *struct_declarator_list(Type *decl_spec) {
     Node *node = struct_declarator(decl_spec);
     if (consume(',')) {
         Node *last_node;
@@ -887,17 +948,17 @@ static Node *struct_declaration(void) {
         }
         node->tp = last_node->tp;
     }
-    expect(';');
     return node;
 }
-static Type *specifier_qualifier_list(void) {
-    Type *tp = declaration_specifiers();
-    if (tp->sclass!=SC_UNDEF) error_at(input_str(), "storage classは指定できません");
-    return tp;
-}
+//    struct_declarator       = declarator
+//                            | declarator? ":" constant_expression
 static Node *struct_declarator(Type *tp) {
     Node *node = declarator(tp, NULL, NULL);
     node->type = ND_MEMBER_DEF;
+    if (tp->node) {
+        node->lst = tp->node->lst;
+        node->map = tp->node->map;
+    }
     regist_var_def(node);
     return node;
 }
@@ -927,7 +988,7 @@ static Node *enum_specifier(void) {
     if (consume_ident(&name)) {
         node->name = name;
     } else {
-        node->name = "<anonymouse>";
+        node->name = "<noname>";
     }
     if (consume('{')) {
         Node *em = enumerator(node, 0);
@@ -1121,7 +1182,7 @@ static Node *statement(void) {
 
 static Node *compound_statement(int is_func_body) {
     Node *node;
-    assert (consume('{'));
+    expect('{');
 
     begin_local_scope();
     node = new_node_block(input_str());
@@ -1144,6 +1205,21 @@ static Node *compound_statement(int is_func_body) {
         Node *block_item;
         if (token_is_type_spec() || token_is(TK_SASSERT)) {
             block_item = declaration(NULL, NULL);
+            if (block_item->type==ND_TYPE_DECL && block_item->name==NULL &&
+                type_is_struct_or_union(block_item->tp) && block_item->tp->node->name[0]=='<') {
+                //  int a;
+                //  union {         //<==block_item: 無名構造体・共用体
+                //      int  ua;    //スコープを親のレベルに引き上げる
+                //      long ub;
+                //  };
+                block_item = dup_node(block_item->tp->node);
+                block_item->type = ND_LOCAL_VAR_DEF;
+                Vector *src_lst = block_item->lst;
+                for (int i=0; i<lst_len(src_lst); i++) {
+                    regist_var_def((Node*)lst_data(src_lst,i));
+                }
+                dump_node(block_item,__func__);
+            }
         } else {
             block_item = statement();
         }

@@ -278,7 +278,9 @@ typedef struct {
 //型・ノードがポインタ型（PTR||ARRAY）であるか
 #define type_is_ptr(_tp) ((_tp)->type==PTR || (_tp)->type==ARRAY)
 #define node_is_ptr(_node) type_is_ptr((_node)->tp)
-#define node_is_var_def(node) ((node)->type==ND_LOCAL_VAR_DEF || (node)->type==ND_GLOBAL_VAR_DEF)
+#define node_is_var_def(_node) ((_node)->type==ND_LOCAL_VAR_DEF || (_node)->type==ND_GLOBAL_VAR_DEF || (_node)->type==ND_MEMBER_DEF)
+//#define node_is_anonymouse_struct_or_union(_node) (type_is_struct_or_union((_node)->tp) && (_node)->name==NULL)
+#define node_is_anonymouse_struct_or_union(_node) (node_is_var_def(_node) && type_is_struct_or_union((_node)->tp) && (_node)->name==NULL)
 
 //アサーション
 #define COMPILE_ERROR 0
@@ -392,7 +394,7 @@ void expect_ident(char**name, const char*str);
 long size_of(const Type *tp);
 int align_of(const Type *tp);
 int get_var_offset(const Type *tp);
-void set_struct_size(Node *node);
+void set_struct_size(Node *node, int base_offset);
 int node_is_const(Node *node, long *val);
 int node_is_const_or_address(Node *node, long *valp, Node **varp);
 #define type_is_static(tp) (get_storage_class(tp)==SC_STATIC)
@@ -431,7 +433,7 @@ Type *new_type_func(Type*ptr, Node *node);
 Type *new_type_array(Type*ptr, size_t size);
 Type *new_type(int type, int is_unsigned);
 Type *dup_type(const Type *tp);
-Node *new_node(int type, Node *lhs, Node *rhs, Type *tp, char *input);
+Node *dup_node(const Node *node);
 Node *new_node(int type, Node *lhs, Node *rhs, Type *tp, char *input);
 Node *new_node_num(long val, char *input);
 Node *new_node_var_def(char *name, Type*tp, char *input);

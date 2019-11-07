@@ -66,20 +66,24 @@ int get_var_offset(const Type *tp) {
     return cur_funcdef->var_stack_size;
 }
 
-//構造体メンバのoffset(memb->offset)と、構造体のサイズを設定する(node->val)。
-void set_struct_size(Node *node) {
-    assert(node->type==ND_STRUCT_DEF || node->type==ND_UNION_DEF);
+//構造体(共用体)メンバのoffset(member->offset)と、構造体のサイズを設定する(node->val)。
+void set_struct_size(Node *node, int base_offset) {
+    assert(type_is_struct_or_union(node->tp));
     if (node->lst==NULL) return;
-    int max_align_size = 0, max_size = 0, offset = 0;
+    int max_align_size = 0, max_size = 0, offset = base_offset;
     for (int i=0; i<lst_len(node->lst); i++) {
-        Node *memb = get_lst_node(node->lst, i);
-        int size = size_of(memb->tp);        
+        Node *member = get_lst_node(node->lst, i);
+        assert(member->type==ND_MEMBER_DEF);
+        int size = size_of(member->tp);        
         assert(size>0);
-        int align_size = align_of(memb->tp);
+        int align_size = align_of(member->tp);
         if (align_size>max_align_size) max_align_size = align_size;
         if (      size>max_size)       max_size       = size;
         offset = (offset +(align_size-1))/align_size * align_size;
-        if (node->type==ND_STRUCT_DEF) memb->offset = offset;
+        member->offset = (node->type==ND_STRUCT_DEF ? offset : base_offset);
+        if (node_is_anonymouse_struct_or_union(member)) {    //無名構造体・共用体
+            set_struct_size(member, offset);
+        }
         offset += size;
     }
     int total_size = (offset +(max_align_size-1))/max_align_size * max_align_size;
@@ -339,6 +343,7 @@ void regist_var_def(Node *node) {
             if (sclass==SC_STATIC) {
                 vec_push(static_var_vec, node);
             }
+
         } else if ((reg_node->type==ND_GLOBAL_VAR_DEF && !type_eq_global(reg_node->tp, node->tp)) ||
                    (reg_node->type==ND_LOCAL_VAR_DEF  && !type_eq       (reg_node->tp, node->tp))) {
             SET_ERROR_WITH_NOTE;
@@ -757,6 +762,12 @@ Type *dup_type(const Type *tp) {
     *new_tp = *tp;
     if (tp->ptr_of) new_tp->ptr_of = dup_type(tp->ptr_of);
     return new_tp;
+}
+
+Node *dup_node(const Node *node) {
+    Node *new_node = malloc(sizeof(Node));
+    *new_node = *node;
+    return new_node;
 }
 
 //抽象構文木の生成（演算子）
