@@ -48,6 +48,7 @@ int map_get(const Map *map, const char *key, void**val) {
             return 1;
         }
     }
+    if (val) *val = NULL;
     return 0;
 }
 

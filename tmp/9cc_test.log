@@ -41,30 +41,37 @@ int main(){a++;}
                                   ^ 'a'は未定義の変数です
 # selftest ----------------
 # [ローカル変数の重複定義]
+int main(){int a; int a;}
+9cc:Error: selftest:1: int main(){int a; int a;}
+                                             ^ ローカル変数の重複定義です
+9cc:Note: selftest:1: int main(){int a; int a;}
+                                     ^ 以前の宣言はここです
+# selftest ----------------
+# [ローカル変数の重複定義]
 int main(){int a=1; int a=1;}
 9cc:Error: selftest:1: int main(){int a=1; int a=1;}
-                                               ^ 'a'はローカル変数の重複定義です
+                                               ^ ローカル変数の重複定義です
 9cc:Note: selftest:1: int main(){int a=1; int a=1;}
-                                     ^ 以前の定義はここです
+                                     ^ 以前の宣言はここです
 # selftest ----------------
 # [静的ローカル変数の重複定義]
 int main(){static int a=1, a=1;}
 9cc:Error: selftest:1: int main(){static int a=1, a=1;}
-                                                  ^ 'a'はローカル変数の重複定義です
+                                                  ^ ローカル変数の重複定義です
 9cc:Note: selftest:1: int main(){static int a=1, a=1;}
-                                            ^ 以前の定義はここです
+                                            ^ 以前の宣言はここです
 # selftest ----------------
 # [グローバル変数の重複定義]
 int a=1, a=1; void main(){}
 9cc:Error: selftest:1: int a=1, a=1; void main(){}
-                                ^ 'a'はグローバル変数の重複定義です
+                                ^ 初期値付きグローバル変数の重複定義です
 9cc:Note: selftest:1: int a=1, a=1; void main(){}
-                           ^ 以前の定義はここです
+                           ^ 以前の宣言はここです
 # selftest ----------------
 # [ローカル変数のstatic/auto]
 int main(){static int a; int a;}
 9cc:Error: selftest:1: int main(){static int a; int a;}
-                                                    ^ 型が一致しません
+                                                    ^ ローカル変数の重複定義です
 9cc:Note: selftest:1: int main(){static int a; int a;}
                                             ^ 以前の宣言はここです
 # selftest ----------------
@@ -250,13 +257,13 @@ int main(){extern static int a;}
 # selftest ----------------
 int main(){extern int x; extern int*x;}
 9cc:Error: selftest:1: int main(){extern int x; extern int*x;}
-                                                           ^ 型が一致しません
+                                                           ^ ローカル変数の重複定義です
 9cc:Note: selftest:1: int main(){extern int x; extern int*x;}
                                             ^ 以前の宣言はここです
 # selftest ----------------
 int main(){extern int x; extern int*x;}
 9cc:Error: selftest:1: int main(){extern int x; extern int*x;}
-                                                           ^ 型が一致しません
+                                                           ^ ローカル変数の重複定義です
 9cc:Note: selftest:1: int main(){extern int x; extern int*x;}
                                             ^ 以前の宣言はここです
 # selftest ----------------
@@ -295,7 +302,7 @@ int func(int , void); int main(){}
 # selftest ----------------
 int func(int a, char *a); int main(){}
 9cc:Error: selftest:1: int func(int a, char *a); int main(){}
-                                              ^ 型が一致しません
+                                              ^ ローカル変数の重複定義です
 9cc:Note: selftest:1: int func(int a, char *a); int main(){}
                                     ^ 以前の宣言はここです
 # selftest ----------------
@@ -307,7 +314,7 @@ void func(){} void func(){} int main(){}
 9cc:Error: selftest:1: void func(){} void func(){} int main(){}
                                               ^ 関数が再定義されています
 9cc:Note: selftest:1: void func(){} void func(){} int main(){}
-                               ^ 以前の関数はここです
+                               ^ 以前の宣言はここです
 # selftest ----------------
 int func;     void func(){} int main(){}
 9cc:Error: selftest:1: int func;     void func(){} int main(){}
@@ -347,7 +354,7 @@ int main(){extern int func(); extern int*func();}
 9cc:Error: selftest:1: int main(){extern int func(); extern int*func();}
                                                                 ^ 関数の型が一致しません
 9cc:Note: selftest:1: int main(){extern int func(); extern int*func();}
-                                            ^ 以前の関数はここです
+                                            ^ 以前の宣言はここです
 # selftest ----------------
 # [関数内でstaticな関数の宣言]
 int main(){static void func();}
@@ -498,49 +505,49 @@ int main(void); int main(int x){return 1:}
 9cc:Error: selftest:1: int main(void); int main(int x){return 1:}
                                                ^ 関数の型が一致しません
 9cc:Note: selftest:1: int main(void); int main(int x){return 1:}
-                              ^ 以前の関数はここです
+                              ^ 以前の宣言はここです
 # selftest ----------------
 int main(void); int main(int){return 1:}
 9cc:Error: selftest:1: int main(void); int main(int){return 1:}
                                                ^ 関数の型が一致しません
 9cc:Note: selftest:1: int main(void); int main(int){return 1:}
-                              ^ 以前の関数はここです
+                              ^ 以前の宣言はここです
 # selftest ----------------
 int main(void); int main(int x);
 9cc:Error: selftest:1: int main(void); int main(int x);
                                                ^ 関数の型が一致しません
 9cc:Note: selftest:1: int main(void); int main(int x);
-                              ^ 以前の関数はここです
+                              ^ 以前の宣言はここです
 # selftest ----------------
 void main(void){} void main(int);
 9cc:Error: selftest:1: void main(void){} void main(int);
                                                   ^ 関数の型が一致しません
 9cc:Note: selftest:1: void main(void){} void main(int);
-                               ^ 以前の関数はここです
+                               ^ 以前の宣言はここです
 # selftest ----------------
 int main(int); int main(int, ...);
 9cc:Error: selftest:1: int main(int); int main(int, ...);
                                               ^ 関数の型が一致しません
 9cc:Note: selftest:1: int main(int); int main(int, ...);
-                              ^ 以前の関数はここです
+                              ^ 以前の宣言はここです
 # selftest ----------------
 int main(int); int main(){return 1;};
 9cc:Error: selftest:1: int main(int); int main(){return 1;};
                                               ^ 関数の型が一致しません
 9cc:Note: selftest:1: int main(int); int main(){return 1;};
-                              ^ 以前の関数はここです
+                              ^ 以前の宣言はここです
 # selftest ----------------
 int func(void); int main(){int func(int);}
 9cc:Error: selftest:1: int func(void); int main(){int func(int);}
                                                       ^ 関数の型が一致しません
 9cc:Note: selftest:1: int func(void); int main(){int func(int);}
-                              ^ 以前の関数はここです
+                              ^ 以前の宣言はここです
 # selftest ----------------
 int main(){int func(void); int func(int);}
 9cc:Error: selftest:1: int main(){int func(void); int func(int);}
                                                       ^ 関数の型が一致しません
 9cc:Note: selftest:1: int main(){int func(void); int func(int);}
-                                     ^ 以前の関数はここです
+                                     ^ 以前の宣言はここです
 # selftest ----------------
 int main(){typedef int INT=1;}
 9cc:Error: selftest:1: int main(){typedef int INT=1;}
@@ -816,9 +823,9 @@ int main(){int a; _Static_assert(a,"aaa");}
 # selftest ----------------
 int main(){struct E; enum E;}
 9cc:Error: selftest:1: int main(){struct E; enum E;}
-                                                 ^ 'E'はタグの重複定義です
+                                                 ^ タグの重複定義です
 9cc:Note: selftest:1: int main(){struct E; enum E;}
-                                        ^ 以前の定義はここです
+                                        ^ 以前の宣言はここです
 # selftest ----------------
 int main(){enum E e;}
 9cc:Error: selftest:1: int main(){enum E e;}
@@ -836,9 +843,9 @@ int main(){enum E{};}
 # selftest ----------------
 int main(){enum E{A}; enum E{A};}
 9cc:Error: selftest:1: int main(){enum E{A}; enum E{A};}
-                                                    ^ 'A'はenum値の重複定義です
+                                                    ^ enum値の重複定義です
 9cc:Note: selftest:1: int main(){enum E{A}; enum E{A};}
-                                        ^ 以前の定義はここです
+                                        ^ 以前の宣言はここです
 # selftest ----------------
 int main(){enum E{A}; enum E{B};}
 9cc:Error: selftest:1: int main(){enum E{A}; enum E{B};}
@@ -854,21 +861,21 @@ int main(){enum E; enum E{A,B}; enum E{C,D};}
 # selftest ----------------
 int main(){int e; enum ABC{A,B,C} e;}
 9cc:Error: selftest:1: int main(){int e; enum ABC{A,B,C} e;}
-                                                         ^ 型が一致しません
+                                                         ^ ローカル変数の重複定義です
 9cc:Note: selftest:1: int main(){int e; enum ABC{A,B,C} e;}
                                      ^ 以前の宣言はここです
 # selftest ----------------
 int main(){enum ABC{A,B,C} e; int e;}
 9cc:Error: selftest:1: int main(){enum ABC{A,B,C} e; int e;}
-                                                         ^ 型が一致しません
+                                                         ^ ローカル変数の重複定義です
 9cc:Note: selftest:1: int main(){enum ABC{A,B,C} e; int e;}
                                                  ^ 以前の宣言はここです
 # selftest ----------------
 int main(){enum ABC{A,B,A} e;}
 9cc:Error: selftest:1: int main(){enum ABC{A,B,A} e;}
-                                               ^ 'A'はenum値の重複定義です
+                                               ^ enum値の重複定義です
 9cc:Note: selftest:1: int main(){enum ABC{A,B,A} e;}
-                                          ^ 以前の定義はここです
+                                          ^ 以前の宣言はここです
 # selftest ----------------
 int main(){enum ABC{A,B,C} e; enum ABC{X,Y,Z} x;}
 9cc:Error: selftest:1: int main(){enum ABC{A,B,C} e; enum ABC{X,Y,Z} x;}
@@ -878,9 +885,9 @@ int main(){enum ABC{A,B,C} e; enum ABC{X,Y,Z} x;}
 # selftest ----------------
 int main(){enum ABC{A,B,C} e; enum XYZ{A,Y,Z} x;}
 9cc:Error: selftest:1: int main(){enum ABC{A,B,C} e; enum XYZ{A,Y,Z} x;}
-                                                              ^ 'A'はenum値の重複定義です
+                                                              ^ enum値の重複定義です
 9cc:Note: selftest:1: int main(){enum ABC{A,B,C} e; enum XYZ{A,Y,Z} x;}
-                                          ^ 以前の定義はここです
+                                          ^ 以前の宣言はここです
 # selftest ----------------
 int main(){enum ABC{A,B,C}; enum ABC{P,Q,R} e;}
 9cc:Error: selftest:1: int main(){enum ABC{A,B,C}; enum ABC{P,Q,R} e;}
@@ -895,9 +902,9 @@ int main(){enum ABC{A,B,C}; unsigned enum ABC abc;}
 # selftest ----------------
 int main(){enum S; struct S;}
 9cc:Error: selftest:1: int main(){enum S; struct S;}
-                                                 ^ 'S'はタグの重複定義です
+                                                 ^ タグの重複定義です
 9cc:Note: selftest:1: int main(){enum S; struct S;}
-                                      ^ 以前の定義はここです
+                                      ^ 以前の宣言はここです
 # selftest ----------------
 int main(){struct S e;}
 9cc:Error: selftest:1: int main(){struct S e;}
@@ -918,7 +925,7 @@ int main(){struct S{int a;}e; struct S{int a;}e2;}
 # selftest ----------------
 int main(){struct S{int a; int a;}s;}
 9cc:Error: selftest:1: int main(){struct S{int a; int a;}s;}
-                                                      ^ aはメンバの重複定義です
+                                                      ^ メンバの重複定義です
 9cc:Note: selftest:1: int main(){struct S{int a; int a;}s;}
                                               ^ 以前の宣言はここです
 # selftest ----------------
@@ -1074,9 +1081,9 @@ int main(){typedef struct{int a;}ST; ST st; void func(ST); func(&st);}
 # selftest ----------------
 int main(){struct U; union U;}
 9cc:Error: selftest:1: int main(){struct U; union U;}
-                                                  ^ 'U'はタグの重複定義です
+                                                  ^ タグの重複定義です
 9cc:Note: selftest:1: int main(){struct U; union U;}
-                                        ^ 以前の定義はここです
+                                        ^ 以前の宣言はここです
 # selftest ----------------
 int main(){union U u;}
 9cc:Error: selftest:1: int main(){union U u;}
@@ -1097,13 +1104,13 @@ int main(){union U{int a;}; union U{int a;};}
 # selftest ----------------
 int main(){union U{int a; int a;};}
 9cc:Error: selftest:1: int main(){union U{int a; int a;};}
-                                                     ^ aはメンバの重複定義です
+                                                     ^ メンバの重複定義です
 9cc:Note: selftest:1: int main(){union U{int a; int a;};}
                                              ^ 以前の宣言はここです
 # selftest ----------------
 int main(){union U{int a; int b;}u; int u;}
 9cc:Error: selftest:1: int main(){union U{int a; int b;}u; int u;}
-                                                               ^ 型が一致しません
+                                                               ^ ローカル変数の重複定義です
 9cc:Note: selftest:1: int main(){union U{int a; int b;}u; int u;}
                                                        ^ 以前の宣言はここです
 # selftest ----------------
@@ -1233,13 +1240,13 @@ void func3(char*str){}          void func3(const char*str); void main(){}
 9cc:Error: selftest:1: void func3(char*str){}          void func3(const char*str); void main(){}
                                                                  ^ 関数の型が一致しません
 9cc:Note: selftest:1: void func3(char*str){}          void func3(const char*str); void main(){}
-                                ^ 以前の関数はここです
+                                ^ 以前の宣言はここです
 # selftest ----------------
 char*func3(void){return 0;}          const char*func3(void); void main(){}
 9cc:Error: selftest:1: char*func3(void){return 0;}          const char*func3(void); void main(){}
                                                                             ^ 関数の型が一致しません
 9cc:Note: selftest:1: char*func3(void){return 0;}          const char*func3(void); void main(){}
-                                ^ 以前の関数はここです
+                                ^ 以前の宣言はここです
 9cc self test
 Total : 268
    Ok : 268

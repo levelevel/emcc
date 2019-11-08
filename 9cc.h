@@ -425,7 +425,7 @@ void check_funccall(Node *node);
 void check_funcargs(Node *node, int def_mode);
 int type_eq(const Type *tp1, const Type *tp2);
 int type_eq_global(const Type *tp1, const Type *tp2);
-int type_eq_func_ret(const Type *tp1, const Type *tp2);
+int type_eq_ex_sclass(const Type *tp1, const Type *tp2);
 Status type_eq_check(const Type *tp1, const Type *tp2);
 Funcdef *new_funcdef(void);
 Type *new_type_ptr(Type*ptr);
