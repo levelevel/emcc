@@ -1174,13 +1174,13 @@ int main(){struct{int a; union U{int ua; long ub;};};}
 # selftest ----------------
 int main(){struct{int a; union  {int  a; long ub;};};}
 9cc:Error: selftest:1: int main(){struct{int a; union  {int  a; long ub;};};}
-                                                             ^ aはメンバの重複定義です
+                                                             ^ メンバの重複定義です
 9cc:Note: selftest:1: int main(){struct{int a; union  {int  a; long ub;};};}
                                             ^ 以前の宣言はここです
 # selftest ----------------
 int main(){struct{int a; union  {int ua; long ub;}; int ua};}
 9cc:Error: selftest:1: int main(){struct{int a; union  {int ua; long ub;}; int ua};}
-                                                                               ^ uaはメンバの重複定義です
+                                                                               ^ メンバの重複定義です
 9cc:Note: selftest:1: int main(){struct{int a; union  {int ua; long ub;}; int ua};}
                                                            ^ 以前の宣言はここです
 # selftest ----------------
@@ -1190,13 +1190,13 @@ int main(){union{int a; struct S{int sa; long sb;};};}
 # selftest ----------------
 int main(){union{int a; struct  {int  a; long sb;};};}
 9cc:Error: selftest:1: int main(){union{int a; struct  {int  a; long sb;};};}
-                                                             ^ aはメンバの重複定義です
+                                                             ^ メンバの重複定義です
 9cc:Note: selftest:1: int main(){union{int a; struct  {int  a; long sb;};};}
                                            ^ 以前の宣言はここです
 # selftest ----------------
 int main(){union{int a; struct  {int sa; long sb;}; int sa};}
 9cc:Error: selftest:1: int main(){union{int a; struct  {int sa; long sb;}; int sa};}
-                                                                               ^ saはメンバの重複定義です
+                                                                               ^ メンバの重複定義です
 9cc:Note: selftest:1: int main(){union{int a; struct  {int sa; long sb;}; int sa};}
                                                            ^ 以前の宣言はここです
 # selftest ----------------
@@ -1248,6 +1248,6 @@ char*func3(void){return 0;}          const char*func3(void); void main(){}
 9cc:Note: selftest:1: char*func3(void){return 0;}          const char*func3(void); void main(){}
                                 ^ 以前の宣言はここです
 9cc self test
-Total : 268
-   Ok : 268
+Total : 269
+   Ok : 269
    NG : 0

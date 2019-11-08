@@ -348,16 +348,6 @@ void regist_var_def(Node *node) {
             }
             if (node->type==ND_UNDEF) node->type = ND_LOCAL_VAR_DEF;
             map_put(symbol_map, name, node);
-
-            if (sclass==SC_STATIC) {
-                vec_push(static_var_vec, node);
-            }
-
-        } else if ((reg_node->type==ND_GLOBAL_VAR_DEF && !type_eq_global(reg_node->tp, node->tp)) ||
-                   (reg_node->type==ND_LOCAL_VAR_DEF  && !type_eq       (reg_node->tp, node->tp))) {
-            SET_ERROR_WITH_NOTE;
-            error_at(node->input, "型が一致しません");
-            note_at(reg_node->input, "以前の宣言はここです");
         } else {
             error_with_note(node, reg_node, "ローカル変数の重複定義です");
         }
