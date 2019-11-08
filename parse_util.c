@@ -278,6 +278,12 @@ void unuse_string_literal(int index) {
 // ==================================================
 // 以下はparse.cローカル
 
+static void error_with_note(const Node *node, const Node *prev, const char *msg) {
+    SET_ERROR_WITH_NOTE;
+    error_at(node->input, msg);
+    note_at(prev->input, "以前の宣言はここです");
+}
+
 //nameをスコープの内側から検索してNodeを返す
 Node *search_symbol(const char *name) {
     Node *node = NULL;
@@ -309,23 +315,26 @@ void regist_var_def(Node *node) {
     if (cur_structdef!=NULL) {      //構造体内であればメンバ
         if (map_get(cur_structdef->map, node->name, (void**)&reg_node)==0) {
             map_put(cur_structdef->map, name, node);
-        } else if (!type_eq(reg_node->tp, node->tp)) {
-            SET_ERROR_WITH_NOTE;
-            error_at(node->input, "型が一致しません");
-            note_at(reg_node->input, "以前の宣言はここです");
         } else {
-            SET_ERROR_WITH_NOTE;
-            error_at(node->input, "%sはメンバの重複定義です", name);
-            note_at(reg_node->input, "以前の宣言はここです");
+            error_with_note(node, reg_node, "メンバの重複定義です");
         }
         return;
     } else if (cur_funcdef!=NULL) { //関数内であればローカル
         Map *symbol_map = stack_top(symbol_stack); 
-        if (map_get(symbol_map, name, (void**)&reg_node)==0) {
-            StorageClass sclass = get_storage_class(node->tp);
+        StorageClass sclass = get_storage_class(node->tp);
+        map_get(symbol_map, name, (void**)&reg_node);
+        Node *reg_node2 = search_symbol(name);
+        if (sclass==SC_EXTERN || node->tp->type==FUNC) {
+            if (reg_node2 && !type_eq_ex_sclass(reg_node2->tp, node->tp)) {
+                error_with_note(node, reg_node2, "ローカル変数の重複定義です");
+            }
+            map_put(symbol_map, name, node);
+        } else 
+        if (reg_node==NULL) {
             switch (sclass) {
             case SC_STATIC:
                 node->index = global_index++;
+                vec_push(static_var_vec, node);
                 break;
             case SC_EXTERN:
             case SC_TYPEDEF:
@@ -335,28 +344,10 @@ void regist_var_def(Node *node) {
             }
             if (node->type==ND_UNDEF) node->type = ND_LOCAL_VAR_DEF;
             map_put(symbol_map, name, node);
-
-            if (sclass==SC_STATIC) {
-                vec_push(static_var_vec, node);
-            }
-        } else if ((reg_node->type==ND_GLOBAL_VAR_DEF && !type_eq_global(reg_node->tp, node->tp)) ||
-                   (reg_node->type==ND_LOCAL_VAR_DEF  && !type_eq       (reg_node->tp, node->tp))) {
-            SET_ERROR_WITH_NOTE;
-            error_at(node->input, "型が一致しません");
-            note_at(reg_node->input, "以前の宣言はここです");
         } else {
-            int has_init_value1 = (reg_node->rhs!=NULL);
-            int has_init_value2 = (node->rhs!=NULL);
-            if (has_init_value1 && has_init_value2) {
-                SET_ERROR_WITH_NOTE;
-                error_at(node->input, "'%s'はローカル変数の重複定義です", name);
-                note_at(reg_node->input, "以前の定義はここです");
-            } else if (has_init_value2) {
-                map_put(symbol_map, name, node);
-                reg_node->unused = 1;
-            }
-            if (node->type==ND_UNDEF) node->type = ND_LOCAL_VAR_DEF;
+            error_with_note(node, reg_node, "ローカル変数の重複定義です");
         }
+        if (node->type==ND_UNDEF) node->type = ND_LOCAL_VAR_DEF;
     }
 
     if (cur_funcdef==NULL ||        //関数外であればグローバル
@@ -365,16 +356,12 @@ void regist_var_def(Node *node) {
         if (map_get(global_symbol_map, name, (void**)&reg_node)==0) {
             map_put(global_symbol_map, name, node);
         } else if (node->type!=ND_LOCAL_VAR_DEF && !type_eq_global(reg_node->tp, node->tp)) {
-            SET_ERROR_WITH_NOTE;
-            error_at(node->input, "型が一致しません");
-            note_at(reg_node->input, "以前の宣言はここです");
+            error_with_note(node, reg_node, "型が一致しません");
         } else {
             int has_init_value1 = (reg_node->rhs!=NULL);
             int has_init_value2 = (node->rhs!=NULL);
             if (has_init_value1 && has_init_value2) {
-                SET_ERROR_WITH_NOTE;
-                error_at(node->input, "'%s'はグローバル変数の重複定義です", name);
-                note_at(reg_node->input, "以前の定義はここです");
+                error_with_note(node, reg_node, "初期値付きグローバル変数の重複定義です");
             } else if (has_init_value2) {
                 reg_node->unused = 1;
                 map_put(global_symbol_map, name, node);
@@ -398,16 +385,12 @@ void regist_func(Node *node, int full_check) {
         return;
     } else if (def_node->type==ND_GLOBAL_VAR_DEF) {
         error_at(node->input, "'%s'は異なる種類のシンボルとして再定義されています", node->name);
-    } else if (!type_eq_func_ret(def_node->tp, node->tp)) {
-        SET_ERROR_WITH_NOTE;
-        error_at(node->input, "関数の型が一致しません");
-        note_at(def_node->input, "以前の関数はここです");
+    } else if (!type_eq_ex_sclass(def_node->tp, node->tp)) {
+        error_with_note(node, def_node, "関数の型が一致しません");
     } else if (!full_check) {
         return;
     } else if (def_node->type==ND_FUNC_DEF && node->type==ND_FUNC_DEF) {
-        SET_ERROR_WITH_NOTE;
-        error_at(node->input, "関数が再定義されています");
-        note_at(def_node->input, "以前の関数はここです");
+        error_with_note(node, def_node, "関数が再定義されています");
     } else if (def_node->type==ND_FUNC_DECL && node->type==ND_FUNC_DEF) {
         map_put(global_symbol_map, node->name, node);
     }
@@ -421,9 +404,7 @@ void regist_symbol(Node *node) {
     if (map_get(symbol_map, name, (void**)&node2)==0) {
         map_put(symbol_map, name, node);
     } else {
-        SET_ERROR_WITH_NOTE;
-        error_at(node->input, "'%s'はenum値の重複定義です", name);
-        note_at(node2->input, "以前の定義はここです");
+        error_with_note(node, node2, "enum値の重複定義です");
     }
 }
 
@@ -455,9 +436,7 @@ void regist_tagname(Node *node) {
         }
     } else if (map_get(tagname_map, name, (void**)&node3)) {
         //同一スコープ内での再定義はできない
-        SET_ERROR_WITH_NOTE;
-        error_at(node->input, "'%s'はタグの重複定義です", name);
-        note_at(node3->input, "以前の定義はここです");
+        error_with_note(node, node3, "タグの重複定義です");
     } else {
         //異なるスコープであれば問題ない
         map_put(tagname_map, name, node);
@@ -649,7 +628,7 @@ static int func_arg_eq(Node *node1, Node *node2) {
     return 1;
 }
 
-//型が等しいかどうかを判定する（constは今は無視）
+//型が等しいかどうかを判定する
 int type_eq(const Type *tp1, const Type *tp2) {
     if (tp1->type != tp2->type) return 0;
     if (tp1->is_unsigned != tp2->is_unsigned) return 0;
@@ -679,7 +658,7 @@ int type_eq_global(const Type *tp1, const Type *tp2) {
 }
 
 //  関数の戻り値の型が等しいかどうかを判定する（storage classは無視）
-int type_eq_func_ret(const Type *tp1, const Type *tp2) {
+int type_eq_ex_sclass(const Type *tp1, const Type *tp2) {
     if (tp1->type != tp2->type) return 0;
     if (tp1->is_unsigned != tp2->is_unsigned) return 0;
     if (tp1->is_const != tp2->is_const) return 0;
@@ -687,7 +666,7 @@ int type_eq_func_ret(const Type *tp1, const Type *tp2) {
     if (tp1->array_size != tp2->array_size) return 0;
     if (tp1->type==FUNC && !func_arg_eq(tp1->node, tp2->node)) return 0;
     if (type_is_struct_or_union(tp1) && tp1->node!=tp2->node) return 0;
-    if (tp1->ptr_of) return type_eq_func_ret(tp1->ptr_of, tp2->ptr_of);
+    if (tp1->ptr_of) return type_eq_ex_sclass(tp1->ptr_of, tp2->ptr_of);
     return 1;
 }
 

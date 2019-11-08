@@ -48,6 +48,7 @@ int map_get(const Map *map, const char *key, void**val) {
             return 1;
         }
     }
+    if (val) *val = NULL;
     return 0;
 }
 
@@ -281,6 +282,7 @@ static const char *get_TPType_str(TPType type) {
     ENUM2STR(LONGLONG);
     ENUM2STR(ENUM);
     ENUM2STR(STRUCT);
+    ENUM2STR(UNION);
     ENUM2STR(PTR);
     ENUM2STR(ARRAY);
     ENUM2STR(FUNC);
