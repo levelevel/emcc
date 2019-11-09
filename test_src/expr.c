@@ -1810,7 +1810,8 @@ static int Struct1(void) {
     };
     typedef struct S S_t;
     struct S a={0};
-    struct S b={11,22,33,44,&a,55,{66,77,88}};
+    int i22 = 22;
+    struct S b={11,i22,i22+11,44,&a,55,{66,77,88}};
     struct S;
     struct {
         char s[5];
@@ -1832,7 +1833,7 @@ static int Struct1(void) {
         && _Alignof(struct S)==8 && _Alignof(a)==8 && _Alignof(a.c)==1 && _Alignof(S_t)==8 && _Alignof(s3)==4
         && a.a+a.b+a.c+a.d+a.e==15 && a.s2.x+a.s2.y+a.s2.z==33
         && s3.a[0]+s3.a[1]+s3.a[2]==6
-        && b.p->b==2 && b.p->s2.z==12;
+        && b.b==22 && b.c==33 && b.p->b==2 && b.p->s2.z==12;
 }
 static int Struct1arrow(void) {
     struct S;
@@ -1846,7 +1847,8 @@ static int Struct1arrow(void) {
     };
     typedef struct S S_t;
     struct S a, *ap=&a;
-    struct S b={11,22,33,44,&a,55,{66,77,88}}, *bp=&b;
+    int i22 = 22;
+    struct S b={11,i22,i22+11,44,&a,55,{66,77,88}}, *bp=&b;
     struct S;
     struct {
         char s[5];
@@ -1870,7 +1872,7 @@ static int Struct1arrow(void) {
         && s3.a[0]+s3.a[1]+s3.a[2]==6
         && ap->a+ap->b+ap->c+ap->d+ap->e==15 && ap->s2.x+ap->s2.y+ap->s2.z==33
         && s3p->a[0]+s3p->a[1]+s3p->a[2]==6
-        && bp->p->b==2 && bp->p->s2.z==12;
+        && bp->b==22 && bp->c==33 && bp->p->b==2 && bp->p->s2.z==12;
 }
 static int Struct2(void) {
     typedef struct XYZ {

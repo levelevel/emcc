@@ -133,44 +133,44 @@ test_src/expr.c:1776:22: warning: empty declaration with storage class specifier
          typedef enum ABC;
                       ^~~
 test_src/expr.c: In function ‘Struct2’:
-test_src/expr.c:1889:5: warning: braces around scalar initializer
+test_src/expr.c:1891:5: warning: braces around scalar initializer
      XYZ xyz = {{1,2,3},4,{5,6}};
      ^~~
-test_src/expr.c:1889:5: note: (near initialization for ‘xyz.x’)
-test_src/expr.c:1889:19: warning: excess elements in scalar initializer
+test_src/expr.c:1891:5: note: (near initialization for ‘xyz.x’)
+test_src/expr.c:1891:19: warning: excess elements in scalar initializer
      XYZ xyz = {{1,2,3},4,{5,6}};
                    ^
-test_src/expr.c:1889:19: note: (near initialization for ‘xyz.x’)
-test_src/expr.c:1889:21: warning: excess elements in scalar initializer
+test_src/expr.c:1891:19: note: (near initialization for ‘xyz.x’)
+test_src/expr.c:1891:21: warning: excess elements in scalar initializer
      XYZ xyz = {{1,2,3},4,{5,6}};
                      ^
-test_src/expr.c:1889:21: note: (near initialization for ‘xyz.x’)
-test_src/expr.c:1889:5: warning: braces around scalar initializer
+test_src/expr.c:1891:21: note: (near initialization for ‘xyz.x’)
+test_src/expr.c:1891:5: warning: braces around scalar initializer
      XYZ xyz = {{1,2,3},4,{5,6}};
      ^~~
-test_src/expr.c:1889:5: note: (near initialization for ‘xyz.z’)
-test_src/expr.c:1889:29: warning: excess elements in scalar initializer
+test_src/expr.c:1891:5: note: (near initialization for ‘xyz.z’)
+test_src/expr.c:1891:29: warning: excess elements in scalar initializer
      XYZ xyz = {{1,2,3},4,{5,6}};
                              ^
-test_src/expr.c:1889:29: note: (near initialization for ‘xyz.z’)
+test_src/expr.c:1891:29: note: (near initialization for ‘xyz.z’)
 test_src/expr.c: In function ‘StaticStruct1’:
-test_src/expr.c:1905:5: warning: useless storage class specifier in empty declaration
+test_src/expr.c:1907:5: warning: useless storage class specifier in empty declaration
      };
      ^
 test_src/expr.c: In function ‘Union2’:
-test_src/expr.c:2039:16: warning: excess elements in union initializer
+test_src/expr.c:2041:16: warning: excess elements in union initializer
      } u10 = {1,2}, u1=u10;
                 ^
-test_src/expr.c:2039:16: note: (near initialization for ‘u10’)
+test_src/expr.c:2041:16: note: (near initialization for ‘u10’)
 test_src/expr.c: In function ‘func_const2’:
-test_src/expr.c:2168:12: warning: return discards ‘const’ qualifier from pointer target type [-Wdiscarded-qualifiers]
+test_src/expr.c:2170:12: warning: return discards ‘const’ qualifier from pointer target type [-Wdiscarded-qualifiers]
      return str; //warning: return discards 'const' qualifier from pointer target type [-Wdiscarded-qualifiers]
             ^~~
 test_src/expr.c: In function ‘Const’:
-test_src/expr.c:2177:17: warning: passing argument 1 of ‘func_const3’ discards ‘const’ qualifier from pointer target type [-Wdiscarded-qualifiers]
+test_src/expr.c:2179:17: warning: passing argument 1 of ‘func_const3’ discards ‘const’ qualifier from pointer target type [-Wdiscarded-qualifiers]
      func_const3(p1);    //warning
                  ^~
-test_src/expr.c:2170:14: note: expected ‘char *’ but argument is of type ‘const char *’
+test_src/expr.c:2172:14: note: expected ‘char *’ but argument is of type ‘const char *’
  static char *func_const3(char*str){return str;}
               ^~~~~~~~~~~
   OK: logical1
