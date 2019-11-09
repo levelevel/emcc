@@ -279,8 +279,8 @@ typedef struct {
 #define type_is_ptr(_tp) ((_tp)->type==PTR || (_tp)->type==ARRAY)
 #define node_is_ptr(_node) type_is_ptr((_node)->tp)
 #define node_is_var_def(_node) ((_node)->type==ND_LOCAL_VAR_DEF || (_node)->type==ND_GLOBAL_VAR_DEF || (_node)->type==ND_MEMBER_DEF)
-//#define node_is_anonymouse_struct_or_union(_node) (type_is_struct_or_union((_node)->tp) && (_node)->name==NULL)
-#define node_is_anonymouse_struct_or_union(_node) (node_is_var_def(_node) && type_is_struct_or_union((_node)->tp) && (_node)->name==NULL)
+#define node_is_anonymouse_struct_or_union(_node) (type_is_struct_or_union((_node)->tp) && (_node)->name==NULL)
+//#define node_is_anonymouse_struct_or_union(_node) (node_is_var_def(_node) && type_is_struct_or_union((_node)->tp) && (_node)->name==NULL)
 
 //アサーション
 #define COMPILE_ERROR 0

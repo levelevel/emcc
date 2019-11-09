@@ -153,24 +153,24 @@ test_src/expr.c:1889:29: warning: excess elements in scalar initializer
      XYZ xyz = {{1,2,3},4,{5,6}};
                              ^
 test_src/expr.c:1889:29: note: (near initialization for ‘xyz.z’)
-test_src/expr.c: In function ‘sStruct1’:
+test_src/expr.c: In function ‘StaticStruct1’:
 test_src/expr.c:1905:5: warning: useless storage class specifier in empty declaration
      };
      ^
 test_src/expr.c: In function ‘Union2’:
-test_src/expr.c:1997:16: warning: excess elements in union initializer
+test_src/expr.c:2039:16: warning: excess elements in union initializer
      } u10 = {1,2}, u1=u10;
                 ^
-test_src/expr.c:1997:16: note: (near initialization for ‘u10’)
+test_src/expr.c:2039:16: note: (near initialization for ‘u10’)
 test_src/expr.c: In function ‘func_const2’:
-test_src/expr.c:2086:12: warning: return discards ‘const’ qualifier from pointer target type [-Wdiscarded-qualifiers]
+test_src/expr.c:2168:12: warning: return discards ‘const’ qualifier from pointer target type [-Wdiscarded-qualifiers]
      return str; //warning: return discards 'const' qualifier from pointer target type [-Wdiscarded-qualifiers]
             ^~~
 test_src/expr.c: In function ‘Const’:
-test_src/expr.c:2095:17: warning: passing argument 1 of ‘func_const3’ discards ‘const’ qualifier from pointer target type [-Wdiscarded-qualifiers]
+test_src/expr.c:2177:17: warning: passing argument 1 of ‘func_const3’ discards ‘const’ qualifier from pointer target type [-Wdiscarded-qualifiers]
      func_const3(p1);    //warning
                  ^~
-test_src/expr.c:2088:14: note: expected ‘char *’ but argument is of type ‘const char *’
+test_src/expr.c:2170:14: note: expected ‘char *’ but argument is of type ‘const char *’
  static char *func_const3(char*str){return str;}
               ^~~~~~~~~~~
   OK: logical1
@@ -322,10 +322,14 @@ test_src/expr.c:2088:14: note: expected ‘char *’ but argument is of type ‘
   OK: Struct1
   OK: Struct1arrow
   OK: Struct2
-  OK: sStruct1
+  OK: StaticStruct1
+  OK: AnonymouseStruct1
+  OK: AnonymouseStruct2
   OK: Struct
   OK: Union1
   OK: Union2
+  OK: AnonymouseUnion1
+  OK: AnonymouseUnion2
   OK: Union
   OK: typedef1
   OK: typedef1p

@@ -1893,7 +1893,7 @@ static int Struct2(void) {
         && xyz.x==1 && xyz.y==4 && xyz.z==5 && memcmp(&st0, &st, sizeof(st))==0;
 }
 
-static int sStruct1(void) {
+static int StaticStruct1(void) {
     struct S;
     static struct S {
         int a,b;
@@ -1904,8 +1904,8 @@ static int sStruct1(void) {
         S2 s2;
     };
     typedef struct S S_t;
-    static struct S a;//={0};
-    static struct S b;//={11,22,33,44,&a,55,{66,77,88}};
+    static struct S a;//={0};//★
+    static struct S b;//={11,22,33,44,&a,55,{66,77,88}};//★
     struct S;
     static struct {
         char s[5];
@@ -1927,15 +1927,57 @@ static int sStruct1(void) {
         && _Alignof(struct S)==8 && _Alignof(a)==8 && _Alignof(a.c)==1 && _Alignof(S_t)==8 && _Alignof(s3)==4
         && a.a+a.b+a.c+a.d+a.e==15 && a.s2.x+a.s2.y+a.s2.z==33
         && s3.a[0]+s3.a[1]+s3.a[2]==6
-        //&& b.p->b==2 && b.p->s2.z==12
+        //&& b.p->b==2 && b.p->s2.z==12//★
         ;
+}
+static int AnonymouseStruct1(void) {
+    struct ST{
+        int a;
+        struct {
+            int b;
+            char c;
+            long d;
+        };
+        int e;
+    };
+    struct ST st1;
+    st1.a = 1;
+    st1.b = 2;
+    st1.c = 3;
+    st1.d = 4;
+    st1.e = 5;
+    struct ST st2 = {1,2,3,4,5};
+    return st1.a==1 && st1.b==2 && st1.c==3 && st1.d==4 && st1.e==5
+        && st2.a==1 && st2.b==2 && st2.c==3 && st2.d==4 && st2.e==5;
+}
+static int AnonymouseStruct2(void) {
+    union UN{
+        short a;
+        struct {
+            int b;
+            char c;
+            long d;
+        };
+        int e;
+    };
+    union UN un1;
+    un1.a = 1;  //5
+    un1.b = 2;  //5
+    un1.c = 3;
+    un1.d = 4;
+    un1.e = 5;
+    union UN un2 = {1};
+    return un1.a==5 && un1.b==5 && un1.c==3 && un1.d==4 && un1.e==5
+        && un2.a==1 && un2.b==1 && un2.c==0 && un2.d==0 && un2.e==1;
 }
 static int Struct(void) {
     TEST(Struct1);
     TEST(Struct1arrow);
     TEST(Struct2);
 
-    TEST(sStruct1);
+    TEST(StaticStruct1);
+    TEST(AnonymouseStruct1);
+    TEST(AnonymouseStruct2);
     return 1;
 }
 
@@ -2005,9 +2047,49 @@ static int Union2(void) {
     return u1.c==1 && memcmp(&u1, &u10, sizeof(u1))==0
         && u2.l==2 && memcmp(&u2, &u20, sizeof(u2))==0;
 }
+static int AnonymouseUnion1(void) {
+    struct ST{
+        int a;
+        union {
+            int b;
+            char c;
+            long d;
+        };
+        int e;
+    }st1;
+    st1.a = 1;
+    st1.b = 2;  //4
+    st1.c = 3;  //4
+    st1.d = 4;
+    st1.e = 5;
+    struct ST st2 = {1,4,5};
+    return st1.a==1 && st1.b==4 && st1.c==4 && st1.d==4 && st1.e==5
+        && st2.a==1 && st2.b==4 && st2.c==4 && st2.d==4 && st2.e==5;
+}
+static int AnonymouseUnion2(void) {
+    union UN{
+        int a;
+        union {
+            int b;
+            char c;
+            long d;
+        };
+        int e;
+    }un1;
+    un1.a = 1;  //5
+    un1.b = 2;  //5
+    un1.c = 3;  //5
+    un1.d = 4;  //5
+    un1.e = 5;
+    union UN un2 = {1};
+    return un1.a==5 && un1.b==5 && un1.c==5 && un1.d==5 && un1.e==5
+        && un2.a==1 && un2.b==1 && un2.c==1 && un2.d==1 && un2.e==1;
+}
 static int Union(void) {
     TEST(Union1);
     TEST(Union2);
+    TEST(AnonymouseUnion1);
+    TEST(AnonymouseUnion2);
     return 1;
 }
 

@@ -1204,21 +1204,11 @@ static Node *compound_statement(int is_func_body) {
     while (!consume('}')) {
         Node *block_item;
         if (token_is_type_spec() || token_is(TK_SASSERT)) {
+            char *input = input_str();
             block_item = declaration(NULL, NULL);
             if (block_item->type==ND_TYPE_DECL && block_item->name==NULL &&
                 type_is_struct_or_union(block_item->tp) && block_item->tp->node->name[0]=='<') {
-                //  int a;
-                //  union {         //<==block_item: 無名構造体・共用体
-                //      int  ua;    //スコープを親のレベルに引き上げる
-                //      long ub;
-                //  };
-                block_item = dup_node(block_item->tp->node);
-                block_item->type = ND_LOCAL_VAR_DEF;
-                Vector *src_lst = block_item->lst;
-                for (int i=0; i<lst_len(src_lst); i++) {
-                    regist_var_def((Node*)lst_data(src_lst,i));
-                }
-                dump_node(block_item,__func__);
+                warning_at(input, "意味のない宣言です");
             }
         } else {
             block_item = statement();

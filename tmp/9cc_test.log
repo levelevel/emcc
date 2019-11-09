@@ -1168,32 +1168,88 @@ int main(){typedef union{int a;}UN; UN un; void func(UN); func(&un);}
 9cc:Note: selftest:1: int main(){typedef union{int a;}UN; UN un; void func(UN); func(&un);}
                                                                            ^ 関数の定義はここです
 # selftest ----------------
+# [構造体・共用体の初期化リストが要素数を超えています]
+int main(){struct{int x,y;}st={1,2,3}; return 0;}
+9cc:Warning: selftest:1: int main(){struct{int x,y;}st={1,2,3}; return 0;}
+                                                            ^ 構造体・共用体の初期化リストが要素数を超えています
+# selftest ----------------
+# [構造体・共用体の初期化リストが要素数を超えています]
+int main(){struct{int a,b; struct{int x,y;}s;}st={0,0,{1,2,3}}; return 0;}
+9cc:Warning: selftest:1: int main(){struct{int a,b; struct{int x,y;}s;}st={0,0,{1,2,3}}; return 0;}
+                                                                                    ^ 構造体・共用体の初期化リストが要素数を超えています
+# selftest ----------------
+# [構造体・共用体の初期化リストが要素数を超えています]
+int main(){struct{int a,b; struct{int x,y;} ;}st={0,0,{1,2,3}}; return 0;}
+9cc:Warning: selftest:1: int main(){struct{int a,b; struct{int x,y;} ;}st={0,0,{1,2,3}}; return 0;}
+                                                                                    ^ 構造体・共用体の初期化リストが要素数を超えています
+# selftest ----------------
+# [構造体・共用体の初期化リストが要素数を超えています]
+int main(){union {int x,y;}un={1,2}; return 0;}
+9cc:Warning: selftest:1: int main(){union {int x,y;}un={1,2}; return 0;}
+                                                          ^ 構造体・共用体の初期化リストが要素数を超えています
+# selftest ----------------
+# [構造体・共用体の初期化リストが要素数を超えています]
+int main(){struct{int a,b; union{int x,y;}u;}un={0,0,{1,2}}; return 0;}
+9cc:Warning: selftest:1: int main(){struct{int a,b; union{int x,y;}u;}un={0,0,{1,2}}; return 0;}
+                                                                                 ^ 構造体・共用体の初期化リストが要素数を超えています
+# selftest ----------------
+# [構造体・共用体の初期化リストが要素数を超えています]
+int main(){struct{int a,b; union{int x,y;} ;}un={0,0,{1,2}}; return 0;}
+9cc:Warning: selftest:1: int main(){struct{int a,b; union{int x,y;} ;}un={0,0,{1,2}}; return 0;}
+                                                                                 ^ 構造体・共用体の初期化リストが要素数を超えています
+# selftest ----------------
+# [スカラーがリストで初期化されています]
+int main(){struct{int x,y;}st={1,{2,3}}; return 0;}
+9cc:Warning: selftest:1: int main(){struct{int x,y;}st={1,{2,3}}; return 0;}
+                                                           ^ スカラーがリストで初期化されています
+# selftest ----------------
+# [スカラーがリストで初期化されています]
+int main(){union {int x,y;}st={{2,3}}; return 0;}
+9cc:Warning: selftest:1: int main(){union {int x,y;}st={{2,3}}; return 0;}
+                                                         ^ スカラーがリストで初期化されています
+# selftest ----------------
+# [ネストしていない無名構造体:]
+int main(){struct {int sa; long sb;};}
+9cc:Warning: selftest:1: int main(){struct {int sa; long sb;};}
+                                    ^ 意味のない宣言です
+# selftest ----------------
+# [ネストしていない無名共用体:]
+int main(){union  {int ua; long ub;};}
+9cc:Warning: selftest:1: int main(){union  {int ua; long ub;};}
+                                    ^ 意味のない宣言です
+# selftest ----------------
+# [構造体の中の無名共用体:タグ付きは変数名必要]
 int main(){struct{int a; union U{int ua; long ub;};};}
 9cc:Error: selftest:1: int main(){struct{int a; union U{int ua; long ub;};};}
                                                                          ^ 識別子（変数名）が期待されています
 # selftest ----------------
+# [構造体の中の無名共用体:変数名重複:前]
 int main(){struct{int a; union  {int  a; long ub;};};}
 9cc:Error: selftest:1: int main(){struct{int a; union  {int  a; long ub;};};}
                                                              ^ メンバの重複定義です
 9cc:Note: selftest:1: int main(){struct{int a; union  {int  a; long ub;};};}
                                             ^ 以前の宣言はここです
 # selftest ----------------
+# [構造体の中の無名共用体:変数名重複:後]
 int main(){struct{int a; union  {int ua; long ub;}; int ua};}
 9cc:Error: selftest:1: int main(){struct{int a; union  {int ua; long ub;}; int ua};}
                                                                                ^ メンバの重複定義です
 9cc:Note: selftest:1: int main(){struct{int a; union  {int ua; long ub;}; int ua};}
                                                            ^ 以前の宣言はここです
 # selftest ----------------
+# [共用体の中の無名構造体:タグ付きは変数名必要]
 int main(){union{int a; struct S{int sa; long sb;};};}
 9cc:Error: selftest:1: int main(){union{int a; struct S{int sa; long sb;};};}
                                                                          ^ 識別子（変数名）が期待されています
 # selftest ----------------
+# [共用体の中の無名構造体:変数名重複:前]
 int main(){union{int a; struct  {int  a; long sb;};};}
 9cc:Error: selftest:1: int main(){union{int a; struct  {int  a; long sb;};};}
                                                              ^ メンバの重複定義です
 9cc:Note: selftest:1: int main(){union{int a; struct  {int  a; long sb;};};}
                                            ^ 以前の宣言はここです
 # selftest ----------------
+# [共用体の中の無名構造体:変数名重複:後]
 int main(){union{int a; struct  {int sa; long sb;}; int sa};}
 9cc:Error: selftest:1: int main(){union{int a; struct  {int sa; long sb;}; int sa};}
                                                                                ^ メンバの重複定義です
@@ -1248,6 +1304,6 @@ char*func3(void){return 0;}          const char*func3(void); void main(){}
 9cc:Note: selftest:1: char*func3(void){return 0;}          const char*func3(void); void main(){}
                                 ^ 以前の宣言はここです
 9cc self test
-Total : 269
-   Ok : 269
+Total : 279
+   Ok : 279
    NG : 0

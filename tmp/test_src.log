@@ -28,19 +28,19 @@
                                                             ^ 関数の定義はここです
 9cc:Warning: tmp/test_src.c:1907:         && xyz.x==1 && xyz.y==4 && xyz.z==5 && memcmp(&st0, &st, sizeof(st))==0;
                                                                                  ^ 未宣言の関数コールです。
-9cc:Warning: tmp/test_src.c:2019:     return u1.c==1 && memcmp(&u1, &u10, sizeof(u1))==0
+9cc:Warning: tmp/test_src.c:2061:     return u1.c==1 && memcmp(&u1, &u10, sizeof(u1))==0
                                                         ^ 未宣言の関数コールです。
-9cc:Warning: tmp/test_src.c:2020:         && u2.l==2 && memcmp(&u2, &u20, sizeof(u2))==0;
+9cc:Warning: tmp/test_src.c:2062:         && u2.l==2 && memcmp(&u2, &u20, sizeof(u2))==0;
                                                         ^ 未宣言の関数コールです。
-9cc:Warning: tmp/test_src.c:2100:     return str;
+9cc:Warning: tmp/test_src.c:2182:     return str;
                                       ^ static char*型の関数func_const2がstatic const char[4]型を返しています
-9cc:Warning: tmp/test_src.c:2109:     func_const3(p1);
+9cc:Warning: tmp/test_src.c:2191:     func_const3(p1);
                                                   ^ 引数[0]の型(char*:const char*)が一致しません
-9cc:Note: tmp/test_src.c:2102: static char *func_const3(char*str){return str;}
+9cc:Note: tmp/test_src.c:2184: static char *func_const3(char*str){return str;}
                                                                 ^ 関数の定義はここです
-9cc:Warning: tmp/test_src.c:2122:     func_const3(p3);
+9cc:Warning: tmp/test_src.c:2204:     func_const3(p3);
                                                   ^ 引数[0]の型(char*:char const*)が一致しません
-9cc:Note: tmp/test_src.c:2102: static char *func_const3(char*str){return str;}
+9cc:Note: tmp/test_src.c:2184: static char *func_const3(char*str){return str;}
                                                                 ^ 関数の定義はここです
 9cc:Warning: tmp/test_src.c:839: static int ga2_b[4]={1,2,{3,99},4}, *ga2_p=&ga2_a, *ga2_q=&ga2_b[2], *ga2_r=ga2_a+3;
                                                            ^ スカラーがリストで初期化されています
@@ -90,16 +90,12 @@
                                                          ^ 初期化リストが配列サイズを超えています
 9cc:Warning: tmp/test_src.c:949:     char str4[3] = "A\0B";
                                                         ^ 初期化リストが配列サイズを超えています
-9cc:Warning: tmp/test_src.c:1826:     struct S a={0};
-                                                  ^ 初期化リストが要素数を超えています
-9cc:Warning: tmp/test_src.c:1902:     } st0 = {2,2,3,4,5,(void*)6, {10,11,}, 20,21,22,}, st=st0;
-                                                     ^ 初期化リストが要素数を超えています
 9cc:Warning: tmp/test_src.c:1903:     XYZ xyz = {{1,2,3},4,{5,6}};
                                                   ^ スカラーがリストで初期化されています
 9cc:Warning: tmp/test_src.c:1903:     XYZ xyz = {{1,2,3},4,{5,6}};
                                                             ^ スカラーがリストで初期化されています
-9cc:Warning: tmp/test_src.c:2011:     } u10 = {1,2}, u1=u10;
-                                                 ^ 初期化リストが要素数を超えています
+9cc:Warning: tmp/test_src.c:2053:     } u10 = {1,2}, u1=u10;
+                                                 ^ 構造体・共用体の初期化リストが要素数を超えています
   OK: logical1
   OK: logical2
   OK: logical
@@ -249,10 +245,14 @@
   OK: Struct1
   OK: Struct1arrow
   OK: Struct2
-  OK: sStruct1
+  OK: StaticStruct1
+  OK: AnonymouseStruct1
+  OK: AnonymouseStruct2
   OK: Struct
   OK: Union1
   OK: Union2
+  OK: AnonymouseUnion1
+  OK: AnonymouseUnion2
   OK: Union
   OK: typedef1
   OK: typedef1p

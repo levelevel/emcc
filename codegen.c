@@ -214,32 +214,32 @@ static void gen_read_reg(const char*dst, const char*src, const Type *tp, const c
 
 // [reg+idx]からlenバイトを0で埋める
 static void gen_fill_zero(const char *reg, int idx, int len, int data_size) {
-#if 1
+    int size = len * data_size;
+    if (size>32) {
         if (strcmp("rdi", reg)!=0) printf("  mov rdi, %s\n", reg);
         printf("  push rdi\n");
         if (idx) printf("  add rdi, %d\n", idx);
         printf("  mov rax, 0\n");
-        printf("  mov rcx, %d\n", len*data_size);
+        printf("  mov rcx, %d\n", size);
         printf("  rep stosb\n");
         printf("  pop rdi\n");
-#else
-    len *= data_size;
-    while (len) {
-        if (len>=8) {
-            printf("  mov QWORD PTR [%s+%d], 0\n", reg, idx);
-            len -= 8; idx += 8;
-        } else if (len>=4) {
-            printf("  mov DWORD PTR [%s+%d], 0\n", reg, idx);
-            len -= 4; idx += 4;
-        } else if (len>=2) {
-            printf("  mov WORD PTR [%s+%d], 0\n", reg, idx);
-            len -= 2; idx += 2;
-        } else if (len>=1) {
-            printf("  mov BYTE PTR [%s+%d], 0\n", reg, idx);
-            len -= 1; idx += 1;
+    } else {
+        while (size) {
+            if (size>=8) {
+                printf("  mov QWORD PTR [%s+%d], 0\n", reg, idx);
+                size -= 8; idx += 8;
+            } else if (size>=4) {
+                printf("  mov DWORD PTR [%s+%d], 0\n", reg, idx);
+                size -= 4; idx += 4;
+            } else if (size>=2) {
+                printf("  mov WORD PTR [%s+%d], 0\n", reg, idx);
+                size -= 2; idx += 2;
+            } else if (size>=1) {
+                printf("  mov BYTE PTR [%s+%d], 0\n", reg, idx);
+                size -= 1; idx += 1;
+            }
         }
     }
-#endif
 }
 //ND_LISTのarray_size個のノードをarray_size*data_sizeのtype型のバイト列に変換して返す。
 //定数でないノードがあればNULLを返す。
@@ -325,12 +325,12 @@ static int gen_array_init_local_sub(Type *tp, Node *init, int start_idx, int off
                 gen_fill_zero("rdi", i*type_size+offset, array_size-i, type_size);
                 break;
             } else {
-                Node *node = lst_data(init->lst, idx);
-                if (node->type==ND_INIT_LIST||node->type==ND_STRING) {
-                    int cnt = gen_array_init_local_sub(tp->ptr_of, node, 0, new_offset);
+                Node *val_node = lst_data(init->lst, idx);
+                if (val_node->type==ND_INIT_LIST||val_node->type==ND_STRING) {
+                    int cnt = gen_array_init_local_sub(tp->ptr_of, val_node, 0, new_offset);
                     idx++;
-                    if (node->type==ND_INIT_LIST && cnt < lst_len(node->lst)) {
-                        warning_at(get_lst_node(node->lst, cnt)->input, "初期化リストが配列サイズを超えています");
+                    if (val_node->type==ND_INIT_LIST && cnt < lst_len(val_node->lst)) {
+                        warning_at(get_lst_node(val_node->lst, cnt)->input, "初期化リストが配列サイズを超えています");
                     }
                 } else {
                     gen_array_init_local_sub(tp->ptr_of, init, idx, new_offset);
@@ -547,29 +547,30 @@ static int gen_struct_init_local_sub(Node *node, int offset, Node *init, int idx
     switch (node->tp->type) {
     case STRUCT:
     case UNION:
-        offset += node->offset;
-        if (node->lst==NULL) node = node->tp->node;
+        if (!node_is_anonymouse_struct_or_union(node)) offset += node->offset;
         int size = node->tp->type==STRUCT ? node->lst->len : 1;
         Node **nodes = (Node**)node->lst->data;
         cnt = 0;
         for (int i=0;i<size;i++) {
-            Node *elm = nodes[i];
+            Node *member = nodes[i];
             int ret;
             if (lst_len(init->lst) > idx+i) {
                 val_node = lst_data(init->lst, idx+i);
             } else {
                 val_node = &zero_node;
             }
-            if (elm->tp->type==STRUCT && val_node->type==ND_INIT_LIST) {
-                gen_struct_init_local_sub(elm, offset, val_node, 0);
+        //  if (member->tp->type==STRUCT && val_node->type==ND_INIT_LIST) {
+            if (type_is_struct_or_union(member->tp) && val_node->type==ND_INIT_LIST) {
+                ret = gen_struct_init_local_sub(member, offset, val_node, 0);
                 cnt++;
+                if (val_node->type==ND_INIT_LIST && ret < lst_len(val_node->lst)) 
+                    warning_at(get_lst_node(val_node->lst, ret)->input, "構造体・共用体の初期化リストが要素数を超えています");
             } else {
-                ret = gen_struct_init_local_sub(elm, offset, init, idx+i);
+                ret = gen_struct_init_local_sub(member, offset, init, idx+i);
                 cnt += ret;
                 idx += ret-1;
             }
         }
-        if (cnt < lst_len(init->lst)) warning_at(get_lst_node(init->lst, cnt)->input, "初期化リストが要素数を超えています");
         break;
     case ARRAY:
         _NOT_YET_(node);
@@ -605,7 +606,11 @@ static void gen_struct_init_local(Node *node) {
     assert(node->lhs->tp->type==STRUCT || node->lhs->tp->type==UNION);
     Node *init = node->rhs; //ND_INIT_LIST
     Node *strct_def = node->lhs->tp->node;
-    gen_struct_init_local_sub(strct_def, 0, init, 0);
+    gen_fill_zero("rdi", 0, 1, size_of(node->lhs->tp));
+    int cnt = gen_struct_init_local_sub(strct_def, 0, init, 0);
+    if (init->type==ND_INIT_LIST && cnt < lst_len(init->lst)) {
+        warning_at(get_lst_node(init->lst, cnt)->input, "構造体・共用体の初期化リストが要素数を超えています");
+    }
 }
 
 //式を左辺値として評価し、rdiにセットする。push!=0ならばさらにPUSHする

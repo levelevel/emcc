@@ -80,9 +80,9 @@ void set_struct_size(Node *node, int base_offset) {
         if (align_size>max_align_size) max_align_size = align_size;
         if (      size>max_size)       max_size       = size;
         offset = (offset +(align_size-1))/align_size * align_size;
-        member->offset = (node->type==ND_STRUCT_DEF ? offset : base_offset);
+        member->offset = (node->tp->type==STRUCT ? offset : base_offset);
         if (node_is_anonymouse_struct_or_union(member)) {    //無名構造体・共用体
-            set_struct_size(member, offset);
+            set_struct_size(member, node->tp->type==STRUCT ? offset : 0);
         }
         offset += size;
     }
@@ -810,6 +810,7 @@ Node *new_node_ident(char *name, char *input) {
         case ND_ENUM:
             return var_def;
         default:
+            dump_node(var_def,__func__);
             assert(0);
         }
         tp = var_def->tp;
