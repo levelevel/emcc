@@ -116,6 +116,36 @@ static int addsub_mix2() {
         l == s && s == l && ul == us && ul == -s &&
         l == i && i == l && ul == ui && ul == -i;
 }
+static int CompoundAssign(void) {
+    int a=1,b=2,c=2,d=10,e=10,f=0xff,g=1,h=0xff,i=0xff,j=0;
+    a += 1;
+    b -= 1;
+    c *= 2;
+    d /= 4;
+    e %= 4;
+    f >>= 4;
+    g <<= 3;
+    h &= 0xf0;
+    i ^= 0xf0;
+    j |= 0xf;
+    return a==2 && b==1 && c==4 && d==2 && e==2 
+        && f==0xf && g==8 && h==0xf0 && i==0xf && j==0xf;
+}
+static int CompoundAssignC(void) {
+    unsigned char a=1,b=2,c=2,d=10,e=10,f=0xff,g=1,h=0xff,i=0xff,j=0;
+    a += 1;
+    b -= 1;
+    c *= 2;
+    d /= 4;
+    e %= 4;
+    f >>= 4;
+    g <<= 3;
+    h &= 0xf0;
+    i ^= 0xf0;
+    j |= 0xf;
+    return a==2 && b==1 && c==4 && d==2 && e==2 
+        && f==0xf && g==8 && h==0xf0 && i==0xf && j==0xf;
+}
 static int addsub() {
     TEST(addsub1);
     TEST(addsub1b);
@@ -125,6 +155,8 @@ static int addsub() {
     TEST(addsub1ll);
     TEST(addsub_mix1);
     TEST(addsub_mix2);
+    TEST(CompoundAssign);
+    TEST(CompoundAssignC);
     return 1;
 }
 

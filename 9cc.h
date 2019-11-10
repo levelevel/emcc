@@ -80,6 +80,14 @@ typedef enum {
     TK_SHIFTL,      // <<
     TK_PLUS_ASSIGN, // +=
     TK_MINUS_ASSIGN,// -=
+    TK_MUL_ASSIGN,  // *=
+    TK_DIV_ASSIGN,  // /=
+    TK_MOD_ASSIGN,  // %=
+    TK_SHIFTR_ASSIGN,   //>>=
+    TK_SHIFTL_ASSIGN,   //<<=
+    TK_AND_ASSIGN,  // &=
+    TK_XOR_ASSIGN,  // ^=
+    TK_OR_ASSIGN,   // |=
     TK_GOTO,        //goto
     TK_CONTINUE,    //continue
     TK_BREAK,       //break
@@ -162,6 +170,14 @@ typedef enum {
     ND_TRI_COND,    // A ? B : C（三項演算子）
     ND_PLUS_ASSIGN, // +=
     ND_MINUS_ASSIGN,// -=
+    ND_MUL_ASSIGN,  // *=
+    ND_DIV_ASSIGN,  // /=
+    ND_MOD_ASSIGN,  // %=
+    ND_SHIFTR_ASSIGN,   // >>=
+    ND_SHIFTL_ASSIGN,   // <<=
+    ND_AND_ASSIGN,  // &=
+    ND_XOR_ASSIGN,  // ^=
+    ND_OR_ASSIGN,   // |=
     ND_LOCAL_VAR_DEF,   //int A=B;      name=A, rhs=Node（"A=B"の形式の初期化式、初期値がない場合はNULL）
                         //              offset=RBPからのオフセット(AUTO)/index=global_index(STATIC)
     ND_GLOBAL_VAR_DEF,  //int A=B;      同上、offset=0

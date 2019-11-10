@@ -80,7 +80,7 @@
     expression              = assignment_expression ( "," assignment_expression )*
     constant_expression     = conditional_expression
     assignment_expression   = conditional_expression
-                            | unary_expression ( "=" | "+=" | "-=" ) assignment_expression
+                            | unary_expression ( "=" | "+=" | "-=" | "*=" | "/=" | "%=" ) assignment_expression
     conditional_expression  = logical_OR_expression ( "?" expression ":" conditional_expression )?
     logical_OR_expression   = logical_AND_expression ( "||" logical_AND_expression )*
     logical_AND_expression  = inclusive_OR_expression ( "&&" inclusive_OR_expression )*
@@ -1297,20 +1297,36 @@ static Node *assignment_expression(void) {
                     get_type_str(node->tp), get_type_str(rhs->tp));
         }
         node = new_node('=', node, rhs, node->tp, input); //ND_ASIGN
-    } else if (consume(TK_PLUS_ASSIGN)) { //+=
+    } else if (consume(TK_PLUS_ASSIGN)      // +=
+            || consume(TK_MINUS_ASSIGN)     // -=
+            || consume(TK_MUL_ASSIGN)       // *=
+            || consume(TK_DIV_ASSIGN)       // /=
+            || consume(TK_MOD_ASSIGN)       // %=
+            || consume(TK_SHIFTR_ASSIGN)    // >>=
+            || consume(TK_SHIFTL_ASSIGN)    // <<=
+            || consume(TK_AND_ASSIGN)       // &=
+            || consume(TK_XOR_ASSIGN)       // ^=
+            || consume(TK_OR_ASSIGN)) {     // |=
+        char *msg;
+        NDtype type;    
+        switch (last_token_type()) {
+        case TK_PLUS_ASSIGN:   type = ND_PLUS_ASSIGN;   msg = "+="; break;
+        case TK_MINUS_ASSIGN:  type = ND_MINUS_ASSIGN;  msg = "-="; break;
+        case TK_MUL_ASSIGN:    type = ND_MUL_ASSIGN;    msg = "*="; break;
+        case TK_DIV_ASSIGN:    type = ND_DIV_ASSIGN;    msg = "/="; break;
+        case TK_MOD_ASSIGN:    type = ND_MOD_ASSIGN;    msg = "%="; break;
+        case TK_SHIFTR_ASSIGN: type = ND_SHIFTR_ASSIGN; msg = ">>="; break;
+        case TK_SHIFTL_ASSIGN: type = ND_SHIFTL_ASSIGN; msg = "<<="; break;
+        case TK_AND_ASSIGN:    type = ND_AND_ASSIGN;    msg = "&="; break;
+        case TK_XOR_ASSIGN:    type = ND_XOR_ASSIGN;    msg = "^="; break;
+        case TK_OR_ASSIGN:     type = ND_OR_ASSIGN;     msg = "|="; break;
+        default: abort(); break;
+        }
         if (!is_lvalue || node->tp->type==ARRAY) error_at(node->input, "左辺値ではありません");
-        check_arg(node, input, CHK_CONST, "+=");
+        check_arg(node, input, CHK_CONST, msg);
         rhs = assignment_expression(); 
-        if (node_is_ptr(node) && node_is_ptr(rhs))
-            error_at(node->input, "ポインタ同士の加算です");
-        node = new_node(ND_PLUS_ASSIGN, node, rhs, node->tp, input);
-    } else if (consume(TK_MINUS_ASSIGN)) { //-=
-        if (!is_lvalue || node->tp->type==ARRAY) error_at(node->input, "左辺値ではありません");
-        check_arg(node, input, CHK_CONST, "-=");
-        rhs = assignment_expression(); 
-        if (node_is_ptr(rhs)) 
-            error_at(node->input, "ポインタによる減算です");
-        node = new_node(ND_MINUS_ASSIGN, node, rhs, node->tp, input);
+        check_arg(rhs, rhs->input, CHK_NOT(CHK_INTEGER), msg);
+        node = new_node(type, node, rhs, node->tp, input);
     }
     return node;
 }

@@ -1339,7 +1339,27 @@ char*func3(void){return 0;}          const char*func3(void); void main(){}
 int main(){void func(char*p); const char*p; func(p);}
 9cc:Warning: selftest:1: int main(){void func(char*p); const char*p; func(p);}
                                                                           ^ 引数[0]の型(char*:const char*)が一致しません
+# selftest ----------------
+int main(){int a; char*p; a+=p;}
+9cc:Error: selftest:1: int main(){int a; char*p; a+=p;}
+                                                    ^ ポインタ(char*)に対して+=の指定はできません
+# selftest ----------------
+int main(){int a; char*p; a-=p;}
+9cc:Error: selftest:1: int main(){int a; char*p; a-=p;}
+                                                    ^ ポインタ(char*)に対して-=の指定はできません
+# selftest ----------------
+int main(){int a; struct{int x;}s; a*=s;}
+9cc:Error: selftest:1: int main(){int a; struct{int x;}s; a*=s;}
+                                                             ^ 構造体(struct<noname>)に対して*=の指定はできません
+# selftest ----------------
+int main(){int a; union {int x;}u; a/=u;}
+9cc:Error: selftest:1: int main(){int a; union {int x;}u; a/=u;}
+                                                             ^ 共用体(union)に対して/=の指定はできません
+# selftest ----------------
+int main(){int a; struct{int x;}s; a%=s;}
+9cc:Error: selftest:1: int main(){int a; struct{int x;}s; a%=s;}
+                                                             ^ 構造体(struct<noname>)に対して%=の指定はできません
 9cc self test
-Total : 288
-   Ok : 288
+Total : 293
+   Ok : 293
    NG : 0

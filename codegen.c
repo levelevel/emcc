@@ -1059,24 +1059,66 @@ static int gen(Node*node) {
             printf("  push rax\n");
         }
         break;
-    case ND_PLUS_ASSIGN:    //+=
-    case ND_MINUS_ASSIGN:   //-=
-        comment("'A+=B'\n");
+    case ND_PLUS_ASSIGN:
+    case ND_MINUS_ASSIGN:
+    case ND_MUL_ASSIGN:
+    case ND_DIV_ASSIGN:
+    case ND_MOD_ASSIGN:
+    case ND_SHIFTR_ASSIGN:
+    case ND_SHIFTL_ASSIGN:
+    case ND_AND_ASSIGN:
+    case ND_XOR_ASSIGN:
+    case ND_OR_ASSIGN:
+        comment("A <op>= B");
         gen_lval(node->lhs, 1); //lhsのアドレスをpush
         printf("  mov rdi, QWORD PTR [rsp]\n");  //lhsのアドレス
         gen_read_reg("rax", "rdi", node->lhs->tp, NULL);    //lhsの値
         printf("  push rax\n"); //lhsの値
         gen(node->rhs);
-        printf("  pop rax\n");  //rhsの値
-        printf("  pop rdi\n");  //lhsの値
+        printf("  pop rdi\n");  //rhsの値
+        printf("  pop rax\n");  //lhsの値
         if (node_is_ptr(node)) {
-            gen_mul_reg("rax", size_of(node->tp->ptr_of));
+            assert(node->type==ND_PLUS_ASSIGN||node->type==ND_MINUS_ASSIGN);
+            gen_mul_reg("rdi", size_of(node->tp->ptr_of));
         }
-        if (node->type == ND_PLUS_ASSIGN) {
-            printf("  add rax, rdi\n");
-        } else {
-            printf("  sub rdi, rax\n");
-            printf("  mov rax, rdi\n");
+        switch (node->type) {
+        case ND_PLUS_ASSIGN:    //'+': rax(lhs)+rdi(rhs)
+            printf("  add rax, rdi\t# A+=B\n");
+            break;
+        case ND_MINUS_ASSIGN:   //'-': rax(lhs)-rdi(rhs)
+            printf("  sub rax, rdi\t# A-=B\n");
+            break;
+        case ND_MUL_ASSIGN:     //'*': rax*rdi -> rdx:rax
+            printf("  imul rdi\t# A*=B\n");
+            break;
+        case ND_DIV_ASSIGN:     //'/': rdx:rax(lhs) / rdi(rhs) -> rax（商）, rdx（余り）
+            printf("  mov rdx, 0\n");
+            printf("  div rdi\t# A/=B\n");
+            break;
+        case ND_MOD_ASSIGN:     //'%': rdx:rax / rdi -> rax（商）, rdx（余り）
+            printf("  cqo\n");
+            printf("  idiv rdi\t# A%%=B\n");
+            printf("  mov rax, rdx\n");
+            break;
+        case ND_SHIFTR_ASSIGN:  //">>"
+            printf("  mov rcx, rdi\t# A<<=B\n");
+            printf("  sar rax, cl\n");
+            break;
+        case ND_SHIFTL_ASSIGN:  //"<<"
+            printf("  mov rcx, rdi\t# A<<=B\n");
+            printf("  sal rax, cl\n");
+            break;
+        case ND_AND_ASSIGN:    //'&'
+            printf("  and rax, rdi\t # A&=B\n");
+            break;
+        case ND_XOR_ASSIGN:    //'^'
+            printf("  xor rax, rdi\t # A^=B\n");
+            break;
+        case ND_OR_ASSIGN:     //'|'
+            printf("  or rax, rdi\t # A|=B\n");
+            break;
+        default:
+            abort();
         }
         printf("  pop rdi\n");  //lhsのアドレス
         if (node->lhs->tp->type==BOOL) gen_bool_rax();
@@ -1288,12 +1330,12 @@ static void gen_op2(Node *node) {
         }
         printf("  movzb rax, al\n");
         break;
-    case ND_SHIFTL:
+    case ND_SHIFTL: //"<<"
         comment("'<<'\n");
         printf("  mov rcx, rdi\n");
         printf("  sal rax, cl\n");
         break;
-    case ND_SHIFTR:
+    case ND_SHIFTR: //">>"
         comment("'<<'\n");
         printf("  mov rcx, rdi\n");
         printf("  sar rax, cl\n");

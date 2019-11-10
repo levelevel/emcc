@@ -12,6 +12,8 @@ typedef struct {
 #define TK(str) str, sizeof(str)-1
 //トークンの終わり判定が不要なもの
 TokenDef TokenLst1[] = {
+    {TK(">>="), TK_SHIFTR_ASSIGN},
+    {TK("<<="), TK_SHIFTL_ASSIGN},
     {TK("++"),  TK_INC},
     {TK("--"),  TK_DEC},
     {TK("=="),  TK_EQ},
@@ -24,6 +26,12 @@ TokenDef TokenLst1[] = {
     {TK("<<"),  TK_SHIFTL},
     {TK("+="),  TK_PLUS_ASSIGN},
     {TK("-="),  TK_MINUS_ASSIGN},
+    {TK("*="),  TK_MUL_ASSIGN},
+    {TK("/="),  TK_DIV_ASSIGN},
+    {TK("%="),  TK_MOD_ASSIGN},
+    {TK("&="),  TK_AND_ASSIGN},
+    {TK("^="),  TK_XOR_ASSIGN},
+    {TK("|="),  TK_OR_ASSIGN},
     {TK("->"),  TK_ARROW},
     {TK("..."), TK_3DOTS},
     {TK("!"),   '!'},

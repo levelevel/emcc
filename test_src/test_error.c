@@ -311,6 +311,12 @@ struct {
     {ER, "char*func3(void){return 0;}\
           const char*func3(void); void main(){}"},
     {WR, "void func(char*p); const char*p; func(p);"},
+    //代入
+    {ER, "int a; char*p; a+=p;"},
+    {ER, "int a; char*p; a-=p;"},
+    {ER, "int a; struct{int x;}s; a*=s;"},
+    {ER, "int a; union {int x;}u; a/=u;"},
+    {ER, "int a; struct{int x;}s; a%=s;"},
     {ER, NULL}
 };
 
