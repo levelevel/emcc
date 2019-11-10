@@ -251,6 +251,15 @@ struct {
     {WR, "typedef struct{int a;}ST; ST st; void func(int); func(&st);"},
     {ER, "typedef struct{int a;}ST; ST st; void func(ST); func(1);"},
     {ER, "typedef struct{int a;}ST; ST st; void func(ST); func(&st);"},
+    //無視される
+    {WR, "static struct ST{int a;}; return 0;"},
+    {WR, "const  struct ST{int a;}; return 0;"},
+    {WR, "static union UN{int a;}; return 0;"},
+    {WR, "const  union UN{int a;}; return 0;"},
+    {WR, "static struct ST{int a;}; void main(){}"},
+    {WR, "const  struct ST{int a;}; void main(){}"},
+    {WR, "static union UN{int a;}; void main(){}"},
+    {WR, "const  union UN{int a;}; void main(){}"},
     //union
     {ER, "struct U; union U;"},
     {ER, "union U u;"},
@@ -301,6 +310,7 @@ struct {
           void func3(const char*str); void main(){}"},
     {ER, "char*func3(void){return 0;}\
           const char*func3(void); void main(){}"},
+    {WR, "void func(char*p); const char*p; func(p);"},
     {ER, NULL}
 };
 

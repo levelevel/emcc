@@ -11,6 +11,9 @@ char *strcpy(char *dest, const char *src);
 int strcmp(const char *s1, const char *s2);
 int strncmp(const char *s1, const char *s2, size_t n);
 size_t strlen(const char *s);
+int memcmp(const void *s1, const void *s2, size_t n);
+
+
 #else
 #include <stdio.h>
 #include <stdlib.h>
@@ -1835,7 +1838,7 @@ static int Struct1(void) {
         && s3.a[0]+s3.a[1]+s3.a[2]==6
         && b.b==22 && b.c==33 && b.p->b==2 && b.p->s2.z==12;
 }
-static int Struct1arrow(void) {
+static int Struct1Arrow(void) {
     struct S;
     struct S {
         int a,b;
@@ -1884,20 +1887,72 @@ static int Struct2(void) {
         short s;
         int   i;
         long  l;
-        char *p;
+        char *p,*q;
         XYZ   x,y;
+        union {
+            char uc;
+            short us;
+            int   ui;
+            long  ul;
+            char *up;
+        };
         int   z;
-    } st0 = {2,2,3,4,5,(void*)6, {10,11,}, 20,21,22,}, st=st0;
+    } st0 = {
+        2,2,3,4,5,          //b,c,s,i,l
+        (void*)6, "qqq",    //p,q
+        {10,11,}, 20,21,22, //x,y
+        -1,                 //uc
+                            //z
+    }, st=st0;
     XYZ xyz = {{1,2,3},4,{5,6}};
-    return st.b==1 && st.c==2 && st.s==3 && st.i==4 && st.l==5 && st.p==(void*)6
+    return st.b==1 && st.c==2 && st.s==3 && st.i==4 && st.l==5 
+        && st.p==(void*)6 && strcmp(st.q, "qqq")==0
         && st.x.x==10 && st.x.y==11 && st.x.z==0
-        && st.y.x==20 && st.y.y==21 && st.y.z==22 && st.z==0 
-        && xyz.x==1 && xyz.y==4 && xyz.z==5 && memcmp(&st0, &st, sizeof(st))==0;
+        && st.y.x==20 && st.y.y==21 && st.y.z==22
+        && st.uc==-1 && st.us==255 && st.ui==255 && st.ul==255 && st.up==(void*)255
+        && st.z==0 && memcmp(&st0, &st, sizeof(st))==0
+        && xyz.x==1 && xyz.y==4 && xyz.z==5;
+}
+static int Struct2Arrow(void) {
+    typedef struct XYZ {
+        int x,y,z;
+    } XYZ;
+    struct ST {
+        _Bool b;
+        char  c;
+        short s;
+        int   i;
+        long  l;
+        char *p,*q;
+        XYZ   x,y;
+        union {
+            char uc;
+            short us;
+            int   ui;
+            long  ul;
+            char *up;
+        };
+        int   z;
+    } st0 = {
+        2,2,3,4,5,          //b,c,s,i,l
+        (void*)6, "qqq",    //p,q
+        {10,11,}, 20,21,22, //x,y
+        -1,                 //uc
+                            //z
+    }, st1, *stp = &st1;
+    *stp = st0;
+    return stp->b==1 && stp->c==2 && stp->s==3 && stp->i==4 && stp->l==5 
+        && stp->p==(void*)6 && strcmp(stp->q, "qqq")==0
+        && stp->x.x==10 && stp->x.y==11 && stp->x.z==0
+        && stp->y.x==20 && stp->y.y==21 && stp->y.z==22
+        && stp->uc==-1 && stp->us==255 && stp->ui==255 && stp->ul==255 && stp->up==(void*)255
+        && stp->z==0 && memcmp(&st0, stp, sizeof(struct ST))==0
+        ;
 }
 
 static int StaticStruct1(void) {
     struct S;
-    static struct S {
+    struct S {
         int a,b;
         char c;
         long d;
@@ -1906,8 +1961,8 @@ static int StaticStruct1(void) {
         S2 s2;
     };
     typedef struct S S_t;
-    static struct S a;//={0};//★
-    static struct S b;//={11,22,33,44,&a,55,{66,77,88}};//★
+    static struct S a={0};
+    static struct S b={11,22,33,44,&a,55,{66,77,88}};
     struct S;
     static struct {
         char s[5];
@@ -1929,9 +1984,197 @@ static int StaticStruct1(void) {
         && _Alignof(struct S)==8 && _Alignof(a)==8 && _Alignof(a.c)==1 && _Alignof(S_t)==8 && _Alignof(s3)==4
         && a.a+a.b+a.c+a.d+a.e==15 && a.s2.x+a.s2.y+a.s2.z==33
         && s3.a[0]+s3.a[1]+s3.a[2]==6
-        //&& b.p->b==2 && b.p->s2.z==12//★
+        && b.b==22 //&& b.p->b==2 //&& b.p->s2.z==12//★
         ;
 }
+static int StaticStruct1Arrow(void) {
+    struct S;
+    struct S {
+        int a,b;
+        char c;
+        long d;
+        struct S *p;
+        short e;
+        S2 s2;
+    };
+    typedef struct S S_t;
+    static struct S a, *ap=&a;
+    static struct S b={11,22,33,44,&a,55,{66,77,88}}, *bp=&b;
+    struct S;
+    static struct {
+        char s[5];
+        int a[3];
+    } s3, *s3p=&s3;
+    ap->a = 1;
+    ap->b = 2;
+    ap->c = 3;
+    ap->d = 4;
+    ap->e = 5;
+    ap->s2.x = 10;
+    ap->s2.y = 11;
+    ap->s2.z = 12;
+    s3p->a[0]=1;
+    s3p->a[1]=2;
+    s3p->a[2]=3;
+    return sizeof(struct S)==64 && sizeof(a)==64 && sizeof(ap->a)==4 && sizeof(S_t)==64
+        && sizeof(s3)==20 && sizeof(s3p->s)==5
+        && _Alignof(struct S)==8 && _Alignof(a)==8 && _Alignof(ap->c)==1 && _Alignof(S_t)==8 && _Alignof(s3)==4
+        && a.a+a.b+a.c+a.d+a.e==15 && a.s2.x+a.s2.y+a.s2.z==33
+        && s3.a[0]+s3.a[1]+s3.a[2]==6
+        && ap->a+ap->b+ap->c+ap->d+ap->e==15 && ap->s2.x+ap->s2.y+ap->s2.z==33
+        && s3p->a[0]+s3p->a[1]+s3p->a[2]==6
+        && bp->b==22 && bp->c==33 && bp->p->b==2 && bp->p->s2.z==12;
+}
+static int StaticStruct2(void) {
+    typedef struct XYZ {
+        int x,y,z;
+    } XYZ;
+    static struct ST {
+        _Bool b;
+        char  c;
+        short s;
+        int   i;
+        long  l;
+        char *p,*q;
+        XYZ   x,y;
+        union {
+            char uc;
+            short us;
+            int   ui;
+            long  ul;
+            char *up;
+        };
+        int   z;
+    } st0 = {
+        2,2,3,4,5,          //b,c,s,i,l
+        (void*)6, "qqq",    //p,q
+        {10,11,}, 20,21,22, //x,y
+        -1,                 //uc
+                            //z
+    }, st;
+    st = st0;
+    static XYZ xyz = {{1,2,3},4,{5,6}};
+    return st.b==1 && st.c==2 && st.s==3 && st.i==4 && st.l==5 
+        && st.p==(void*)6 && strcmp(st.q, "qqq")==0
+        && st.x.x==10 && st.x.y==11 && st.x.z==0
+        && st.y.x==20 && st.y.y==21 && st.y.z==22
+        && st.uc==-1 && st.us==255 && st.ui==255 && st.ul==255 && st.up==(void*)255
+        && st.z==0 && memcmp(&st0, &st, sizeof(st))==0
+        && xyz.x==1 && xyz.y==4 && xyz.z==5;
+}
+static int StaticStruct2Arrow(void) {
+    typedef struct XYZ {
+        int x,y,z;
+    } XYZ;
+    static struct ST {
+        _Bool b;
+        char  c;
+        short s;
+        int   i;
+        long  l;
+        char *p,*q;
+        XYZ   x,y;
+        union {
+            char uc;
+            short us;
+            int   ui;
+            long  ul;
+            char *up;
+        };
+        int   z;
+    } st0 = {
+        2,2,3,4,5,          //b,c,s,i,l
+        (void*)6, "qqq",    //p,q
+        {10,11,}, 20,21,22, //x,y
+        -1,                 //uc
+                            //z
+    }, st1, *stp;
+    stp = &st1;
+    *stp = st0;
+    static XYZ xyz = {{1,2,3},4,{5,6}};
+    return stp->b==1 && stp->c==2 && stp->s==3 && stp->i==4 && stp->l==5 
+        && stp->p==(void*)6 && strcmp(stp->q, "qqq")==0
+        && stp->x.x==10 && stp->x.y==11 && stp->x.z==0
+        && stp->y.x==20 && stp->y.y==21 && stp->y.z==22
+        && stp->uc==-1 && stp->us==255 && stp->ui==255 && stp->ul==255 && stp->up==(void*)255
+        && stp->z==0 && memcmp(&st0, stp, sizeof(struct ST))==0
+        && xyz.x==1 && xyz.y==4 && xyz.z==5;
+}
+
+    struct gs1_S;
+    struct gs1_S {
+        int a,b;
+        char c;
+        long d;
+        struct gs1_S *p;
+        short e;
+        S2 s2;
+    };
+    typedef struct gs1_S gs1_S_t;
+    struct gs1_S gs1_a={0};
+    struct gs1_S gs1_b={11,22,33,44,&gs1_a,55,{66,77,88}};
+    struct {
+        char s[5];
+        int a[3];
+    } gs1_s3;
+static int GlobalStruct1(void) {
+    gs1_a.a = 1;
+    gs1_a.b = 2;
+    gs1_a.c = 3;
+    gs1_a.d = 4;
+    gs1_a.e = 5;
+    gs1_a.s2.x = 10;
+    gs1_a.s2.y = 11;
+    gs1_a.s2.z = 12;
+    gs1_s3.a[0]=1;
+    gs1_s3.a[1]=2;
+    gs1_s3.a[2]=3;
+    return sizeof(struct gs1_S)==64 && sizeof(gs1_a)==64 && sizeof(gs1_a.a)==4 && sizeof(gs1_S_t)==64
+        && sizeof(gs1_s3)==20 && sizeof(gs1_s3.s)==5
+        && _Alignof(struct gs1_S)==8 && _Alignof(gs1_a)==8 && _Alignof(gs1_a.c)==1 && _Alignof(gs1_S_t)==8 && _Alignof(gs1_s3)==4
+        && gs1_a.a+gs1_a.b+gs1_a.c+gs1_a.d+gs1_a.e==15 && gs1_a.s2.x+gs1_a.s2.y+gs1_a.s2.z==33
+        && gs1_s3.a[0]+gs1_s3.a[1]+gs1_s3.a[2]==6
+        && gs1_b.b==22 && gs1_b.c==33 && gs1_b.p->b==2 && gs1_b.p->s2.z==12;
+}
+    typedef struct gs2a_XYZ {
+        int x,y,z;
+    } gs2a_XYZ;
+    static struct gs2a_ST {
+        _Bool b;
+        char  c;
+        short s;
+        int   i;
+        long  l;
+        char *p,*q;
+        gs2a_XYZ   x,y;
+        union {
+            char uc;
+            short us;
+            int   ui;
+            long  ul;
+            char *up;
+        };
+        int   z;
+    } gs2a_st0 = {
+        2,2,3,4,5,          //b,c,s,i,l
+        (void*)6, "qqq",    //p,q
+        {10,11,}, 20,21,22, //x,y
+        -1,                 //uc
+                            //z
+    }, gs2a_st1, *gs2a_stp;
+    static gs2a_XYZ gs2a_xyz = {{1,2,3},4,{5,6}};
+static int GlobalStruct2Arrow(void) {
+    gs2a_stp = &gs2a_st1;
+    *gs2a_stp = gs2a_st0;
+    return gs2a_stp->b==1 && gs2a_stp->c==2 && gs2a_stp->s==3 && gs2a_stp->i==4 && gs2a_stp->l==5 
+        && gs2a_stp->p==(void*)6 && strcmp(gs2a_stp->q, "qqq")==0
+        && gs2a_stp->x.x==10 && gs2a_stp->x.y==11 && gs2a_stp->x.z==0
+        && gs2a_stp->y.x==20 && gs2a_stp->y.y==21 && gs2a_stp->y.z==22
+        && gs2a_stp->uc==-1 && gs2a_stp->us==255 && gs2a_stp->ui==255 && gs2a_stp->ul==255 && gs2a_stp->up==(void*)255
+        && gs2a_stp->z==0 && memcmp(&gs2a_st0, gs2a_stp, sizeof(struct gs2a_ST))==0
+        && gs2a_xyz.x==1 && gs2a_xyz.y==4 && gs2a_xyz.z==5;
+}
+
 static int AnonymouseStruct1(void) {
     struct ST{
         int a;
@@ -1949,8 +2192,10 @@ static int AnonymouseStruct1(void) {
     st1.d = 4;
     st1.e = 5;
     struct ST st2 = {1,2,3,4,5};
+    static struct ST st3= {1,2,3,4,5};
     return st1.a==1 && st1.b==2 && st1.c==3 && st1.d==4 && st1.e==5
-        && st2.a==1 && st2.b==2 && st2.c==3 && st2.d==4 && st2.e==5;
+        && st2.a==1 && st2.b==2 && st2.c==3 && st2.d==4 && st2.e==5
+        && st3.a==1 && st3.b==2 && st3.c==3 && st3.d==4 && st3.e==5;
 }
 static int AnonymouseStruct2(void) {
     union UN{
@@ -1969,15 +2214,25 @@ static int AnonymouseStruct2(void) {
     un1.d = 4;
     un1.e = 5;
     union UN un2 = {1};
+    static union UN un3 = {1};
     return un1.a==5 && un1.b==5 && un1.c==3 && un1.d==4 && un1.e==5
-        && un2.a==1 && un2.b==1 && un2.c==0 && un2.d==0 && un2.e==1;
+        && un2.a==1 && un2.b==1 && un2.c==0 && un2.d==0 && un2.e==1
+        && un3.a==1 && un3.b==1 && un3.c==0 && un3.d==0 && un3.e==1;
 }
 static int Struct(void) {
     TEST(Struct1);
-    TEST(Struct1arrow);
+    TEST(Struct1Arrow);
     TEST(Struct2);
+    TEST(Struct2Arrow);
 
     TEST(StaticStruct1);
+    TEST(StaticStruct1Arrow);
+    TEST(StaticStruct2);
+    TEST(StaticStruct2Arrow);
+
+    TEST(GlobalStruct1);
+    TEST(GlobalStruct2Arrow);
+
     TEST(AnonymouseStruct1);
     TEST(AnonymouseStruct2);
     return 1;
@@ -2065,8 +2320,11 @@ static int AnonymouseUnion1(void) {
     st1.d = 4;
     st1.e = 5;
     struct ST st2 = {1,4,5};
+    static struct ST st3 = {1,4,5};
     return st1.a==1 && st1.b==4 && st1.c==4 && st1.d==4 && st1.e==5
-        && st2.a==1 && st2.b==4 && st2.c==4 && st2.d==4 && st2.e==5;
+        && st2.a==1 && st2.b==4 && st2.c==4 && st2.d==4 && st2.e==5
+        && st3.a==1 && st3.b==4 && st3.c==4 && st3.d==4 && st3.e==5;
+        ;
 }
 static int AnonymouseUnion2(void) {
     union UN{
@@ -2084,8 +2342,10 @@ static int AnonymouseUnion2(void) {
     un1.d = 4;  //5
     un1.e = 5;
     union UN un2 = {1};
+    static union UN un3 = {1};
     return un1.a==5 && un1.b==5 && un1.c==5 && un1.d==5 && un1.e==5
-        && un2.a==1 && un2.b==1 && un2.c==1 && un2.d==1 && un2.e==1;
+        && un2.a==1 && un2.b==1 && un2.c==1 && un2.d==1 && un2.e==1
+        && un3.a==1 && un3.b==1 && un3.c==1 && un3.d==1 && un3.e==1;
 }
 static int Union(void) {
     TEST(Union1);

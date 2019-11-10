@@ -418,6 +418,7 @@ static int gen_array_init_local(Type *tp, Node *init, int start_idx, int offset)
 //グローバル変数の配列の初期化
 //戻り値は初期値を設定した要素数。
 static int gen_array_init_global(Type *tp, Node *init, int start_idx) {
+    assert(tp->type==ARRAY);
     int array_size  = tp->array_size;  //配列のサイズ
     int type_size = size_of(tp->ptr_of);   //左辺の型のサイズ
     int data_len;
@@ -449,8 +450,7 @@ static int gen_array_init_global(Type *tp, Node *init, int start_idx) {
         return array_size;
     }
 
-    if (tp->ptr_of->type==CHAR &&
-        init->type==ND_STRING) {
+    if (tp->ptr_of->type==CHAR && init->type==ND_STRING) {
         //文字列リテラルによる初期化: char a[]="ABC";
         data_len = init->tp->array_size;
         String *string = get_string_literal(init->index);
@@ -475,33 +475,30 @@ static int gen_array_init_global(Type *tp, Node *init, int start_idx) {
     // int  b[]={1, 2, 4, 8}
     Node **nodes = (Node**)init->lst->data;
     data_len = init->lst->len;
-    long val;
-    Node *var = NULL;
     char *val_name = val_name_of_type(tp);
     for (int i=0; i<array_size && i<data_len; i++) {
-        var = NULL;
-        //nodes[i]がアドレス+定数の形式になっているかどうかを調べる。
+        long val;
+        Node *var = NULL;
+        Node *val_node = nodes[i];
+        //val_nodeがアドレス+定数の形式になっているかどうかを調べる。
         //varにND_ADDRESS(&var)のノード、valに定数を返す
-        if (nodes[i]->type==ND_INIT_LIST) {
-            warning_at(nodes[i]->input, "スカラーがリストで初期化されています");
-            if (!node_is_const_or_address(lst_data(nodes[i]->lst,0), &val, &var)) {
-                error_at(nodes[i]->input, "初期値が定数式ではありません");
+        if (val_node->type==ND_INIT_LIST) {
+            warning_at(val_node->input, "スカラーがリストで初期化されています");
+            if (!node_is_const_or_address(lst_data(val_node->lst,0), &val, &var)) {
+                error_at(val_node->input, "初期値が定数式ではありません");
             }
-            if (lst_len(nodes[i]->lst)>1) warning_at(((Node*)lst_data(nodes[i]->lst,1))->input, "初期化リストが配列サイズを超えています");
-        } else if (!node_is_const_or_address(nodes[i], &val, &var)) {
-            error_at(nodes[i]->input, "初期値が定数式ではありません");
+            if (lst_len(val_node->lst)>1) warning_at(((Node*)lst_data(val_node->lst,1))->input, "初期化リストが配列サイズを超えています");
+        } else if (!node_is_const_or_address(val_node, &val, &var)) {
+            error_at(val_node->input, "初期値が定数式ではありません");
         }
         if (var && val) {
             printf("  .%s %s%+ld\n", val_name, get_asm_var_name(var->rhs), val*size_of(var->rhs->tp));
         } else if (var) {
             printf("  .%s %s\n", val_name, get_asm_var_name(var->rhs));
-        } else if (nodes[i]->type==ND_STRING) {
-            printf("   .quad .LC%03d\n", nodes[i]->index);
-            //abort();
+        } else if (val_node->type==ND_STRING) {
+            printf("   .quad .LC%03d\n", val_node->index);
         } else {
-            if (tp->ptr_of->type==BOOL) {
-                if (val) val = 1;
-            }
+            if (tp->ptr_of->type==BOOL && val) val = 1;
             printf("  .%s %ld\n", val_name, val);
         }
     }
@@ -551,7 +548,6 @@ static int gen_struct_init_local(Node *node, int offset, Node *init, int idx) {
             } else {
                 val_node = &zero_node;
             }
-        //  if (member->tp->type==STRUCT && val_node->type==ND_INIT_LIST) {
             if (type_is_struct_or_union(member->tp) && val_node->type==ND_INIT_LIST) {
                 ret = gen_struct_init_local(member, offset, val_node, 0);
                 cnt++;
@@ -591,6 +587,75 @@ static int gen_struct_init_local(Node *node, int offset, Node *init, int idx) {
     }
     return cnt;
 }
+//ローカル変数の構造体・共用体を初期化
+//戻り値:消費したinitの数
+static int gen_struct_init_global(Node *node, int offset, Node *init, int idx) {
+    Type *tp = node->tp;
+    Node zero_node = {ND_NUM};  //定数0のノード
+    int cnt = 0;
+    Node *val_node;
+    switch (tp->type) {
+    case STRUCT:
+    case UNION:
+        if (!node_is_anonymouse_struct_or_union(node)) offset += node->offset;
+        int len = tp->type==STRUCT ? node->lst->len : 1;
+        Node **nodes = (Node**)node->lst->data;
+        for (int i=0;i<len;i++) {
+            Node *member = nodes[i];
+            int ret;
+            if (lst_len(init->lst) > idx+i) {
+                val_node = lst_data(init->lst, idx+i);
+            } else {
+                val_node = &zero_node;
+            }
+            if (type_is_struct_or_union(member->tp) && val_node->type==ND_INIT_LIST) {
+                ret = gen_struct_init_global(member, offset, val_node, 0);
+                cnt++;
+                if (val_node->type==ND_INIT_LIST && ret < lst_len(val_node->lst)) 
+                    warning_at(get_lst_node(val_node->lst, ret)->input, "構造体・共用体の初期化リストが要素数を超えています");
+            } else {
+                ret = gen_struct_init_global(member, offset, init, idx+i);
+                cnt += ret;
+                idx += ret-1;
+            }
+        }
+        break;
+    case ARRAY:
+        _NOT_YET_(node);
+        break;
+    default:
+        if (lst_len(init->lst) > idx) {
+            val_node = lst_data(init->lst, idx);
+            cnt = 1;
+        } else {
+            val_node = &zero_node;
+            cnt = 0;
+        }
+        char *val_name = val_name_of_type(tp);
+        int size = size_of(tp);
+        long val;
+        Node *var = NULL;
+        if (!node_is_const_or_address(val_node, &val, &var)) {
+            error_at(val_node->input, "初期値が定数式ではありません");
+        }
+        if (var && val) {
+            printf("  .%s %s%+ld\n", val_name, get_asm_var_name(var->rhs), val*size_of(var->rhs->tp));
+        } else if (var) {
+            printf("  .%s %s\n", val_name, get_asm_var_name(var->rhs));
+        } else if (val_node->type==ND_STRING) {
+            printf("   .quad .LC%03d\n", val_node->index);
+        } else {
+            if (tp->type==BOOL && val) val = 1;
+            printf("  .%s %ld\n", val_name, val);
+        }
+        if (node->val - size > 0) {
+            printf("  .zero %ld\n", node->val - size);
+        }
+
+        break;
+    }
+    return cnt;
+}
 static void gen_struct_init(Node *node) {
     assert(node->type=='=');
     assert(type_is_struct_or_union(node->lhs->tp));
@@ -598,7 +663,7 @@ static void gen_struct_init(Node *node) {
     Node *struct_def = node->lhs->tp->node;
     int cnt;
     if (node->lhs->type==ND_GLOBAL_VAR || node_is_local_static_var(node->lhs)) {
-        //cnt = gen_struct_init_global(struct_def, 0, init, 0);
+        cnt = gen_struct_init_global(struct_def, 0, init, 0);
     } else if (node->lhs->type==ND_LOCAL_VAR) {
         //スタックトップとrdiに構造体のベースアドレスが設定されている前提
         gen_fill_zero("rdi", 0, 1, size_of(node->lhs->tp));

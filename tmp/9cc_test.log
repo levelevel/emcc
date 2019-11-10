@@ -959,7 +959,7 @@ int main(){typedef struct ST st_t;{struct ST{int a,b;}; st_t st;}}
 # selftest ----------------
 int main(){struct{int a;}st; st=1;}
 9cc:Error: selftest:1: int main(){struct{int a;}st; st=1;}
-                                                    ^ 左辺値ではありません
+                                                      ^ =の左右の型(struct<noname>:int)が異なります
 # selftest ----------------
 int main(){struct{int a;}st; int b=st;}
 9cc:Error: selftest:1: int main(){struct{int a;}st; int b=st;}
@@ -975,7 +975,7 @@ int main(){struct{int a;}st1; struct{int b;}st2=st1;}
 # selftest ----------------
 int main(){struct{int a;}st1; struct{int b;}st2; st1=st2;}
 9cc:Error: selftest:1: int main(){struct{int a;}st1; struct{int b;}st2; st1=st2;}
-                                                                        ^ 左辺値ではありません
+                                                                           ^ =の左右の型(struct<noname>:struct<noname>)が異なります
 # selftest ----------------
 int main(){struct{int a;}st; return st;}
 9cc:Error: selftest:1: int main(){struct{int a;}st; return st;}
@@ -1079,6 +1079,38 @@ int main(){typedef struct{int a;}ST; ST st; void func(ST); func(&st);}
 9cc:Note: selftest:1: int main(){typedef struct{int a;}ST; ST st; void func(ST); func(&st);}
                                                                             ^ 関数の定義はここです
 # selftest ----------------
+int main(){static struct ST{int a;}; return 0;}
+9cc:Warning: selftest:1: int main(){static struct ST{int a;}; return 0;}
+                                    ^ Storage Classは無視されます
+# selftest ----------------
+int main(){const  struct ST{int a;}; return 0;}
+9cc:Warning: selftest:1: int main(){const  struct ST{int a;}; return 0;}
+                                    ^ constは無視されます
+# selftest ----------------
+int main(){static union UN{int a;}; return 0;}
+9cc:Warning: selftest:1: int main(){static union UN{int a;}; return 0;}
+                                    ^ Storage Classは無視されます
+# selftest ----------------
+int main(){const  union UN{int a;}; return 0;}
+9cc:Warning: selftest:1: int main(){const  union UN{int a;}; return 0;}
+                                    ^ constは無視されます
+# selftest ----------------
+static struct ST{int a;}; void main(){}
+9cc:Warning: selftest:1: static struct ST{int a;}; void main(){}
+                         ^ Storage Classは無視されます
+# selftest ----------------
+const  struct ST{int a;}; void main(){}
+9cc:Warning: selftest:1: const  struct ST{int a;}; void main(){}
+                         ^ constは無視されます
+# selftest ----------------
+static union UN{int a;}; void main(){}
+9cc:Warning: selftest:1: static union UN{int a;}; void main(){}
+                         ^ Storage Classは無視されます
+# selftest ----------------
+const  union UN{int a;}; void main(){}
+9cc:Warning: selftest:1: const  union UN{int a;}; void main(){}
+                         ^ constは無視されます
+# selftest ----------------
 int main(){struct U; union U;}
 9cc:Error: selftest:1: int main(){struct U; union U;}
                                                   ^ タグの重複定義です
@@ -1136,7 +1168,7 @@ int main(){typedef union UN un_t;{union UN{int a,b;}; un_t un;}}
 # selftest ----------------
 int main(){union{int a;}un1; union{int b;}un2; un1=un2;}
 9cc:Error: selftest:1: int main(){union{int a;}un1; union{int b;}un2; un1=un2;}
-                                                                      ^ 左辺値ではありません
+                                                                         ^ =の左右の型(union:union)が異なります
 # selftest ----------------
 int main(){union{int a;}un; return un;}
 9cc:Error: selftest:1: int main(){union{int a;}un; return un;}
@@ -1303,7 +1335,11 @@ char*func3(void){return 0;}          const char*func3(void); void main(){}
                                                                             ^ 関数の型が一致しません
 9cc:Note: selftest:1: char*func3(void){return 0;}          const char*func3(void); void main(){}
                                 ^ 以前の宣言はここです
+# selftest ----------------
+int main(){void func(char*p); const char*p; func(p);}
+9cc:Warning: selftest:1: int main(){void func(char*p); const char*p; func(p);}
+                                                                          ^ 引数[0]の型(char*:const char*)が一致しません
 9cc self test
-Total : 279
-   Ok : 279
+Total : 288
+   Ok : 288
    NG : 0

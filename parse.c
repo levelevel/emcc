@@ -220,6 +220,7 @@ static void external_declaration(void) {
     Node *node;
     Type *tp;
     char *name;
+    char *input = input_str();
     //          <-> declaration_specifiers
     //             <-> pointer* (declarator|init_declarator)
     //                <-> identifier (declarator|init_declarator)
@@ -236,6 +237,8 @@ static void external_declaration(void) {
     if (token_is_type_spec()) {
         tp = declaration_specifiers(0/*=type_only*/);
         if (consume(';')) {
+            if (get_storage_class(tp)>SC_TYPEDEF) warning_at(input, "Storage Classは無視されます");
+            if (tp->is_const) warning_at(input, "constは無視されます");
             new_node(ND_TYPE_DECL, NULL, NULL, tp, input_str());
             return;
         }
@@ -301,9 +304,12 @@ static Node *declaration(Type *tp, char *name) {
         if (token_is(TK_SASSERT)) {
             return static_assert_declaration();
         }
+        char *input = input_str();
         //declaration_specifiers, pointer, identifierを先読みしていなければdecl_specを読む
         decl_spec = declaration_specifiers(0/*=type_only*/);
         if (consume(';')) {
+            if (get_storage_class(decl_spec)>SC_TYPEDEF) warning_at(input, "Storage Classは無視されます");
+            if (decl_spec->is_const) warning_at(input, "constは無視されます");
             node = new_node(ND_TYPE_DECL, NULL, NULL, decl_spec, input_str());
             return node;
         }
@@ -411,6 +417,7 @@ static Node *init_declarator(Type *decl_spec, Type *tp, char *name) {
     //初期値により配列のサイズが決まるケースがあるので、regist_var_def()は初期値の確定後に行う必要あり
     regist_var_def(node);   //ND_UNDEF -> ND_(LOCAL|GLOBAL)_VAR_DEFに確定する。ND_FUNC_DECLはそのまま
     if (rhs) node->rhs->lhs = new_node_ident(name, input);  //=の左辺
+    node->val = size_of(node->tp);
 
     //初期値のないサイズ未定義のARRAYはエラー
     //externの場合はOK
@@ -1268,10 +1275,11 @@ static Node *assignment_expression(void) {
     case ND_DEC:
     case ND_LOCAL_VAR:
     case ND_GLOBAL_VAR:
-        is_lvalue = !type_is_struct_or_union(node->tp);
+        is_lvalue = 1;
         break;
     default:
         is_lvalue = 0;
+        break;
     }
     char *input = input_str();
     if (consume('=')) {
@@ -1671,12 +1679,12 @@ static Node *postfix_expression(void) {
             input++;
             Node *struct_def = tp->node; assert(struct_def!=NULL);    //STRUCT/UNION
             Node *member_def;
+            StorageClass sclass = get_storage_class(node->tp);
             if (map_get(struct_def->map, name, (void**)&member_def)==0) error_at(input, "struct/union %sに%sは存在しません", struct_def->name, name);
-            if (type_is_static(node->tp)) {
-                node->tp = dup_type(member_def->tp);
-                set_type_static(node->tp);
-            } else {
-                node->tp = member_def->tp;
+            node->tp = member_def->tp;
+            if (sclass != get_storage_class(node->tp)) {
+                node->tp = dup_type(node->tp);
+                set_storage_class(node->tp, SC_STATIC);
             }
             node->offset -= member_def->offset;
             assert(node->offset-sizeof(node->tp)>=0);
@@ -1692,8 +1700,13 @@ static Node *postfix_expression(void) {
             input++;
             Node *struct_def = tp->ptr_of->node; assert(struct_def!=NULL);    //STRUCT/UNION
             Node *member_def;
+            StorageClass sclass = get_storage_class(node->tp);
             if (map_get(struct_def->map, name, (void**)&member_def)==0) error_at(input, "struct/union %sに%sは存在しません", struct_def->name, name);
             node->tp = new_type_ptr(member_def->tp);
+            if (sclass != get_storage_class(node->tp)) {
+                node->tp = dup_type(node->tp);
+                set_storage_class(node->tp, SC_STATIC);
+            }
             assert(node->offset-sizeof(node->tp)>=0);
             if (node->disp_name==NULL) node->disp_name = node->name;
             char *buf = malloc(strlen(node->disp_name)+strlen(member_def->name)+3);

@@ -66,11 +66,15 @@ int get_var_offset(const Type *tp) {
     return cur_funcdef->var_stack_size;
 }
 
-//構造体(共用体)メンバのoffset(member->offset)と、構造体のサイズを設定する(node->val)。
+//構造体(共用体)メンバのoffset(member->offset)とパディングを含めたサイズ(member->val)、
+//構造体(共用体)のサイズを設定する(node->val)。
+//構造体(共用体)のStorage Class属性をメンバにもコピーする。
 void set_struct_size(Node *node, int base_offset) {
-    assert(type_is_struct_or_union(node->tp));
+    Type *tp = node->tp;
+    assert(type_is_struct_or_union(tp));
     if (node->lst==NULL) return;
     int max_align_size = 0, max_size = 0, offset = base_offset;
+    StorageClass sclass = get_storage_class(tp);
     for (int i=0; i<lst_len(node->lst); i++) {
         Node *member = get_lst_node(node->lst, i);
         assert(member->type==ND_MEMBER_DEF);
@@ -80,14 +84,30 @@ void set_struct_size(Node *node, int base_offset) {
         if (align_size>max_align_size) max_align_size = align_size;
         if (      size>max_size)       max_size       = size;
         offset = (offset +(align_size-1))/align_size * align_size;
-        member->offset = (node->tp->type==STRUCT ? offset : base_offset);
+        member->offset = (tp->type==STRUCT ? offset : base_offset);
         if (node_is_anonymouse_struct_or_union(member)) {    //無名構造体・共用体
-            set_struct_size(member, node->tp->type==STRUCT ? offset : 0);
+            set_struct_size(member, tp->type==STRUCT ? offset : 0);
         }
         offset += size;
+        if (sclass!=get_storage_class(member->tp)) {
+            member->tp = dup_type(member->tp);
+            set_storage_class(member->tp, sclass);
+        }
     }
     int total_size = (offset +(max_align_size-1))/max_align_size * max_align_size;
     node->val = node->type==ND_STRUCT_DEF ? total_size : max_size;
+    
+    //パディングを含めたサイズ(member->val)を設定する
+        int last_offset = node->val;    //全体のサイズ
+    for (int i=lst_len(node->lst)-1; i>=0; i--) {
+        Node *member = get_lst_node(node->lst, i);
+        if (tp->type==STRUCT) {
+            member->val = last_offset - member->offset;
+            last_offset = member->offset;
+        } else {
+            member->val = last_offset;
+        }
+    }
 }
 
 static long calc_node(Node *node, long val1, long val2) {
@@ -252,12 +272,12 @@ int node_is_const_or_address(Node *node, long *valp, Node **varp) {
 // static char*p; のような宣言ではPTRにはsclassが設定されず、
 // charだけに設定されているのでcharのところまで見に行く
 StorageClass get_storage_class(Type *tp) {
-    if (tp->ptr_of) return get_storage_class(tp->ptr_of);
+    while (tp->ptr_of) tp = tp->ptr_of;
     return tp->sclass;
 }
-void set_type_static(Type *tp) {
-    if (tp->ptr_of) set_type_static(tp->ptr_of);
-    else tp->sclass = SC_STATIC;
+void set_storage_class(Type *tp, StorageClass sclass) {
+    while (tp->ptr_of) tp = tp->ptr_of;
+    tp->sclass = sclass;
 }
 
 int new_string_literal(String *string) {
@@ -678,9 +698,10 @@ int type_eq_ex_sclass(const Type *tp1, const Type *tp2) {
 Status type_eq_check(const Type *tp1, const Type *tp2) {
     if (!tp1->is_const && tp2->is_const) {
         return ST_WARN; //引数、戻り値の場合はWARN。代入の場合はERRだがここではチェックしない
-    } else if ((tp1->type==PTR && tp2->type==ARRAY) ||
-        (type_is_integer(tp1) && type_is_integer(tp2))) {
-        ;
+    } else if (type_is_integer(tp1) && type_is_integer(tp2)) {
+        ;   //inter同士はOK
+    } else if (tp1->type==PTR && tp2->type==ARRAY) {
+        ;   //ポインタに対する配列はOK
     } else if (tp1->type==PTR && tp1->ptr_of->type==FUNC &&
                tp2->type==FUNC) {   //関数ポインタに対する関数名の代入
         tp1 = tp1->ptr_of;
@@ -690,7 +711,10 @@ Status type_eq_check(const Type *tp1, const Type *tp2) {
         if (tp1->type==VOID) return ST_ERR;
         return ST_WARN;
     }
-    if (tp1->ptr_of) return type_eq_check(tp1->ptr_of, tp2->ptr_of)==ST_OK ? ST_OK : ST_WARN;
+    if (tp1->ptr_of) {
+        if (tp1->type==PTR && tp1->ptr_of->type==VOID && !tp2->ptr_of->is_const) return ST_OK;
+        return type_eq_check(tp1->ptr_of, tp2->ptr_of)==ST_OK ? ST_OK : ST_WARN;
+    }
     return ST_OK;
 }
 

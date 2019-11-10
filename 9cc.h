@@ -212,11 +212,11 @@ typedef enum {
 
 typedef enum {
     SC_UNDEF,
+    SC_TYPEDEF,     //便宜的にここに入っている
     SC_AUTO,
     SC_REGISTER,
     SC_STATIC,
     SC_EXTERN,
-    SC_TYPEDEF,
 } StorageClass;
 
 typedef struct Type Type;
@@ -242,7 +242,8 @@ struct Node {
     int index;      //static変数：識別用index（global_index）
                     //typeがND_STRINGの場合のstring_vecのインデックス
     long val;       //typeがND_NUMの場合の値
-                    //typeがND_STRUCT/UNION_DEFの場合のサイズ
+                    //typeがND_(STRUCT/UNION/LOCAL_VAR|GLOBAL_VAR)_DEFの場合のサイズ(sizeof)
+                    //typeがND_MEMBER_DEFの場合のパディングを含めたサイズ
     Node *lhs;
     Node *rhs;
     Vector *lst;    //typeがND_BLOCKの場合のstatementのリスト
@@ -402,7 +403,7 @@ int node_is_const_or_address(Node *node, long *valp, Node **varp);
 #define type_is_typedef(tp) (get_storage_class(tp)==SC_TYPEDEF)
 #define node_is_local_static_var(node) (((node)->type==ND_LOCAL_VAR||(node)->type==ND_LOCAL_VAR_DEF) && type_is_static((node)->tp))
 StorageClass get_storage_class(Type *tp);
-void set_type_static(Type *tp);
+void set_storage_class(Type *tp, StorageClass sclass);
 int new_string_literal(String *string);
 String *get_string_literal(int index);
 void unuse_string_literal(int index);
