@@ -24,15 +24,15 @@
                                                ^ 引数[0]の型(struct LS*:struct LS*)が一致しません
 9cc:Note: tmp/test_src.c:1434:     void gc4_func(struct LS*p){};
                                                             ^ 関数の定義はここです
-9cc:Warning: tmp/test_src.c:2467:     return str;
+9cc:Warning: tmp/test_src.c:2534:     return str;
                                       ^ static char*型の関数func_const2がstatic const char[4]型を返しています
-9cc:Warning: tmp/test_src.c:2476:     func_const3(p1);
+9cc:Warning: tmp/test_src.c:2543:     func_const3(p1);
                                                   ^ 引数[0]の型(char*:const char*)が一致しません
-9cc:Note: tmp/test_src.c:2469: static char *func_const3(char*str){return str;}
+9cc:Note: tmp/test_src.c:2536: static char *func_const3(char*str){return str;}
                                                                 ^ 関数の定義はここです
-9cc:Warning: tmp/test_src.c:2489:     func_const3(p3);
+9cc:Warning: tmp/test_src.c:2556:     func_const3(p3);
                                                   ^ 引数[0]の型(char*:char const*)が一致しません
-9cc:Note: tmp/test_src.c:2469: static char *func_const3(char*str){return str;}
+9cc:Note: tmp/test_src.c:2536: static char *func_const3(char*str){return str;}
                                                                 ^ 関数の定義はここです
 9cc:Warning: tmp/test_src.c:865: static int ga2_b[4]={1,2,{3,99},4}, *ga2_p=&ga2_a, *ga2_q=&ga2_b[2], *ga2_r=ga2_a+3;
                                                            ^ スカラーがリストで初期化されています
@@ -82,11 +82,11 @@
                                                          ^ 初期化リストが配列サイズを超えています
 9cc:Warning: tmp/test_src.c:975:     char str4[3] = "A\0B";
                                                         ^ 初期化リストが配列サイズを超えています
-9cc:Warning: tmp/test_src.c:1944:     XYZ xyz = {{1,2,3},4,{5,6}};
+9cc:Warning: tmp/test_src.c:1945:     XYZ xyz = {{1,2,3},4,{5,6}};
                                                   ^ スカラーがリストで初期化されています
-9cc:Warning: tmp/test_src.c:1944:     XYZ xyz = {{1,2,3},4,{5,6}};
+9cc:Warning: tmp/test_src.c:1945:     XYZ xyz = {{1,2,3},4,{5,6}};
                                                             ^ スカラーがリストで初期化されています
-9cc:Warning: tmp/test_src.c:2333:     } u10 = {1,2}, u1=u10;
+9cc:Warning: tmp/test_src.c:2400:     } u10 = {1,2}, u1=u10;
                                                  ^ 構造体・共用体の初期化リストが要素数を超えています
   OK: logical1
   OK: logical2
@@ -240,12 +240,15 @@
   OK: Struct1Arrow
   OK: Struct2
   OK: Struct2Arrow
+  OK: Struct3
   OK: StaticStruct1
   OK: StaticStruct1Arrow
   OK: StaticStruct2
   OK: StaticStruct2Arrow
+  OK: StaticStruct3
   OK: GlobalStruct1
   OK: GlobalStruct2Arrow
+  OK: GlobalStruct3
   OK: AnonymouseStruct1
   OK: AnonymouseStruct2
   OK: Struct

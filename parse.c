@@ -80,7 +80,8 @@
     expression              = assignment_expression ( "," assignment_expression )*
     constant_expression     = conditional_expression
     assignment_expression   = conditional_expression
-                            | unary_expression ( "=" | "+=" | "-=" | "*=" | "/=" | "%=" ) assignment_expression
+                            | unary_expression ( "=" | "+=" | "-=" | "*=" | "/=" | "%=" | 
+                                ">>=" | "<<=" | "&=" | "^=" | "|=" ) assignment_expression
     conditional_expression  = logical_OR_expression ( "?" expression ":" conditional_expression )?
     logical_OR_expression   = logical_AND_expression ( "||" logical_AND_expression )*
     logical_AND_expression  = inclusive_OR_expression ( "&&" inclusive_OR_expression )*

@@ -1929,20 +1929,22 @@ static int Struct2(void) {
             char *up;
         };
         int   z;
-    } st0 = {
+    } st0 = {0},
+      st1 = {
         2,2,3,4,5,          //b,c,s,i,l
         (void*)6, "qqq",    //p,q
         {10,11,}, 20,21,22, //x,y
         -1,                 //uc
                             //z
-    }, st=st0;
+      }, st=st1;
     XYZ xyz = {{1,2,3},4,{5,6}};
-    return st.b==1 && st.c==2 && st.s==3 && st.i==4 && st.l==5 
+    return st0.c==0 && st0.p==0 && st0.x.x==0 && st0.ui==0
+        && st.b==1 && st.c==2 && st.s==3 && st.i==4 && st.l==5 
         && st.p==(void*)6 && strcmp(st.q, "qqq")==0
         && st.x.x==10 && st.x.y==11 && st.x.z==0
         && st.y.x==20 && st.y.y==21 && st.y.z==22
         && st.uc==-1 && st.us==255 && st.ui==255 && st.ul==255 && st.up==(void*)255
-        && st.z==0 && memcmp(&st0, &st, sizeof(st))==0
+        && st.z==0 && memcmp(&st1, &st, sizeof(st))==0
         && xyz.x==1 && xyz.y==4 && xyz.z==5;
 }
 static int Struct2Arrow(void) {
@@ -1965,20 +1967,44 @@ static int Struct2Arrow(void) {
             char *up;
         };
         int   z;
-    } st0 = {
+    } st1 = {
         2,2,3,4,5,          //b,c,s,i,l
         (void*)6, "qqq",    //p,q
         {10,11,}, 20,21,22, //x,y
         -1,                 //uc
                             //z
-    }, st1, *stp = &st1;
-    *stp = st0;
+      }, st2, *stp = &st2;
+    *stp = st1;
     return stp->b==1 && stp->c==2 && stp->s==3 && stp->i==4 && stp->l==5 
         && stp->p==(void*)6 && strcmp(stp->q, "qqq")==0
         && stp->x.x==10 && stp->x.y==11 && stp->x.z==0
         && stp->y.x==20 && stp->y.y==21 && stp->y.z==22
         && stp->uc==-1 && stp->us==255 && stp->ui==255 && stp->ul==255 && stp->up==(void*)255
-        && stp->z==0 && memcmp(&st0, stp, sizeof(struct ST))==0
+        && stp->z==0 && memcmp(&st1, stp, sizeof(struct ST))==0
+        ;
+}
+static int Struct3(void) {
+    struct ST {
+        struct{short s;};
+        int  a[4];
+        char c[4];
+        char*p[2];
+        short d[2][2];
+    };
+    int a='a';
+    char *abc="ABC";
+    struct ST st00={0};
+    struct ST st01={{0},{0},{0},{0},{0}};
+    struct ST st1={ 0,   1,2,3,4,   'a','b','c',0,   0,"ABC",   11,12,21,22 };
+    struct ST st2={{0}, {1,2,3},   {'a','b','c',0}, {0,"ABC"}, {{11,12},{21,22}}}, *sp2=&st2;
+    struct ST sv1={ a,   1,a,3,4,    a, 'b','c',0,   0,abc,    { a,12,21,22}};
+    struct ST sv2={{a}, {1,a,3},   { a, 'b','c',0}, {0,abc},   {{a,12},a,22}};
+    return st00.s==0 && st00.a[3]==0 && st00.p[1]==0 && st00.d[1][1]==0
+        && st01.s==0 && st01.a[3]==0 && st01.p[1]==0 && st01.d[1][1]==0
+        && st1.s==0 && st1.a[1]==2 && strcmp(st1.c, "abc")==0 && strcmp(st1.p[1],"ABC")==0 && st1.d[1][1]==22
+        && sp2->s==0 && sp2->a[1]==2 && strcmp(sp2->c, "abc")==0 && strcmp(sp2->p[1],"ABC")==0 && sp2->a[3]==0 &&  sp2->d[1][1]==22
+        && sv1.s=='a' && sv1.a[1]=='a' && strcmp(sv1.c, "abc")==0 && strcmp(sv1.p[1],"ABC")==0 && sv1.d[1][1]==22
+        && sv2.s=='a' && sv2.a[1]=='a' && strcmp(sv2.c, "abc")==0 && strcmp(sv2.p[1],"ABC")==0 && sv2.a[3]==0 && sv2.d[1][1]==22
         ;
 }
 
@@ -2077,21 +2103,23 @@ static int StaticStruct2(void) {
             char *up;
         };
         int   z;
-    } st0 = {
+    } st0 = {0},
+      st1 = {
         2,2,3,4,5,          //b,c,s,i,l
         (void*)6, "qqq",    //p,q
         {10,11,}, 20,21,22, //x,y
         -1,                 //uc
                             //z
-    }, st;
-    st = st0;
+      }, st;
+    st = st1;
     static XYZ xyz = {{1,2,3},4,{5,6}};
-    return st.b==1 && st.c==2 && st.s==3 && st.i==4 && st.l==5 
+    return st0.c==0 && st0.p==0 && st0.x.x==0 && st0.ui==0
+        && st.b==1 && st.c==2 && st.s==3 && st.i==4 && st.l==5 
         && st.p==(void*)6 && strcmp(st.q, "qqq")==0
         && st.x.x==10 && st.x.y==11 && st.x.z==0
         && st.y.x==20 && st.y.y==21 && st.y.z==22
         && st.uc==-1 && st.us==255 && st.ui==255 && st.ul==255 && st.up==(void*)255
-        && st.z==0 && memcmp(&st0, &st, sizeof(st))==0
+        && st.z==0 && memcmp(&st1, &st, sizeof(st))==0
         && xyz.x==1 && xyz.y==4 && xyz.z==5;
 }
 static int StaticStruct2Arrow(void) {
@@ -2114,23 +2142,41 @@ static int StaticStruct2Arrow(void) {
             char *up;
         };
         int   z;
-    } st0 = {
+    } st1 = {
         2,2,3,4,5,          //b,c,s,i,l
         (void*)6, "qqq",    //p,q
         {10,11,}, 20,21,22, //x,y
         -1,                 //uc
                             //z
-    }, st1, *stp;
-    stp = &st1;
-    *stp = st0;
+    }, st2, *stp;
+    stp = &st2;
+    *stp = st1;
     static XYZ xyz = {{1,2,3},4,{5,6}};
     return stp->b==1 && stp->c==2 && stp->s==3 && stp->i==4 && stp->l==5 
         && stp->p==(void*)6 && strcmp(stp->q, "qqq")==0
         && stp->x.x==10 && stp->x.y==11 && stp->x.z==0
         && stp->y.x==20 && stp->y.y==21 && stp->y.z==22
         && stp->uc==-1 && stp->us==255 && stp->ui==255 && stp->ul==255 && stp->up==(void*)255
-        && stp->z==0 && memcmp(&st0, stp, sizeof(struct ST))==0
+        && stp->z==0 && memcmp(&st1, stp, sizeof(struct ST))==0
         && xyz.x==1 && xyz.y==4 && xyz.z==5;
+}
+static int StaticStruct3(void) {
+    struct ST {
+        struct{short s;};
+        int  a[4];
+        char c[4];
+        char*p[2];
+        short d[2][2];
+    };
+    static struct ST st00={0};
+    static struct ST st01={{0},{0},{0},{0},{0}};
+    static struct ST st1={ 0, 1,2,3,4,   'a','b','c',0,   0,"ABC",   11,12,21,22 };
+    static struct ST st2={{0}, {1,2,3},   {'a','b','c',0}, {0,"ABC"}, {{11,12},{21,22}}}, *sp2=&st2;
+    return st00.s==0 && st00.a[3]==0 && st00.p[1]==0 && st00.d[1][1]==0
+        && st01.s==0 && st01.a[3]==0 && st01.p[1]==0 && st01.d[1][1]==0
+        && st1.s==0 && st1.a[1]==2 && strcmp(st1.c, "abc")==0 && strcmp(st1.p[1],"ABC")==0 && st1.d[1][1]==22
+        && sp2->s==0 && sp2->a[1]==2 && strcmp(sp2->c, "abc")==0 && strcmp(sp2->p[1],"ABC")==0 && sp2->a[3]==0 &&  sp2->d[1][1]==22
+        ;
 }
 
     struct gs1_S;
@@ -2206,6 +2252,24 @@ static int GlobalStruct2Arrow(void) {
         && gs2a_stp->z==0 && memcmp(&gs2a_st0, gs2a_stp, sizeof(struct gs2a_ST))==0
         && gs2a_xyz.x==1 && gs2a_xyz.y==4 && gs2a_xyz.z==5;
 }
+    struct gs3_ST {
+        struct{short s;};
+        int  a[4];
+        char c[4];
+        char*p[2];
+        short d[2][2];
+    };
+    static struct gs3_ST gs3_st00={0};
+    static struct gs3_ST gs3_st01={{0},{0},{0},{0},{0}};
+    static struct gs3_ST gs3_st1={ 0, 1,2,3,4,   'a','b','c',0,   0,"ABC",   11,12,21,22 };
+    static struct gs3_ST gs3_st2={{0}, {1,2,3},   {'a','b','c',0}, {0,"ABC"}, {{11,12},{21,22}}}, *gs3_sp2=&gs3_st2;
+static int GlobalStruct3(void) {
+    return gs3_st00.s==0 && gs3_st00.a[3]==0 && gs3_st00.p[1]==0 && gs3_st00.d[1][1]==0
+        && gs3_st01.s==0 && gs3_st01.a[3]==0 && gs3_st01.p[1]==0 && gs3_st01.d[1][1]==0
+        && gs3_st1.s==0 && gs3_st1.a[1]==2 && strcmp(gs3_st1.c, "abc")==0 && strcmp(gs3_st1.p[1],"ABC")==0 && gs3_st1.d[1][1]==22
+        && gs3_sp2->s==0 && gs3_sp2->a[1]==2 && strcmp(gs3_sp2->c, "abc")==0 && strcmp(gs3_sp2->p[1],"ABC")==0 && gs3_sp2->a[3]==0 && gs3_sp2->d[1][1]==22
+        ;
+}
 
 static int AnonymouseStruct1(void) {
     struct ST{
@@ -2256,14 +2320,17 @@ static int Struct(void) {
     TEST(Struct1Arrow);
     TEST(Struct2);
     TEST(Struct2Arrow);
+    TEST(Struct3);
 
     TEST(StaticStruct1);
     TEST(StaticStruct1Arrow);
     TEST(StaticStruct2);
     TEST(StaticStruct2Arrow);
+    TEST(StaticStruct3);
 
     TEST(GlobalStruct1);
     TEST(GlobalStruct2Arrow);
+    TEST(GlobalStruct3);
 
     TEST(AnonymouseStruct1);
     TEST(AnonymouseStruct2);
