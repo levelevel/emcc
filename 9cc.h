@@ -277,6 +277,9 @@ struct Node {
     char *input;    //トークン文字列（エラーメッセージ用）。Token.inputと同じ。
 };
 #define display_name(_node) ((_node)->disp_name ? (_node)->disp_name : (_node)->name)
+//タグなしenum/struct/union
+#define NODE_NONAME "<noname>"
+#define node_is_noname(_node) ((_node)->name && (_node)->name[0]=='<')
 
 typedef struct {
     char    *func_name;     //関数名

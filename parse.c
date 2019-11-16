@@ -328,7 +328,7 @@ static Node *declaration(Type *tp, char *name) {
 
     if (name==NULL && token_is(';')) {
         //変数名なしが許されるのは無名構造体・共用体のみ
-        if (!type_is_struct_or_union(decl_spec) || decl_spec->node->name[0]!='<') {
+        if (!(type_is_struct_or_union(decl_spec) && node_is_noname(decl_spec->node))) {
             expect_ident(NULL, "変数名");
         }
         node = decl_spec->node;
@@ -866,7 +866,7 @@ static Node *struct_or_union_specifier(TPType type) {
     if (consume_ident(&name)) {
         node->name = name;
     } else {
-        node->name = "<noname>";
+        node->name = NODE_NONAME;
     }
     node->tp->node = node;
 
@@ -980,7 +980,7 @@ static void refresh_typedef(Node *struc) {
     for (int i=0; i<size; i++) {
         Node *typdef = nodes[i];
         if (typdef->type!=ND_TYPEDEF) continue;
-        if (strcmp(struc->name, typdef->tp->node->name)==0) {
+        if (!node_is_noname(struc) && strcmp(struc->name, typdef->tp->node->name)==0) {
             assert(struc->tp->type==typdef->tp->type);
             typdef->tp->node = struc;
         }
@@ -996,7 +996,7 @@ static Node *enum_specifier(void) {
     if (consume_ident(&name)) {
         node->name = name;
     } else {
-        node->name = "<noname>";
+        node->name = NODE_NONAME;
     }
     if (consume('{')) {
         Node *em = enumerator(node, 0);
@@ -1215,7 +1215,7 @@ static Node *compound_statement(int is_func_body) {
             char *input = input_str();
             block_item = declaration(NULL, NULL);
             if (block_item->type==ND_TYPE_DECL && block_item->name==NULL &&
-                type_is_struct_or_union(block_item->tp) && block_item->tp->node->name[0]=='<') {
+                type_is_struct_or_union(block_item->tp) && node_is_noname(block_item->tp->node)) {
                 warning_at(input, "意味のない宣言です");
             }
         } else {
@@ -1609,9 +1609,9 @@ static Node *unary_expression(void) {
         if (!type_is_ptr(node->tp))
             error_at(node->input, "'*'は非ポインタ型(%s)を参照しています", get_type_str(node->tp));
         node = new_node(ND_INDIRECT, NULL, node, node->tp->ptr_of, input);
-        if (display_name(node)) {
-            char *buf = malloc(strlen(display_name(node))+2);
-            sprintf(buf, "*%s", display_name(node));
+        if (display_name(node->rhs)) {
+            char *buf = malloc(strlen(display_name(node->rhs))+2);
+            sprintf(buf, "*%s", display_name(node->rhs));
             node->disp_name = buf;
         }
     } else if (consume('&')) {
@@ -1676,6 +1676,7 @@ static Node *postfix_expression(void) {
             // a[3][2] => *(*(a+3)+2)
             input = input_str();
             Node *rhs = expression();
+            Node *base_node = node;
             long val;
             if (tp->type==ARRAY && node_is_const(rhs, &val)) {
                 tp = node->tp->ptr_of ? node->tp->ptr_of : rhs->tp->ptr_of;
@@ -1687,6 +1688,11 @@ static Node *postfix_expression(void) {
                 tp = node->tp->ptr_of ? node->tp->ptr_of : rhs->tp->ptr_of;
                 if (tp==NULL) error_at(input_str(), "ここでは配列を指定できません");
                 node = new_node(ND_INDIRECT, NULL, node, tp, input);
+            }
+            if (display_name(base_node)) {
+                char *buf = malloc(strlen(display_name(base_node))+3);
+                sprintf(buf, "%s[]", display_name(base_node));
+                node->disp_name = buf;
             }
             expect(']');
         } else if (consume('.')) {
@@ -1732,6 +1738,11 @@ static Node *postfix_expression(void) {
             node = new_node(ND_INDIRECT, NULL, node, member_def->tp, input);
             node->name = node->rhs->name;
             node->offset = -member_def->offset;
+            if (display_name(node->rhs)) {
+                char *buf = malloc(strlen(display_name(node->rhs))+2);
+                sprintf(buf, "*%s", display_name(node->rhs));
+                node->disp_name = buf;
+            }
             //dump_node(node,__func__);
         } else if (consume(TK_INC)) {
             check_arg(node, input, CHK_STRUCT|CHK_UNION|CHK_ARRAY|CHK_CONST, "++");

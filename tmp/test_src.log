@@ -1,9 +1,7 @@
-9cc:Warning: tmp/test_src.c:28:         42 == f42() &&
-                                              ^ 未宣言の関数コールです。
-9cc:Warning: tmp/test_src.c:40: }
-                                 ^ 関数が戻り値を返していません
-9cc:Warning: tmp/test_src.c:60: static int f42() {42; ;;;;;}
+9cc:Warning: tmp/test_src.c:26: static int f42() {42; ;;;;;}
                                                             ^ 関数が戻り値を返していません
+9cc:Warning: tmp/test_src.c:41: }
+                                 ^ 関数が戻り値を返していません
 9cc:Warning: tmp/test_src.c:274: }
                                   ^ 関数が戻り値を返していません
 9cc:Warning: tmp/test_src.c:420: }
@@ -24,15 +22,15 @@
                                                ^ 引数[0]の型(struct LS*:struct LS*)が一致しません
 9cc:Note: tmp/test_src.c:1434:     void gc4_func(struct LS*p){};
                                                             ^ 関数の定義はここです
-9cc:Warning: tmp/test_src.c:2534:     return str;
+9cc:Warning: tmp/test_src.c:2712:     return str;
                                       ^ static char*型の関数func_const2がstatic const char[4]型を返しています
-9cc:Warning: tmp/test_src.c:2543:     func_const3(p1);
+9cc:Warning: tmp/test_src.c:2721:     func_const3(p1);
                                                   ^ 引数[0]の型(char*:const char*)が一致しません
-9cc:Note: tmp/test_src.c:2536: static char *func_const3(char*str){return str;}
+9cc:Note: tmp/test_src.c:2714: static char *func_const3(char*str){return str;}
                                                                 ^ 関数の定義はここです
-9cc:Warning: tmp/test_src.c:2556:     func_const3(p3);
+9cc:Warning: tmp/test_src.c:2734:     func_const3(p3);
                                                   ^ 引数[0]の型(char*:char const*)が一致しません
-9cc:Note: tmp/test_src.c:2536: static char *func_const3(char*str){return str;}
+9cc:Note: tmp/test_src.c:2714: static char *func_const3(char*str){return str;}
                                                                 ^ 関数の定義はここです
 9cc:Warning: tmp/test_src.c:865: static int ga2_b[4]={1,2,{3,99},4}, *ga2_p=&ga2_a, *ga2_q=&ga2_b[2], *ga2_r=ga2_a+3;
                                                            ^ スカラーがリストで初期化されています
@@ -48,6 +46,10 @@
                                                          ^ 初期化リストが配列サイズを超えています
 9cc:Warning: tmp/test_src.c:1142:  char i2g_c, *i2g_ac[3] = {0,&i2g_c+1,(char*)3,(char*)4};
                                                                                  ^ 初期化リストが配列サイズを超えています
+9cc:Warning: tmp/test_src.c:2328:     static gs2a_XYZ gs2a_xyz = {{1,2,3},4,{5,6}};
+                                                                   ^ スカラーがリストで初期化されています
+9cc:Warning: tmp/test_src.c:2328:     static gs2a_XYZ gs2a_xyz = {{1,2,3},4,{5,6}};
+                                                                             ^ スカラーがリストで初期化されています
 9cc:Warning: tmp/test_src.c:878:     static int a[4]={1,2,{3,99},4}, *p=a, *q=&a[2], *r=a+3;
                                                            ^ スカラーがリストで初期化されています
 9cc:Warning: tmp/test_src.c:878:     static int a[4]={1,2,{3,99},4}, *p=a, *q=&a[2], *r=a+3;
@@ -58,6 +60,14 @@
                                                               ^ 初期化リストが配列サイズを超えています
 9cc:Warning: tmp/test_src.c:1020:     static char str3[4] = "ABCDE";
                                                                  ^ 初期化リストが配列サイズを超えています
+9cc:Warning: tmp/test_src.c:2170:     static XYZ xyz = {{1,2,3},4,{5,6}};
+                                                         ^ スカラーがリストで初期化されています
+9cc:Warning: tmp/test_src.c:2170:     static XYZ xyz = {{1,2,3},4,{5,6}};
+                                                                   ^ スカラーがリストで初期化されています
+9cc:Warning: tmp/test_src.c:2209:     static XYZ xyz = {{1,2,3},4,{5,6}};
+                                                         ^ スカラーがリストで初期化されています
+9cc:Warning: tmp/test_src.c:2209:     static XYZ xyz = {{1,2,3},4,{5,6}};
+                                                                   ^ スカラーがリストで初期化されています
 9cc:Warning: tmp/test_src.c:671:     int b[4]={1,2,{3,99},a[3]};
                                                     ^ スカラーがリストで初期化されています
 9cc:Warning: tmp/test_src.c:671:     int b[4]={1,2,{3,99},a[3]};
@@ -86,7 +96,9 @@
                                                   ^ スカラーがリストで初期化されています
 9cc:Warning: tmp/test_src.c:1945:     XYZ xyz = {{1,2,3},4,{5,6}};
                                                             ^ スカラーがリストで初期化されています
-9cc:Warning: tmp/test_src.c:2400:     } u10 = {1,2}, u1=u10;
+9cc:Warning: tmp/test_src.c:2518:     } u10 = {1,2}, u1=u10;
+                                                 ^ 構造体・共用体の初期化リストが要素数を超えています
+9cc:Warning: tmp/test_src.c:2536:     } u10 = {1,2}, u1, *u1p=&u1;
                                                  ^ 構造体・共用体の初期化リストが要素数を超えています
   OK: logical1
   OK: logical2
@@ -241,11 +253,14 @@
   OK: Struct2
   OK: Struct2Arrow
   OK: Struct3
+  OK: Struct4
+  OK: Struct4Arrow
   OK: StaticStruct1
   OK: StaticStruct1Arrow
   OK: StaticStruct2
   OK: StaticStruct2Arrow
   OK: StaticStruct3
+  OK: StaticStruct4
   OK: GlobalStruct1
   OK: GlobalStruct2Arrow
   OK: GlobalStruct3
@@ -253,7 +268,10 @@
   OK: AnonymouseStruct2
   OK: Struct
   OK: Union1
+  OK: Union1Arrow
   OK: Union2
+  OK: Union2Arrow
+  OK: StaticUnion1
   OK: AnonymouseUnion1
   OK: AnonymouseUnion2
   OK: Union

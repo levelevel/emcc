@@ -19,6 +19,7 @@ test_src() {
   EXE2=tmp/test_src
   rm -f $EXE2 $EXE2.log
 
+# gcc $CFLAGS -g $src $src2 -o $EXE2 > $EXE2.gcc.log 2>&1
   gcc -g $src $src2 -o $EXE2 > $EXE2.gcc.log 2>&1
   ./$EXE2          >> $EXE2.gcc.log
   if [ $? -eq 0 ]; then

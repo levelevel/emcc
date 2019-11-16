@@ -27,6 +27,7 @@ int memcmp(const void *s1, const void *s2, size_t n);
 static int test_cnt = 0;
 #define TEST(f) test_cnt++;if(!f()) {printf("Error at %s:%d:%s\n",__FILE__,__LINE__,#f);exit(1);} else {printf("  OK: %s\n",#f);}
 
+static int f42() {42; ;;;;;}
 static int logical1(void) {
 #ifdef _9cc
         42 == f42() &&    //これはCの仕様とは異なる
@@ -61,7 +62,6 @@ static int logical(void) {
     return 1;
 }
 
-static int f42() {42; ;;;;;}
 static int addsub1(){
     int a=10, b=3, c=a+b*(-2), d=a/b, e=a%b;
     return c==4 && d==3 && e==1;
@@ -2007,6 +2007,56 @@ static int Struct3(void) {
         && sv2.s=='a' && sv2.a[1]=='a' && strcmp(sv2.c, "abc")==0 && strcmp(sv2.p[1],"ABC")==0 && sv2.a[3]==0 && sv2.d[1][1]==22
         ;
 }
+static int Struct4(void) {
+    const int a=1;
+    struct XY{int x;long y;};
+    struct S {
+        short s;
+        int a[2];
+        struct XY xy;
+    } s1[2],
+      s01[2] = {0},
+      s02[2] = {{0},{1}},
+      s21[2] = {1,2,3,4,5,6,7,8,9,10},
+      s22[2] = {{1,2,3,4,5},{6,{7,8},{9,10}}},
+      sv1[2] = {a+1,a+2,a+3,a+4,a+5,{a+6,{a+7,a+8},{a+9,a+10}}};
+    s1[1].s = 1;
+    s1[1].a[1] = 2;
+    s1[1].xy.y = 3;
+
+    return sizeof(s1)==sizeof(struct S)*2
+        && s1[1].s==1 && s1[1].a[1]==2 && s1[1].xy.y==3
+        && s01[0].s==0 && s01[0].a[1]==0 && s01[0].xy.y==0
+        && s01[1].s==0 && s01[1].a[1]==0 && s01[1].xy.y==0
+        && s02[0].s==0 && s02[0].a[1]==0 && s02[0].xy.y==0
+        && s02[1].s==1 && s02[1].a[1]==0 && s02[1].xy.y==0
+        && s21[1].s==6 && s21[1].a[1]==8 && s21[1].xy.y==10
+        && s22[0].s==1 && s22[0].a[1]==3 && s22[0].xy.y==5
+        && s22[1].s==6 && s22[1].a[1]==8 && s22[1].xy.y==10
+        && sv1[0].s==a+1 && sv1[0].a[1]==a+3 && sv1[0].xy.y==a+5
+        && sv1[1].s==a+6 && sv1[1].a[1]==a+8 && sv1[1].xy.y==a+10
+    ;
+}
+static int Struct4Arrow(void) {
+    const int a=1;
+    struct XY{int x;long y;};
+    struct S {
+        short s;
+        int a[2];
+        struct XY xy;
+    } s1[2], *s1p[]={&s1[0],&s1[1]},
+      s01[2] = {0}, *s01p[]={&s01[0],&s01[1]};
+    s1p[1]->s = 1;
+    s1p[1]->a[1] = 2;
+    s1p[1]->xy.y = 3;
+
+    return sizeof(s1)==sizeof(struct S)*2
+        && s1[1].s==1 && s1[1].a[1]==2 && s1[1].xy.y==3
+        && s1p[1]->s==1 && s1p[1]->a[1]==2 && s1p[1]->xy.y==3
+        && s01p[0]->s==0 && s01p[0]->a[1]==0 && s01p[0]->xy.y==0
+        && s01p[1]->s==0 && s01p[1]->a[1]==0 && s01p[1]->xy.y==0
+    ;
+}
 
 static int StaticStruct1(void) {
     struct S;
@@ -2178,6 +2228,36 @@ static int StaticStruct3(void) {
         && sp2->s==0 && sp2->a[1]==2 && strcmp(sp2->c, "abc")==0 && strcmp(sp2->p[1],"ABC")==0 && sp2->a[3]==0 &&  sp2->d[1][1]==22
         ;
 }
+static int StaticStruct4(void) {
+    const int a=1;
+    struct XY{int x;long y;};
+    static struct S {
+        short s;
+        int a[2];
+        struct XY xy;
+    } s1[2],
+      s01[2] = {0},
+      s02[2] = {{0},{1}},
+      s21[2] = {1,2,3,4,5,6,7,8,9,10},
+      s22[2] = {{1,2,3,4,5},{6,{7,8},{9,10}}};
+      //sv1[2] = {a+1,a+2,a+3,a+4,a+5,{a+6,{a+7,a+8},{a+9,a+10}}};
+    s1[1].s = 1;
+    s1[1].a[1] = 2;
+    s1[1].xy.y = 3;
+
+    return sizeof(s1)==sizeof(struct S)*2
+        && s1[1].s==1 && s1[1].a[1]==2 && s1[1].xy.y==3
+        && s01[0].s==0 && s01[0].a[1]==0 && s01[0].xy.y==0
+        && s01[1].s==0 && s01[1].a[1]==0 && s01[1].xy.y==0
+        && s02[0].s==0 && s02[0].a[1]==0 && s02[0].xy.y==0
+        && s02[1].s==1 && s02[1].a[1]==0 && s02[1].xy.y==0
+        && s21[1].s==6 && s21[1].a[1]==8 && s21[1].xy.y==10
+        && s22[0].s==1 && s22[0].a[1]==3 && s22[0].xy.y==5
+        && s22[1].s==6 && s22[1].a[1]==8 && s22[1].xy.y==10
+        //&& sv1[0].s==a+1 && sv1[0].a[1]==a+3 && sv1[0].xy.y==a+5
+        //&& sv1[1].s==a+6 && sv1[1].a[1]==a+8 && sv1[1].xy.y==a+10
+    ;
+}
 
     struct gs1_S;
     struct gs1_S {
@@ -2321,12 +2401,15 @@ static int Struct(void) {
     TEST(Struct2);
     TEST(Struct2Arrow);
     TEST(Struct3);
+    TEST(Struct4);
+    TEST(Struct4Arrow);
 
     TEST(StaticStruct1);
     TEST(StaticStruct1Arrow);
     TEST(StaticStruct2);
     TEST(StaticStruct2Arrow);
     TEST(StaticStruct3);
+    TEST(StaticStruct4);
 
     TEST(GlobalStruct1);
     TEST(GlobalStruct2Arrow);
@@ -2385,6 +2468,41 @@ static int Union1(void) {
         && a.a==5 && a.b==5 && a.c==5 && a.d==5 && a.e==5 && xyz==36 && a.u2.x==5
         && u3.a[0]+u3.a[1]+u3.a[2]==6;
 }
+static int Union1Arrow(void) {
+    union U;
+    union U {
+        int a,b;
+        char c;
+        long d;
+        union U *p;
+        short e;
+        U2 u2;
+    };
+    union U a, *ap=&a;
+    union U;
+    typedef union U U_t;
+    union {
+        char s[5];
+        int a[3];
+    } u3, *u3p=&u3;
+    ap->u2.x = 10;
+    ap->u2.y = 11;
+    ap->u2.z = 12;
+    int xyz = ap->u2.x+ap->u2.y+ap->u2.z;
+    ap->a = 1;
+    ap->b = 2;
+    ap->c = 3;
+    ap->d = 4;
+    ap->e = 5;
+    u3p->a[0]=1;
+    u3p->a[1]=2;
+    u3p->a[2]=3;
+    return sizeof(union U)==8 && sizeof(ap)==8 && sizeof(ap->c)==1 && sizeof(U_t)==8
+        && sizeof(u3)==12 && sizeof(u3p->s)==5
+        && _Alignof(union U)==8 && _Alignof(a)==8 && _Alignof(ap->c)==1 && _Alignof(U_t)==8 && _Alignof(u3)==4
+        && ap->a==5 && ap->b==5 && ap->c==5 && ap->d==5 && ap->e==5 && xyz==36 && ap->u2.x==5
+        && u3p->a[0]+u3p->a[1]+u3p->a[2]==6;
+}
 static int Union2(void) {
     union U1 {
         char  c;
@@ -2402,6 +2520,63 @@ static int Union2(void) {
     } u20 = {2}, u2=u20;
     return u1.c==1 && memcmp(&u1, &u10, sizeof(u1))==0
         && u2.l==2 && memcmp(&u2, &u20, sizeof(u2))==0;
+}
+static int Union2Arrow(void) {
+    union U1 {
+        char  c;
+        short s;
+        int   i;
+        long  l;
+        void *p;
+    } u10 = {1,2}, u1, *u1p=&u1;
+    *u1p = u10;
+    union U2 {
+        long  l;
+        char  c;
+        short s;
+        int   i;
+        void *p;
+    } u20 = {2}, u2, *u2p=&u2;
+    *u2p = u20;
+    return u1p->c==1 && memcmp(u1p, &u10, sizeof(u1))==0
+        && u2p->l==2 && memcmp(u2p, &u20, sizeof(u2))==0
+        ;
+}
+
+static int StaticUnion1(void) {
+    union U;
+    union U {
+        int a,b;
+        char c;
+        long d;
+        union U *p;
+        short e;
+        U2 u2;
+    };
+    static union U a;
+    union U;
+    typedef union U U_t;
+    static union {
+        char s[5];
+        int a[3];
+    } u3;
+    a.u2.x = 10;
+    a.u2.y = 11;
+    a.u2.z = 12;
+    int xyz = a.u2.x+a.u2.y+a.u2.z;
+    a.a = 1;
+    a.b = 2;
+    a.c = 3;
+    a.d = 4;
+    a.e = 5;
+    u3.a[0]=1;
+    u3.a[1]=2;
+    u3.a[2]=3;
+    return sizeof(union U)==8 && sizeof(a)==8 && sizeof(a.c)==1 && sizeof(U_t)==8
+        && sizeof(u3)==12 && sizeof(u3.s)==5
+        && _Alignof(union U)==8 && _Alignof(a)==8 && _Alignof(a.c)==1 && _Alignof(U_t)==8 && _Alignof(u3)==4
+        && a.a==5 && a.b==5 && a.c==5 && a.d==5 && a.e==5 && xyz==36 && a.u2.x==5
+        && u3.a[0]+u3.a[1]+u3.a[2]==6;
 }
 static int AnonymouseUnion1(void) {
     struct ST{
@@ -2448,7 +2623,10 @@ static int AnonymouseUnion2(void) {
 }
 static int Union(void) {
     TEST(Union1);
+    TEST(Union1Arrow);
     TEST(Union2);
+    TEST(Union2Arrow);
+    TEST(StaticUnion1);
     TEST(AnonymouseUnion1);
     TEST(AnonymouseUnion2);
     return 1;
