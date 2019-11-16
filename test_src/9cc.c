@@ -1,39 +1,19 @@
-#include <errno.h>
-#include <stdarg.h>
-#include <ctype.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <assert.h>
-#include <limits.h>
-#include <setjmp.h>
-
-//エラー状態
 typedef enum {
     ST_ERR=0,
     ST_OK=1,
     ST_WARN=2,
 }Status;
 
-//可変長ベクタ ---------------------------------------
 typedef struct {
     void **data;
     int capacity;
     int len;
 } Vector;
-#define vec_len(vec) (vec)->len
-#define vec_data(vec,i) ((vec)->data[i])
-#define lst_len vec_len
-#define lst_data vec_data
-#define get_lst_node(vec,i) ((Node*)vec_data(vec,i))
 
-//マップ --------------------------------------------
 typedef struct {
     Vector *keys;
     Vector *vals;
 } Map;
-#define map_len(map) vec_len((map)->vals)
-#define map_data(map,i) vec_data((map)->vals,i)
 
 //トークン ------------------------------------------
 typedef enum {
@@ -125,7 +105,6 @@ typedef struct {
     char *input;    //トークン文字列（エラーメッセージ用）
 } Token;
 
-//抽象構文木 ----------------------------------------
 typedef enum {
     ND_UNDEF = 0,
     ND_NOT   = '!',
@@ -147,7 +126,7 @@ typedef enum {
     ND_IDENT,       //IDENT:中間的なタイプであり、最終的にND_LOCAL_VARなどに置き換わる
     ND_ENUM_DEF,    //enum定義          name=enum名/NULL, lst=node(ND_ENUM)/NULL
     ND_ENUM,        //enum要素          name=要素名, val=値, lhs=node(ND_ENUN_DEF)
-    ND_TYPEDEF,     //typedef           name=typedef名, tp->tmp_sclass=SC_TYPEDEF
+    ND_TYPEDEF,     //typedef           name=typedef名, tp->sclass=SC_TYPEDEF
     ND_STRUCT_DEF,  //struct            name=struct名/NULL, lst=node(ND_MEMBER_DEF)
     ND_UNION_DEF,   //union             name=union名/NULL, lst=node(ND_MEMBER_DEF)
     ND_LOCAL_VAR,   //ローカル変数の参照    name=変数名、offset=RBPからのオフセット(AUTO)/global_index(STATIC)
@@ -243,16 +222,15 @@ struct Type {
     TPType          type;
     char            is_unsigned;    //unsigned型
     char            is_const;
-    StorageClass    tmp_sclass;     //一時的なデータ。nodeに移す。
+    StorageClass    tmp_sclass;
     Type            *ptr_of;        //typeがPTR,ARRAY,FUNCの場合次のType
     Node            *node;          //typeがFUNCの場合のND_FUNC_DEFのノード
-                                    //typeがENUM/STRUCT/UNIONの場合のND_(ENUM|STRUCT|UNION)_DEFのノード
+                                    //typeがENUMの場合のND_ENUM_DEFのノード
     long            array_size;     //typeがARRAYの場合の配列サイズ。未定義の場合は-1
 };
 
 struct Node {
-    NDtype          type;           //nodeの型：演算子、ND_INDENTなど
-    StorageClass    sclass;         //
+    NDtype type;    //nodeの型：演算子、ND_INDENTなど
     char unused;    //無効（重複した宣言など：コード生成時には無視する）
     int offset;     //auto変数：ベースアドレスからのoffset：(ベースアドレス-offset)が実際のアドレスになる
                     //typeがND_MEMBER_DEFの場合の先頭アドレスからのoffset。UNIONの場合は常に0
@@ -277,10 +255,6 @@ struct Node {
     Type *tp;       //型情報
     char *input;    //トークン文字列（エラーメッセージ用）。Token.inputと同じ。
 };
-#define display_name(_node) ((_node)->disp_name ? (_node)->disp_name : (_node)->name)
-//タグなしenum/struct/union
-#define NODE_NONAME "<noname>"
-#define node_is_noname(_node) ((_node)->name && (_node)->name[0]=='<')
 
 typedef struct {
     char    *func_name;     //関数名
@@ -292,228 +266,9 @@ typedef struct {
     int     var_stack_size; //ローカル変数のために必要となるスタックサイズ（offset）
 } Funcdef;
 
-//型がinteger型であるか
-#define type_is_integer(_tp) (BOOL<=(_tp)->type && (_tp)->type<=ENUM)
-#define type_is_struct_or_union(_tp) ((_tp)->type==STRUCT || (_tp)->type==UNION)
-
-//型・ノードがポインタ型（PTR||ARRAY）であるか
-#define type_is_ptr(_tp) ((_tp)->type==PTR || (_tp)->type==ARRAY)
-#define node_is_ptr(_node) type_is_ptr((_node)->tp)
-#define node_is_var_def(_node) ((_node)->type==ND_LOCAL_VAR_DEF || (_node)->type==ND_GLOBAL_VAR_DEF || (_node)->type==ND_MEMBER_DEF)
-#define node_is_anonymouse_struct_or_union(_node) (type_is_struct_or_union((_node)->tp) && (_node)->name==NULL)
-//#define node_is_anonymouse_struct_or_union(_node) (node_is_var_def(_node) && type_is_struct_or_union((_node)->tp) && (_node)->name==NULL)
-
-//アサーション
-#define COMPILE_ERROR 0
-#define _ERROR_ assert(COMPILE_ERROR)
-#define _NOT_YET_(node) {dump_node(node,__func__); error_at((node)->input, "未実装です（%s:%d in %s）",__FILE__,__LINE__,__func__);} 
-
-//グローバル変数 ----------------------------------------
-#ifndef EXTERN
-#define EXTERN extern
-#endif
-
-// トークナイズした結果のトークン列はこのVectorに保存する
-EXTERN Vector *token_vec;
-EXTERN Token **tokens;  //token_vec->data;
-EXTERN int token_pos;   //tokensの現在位置
-
-//break時のジャンプ先のラベルを示す
-EXTERN char *break_label;
-//continue時のジャンプ先のラベルを示す
-EXTERN char *continue_label;
-
-//文字列リテラル
-typedef struct StringL {
-    String string;
-    char unused;                //.text領域に出力する必要なし
-} StringL;
-EXTERN Vector *string_vec;      //value=StringL
-
-//staticシンボル
-EXTERN Vector *static_var_vec;  //value=Node
-
-//グローバルシンボル
-EXTERN Map *global_symbol_map;  //通常の識別子：key=name, val=Node(ND_GLOBAL_VAR_DEFなど)
-EXTERN Map *global_tagname_map; //タグ名：key=name, val=Node(ND_ENUN_DEFなど)
-
-//スコープごとのシンボルの管理
-//（グローバルシンボル(global_symbol_map)→関数のローカルシンボル(cur_funcdef->ident_map)→ブロックのシンボル→...）
-EXTERN Stack *symbol_stack;     //value=Map
-EXTERN Stack *tagname_stack;    //value=Map
-
-//現在の関数定義
-EXTERN Funcdef *cur_funcdef;
-
-//プログラム（関数定義）の管理
-EXTERN Map *funcdef_map;    //key=name, value=Funcdef
-
-//現在の構造体定義
-EXTERN Node *cur_structdef;
-
-//ラベル・static変数のユニークなIDを生成するためのindex
-EXTERN int global_index;
-
-//現在処理中のswitch文: cur_switch->valをラベルの識別indexとして用いる
-EXTERN Node *cur_switch;
-
 typedef enum {
     ERC_CONTINUE,
     ERC_EXIT,
     ERC_LONGJMP,
     ERC_ABORT,
 } ErCtrl;
-EXTERN ErCtrl error_ctrl;       // エラー発生時の処理
-EXTERN ErCtrl warning_ctrl;
-EXTERN ErCtrl note_ctrl;
-EXTERN jmp_buf jmpbuf;
-EXTERN int error_cnt;
-EXTERN int warning_cnt;
-EXTERN int note_cnt;
-#define SET_ERROR_WITH_NOTE  {note_ctrl = error_ctrl; error_ctrl = ERC_CONTINUE;}
-
-//デバッグオプション
-EXTERN int g_dump_node; //関数をダンプする
-EXTERN int g_dump_type; //型をダンプする
-EXTERN int g_parse_only;//パースのみ
-
-//現在のトークン（エラー箇所）の入力文字列
-#define input_str() (tokens[token_pos]->input)
-
-//トークンへのアクセス
-#define token_ident()       (tokens[token_pos]->ident)
-#define token_type()        (tokens[token_pos]->type)
-#define token_is(_tp)       (token_type()==(_tp))
-#define next_token_ident()  (tokens[token_pos+1]->ident)
-#define next_token_type()   (tokens[token_pos+1]->type)
-#define next_token_is(_tp)  (next_token_type()==(_tp))
-#define last_token_type()   (tokens[token_pos-1]->type)
-
-// main.c
-void compile(void);
-
-// tokenize.c
-char *escape_ascii(const String *string);
-char *escape_string(const String *string);
-void tokenize(char *p);
-void dump_tokens(void);
-int token_is_type_spec(void);
-int next_token_is_type_spec(void);
-
-#ifdef _PARSE_C_
-int consume(TKtype type);
-int consume_typedef(Node **node);
-int consume_num(long *valp);
-int consume_string(String *string);
-int consume_ident(char**name);
-void expect(TKtype type);
-void expect_string(String *string);
-void expect_ident(char**name, const char*str);
-#endif
-
-// parse_util.c
-long size_of(const Type *tp);
-int align_of(const Type *tp);
-int get_var_offset(const Type *tp);
-void set_struct_size(Node *node, int base_offset);
-int node_is_constant(Node *node, long *val);
-int node_is_constant_or_address(Node *node, long *valp, Node **varp);
-#define type_is_static(_tp) (get_storage_class(_tp)==SC_STATIC)
-#define node_is_static(_node) (get_storage_class(_node->tp)==SC_STATIC || (_node)->sclass==SC_STATIC)
-#define node_is_extern(_node) (get_storage_class(_node->tp)==SC_EXTERN || (_node)->sclass==SC_EXTERN)
-#define node_is_typedef(_node) (get_storage_class(_node->tp)==SC_TYPEDEF || (_node)->sclass==SC_TYPEDEF)
-#define node_is_local_static_var(_node) (((_node)->type==ND_LOCAL_VAR||(_node)->type==ND_LOCAL_VAR_DEF) && node_is_static(_node))
-StorageClass get_storage_class(Type *tp);
-void set_storage_class(Type *tp, StorageClass sclass);
-int new_string_literal(String *string);
-String *get_string_literal(int index);
-void unuse_string_literal(int index);
-Vector *get_func_args(Node *node);
-
-#ifdef _PARSE_C_
-Node *search_symbol(const char *name);
-Node *search_tagname(const char *name);
-void regist_var_def(Node *node);
-void regist_func(Node *node, int full_check);
-void regist_symbol(Node *node);
-Node *regist_tagname(Node *node);
-void regist_label(Node *node);
-void regist_case(Node *node);
-
-Type *get_typeof(Type *tp);
-void check_return(Node *node);
-void check_func_return(Funcdef *funcdef);
-void check_funccall(Node *node);
-void check_funcargs(Node *node, int def_mode);
-int type_eq(const Type *tp1, const Type *tp2);
-int type_eq_global(const Type *tp1, const Type *tp2);
-int node_type_eq_global(const Node *node1, const Node *node2);
-int type_eq_ex_sclass(const Type *tp1, const Type *tp2);
-Status type_eq_check(const Type *tp1, const Type *tp2);
-Funcdef *new_funcdef(void);
-Type *new_type_ptr(Type*ptr);
-Type *new_type_func(Type*ptr, Node *node);
-Type *new_type_array(Type*ptr, size_t size);
-Type *new_type(int type, int is_unsigned);
-Type *dup_type(const Type *tp);
-Node *dup_node(const Node *node);
-Node *new_node(int type, Node *lhs, Node *rhs, Type *tp, char *input);
-Node *new_node_num(long val, char *input);
-Node *new_node_var_def(char *name, Type*tp, char *input);
-Node *new_node_string(String *string, char *input);
-Node *new_node_ident(char *name, char *input);
-Node *new_node_func_call(char *name, char *input);
-Node *new_node_func(char *name, Type *tp, char *input);
-Node *new_node_empty(char *input);
-Node *new_node_block(char *input);
-Node *new_node_list(Node *item, char *input);
-Node *new_node_init_list(Node *item, char *input);
-#endif
-
-// parse.c
-void translation_unit(void);
-void check_assignment(const Node *node, const Node *rhs, const char *input);
-
-// codegen.c
-void gen_program(void);
-
-// util.c
-Vector *new_vector(void);
-void vec_push(Vector *vec, void *elem);
-void *vec_get(Vector *vec, int idx);
-void vec_copy(Vector *dst, Vector *src);
-
-Map *new_map(void);
-void map_put(Map *map, const char *key, void *val);
-int  map_get(const Map *map, const char *key, void**val);
-
-Stack *new_stack(void);
-int   stack_push(Stack *stack, void*elem);
-void *stack_pop(Stack *stack);
-void *stack_get(Stack *stack, int idx);
-#define stack_top(stack) stack_get(stack,stack->len-1)
-#define stack_len  vec_len
-#define stack_data vec_data
-
-int is_alnum(char c);
-int is_alpha(char c);
-
-char* get_type_str(const Type *tp);
-char *get_node_type_str(const Node *node);
-char* get_func_args_str(const Node *node);
-const char *get_NDtype_str(NDtype type);
-void dump_node(const Node *node, const char *str);
-void dump_type(const Type *tp, const char *str);
-void dump_symbol(int idx, const char *str);
-void dump_tagname(void);
-
-EXTERN char *filename;
-EXTERN char *user_input;
-void error_at(const char*loc, const char*fmt, ...);
-void warning_at(const char*loc, const char*fmt, ...);
-void note_at(const char*loc, const char*fmt, ...);
-void error(const char*fmt, ...);
-void warning(const char*fmt, ...);
-void run_test(void);
-
-void test_error(void);

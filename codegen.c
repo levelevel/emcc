@@ -256,10 +256,10 @@ static char *get_byte_string(Node *node, int start_idx, int array_size, int data
     for (int i=start_idx; i<end_idx; i++) {
         if (nodes[i]->type==ND_INIT_LIST) {
             warning_at(nodes[i]->input, "スカラーがリストで初期化されています");
-            if (!node_is_const(lst_data(nodes[i]->lst,0), &val)) return NULL;
+            if (!node_is_constant(lst_data(nodes[i]->lst,0), &val)) return NULL;
             if (lst_len(nodes[i]->lst)>1) warning_at(get_lst_node(nodes[i]->lst,1)->input,
                 "初期化リストが配列サイズを超えています");
-        } else if (!node_is_const(nodes[i], &val)) {
+        } else if (!node_is_constant(nodes[i], &val)) {
             return NULL;
         }
         if (type==BOOL) {
@@ -278,7 +278,7 @@ static char *get_asm_var_name(Node *node) {
     char *ret = buf;
     switch (node->type) {
     case ND_LOCAL_VAR:
-        if (type_is_static(node->tp)) {
+        if (node_is_static(node)) {
             if (node->offset) sprintf(buf, "%s.%03d+%d", node->name, node->index, -node->offset);
             else              sprintf(buf, "%s.%03d",    node->name, node->index);
         } else {
@@ -432,6 +432,9 @@ static int gen_array_init_local(Type *tp, Node *init, int start_idx, int offset)
     } else {    //初期値に定数でない式を含む場合
         for (idx=0; idx<data_len; idx++) {
             Node *val_node = lst_data(init->lst, start_idx+idx);
+            static Node node = {0};
+            node.tp = tp->ptr_of;
+            check_assignment(&node, val_node, val_node->input);
             if (val_node->type==ND_NUM) {
                 printf("  %s %s PTR [rdi+%d], %ld\n", 
                     write_command_of_type(tp->ptr_of),
@@ -550,11 +553,11 @@ static int gen_array_init_global(Type *tp, Node *init, int start_idx) {
         //varにND_ADDRESS(&var)のノード、valに定数を返す
         if (val_node->type==ND_INIT_LIST) {
             warning_at(val_node->input, "スカラーがリストで初期化されています");
-            if (!node_is_const_or_address(lst_data(val_node->lst,0), &val, &var)) {
+            if (!node_is_constant_or_address(lst_data(val_node->lst,0), &val, &var)) {
                 error_at(val_node->input, "初期値が定数式ではありません");
             }
             if (lst_len(val_node->lst)>1) warning_at(((Node*)lst_data(val_node->lst,1))->input, "初期化リストが配列サイズを超えています");
-        } else if (!node_is_const_or_address(val_node, &val, &var)) {
+        } else if (!node_is_constant_or_address(val_node, &val, &var)) {
             error_at(val_node->input, "初期値が定数式ではありません");
         }
         if (var && val) {
@@ -597,7 +600,9 @@ static void gen_write_var_const_val(Node *node, long val);
 // init:        初期値を格納したND_INIT_LIST
 //戻り値:消費したinitの数
 static int gen_struct_init_local(Node *node, int offset, Node *init, int start_idx) {
-    Node zero_node = {ND_NUM};  //定数0のノード
+    static Node zero_node = {ND_NUM};  //定数0のノード
+    static Type zero_type = {INT};
+    zero_node.tp = &zero_type;
     char buf[32];
     char cbuf[128];
     int cnt = 0;
@@ -641,7 +646,8 @@ static int gen_struct_init_local(Node *node, int offset, Node *init, int start_i
             cnt = gen_array_init_local(node->tp, init, start_idx, offset+node->offset);
         }
         break;
-    default:
+    case BOOL: case CHAR: case SHORT: case INT: case LONG: case LONGLONG: case ENUM:
+    case PTR:
         if (lst_len(init->lst) > start_idx) {
             val_node = lst_data(init->lst, start_idx);
             cnt = 1;
@@ -649,8 +655,9 @@ static int gen_struct_init_local(Node *node, int offset, Node *init, int start_i
             val_node = &zero_node;
             cnt = 0;
         }
+        check_assignment(node, val_node, val_node->input);
         sprintf(buf, "rdi+%d", offset + node->offset);
-        sprintf(cbuf, "%s(%s)", node->name, get_type_str(node->tp));
+        sprintf(cbuf, "%s(%s)", node->name, get_node_type_str(node));
         if (val_node->type==ND_NUM) {
             gen_write_reg_const_val(buf, val_node->val, node->tp, cbuf, 0);
         } else {
@@ -662,15 +669,20 @@ static int gen_struct_init_local(Node *node, int offset, Node *init, int start_i
             gen_write_reg(buf, "rax", node->tp, cbuf);
         }
         break;
+    default:
+        _NOT_YET_(node);
+        break;
     }
     return cnt;
 }
 //グローバル変数の構造体・共用体を初期化
 //戻り値:消費したinitの数
 static int gen_struct_init_global(Node *node, Node *init, int start_idx) {
+    static Node zero_node = {ND_NUM};  //定数0のノード
+    static Type zero_type = {INT};
+    zero_node.tp = &zero_type;
     Type *tp = node->tp;
     int size = size_of(tp);
-    Node zero_node = {ND_NUM};  //定数0のノード
     int cnt = 0;
     Node *val_node;
     switch (tp->type) {
@@ -722,11 +734,12 @@ static int gen_struct_init_global(Node *node, Node *init, int start_idx) {
             val_node = &zero_node;
             cnt = 0;
         }
+        check_assignment(node, val_node, val_node->input);
         if (val_node->type==ND_INIT_LIST) warning_at(val_node->input, "スカラーがリストで初期化されています");
         char *val_name = val_name_of_type(tp);
         long val;
         Node *var = NULL;
-        if (!node_is_const_or_address(val_node, &val, &var)) {
+        if (!node_is_constant_or_address(val_node, &val, &var)) {
             error_at(val_node->input, "初期値が定数式ではありません");
         }
         if (var && val) {
@@ -769,11 +782,11 @@ static void gen_struct_init(Node *node) {
 //式を左辺値として評価し、rdiにセットする。push!=0ならばさらにPUSHする
 static void gen_lval(Node*node, int push) {
     if (node->type == ND_LOCAL_VAR) {   //ローカル変数
-        comment("LVALUE:%s (LOCAL:%s)\n", node->name, get_type_str(node->tp));
+        comment("LVALUE:%s (LOCAL:%s)\n", node->name, get_node_type_str(node));
         printf("  lea rdi, [%s]\n", get_asm_var_name(node));
         if (push) printf("  push rdi\n");
     } else if (node->type == ND_GLOBAL_VAR) {   //グローバル変数
-        comment("LVALUE:%s (GLOBAL:%s)\n", node->name, get_type_str(node->tp));
+        comment("LVALUE:%s (GLOBAL:%s)\n", node->name, get_node_type_str(node));
         printf("  lea rdi, %s\n", get_asm_var_name(node));
         if (push) printf("  push rdi\n");
     } else if (node->type == ND_INDIRECT) {
@@ -782,7 +795,7 @@ static void gen_lval(Node*node, int push) {
         if (node->offset) printf("  add QWORD ptr [rsp], %d\n", -node->offset);
         if (!push) printf("  pop rdi\n");
     } else if (node->type == ND_CAST) {
-        comment("LVALUE (%s)var\n", get_type_str(node->tp));
+        comment("LVALUE (%s)var\n", get_node_type_str(node));
         gen_lval(node->rhs, push);
     } else {
         error_at(node->input, "アドレスを生成できません");
@@ -793,7 +806,7 @@ static void gen_lval(Node*node, int push) {
 //スタックは変化しない
 static void gen_read_var(Node *node, const char *reg) {
     char cbuf[256];
-    sprintf(cbuf, "%s(%s)", display_name(node), get_type_str(node->tp));
+    sprintf(cbuf, "%s(%s)", display_name(node), get_node_type_str(node));
     if (node->type==ND_LOCAL_VAR || node->type==ND_GLOBAL_VAR) {
         gen_read_reg(reg, get_asm_var_name(node), node->tp, cbuf);
     } else {
@@ -807,7 +820,7 @@ static void gen_read_var(Node *node, const char *reg) {
 //結果は指定したregに残る
 static void gen_write_var(Node *node, char *reg) {
     char cbuf[256];
-    sprintf(cbuf, "%s(%s)", display_name(node), get_type_str(node->tp));
+    sprintf(cbuf, "%s(%s)", display_name(node), get_node_type_str(node));
     if (node->type==ND_LOCAL_VAR) {
         printf("  pop %s\n", reg);  //writeする値
         gen_write_reg(get_asm_var_name(node), reg, node->tp, cbuf);
@@ -823,7 +836,7 @@ static void gen_write_var(Node *node, char *reg) {
 //即値を変数にwriteする。即値はraxは保存される。
 static void gen_write_var_const_val(Node *node, long val) {
     char cbuf[256];
-    sprintf(cbuf, "%s(%s)", display_name(node), get_type_str(node->tp));
+    sprintf(cbuf, "%s(%s)", display_name(node), get_node_type_str(node));
     gen_write_reg_const_val(get_asm_var_name(node), val, node->tp, cbuf, 1);
 }
 
@@ -853,14 +866,14 @@ static int gen(Node*node) {
     switch (node->type) {
     case ND_NUM:            //数値
         if (node->tp->type==LONG) {
-            printf("  mov rax, %ld\t# 0x%lx (%s)\n", node->val, node->val, get_type_str(node->tp));
+            printf("  mov rax, %ld\t# 0x%lx (%s)\n", node->val, node->val, get_node_type_str(node));
             printf("  push rax\n");
         } else {
-            printf("  push %d\t# 0x%lx (%s)\n", (int)node->val, node->val, get_type_str(node->tp));
+            printf("  push %d\t# 0x%lx (%s)\n", (int)node->val, node->val, get_node_type_str(node));
         }
         break;
     case ND_ENUM:
-        printf("  push %d\t# %s (%s)\n", (int)node->val, display_name(node), get_type_str(node->lhs->tp));
+        printf("  push %d\t# %s (%s)\n", (int)node->val, display_name(node), get_node_type_str(node->lhs));
         break;
     case ND_STRING:         //文字列リテラル
         sprintf(buf, ".LC%03d", node->index);
@@ -881,7 +894,7 @@ static int gen(Node*node) {
     case ND_GLOBAL_VAR:     //変数参照
         if (node->tp->type==ARRAY || node->tp->type==STRUCT) {
             //アドレスをそのまま返す
-            comment("%s_VAR:%s(%s)\n", node->type==ND_LOCAL_VAR?"LOCAL":"GLOBAL", display_name(node), get_type_str(node->tp));
+            comment("%s_VAR:%s(%s)\n", node->type==ND_LOCAL_VAR?"LOCAL":"GLOBAL", display_name(node), get_node_type_str(node));
             gen_lval(node, 1);  //nodeのアドレスをpush
         } else {
             gen_read_var(node, "rax");
@@ -891,7 +904,7 @@ static int gen(Node*node) {
     case ND_FUNC_CALL:      //関数コール
     {
         int i=0;
-        comment("CALL:%s\t%s\n", node->name, get_type_str(node->tp));
+        comment("CALL:%s\t%s\n", node->name, get_node_type_str(node));
         if (node->lhs) {    //引数
             assert(node->lhs->type==ND_LIST);
             Vector *actual_list = node->lhs->lst;
@@ -927,7 +940,7 @@ static int gen(Node*node) {
         break;
     }
     case ND_CAST:           //キャスト
-        comment("CAST (%s)%s\n", get_type_str(node->tp), get_type_str(node->rhs->tp));
+        comment("CAST (%s)%s\n", get_node_type_str(node), get_node_type_str(node->rhs));
         gen(node->rhs);
         break;
     case ND_LABEL:
@@ -950,7 +963,7 @@ static int gen(Node*node) {
     }
     case ND_RETURN:         //return
         if (node->rhs) {
-            comment("RETURN (%s)\n", get_type_str(node->tp));
+            comment("RETURN (%s)\n", get_node_type_str(node));
             gen(node->rhs);
             if (cur_funcdef->tp->ptr_of->type==BOOL) gen_bool();
             printf("  pop rax\t# RETURN VALUE\n");
@@ -1433,7 +1446,7 @@ static void gen_op2(Node *node) {
         printf("  sar rax, cl\n");
         break;
     case ND_PLUS:   //'+': rax(lhs)+rdi(rhs)
-        comment("'+' %s %s\n", get_type_str(lhs->tp), get_type_str(rhs->tp));
+        comment("'+' %s %s\n", get_node_type_str(lhs), get_node_type_str(rhs));
         if (node_is_ptr(lhs)) {
             gen_mul_reg("rdi", size_of(lhs->tp->ptr_of));
         } else if (node_is_ptr(rhs)) {
@@ -1442,7 +1455,7 @@ static void gen_op2(Node *node) {
         printf("  add rax, rdi\n");
         break;
     case ND_MINUS:  //'-': rax(lhs)-rdi(rhs)
-        comment("'-' %s %s\n", get_type_str(lhs->tp), get_type_str(rhs->tp));
+        comment("'-' %s %s\n", get_node_type_str(lhs), get_node_type_str(rhs));
         if (node_is_ptr(lhs) && node_is_ptr(rhs)) {
             printf("  sub rax, rdi\n");
             gen_div_reg("rax", size_of(lhs->tp->ptr_of));
@@ -1493,12 +1506,12 @@ static void gen_single_val(const char*size, Node *node) {
 
 //グローバルシンボルのコードを生成
 static void gen_global_var(Node *node) {
-    if (type_is_extern(node->tp)) return;
+    if (node_is_extern(node)) return;
     if (node->unused) return;
     switch (node->type) {
     case ND_FUNC_DEF:
     case ND_FUNC_DECL:
-        if (!type_is_static(node->tp))
+        if (!node_is_static(node))
             printf(".global %s\n", node->name);
         return;
     case ND_GLOBAL_VAR_DEF:
@@ -1507,20 +1520,20 @@ static void gen_global_var(Node *node) {
     case ND_TYPEDEF:
         return;
     default:
-        assert(type_is_static(node->tp));
+        assert(node_is_static(node));
         break;
     }
 
     int size = size_of(node->tp);
     int align_size = align_of(node->tp);
 
-    if (!type_is_static(node->tp))
+    if (!node_is_static(node))
         printf(".global %s\n", node->name);
     if (align_size > 1) printf(".align %d\n", align_size);
-    if (node->type == ND_LOCAL_VAR_DEF && type_is_static(node->tp)) {
-        printf("%s.%03d:\t# %s\n", node->name, node->index, get_type_str(node->tp));
+    if (node->type == ND_LOCAL_VAR_DEF && node_is_static(node)) {
+        printf("%s.%03d:\t# %s\n", node->name, node->index, get_node_type_str(node));
     } else {
-        printf("%s:\t# %s\n", node->name, get_type_str(node->tp));
+        printf("%s:\t# %s\n", node->name, get_node_type_str(node));
     }
 
     if (node->rhs) {    //初期値あり、rhsは'='のノード
@@ -1554,7 +1567,7 @@ static void gen_global_var(Node *node) {
                 printf("  .quad %s\n", get_asm_var_name(rhs));
                 break;
             case ND_LOCAL_VAR:
-                if (type_is_static(rhs->tp)) {
+                if (node_is_static(rhs)) {
                     printf("  .quad %s\n", get_asm_var_name(rhs));
                 } else {
                     error_at(rhs->input,"静的変数の初期化には定数式が必要です");
@@ -1656,7 +1669,7 @@ void gen_program(void) {
                     ; 
                 } else {
                     printf("  sub rax, %ld\n", size_of(arg->tp));
-                    sprintf(buf, "arg:%s %s", get_type_str(arg->tp) ,arg->name);
+                    sprintf(buf, "arg:%s %s", get_node_type_str(arg) ,arg->name);
                     gen_write_reg("rax", arg_regs[j], arg->tp, buf);
                 }
             }

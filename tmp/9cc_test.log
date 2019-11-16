@@ -715,6 +715,7 @@ int main(){char *p[]="ABC";}
 int main(){int a; a[1];}
 9cc:Error: selftest:1: int main(){int a; a[1];}
                                             ^ ここでは配列を指定できません
+# ===== LOCAL配列の初期化 =====
 # selftest ----------------
 int main(){char a[3]="abc"; return 0;}
 9cc:Warning: selftest:1: int main(){char a[3]="abc"; return 0;}
@@ -752,6 +753,7 @@ int main(){int x=1, a[2][2]={{x,2,3},{4,5,6}}; return 0;}
 int main(){int x=1, a[2][2]={{x,2},{3,4},{5,6}}; return 0;}
 9cc:Warning: selftest:1: int main(){int x=1, a[2][2]={{x,2},{3,4},{5,6}}; return 0;}
                                                                    ^ 初期化リストが配列サイズを超えています
+# ===== LOCAL STATIC配列の初期化 =====
 # selftest ----------------
 int main(){static char a[3]="abc"; return 0;}
 9cc:Warning: selftest:1: int main(){static char a[3]="abc"; return 0;}
@@ -776,6 +778,7 @@ int main(){static char a[2][2]={"ab","cd"}; return 0;}
 int main(){static int a[3]={1,{2,99},3}; return 0;}
 9cc:Warning: selftest:1: int main(){static int a[3]={1,{2,99},3}; return 0;}
                                                         ^ スカラーがリストで初期化されています
+# ===== GLOBAL配列の初期化 =====
 # selftest ----------------
 char a[3]="abc"; void main(){}
 9cc:Warning: selftest:1: char a[3]="abc"; void main(){}
@@ -801,14 +804,6 @@ int a[3]={1,{2,99},3}; void main(){}
 9cc:Warning: selftest:1: int a[3]={1,{2,99},3}; void main(){}
                                       ^ スカラーがリストで初期化されています
 # selftest ----------------
-int main(){struct {int a,b;}st1={1,2,3};}
-9cc:Warning: selftest:1: int main(){struct {int a,b;}st1={1,2,3};}
-                                                                 ^ 関数が戻り値を返していません
-# selftest ----------------
-int main(){struct {int a,b;}st1={1,{2,3}};}
-9cc:Warning: selftest:1: int main(){struct {int a,b;}st1={1,{2,3}};}
-                                                                   ^ 関数が戻り値を返していません
-# selftest ----------------
 int main(){_Static_assert(0,"aaa");}
 9cc:Error: selftest:1: int main(){_Static_assert(0,"aaa");}
                                   ^ static assertionに失敗しました: aaa
@@ -820,6 +815,11 @@ _Static_assert(0,"aaa"); void main(){}
 int main(){int a; _Static_assert(a,"aaa");}
 9cc:Error: selftest:1: int main(){int a; _Static_assert(a,"aaa");}
                                                         ^ 定数式が必要です
+# selftest ----------------
+int main(){int a[2]; _Static_assert(sizeof(a)==1,"aaa");}
+9cc:Error: selftest:1: int main(){int a[2]; _Static_assert(sizeof(a)==1,"aaa");}
+                                            ^ static assertionに失敗しました: aaa
+# ===== 列挙型 =====
 # selftest ----------------
 int main(){struct E; enum E;}
 9cc:Error: selftest:1: int main(){struct E; enum E;}
@@ -899,6 +899,7 @@ int main(){enum ABC{A,B,C}; unsigned enum ABC abc;}
 9cc:Error: selftest:1: int main(){enum ABC{A,B,C}; unsigned enum ABC abc;}
                                                    ^ enum/typedef/struct/union名に対してsigned/unsignedの指定はできません
 
+# ===== 構造体 =====
 # selftest ----------------
 int main(){enum S; struct S;}
 9cc:Error: selftest:1: int main(){enum S; struct S;}
@@ -1078,6 +1079,7 @@ int main(){typedef struct{int a;}ST; ST st; void func(ST); func(&st);}
                                                                                        ^ 引数[0]の型(struct<noname>:struct<noname>*)が一致しません
 9cc:Note: selftest:1: int main(){typedef struct{int a;}ST; ST st; void func(ST); func(&st);}
                                                                             ^ 関数の定義はここです
+# ===== 無意味な宣言 =====
 # selftest ----------------
 int main(){static struct ST{int a;}; return 0;}
 9cc:Warning: selftest:1: int main(){static struct ST{int a;}; return 0;}
@@ -1110,6 +1112,7 @@ static union UN{int a;}; void main(){}
 const  union UN{int a;}; void main(){}
 9cc:Warning: selftest:1: const  union UN{int a;}; void main(){}
                          ^ constは無視されます
+# ===== 共用体 =====
 # selftest ----------------
 int main(){struct U; union U;}
 9cc:Error: selftest:1: int main(){struct U; union U;}
@@ -1199,6 +1202,7 @@ int main(){typedef union{int a;}UN; UN un; void func(UN); func(&un);}
                                                                                       ^ 引数[0]の型(union:union*)が一致しません
 9cc:Note: selftest:1: int main(){typedef union{int a;}UN; UN un; void func(UN); func(&un);}
                                                                            ^ 関数の定義はここです
+# ===== 構造体・共用体の初期化 =====
 # selftest ----------------
 # [構造体・共用体の初期化リストが要素数を超えています]
 int main(){struct{int x,y;}st={1,2,3}; return 0;}
@@ -1279,6 +1283,7 @@ int main(){static struct{int x,y;}st={1,{2,3}}; return 0;}
 int main(){static union {int x,y;}st={{2,3}}; return 0;}
 9cc:Warning: selftest:1: int main(){static union {int x,y;}st={{2,3}}; return 0;}
                                                                 ^ スカラーがリストで初期化されています
+# ===== 無名構造体・共用体 =====
 # selftest ----------------
 # [ネストしていない無名構造体:]
 int main(){struct {int sa; long sb;};}
@@ -1375,6 +1380,7 @@ int main(){static union{int a; struct  {int sa; long sb;}; int sa};}
                                                                                       ^ メンバの重複定義です
 9cc:Note: selftest:1: int main(){static union{int a; struct  {int sa; long sb;}; int sa};}
                                                                   ^ 以前の宣言はここです
+# ===== 構造体・共用体の配列の初期化 =====
 # selftest ----------------
 # [初期化リストが配列サイズを超えています]
 int main(){struct{int a,b;}s[2]={1,2,3,4,5}; return 0;}
@@ -1405,6 +1411,7 @@ int main(){static struct{int a,b;}s[2]={{1,2,9},{3,4,9}}; return 0;}
 int main(){static struct{int a,b;}s[2]={1,{2},3,4}; return 0;}
 9cc:Warning: selftest:1: int main(){static struct{int a,b;}s[2]={1,{2},3,4}; return 0;}
                                                                     ^ スカラーがリストで初期化されています
+# ===== Const =====
 # selftest ----------------
 int main(){const int ci; ci=1; return ci;}
 9cc:Error: selftest:1: int main(){const int ci; ci=1; return ci;}
@@ -1440,7 +1447,7 @@ int main(){static char str[]="abc"; const char*p1=str; (*p1)++;}
 # selftest ----------------
 char*func(void) {static const char str[]="abc"; return str;} void main(){}
 9cc:Warning: selftest:1: char*func(void) {static const char str[]="abc"; return str;} void main(){}
-                                                                         ^ char*型の関数funcがstatic const char[4]型を返しています
+                                                                         ^ 戻り値static const char[4]のconst情報は失われます
 # selftest ----------------
 void func3(char*str){}          void func3(const char*str); void main(){}
 9cc:Error: selftest:1: void func3(char*str){}          void func3(const char*str); void main(){}
@@ -1454,9 +1461,15 @@ char*func3(void){return 0;}          const char*func3(void); void main(){}
 9cc:Note: selftest:1: char*func3(void){return 0;}          const char*func3(void); void main(){}
                                 ^ 以前の宣言はここです
 # selftest ----------------
-int main(){void func(char*p); const char*p; func(p);}
-9cc:Warning: selftest:1: int main(){void func(char*p); const char*p; func(p);}
-                                                                          ^ 引数[0]の型(char*:const char*)が一致しません
+# [戻り値const char*のconst情報は失われます]
+int main(){void func(char*p); const char*p; func(p); return 0;}
+9cc:Warning: selftest:1: int main(){void func(char*p); const char*p; func(p); return 0;}
+                                                                          ^ 戻り値const char*のconst情報は失われます
+# selftest ----------------
+int main(){void func(char*p); char* const p; func(p); return 0;}
+# selftest ----------------
+int main(){void func(const char*p); char*p; func(p); return 0;}
+# ===== Assign =====
 # selftest ----------------
 int main(){int a; char*p; a+=p;}
 9cc:Error: selftest:1: int main(){int a; char*p; a+=p;}
@@ -1478,6 +1491,6 @@ int main(){int a; struct{int x;}s; a%=s;}
 9cc:Error: selftest:1: int main(){int a; struct{int x;}s; a%=s;}
                                                              ^ 構造体(struct<noname>)に対して%=の指定はできません
 9cc self test
-Total : 315
-   Ok : 315
+Total : 316
+   Ok : 316
    NG : 0

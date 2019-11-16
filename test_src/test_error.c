@@ -1,7 +1,7 @@
 #include "../9cc.h"
 
 struct {
-    enum {ER, WR} expect;
+    enum {ER, WR, OK, CM} expect;
     char *code;
     char *note;
 } test[] = {
@@ -164,7 +164,8 @@ struct {
     {ER, "int a[]=\"ABC\";"},
     {ER, "char *p[]=\"ABC\";"},
     {ER, "int a; a[1];"},
-    //LOCAL配列の初期化
+
+    {CM, "===== LOCAL配列の初期化 ====="},
     {WR, "char a[3]=\"abc\"; return 0;"},
     {WR, "int a[2]={1,2,3}; return 0;"},
     {WR, "int a[2][2]={{1,2,3},{4,5,6}}; return 0;"},
@@ -174,28 +175,29 @@ struct {
     {WR, "int x=1, a[2]={x,2,3}; return 0;",     "LOCAL配列の初期化:非定数式"},
     {WR, "int x=1, a[2][2]={{x,2,3},{4,5,6}}; return 0;"},
     {WR, "int x=1, a[2][2]={{x,2},{3,4},{5,6}}; return 0;"},
-    //LOCAL STATIC配列の初期化
+
+    {CM, "===== LOCAL STATIC配列の初期化 ====="},
     {WR, "static char a[3]=\"abc\"; return 0;"},
     {WR, "static int a[2]={1,2,3}; return 0;"},
     {WR, "static int a[2][2]={{1,2,3},{4,5,6}}; return 0;"},
     {WR, "static int a[2][2]={{1,2},{3,4},{5,6}}; return 0;"},
     {WR, "static char a[2][2]={\"ab\",\"cd\"}; return 0;"},
     {WR, "static int a[3]={1,{2,99},3}; return 0;"},
-    //GLOBAL配列の初期化
+
+    {CM, "===== GLOBAL配列の初期化 ====="},
     {WR, "char a[3]=\"abc\"; void main(){}"},
     {WR, "int a[2]={1,2,3}; void main(){}"},
     {WR, "int a[2][2]={{1,2,3},{4,5,6}}; void main(){}"},
     {WR, "int a[2][2]={{1,2},{3,4},{5,6}}; void main(){}"},
     {WR, "char a[2][2]={\"ab\",\"cd\"}; void main(){}"},
     {WR, "int a[3]={1,{2,99},3}; void main(){}"},
-    //LOCAL構造体の初期化
-    {WR, "struct {int a,b;}st1={1,2,3};"},
-    {WR, "struct {int a,b;}st1={1,{2,3}};"},
 
     {ER, "_Static_assert(0,\"aaa\");"},
     {ER, "_Static_assert(0,\"aaa\"); void main(){}"},
     {ER, "int a; _Static_assert(a,\"aaa\");"},
-    //enum
+    {ER, "int a[2]; _Static_assert(sizeof(a)==1,\"aaa\");"},
+
+    {CM, "===== 列挙型 ====="},
     {ER, "struct E; enum E;"},
     {ER, "enum E e;"},
     {ER, "return sizeof(enum E);"},
@@ -210,7 +212,8 @@ struct {
     {ER, "enum ABC{A,B,C} e; enum XYZ{A,Y,Z} x;"},
     {ER, "enum ABC{A,B,C}; enum ABC{P,Q,R} e;"},
     {ER, "enum ABC{A,B,C}; unsigned enum ABC abc;"},
-    //struct
+
+    {CM, "===== 構造体 ====="},
     {ER, "enum S; struct S;"},
     {ER, "struct S e;"},
     {ER, "struct S{}e;"},
@@ -251,7 +254,8 @@ struct {
     {WR, "typedef struct{int a;}ST; ST st; void func(int); func(&st);"},
     {ER, "typedef struct{int a;}ST; ST st; void func(ST); func(1);"},
     {ER, "typedef struct{int a;}ST; ST st; void func(ST); func(&st);"},
-    //無視される
+
+    {CM, "===== 無意味な宣言 ====="},
     {WR, "static struct ST{int a;}; return 0;"},
     {WR, "const  struct ST{int a;}; return 0;"},
     {WR, "static union UN{int a;}; return 0;"},
@@ -260,7 +264,8 @@ struct {
     {WR, "const  struct ST{int a;}; void main(){}"},
     {WR, "static union UN{int a;}; void main(){}"},
     {WR, "const  union UN{int a;}; void main(){}"},
-    //union
+
+    {CM, "===== 共用体 ====="},
     {ER, "struct U; union U;"},
     {ER, "union U u;"},
     {ER, "union U{};"},
@@ -278,7 +283,8 @@ struct {
     {WR, "typedef union{int a;}UN; UN un; void func(int); func(&un);"},
     {ER, "typedef union{int a;}UN; UN un; void func(UN); func(1);"},
     {ER, "typedef union{int a;}UN; UN un; void func(UN); func(&un);"},
-    //構造体・共用体の初期化
+
+    {CM, "===== 構造体・共用体の初期化 ====="},
     {WR, "struct{int x,y;}st={1,2,3}; return 0;",                           "構造体・共用体の初期化リストが要素数を超えています"},
     {WR, "struct{int a,b; struct{int x,y;}s;}st={0,0,{1,2,3}}; return 0;",  "構造体・共用体の初期化リストが要素数を超えています"},
     {WR, "struct{int a,b; struct{int x,y;} ;}st={0,0,{1,2,3}}; return 0;",  "構造体・共用体の初期化リストが要素数を超えています"},
@@ -295,7 +301,8 @@ struct {
     {WR, "static struct{int a,b; union{int x,y;} ;}un={0,0,{1,2}}; return 0;",     "構造体・共用体の初期化リストが要素数を超えています"},
     {WR, "static struct{int x,y;}st={1,{2,3}}; return 0;",                         "スカラーがリストで初期化されています"},
     {WR, "static union {int x,y;}st={{2,3}}; return 0;",                           "スカラーがリストで初期化されています"},
-    //無名構造体・共用体
+
+    {CM, "===== 無名構造体・共用体 ====="},
     {WR, "struct {int sa; long sb;};",                          "ネストしていない無名構造体:"},
     {WR, "union  {int ua; long ub;};",                          "ネストしていない無名共用体:"},
     {ER, "struct{int a; union U{int ua; long ub;};};",          "構造体の中の無名共用体:タグ付きは変数名必要"},
@@ -312,14 +319,16 @@ struct {
     {ER, "static union{int a; struct S{int sa; long sb;};};",          "共用体の中の無名構造体:タグ付きは変数名必要"},
     {ER, "static union{int a; struct  {int  a; long sb;};};",          "共用体の中の無名構造体:変数名重複:前"},
     {ER, "static union{int a; struct  {int sa; long sb;}; int sa};",   "共用体の中の無名構造体:変数名重複:後"},
-    //構造体・共用体の配列の初期化
+    
+    {CM, "===== 構造体・共用体の配列の初期化 ====="},
     {WR, "struct{int a,b;}s[2]={1,2,3,4,5}; return 0;",         "初期化リストが配列サイズを超えています"},
     {WR, "struct{int a,b;}s[2]={{1,2,9},{3,4,9}}; return 0;",   "構造体・共用体の初期化リストが要素数を超えています"},
     {WR, "struct{int a,b;}s[2]={1,{2},3,4}; return 0;",         "スカラーがリストで初期化されています"},
     {WR, "static struct{int a,b;}s[2]={1,2,3,4,5}; return 0;",         "初期化リストが配列サイズを超えています"},
     {WR, "static struct{int a,b;}s[2]={{1,2,9},{3,4,9}}; return 0;",   "構造体・共用体の初期化リストが要素数を超えています"},
     {WR, "static struct{int a,b;}s[2]={1,{2},3,4}; return 0;",         "スカラーがリストで初期化されています"},
-    //Const
+
+    {CM, "===== Const ====="},
     {ER, "const int ci; ci=1; return ci;"},
     {ER, "static char str[]=\"abc\"; const char*p1=str; *p1='A';"},
     {ER, "static char str[]=\"abc\"; char const*p2=str; *p2='A';"},
@@ -333,8 +342,11 @@ struct {
           void func3(const char*str); void main(){}"},
     {ER, "char*func3(void){return 0;}\
           const char*func3(void); void main(){}"},
-    {WR, "void func(char*p); const char*p; func(p);"},
-    //代入
+    {WR, "void func(char*p); const char*p; func(p); return 0;",     "戻り値const char*のconst情報は失われます"},
+    {OK, "void func(char*p); char* const p; func(p); return 0;"},
+    {OK, "void func(const char*p); char*p; func(p); return 0;"},
+
+    {CM, "===== Assign ====="},
     {ER, "int a; char*p; a+=p;"},
     {ER, "int a; char*p; a-=p;"},
     {ER, "int a; struct{int x;}s; a*=s;"},
@@ -352,9 +364,16 @@ static int ng_cnt   = 0;
 static void test_error1(int index) {
     char fname[50];
     FILE *fp = stderr;
+
 //  sprintf(fname, "selftest%03d", index);
     sprintf(fname, "selftest");
     filename = fname;
+
+    if (test[index].expect==CM) {
+        fprintf(fp, "# %s\n", test[index].code);
+        return;
+    }
+
     user_input = test[index].code;
     if (strstr(user_input, "main")==NULL) {
         char *buf = malloc(strlen(user_input) + 50);
@@ -388,6 +407,16 @@ static void test_error1(int index) {
         } else {
             ok_cnt++;
         }
+        break;
+    case OK:
+        if (error_cnt || warning_cnt) {
+            fprintf(fp, "  ---> NG! (expected: No message)\n");
+            ng_cnt++;
+        } else {
+            ok_cnt++;
+        }
+        break;
+    default:
         break;
     }
 }

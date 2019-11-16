@@ -138,7 +138,7 @@ static long calc_node(Node *node, long val1, long val2) {
 }
 
 //nodeが定数になっているかどうかを調べる。valpに定数を返す
-int node_is_const(Node *node, long *valp) {
+int node_is_constant(Node *node, long *valp) {
     long val, val1, val2;
 
     switch (node->type) {
@@ -147,29 +147,26 @@ int node_is_const(Node *node, long *valp) {
         val = node->val;
         break;
     case ND_TRI_COND:
-        if (!node_is_const(node->lhs, &val)) return 0;
+        if (!node_is_constant(node->lhs, &val)) return 0;
         if (val) {
-            if (!node_is_const(node->rhs->lhs, &val)) return 0;
+            if (!node_is_constant(node->rhs->lhs, &val)) return 0;
         } else {
-            if (!node_is_const(node->rhs->rhs, &val)) return 0;
+            if (!node_is_constant(node->rhs->rhs, &val)) return 0;
         }
         if (valp) *valp = val;
         return 1;
     case ND_CAST:
-        return node_is_const(node->rhs, valp);
+        return node_is_constant(node->rhs, valp);
     case ND_LIST:
     case ND_INIT_LIST:
-        //if (vec_len(node->lst))
-        //    return node_is_const(vec_data(node->lst, vec_len(node->lst)-1), valp);
-        //return 0;
     case ND_LOCAL_VAR:
     case ND_GLOBAL_VAR:
     case ND_STRING:
     case ND_FUNC_CALL:
         return 0;
     default:
-        if (node->lhs && !node_is_const(node->lhs, &val1)) return 0;
-        if (node->rhs && !node_is_const(node->rhs, &val2)) return 0;
+        if (node->lhs && !node_is_constant(node->lhs, &val1)) return 0;
+        if (node->rhs && !node_is_constant(node->rhs, &val2)) return 0;
         val = calc_node(node, val1, val2);
     }
     if (valp) *valp = val;
@@ -179,7 +176,7 @@ int node_is_const(Node *node, long *valp) {
 //nodeが定数またはアドレス+定数の形式になっているかどうかを調べる。
 //varpにND_ADDRESS(&var)のノード、valpに定数を返す。
 //nodeが文字列リテラル(ND_STRING)の場合は1を返すがvalp/varpには何も返さない。
-int node_is_const_or_address(Node *node, long *valp, Node **varp) {
+int node_is_constant_or_address(Node *node, long *valp, Node **varp) {
     long val, val1, val2;
     Node *var1=NULL, *var2=NULL;
 
@@ -207,14 +204,14 @@ int node_is_const_or_address(Node *node, long *valp, Node **varp) {
         if (vec_len(node->lst)) {
             int size = vec_len(node->lst);
             for (int i=0; i<size; i++) {
-                if (node_is_const_or_address(vec_data(node->lst, i), valp, varp)==0) return 0;
+                if (node_is_constant_or_address(vec_data(node->lst, i), valp, varp)==0) return 0;
             }
             return 1;
         }
         return 0;
     case ND_INIT_LIST:
         if (vec_len(node->lst))
-            return node_is_const_or_address(vec_data(node->lst, 0), valp, varp);
+            return node_is_constant_or_address(vec_data(node->lst, 0), valp, varp);
         return 0;
     case ND_LOCAL_VAR:
     case ND_GLOBAL_VAR:
@@ -229,24 +226,24 @@ int node_is_const_or_address(Node *node, long *valp, Node **varp) {
             if (valp) *valp = 0;
             return 1;
         } else if (node->rhs->type==ND_INDIRECT) {
-            return node_is_const_or_address(node->rhs->rhs, valp, varp);
+            return node_is_constant_or_address(node->rhs->rhs, valp, varp);
         } else {
             return 0;
         }
     case ND_TRI_COND:
-        if (!node_is_const_or_address(node->lhs, &val, varp)) return 0;
+        if (!node_is_constant_or_address(node->lhs, &val, varp)) return 0;
         if (val) {
-            if (!node_is_const_or_address(node->rhs->lhs, &val, varp)) return 0;
+            if (!node_is_constant_or_address(node->rhs->lhs, &val, varp)) return 0;
         } else {
-            if (!node_is_const_or_address(node->rhs->rhs, &val, varp)) return 0;
+            if (!node_is_constant_or_address(node->rhs->rhs, &val, varp)) return 0;
         }
         if (valp) *valp = val;
         return 1;
     case ND_CAST:
-        return node_is_const_or_address(node->rhs, valp, varp);
+        return node_is_constant_or_address(node->rhs, valp, varp);
     default:
-        if (node->lhs && !node_is_const_or_address(node->lhs, &val1, &var1)) return 0;
-        if (node->rhs && !node_is_const_or_address(node->rhs, &val2, &var2)) return 0;
+        if (node->lhs && !node_is_constant_or_address(node->lhs, &val1, &var1)) return 0;
+        if (node->rhs && !node_is_constant_or_address(node->rhs, &val2, &var2)) return 0;
         if (var1 && var2) {
             return 0;
         } else if (var1) {
@@ -273,11 +270,11 @@ int node_is_const_or_address(Node *node, long *valp, Node **varp) {
 // charだけに設定されているのでcharのところまで見に行く
 StorageClass get_storage_class(Type *tp) {
     while (tp->ptr_of) tp = tp->ptr_of;
-    return tp->sclass;
+    return tp->tmp_sclass;
 }
 void set_storage_class(Type *tp, StorageClass sclass) {
     while (tp->ptr_of) tp = tp->ptr_of;
-    tp->sclass = sclass;
+    tp->tmp_sclass = sclass;
 }
 
 int new_string_literal(String *string) {
@@ -335,6 +332,7 @@ Node *search_tagname(const char *name) {
 void regist_var_def(Node *node) {
     char *name = node->name;
     Node *reg_node;
+    StorageClass sclass = node->sclass = get_storage_class(node->tp);
 
     if (cur_structdef!=NULL) {      //構造体内であればメンバ
         if (map_get(cur_structdef->map, node->name, (void**)&reg_node)==0) {
@@ -345,7 +343,6 @@ void regist_var_def(Node *node) {
         return;
     } else if (cur_funcdef!=NULL) { //関数内であればローカル
         Map *symbol_map = stack_top(symbol_stack); 
-        StorageClass sclass = get_storage_class(node->tp);
         map_get(symbol_map, name, (void**)&reg_node);
         Node *reg_node2 = search_symbol(name);
         if (sclass==SC_EXTERN || node->tp->type==FUNC) {
@@ -353,8 +350,7 @@ void regist_var_def(Node *node) {
                 error_with_note(node, reg_node2, "ローカル変数の重複定義です");
             }
             map_put(symbol_map, name, node);
-        } else 
-        if (reg_node==NULL) {
+        } else if (reg_node==NULL) {
             switch (sclass) {
             case SC_STATIC:
                 node->index = global_index++;
@@ -375,11 +371,11 @@ void regist_var_def(Node *node) {
     }
 
     if (cur_funcdef==NULL ||        //関数外であればグローバル
-        type_is_extern(node->tp)) { //externであればグローバル（関数内であればローカルにも登録）
+        node_is_extern(node)) {     //externであればグローバル（関数内であればローカルにも登録）
         if (node->type==ND_UNDEF) node->type = ND_GLOBAL_VAR_DEF;
         if (map_get(global_symbol_map, name, (void**)&reg_node)==0) {
             map_put(global_symbol_map, name, node);
-        } else if (node->type!=ND_LOCAL_VAR_DEF && !type_eq_global(reg_node->tp, node->tp)) {
+        } else if (node->type!=ND_LOCAL_VAR_DEF && !node_type_eq_global(reg_node, node)) {
             error_with_note(node, reg_node, "型が一致しません");
         } else {
             int has_init_value1 = (reg_node->rhs!=NULL);
@@ -433,17 +429,20 @@ void regist_symbol(Node *node) {
 }
 
 //タグ名を登録(enum/struct/union)
-void regist_tagname(Node *node) {
+//nodeが不完全定義(node-lst==NULL)であり、すでに同一タグで登録済みの場合は先行登録済みのノードを返す
+//そうでない場合はnodeを返す
+Node *regist_tagname(Node *node) {
     char *name = node->name;
-    Node *node2 = search_tagname(node->name);
+    Node *ret_node = node;
+    Node *prev_node = search_tagname(node->name);
     Node *node3;
     Map *tagname_map = stack_top(tagname_stack); 
-    if (node2==NULL) {
+    if (prev_node==NULL) {
         map_put(tagname_map, name, node);
-    } else if ((node2->type==ND_ENUM_DEF   && node->type==ND_ENUM_DEF) ||
-               (node2->type==ND_STRUCT_DEF && node->type==ND_STRUCT_DEF) ||
-               (node2->type==ND_UNION_DEF  && node->type==ND_UNION_DEF)) {
-        if (node2->lst!=NULL && node->lst!=NULL) {  //共に完全型
+    } else if ((prev_node->type==ND_ENUM_DEF   && node->type==ND_ENUM_DEF) ||
+               (prev_node->type==ND_STRUCT_DEF && node->type==ND_STRUCT_DEF) ||
+               (prev_node->type==ND_UNION_DEF  && node->type==ND_UNION_DEF)) {
+        if (prev_node->lst!=NULL && node->lst!=NULL) {          //共に完全型
             if (map_get(tagname_map, name, (void**)&node3)) {
                 //同一スコープ内での再定義はできない
                 SET_ERROR_WITH_NOTE;
@@ -451,12 +450,18 @@ void regist_tagname(Node *node) {
                 note_at(node3->input, "以前の定義はここです");
             } 
             map_put(tagname_map, name, node);
-        } else if (node2->lst==NULL && node->lst!=NULL) {
+        } else if (prev_node->lst==NULL && node->lst!=NULL) {   //先行が不完全、新規が完全
             map_put(tagname_map, name, node);
-            node2->tp = node->tp;
-        } else if (node2->lst!=NULL && node->lst==NULL) {
-            node->lst = node2->lst;
-            node->map = node2->map;
+            prev_node->tp = node->tp;
+            //prev_node->lst = node->lst;
+            //prev_node->map = node->map;
+            //ret_node = prev_node;
+        } else if (prev_node->lst!=NULL && node->lst==NULL) {   //先行が完全、新規が不完全
+            //node->lst = prev_node->lst;
+            //node->map = prev_node->map;
+            ret_node = prev_node;
+        } else {                                                //共に不完全
+            //ret_node = prev_node;
         }
     } else if (map_get(tagname_map, name, (void**)&node3)) {
         //同一スコープ内での再定義はできない
@@ -465,6 +470,7 @@ void regist_tagname(Node *node) {
         //異なるスコープであれば問題ない
         map_put(tagname_map, name, node);
     }
+    return ret_node;
 }
 
 //ラベルを登録
@@ -502,7 +508,7 @@ void regist_case(Node *node) {
 Type *get_typeof(Type *tp) {
     Type *ret = malloc(sizeof(Type));
     memcpy(ret, tp, sizeof(Type));
-    ret->sclass = SC_UNDEF;
+    ret->tmp_sclass = SC_UNDEF;
     if (tp->ptr_of) ret->ptr_of = get_typeof(tp->ptr_of);
     return ret;
 }
@@ -525,10 +531,13 @@ void check_return(Node *node) {
         (sts=type_eq_check(func_tp, ret_tp))!=ST_OK) {
         if (sts==ST_WARN)
             warning_at(node->input, "%s型の関数%sが%s型を返しています",
-                get_type_str(func_tp), cur_funcdef->func_name, get_type_str(ret_tp));
+                get_type_str(func_tp), cur_funcdef->func_name, get_node_type_str(node));
         if (sts==ST_ERR)
             error_at(node->input, "%s型の関数%sが%s型を返しています",
-                get_type_str(func_tp), cur_funcdef->func_name, get_type_str(ret_tp));
+                get_type_str(func_tp), cur_funcdef->func_name, get_node_type_str(node));
+    } else if (func_tp->type==PTR && !func_tp->ptr_of->is_const 
+            && (ret_tp->type==PTR || ret_tp->type==ARRAY) && ret_tp->ptr_of->is_const) {
+        warning_at(node->input, "戻り値%sのconst情報は失われます", get_node_type_str(node));
     }
 }
 
@@ -604,22 +613,30 @@ void check_funccall(Node *node) {
     } else {
         for (int i=0;i<decl_size && i<call_size;i++) {
             if (decl_args[i]->type==ND_VARARGS) return; //唯一引数の数が一致しないケース
-            switch (type_eq_check(decl_args[i]->tp, call_args[i]->tp)) {
+            Node *decl_arg = decl_args[i];
+            Node *call_arg = call_args[i];
+            Type *decl_tp = decl_arg->tp;
+            Type *call_tp = call_arg->tp;
+            switch (type_eq_check(decl_tp, call_tp)) {
             case ST_ERR:
                 SET_ERROR_WITH_NOTE;
-                error_at(call_args[i]->input, "引数[%d]の型(%s:%s)が一致しません", i,
-                    get_type_str(decl_args[i]->tp),
-                    get_type_str(call_args[i]->tp));
-                note_at(decl_args[i]->input, "関数の定義はここです");
+                error_at(call_arg->input, "引数[%d]の型(%s:%s)が一致しません", i,
+                    get_node_type_str(decl_arg),
+                    get_node_type_str(call_arg));
+                note_at(decl_arg->input, "関数の定義はここです");
                 break;
             case ST_WARN:
-                warning_at(call_args[i]->input, "引数[%d]の型(%s:%s)が一致しません", i,
-                    get_type_str(decl_args[i]->tp),
-                    get_type_str(call_args[i]->tp));
-                note_at(decl_args[i]->input, "関数の定義はここです");
+                warning_at(call_arg->input, "引数[%d]の型(%s:%s)が一致しません", i,
+                    get_node_type_str(decl_arg),
+                    get_node_type_str(call_arg));
+                note_at(decl_arg->input, "関数の定義はここです");
                 break;
             default:
                 break;
+            }
+            if (decl_tp->type==PTR && !decl_tp->ptr_of->is_const &&
+                (call_tp->type==PTR || call_tp->type==ARRAY) && call_tp->ptr_of->is_const) {
+                warning_at(call_arg->input, "戻り値%sのconst情報は失われます", get_node_type_str(call_arg));
             }
         }
         if (decl_size>call_size) {
@@ -657,7 +674,7 @@ int type_eq(const Type *tp1, const Type *tp2) {
     if (tp1->type != tp2->type) return 0;
     if (tp1->is_unsigned != tp2->is_unsigned) return 0;
     if (tp1->is_const != tp2->is_const) return 0;
-    if (tp1->sclass != tp2->sclass) return 0;
+    if (tp1->tmp_sclass != tp2->tmp_sclass) return 0;
     if (tp1->array_size != tp2->array_size) return 0;
     if (tp1->type==FUNC && !func_arg_eq(tp1->node, tp2->node)) return 0;
     if (type_is_struct_or_union(tp1) && tp1->node!=tp2->node) return 0;
@@ -670,15 +687,23 @@ int type_eq_global(const Type *tp1, const Type *tp2) {
     if (tp1->type != tp2->type) return 0;
     if (tp1->is_unsigned != tp2->is_unsigned) return 0;
     if (tp1->is_const != tp2->is_const) return 0;
-    if (tp1->sclass != tp2->sclass) {
-        if (!(tp1->sclass == SC_EXTERN && tp2->sclass == SC_UNDEF ) &&
-            !(tp1->sclass == SC_UNDEF  && tp2->sclass == SC_EXTERN)) return 0;
+    if (tp1->tmp_sclass != tp2->tmp_sclass) {
+        if (!(tp1->tmp_sclass == SC_EXTERN && tp2->tmp_sclass == SC_UNDEF ) &&
+            !(tp1->tmp_sclass == SC_UNDEF  && tp2->tmp_sclass == SC_EXTERN)) return 0;
     }
     if (tp1->array_size != tp2->array_size) return 0;
     if (tp1->type==FUNC && !func_arg_eq(tp1->node, tp2->node)) return 0;
     if (type_is_struct_or_union(tp1) && tp1->node!=tp2->node) return 0;
     if (tp1->ptr_of) return type_eq_global(tp1->ptr_of, tp2->ptr_of);
     return 1;
+}
+int node_type_eq_global(const Node *node1, const Node *node2) {
+    StorageClass sclass1 = node1->sclass, sclass2 = node2->sclass;
+    if (sclass1 != sclass2) {
+        if (!(sclass1 == SC_EXTERN && sclass2 == SC_UNDEF ) &&
+            !(sclass1 == SC_UNDEF  && sclass2 == SC_EXTERN)) return 0;
+    }
+    return type_eq_global(node1->tp, node2->tp);
 }
 
 //  関数の戻り値の型が等しいかどうかを判定する（storage classは無視）
@@ -696,15 +721,21 @@ int type_eq_ex_sclass(const Type *tp1, const Type *tp2) {
 
 //node1にnode2を渡す観点で型の一致を判定する
 Status type_eq_check(const Type *tp1, const Type *tp2) {
-    if (!tp1->is_const && tp2->is_const) {
-        return ST_WARN; //引数、戻り値の場合はWARN。代入の場合はERRだがここではチェックしない
-    } else if (type_is_integer(tp1) && type_is_integer(tp2)) {
+    //if (!tp1->is_const && tp2->is_const) {
+    //    return ST_WARN; //引数、戻り値の場合はWARN。代入の場合はERRだがここではチェックしない
+    //} else
+     if (type_is_integer(tp1) && type_is_integer(tp2)) {
         ;   //inter同士はOK
     } else if (tp1->type==PTR && tp2->type==ARRAY) {
         ;   //ポインタに対する配列はOK
+        if (tp1->ptr_of->type==VOID) return ST_OK;
     } else if (tp1->type==PTR && tp1->ptr_of->type==FUNC &&
                tp2->type==FUNC) {   //関数ポインタに対する関数名の代入
         tp1 = tp1->ptr_of;
+    } else if (tp1->type==PTR && tp2->type==PTR &&
+             (tp1->ptr_of->type==VOID || tp2->ptr_of->type==VOID)) {
+            //voidポインタと非voidポインタの相互代入はOK
+        return ST_OK;
     } else if (type_is_struct_or_union(tp1) || type_is_struct_or_union(tp2)) {
         if (!type_eq(tp1, tp2)) return ST_ERR;
     } else if (tp1->type != tp2->type) {
@@ -712,7 +743,7 @@ Status type_eq_check(const Type *tp1, const Type *tp2) {
         return ST_WARN;
     }
     if (tp1->ptr_of) {
-        if (tp1->type==PTR && tp1->ptr_of->type==VOID && !tp2->ptr_of->is_const) return ST_OK;
+        //ポインタの種類が違う場合は警告とする
         return type_eq_check(tp1->ptr_of, tp2->ptr_of)==ST_OK ? ST_OK : ST_WARN;
     }
     return ST_OK;
@@ -814,6 +845,7 @@ Node *new_node_string(String *string, char *input) {
 Node *new_node_ident(char *name, char *input) {
     Node *node, *var_def;
     NDtype type;
+    StorageClass sclass = SC_UNDEF;
     Type *tp;
     long offset = 0;
     int index = 0;
@@ -823,8 +855,8 @@ Node *new_node_ident(char *name, char *input) {
     if (var_def) {
         switch (var_def->type) {
         case ND_LOCAL_VAR_DEF:
-            if (type_is_extern(var_def->tp)) type = ND_GLOBAL_VAR;
-            else                             type = ND_LOCAL_VAR;
+            if (node_is_extern(var_def)) type = ND_GLOBAL_VAR;
+            else                         type = ND_LOCAL_VAR;
             break;
         case ND_GLOBAL_VAR_DEF:
         case ND_FUNC_DEF:       
@@ -837,6 +869,7 @@ Node *new_node_ident(char *name, char *input) {
             dump_node(var_def,__func__);
             assert(0);
         }
+        sclass = var_def->sclass;
         tp = var_def->tp;
         offset = var_def->offset;
         index  = var_def->index;
@@ -847,6 +880,7 @@ Node *new_node_ident(char *name, char *input) {
 
     node = new_node(type, NULL, NULL, tp, input);
     node->name   = name;
+    node->sclass = sclass;
     node->offset = offset;
     node->index  = index;
     //dump_node(node, __func__);
@@ -888,6 +922,7 @@ Node *new_node_func_call(char *name, char *input) {
     }
     node = new_node(ND_FUNC_CALL, NULL, func_node, tp, input);
     node->name = name;
+    if (func_node) node->sclass = func_node->sclass;
 //  node->lhs   //引数リスト
 //  node->rhs   //コール先を示すノード
 
@@ -899,6 +934,7 @@ Node *new_node_func_call(char *name, char *input) {
 Node *new_node_func(char *name, Type *tp, char *input) {
     Node *node = new_node(ND_FUNC_DECL, NULL, NULL, tp, input);
     node->name = name;
+    node->sclass = get_storage_class(tp);
 //  node->lhs       //引数リスト(ND_LIST)
 //  node->rhs       //ブロック(ND_BLOCK)
 

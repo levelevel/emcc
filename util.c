@@ -151,9 +151,9 @@ static void sprint_type(char *buf, const Type *tp) {
 //bufに対して型を表す文字列をCの文法で生成する
 static void sprintC_type(char *buf, const Type *tp) {
     if (tp->ptr_of) sprintC_type(buf, tp->ptr_of);
-    strcat_word(buf, SClassStr[tp->sclass]);
-    if (tp->is_unsigned&& tp->type!=BOOL) strcat_word(buf, "unsigned");
+    strcat_word(buf, SClassStr[tp->tmp_sclass]);
     if (tp->is_const) strcat_word(buf, "const");
+    if (tp->is_unsigned&& tp->type!=BOOL) strcat_word(buf, "unsigned");
     strcat_word(buf, TypeStr[tp->type]);
     if ((tp->type==STRUCT || tp->type==ENUM) && tp->node) strcat_word(buf, tp->node->name);
     if (tp->type==ARRAY) {
@@ -187,6 +187,15 @@ char *get_type_str(const Type *tp) {
     }
     char *ret = malloc(strlen(buf)+1);
     strcpy(ret, buf);
+    return ret;
+}
+char *get_node_type_str(const Node *node) {
+    char *ret = get_type_str(node->tp);
+    if (node->sclass && get_storage_class(node->tp)==SC_UNDEF) {
+        char *tmp = malloc(strlen(ret)+32);
+        sprintf(tmp, "%s%s", SClassStr[node->sclass], ret);
+        ret = tmp;
+    }
     return ret;
 }
 
@@ -326,8 +335,9 @@ static void dump_node_indent(FILE *fp, const Node *node, const char *str, int in
         get_NDtype_str(node->type),
         node->name?node->name:"");
     if (node->disp_name) fprintf(fp, "(%s)", node->disp_name);
+    if (node->sclass) fprintf(fp, ", sclass==%s", get_StorageClass_str(node->sclass));
     fprintf(fp, ", tp=%s, offset=%d, index=%d, val=%ld, unused=%d\n", 
-        get_type_str(node->tp),
+        get_node_type_str(node),
         node->offset, node->index, node->val, node->unused);
     if (g_dump_type && (node->type==ND_LOCAL_VAR_DEF||node->type==ND_GLOBAL_VAR_DEF)) {
         g_dump_type = 0;
@@ -336,7 +346,7 @@ static void dump_node_indent(FILE *fp, const Node *node, const char *str, int in
     }
     if (node->lhs) dump_node_indent(fp, node->lhs, "lhs=", indent+2);
     if (node->rhs) dump_node_indent(fp, node->rhs, "rhs=", indent+2);
-    if (node->lst && indent<20 && (node->type!=ND_ENUM_DEF || f_dump_enum_lst)) {
+    if (node->lst && indent<20 && !(node->tp && node->tp->type==PTR) && (node->type!=ND_ENUM_DEF || f_dump_enum_lst)) {
         char buf[16];
         Vector *lists = node->lst;
         Node **nodes = (Node**)lists->data;
@@ -362,7 +372,7 @@ static void dump_type_indent(FILE *fp, const Type *tp, const char *str, int inde
         get_TPType_str(tp->type), 
         tp->is_unsigned,
         tp->is_const,
-        get_StorageClass_str(tp->sclass),
+        get_StorageClass_str(tp->tmp_sclass),
         tp->array_size);
     if (tp->node) dump_node_indent(fp, tp->node, NULL, indent+2);
     if (tp->ptr_of) dump_type_indent(fp, tp->ptr_of, NULL, indent+2);

@@ -133,10 +133,11 @@ static Type *direct_abstract_declarator(Type *tp);
 static Type *declaration_specifiers(int type_only);
 static Node *struct_or_union_specifier(TPType type);
 static Type *specifier_qualifier_list(void);
-static Node *enum_specifier(void);
 static Node *struct_declaration(void);
 static Node *struct_declarator_list(Type *tp);
 static Node *struct_declarator(Type *tp);
+static void refresh_typedef(Node *struc);
+static Node *enum_specifier(void);
 static Node *enumerator(Node *enum_def, int default_val);
 
 static Node *statement(void);
@@ -212,6 +213,20 @@ static void check_arg(Node *node, const char *input, unsigned int check_mode, co
 static void check_scalar(Node *node, const char *input, const char *msg) {
     if (input==NULL) input = node->input;
     if (type_is_struct_or_union(node->tp)) error_at(input, "%sにはスカラー値が必要です", msg);
+}
+
+//代入：node = rhs に対する型チェックを行う
+void check_assignment(const Node *node, const Node *rhs, const char *input){
+    Status sts;
+    if (!(node->tp->type==PTR && rhs->type==ND_NUM && rhs->val==0) &&  //ポンタの右辺が0の場合は無条件にOK
+        (sts=type_eq_check(node->tp, rhs->tp))!=ST_OK) {
+        if (sts==ST_ERR)
+            error_at(input, "=の左右の型(%s:%s)が異なります", 
+                get_node_type_str(node), get_node_type_str(rhs));
+        if (sts==ST_WARN)
+            warning_at(input, "=の左右の型(%s:%s)が異なります", 
+                get_node_type_str(node), get_node_type_str(rhs));
+    }
 }
 
 //    external_declaration    = function_definition | declaration
@@ -350,6 +365,7 @@ static Node *declaration(Type *tp, char *name) {
             node->tp = last_node->tp;
         }
     }
+    set_storage_class(node->tp, SC_UNDEF);
 
     expect(';');
     return node;
@@ -366,7 +382,7 @@ static Node *init_declarator(Type *decl_spec, Type *tp, char *name) {
     tp   = node->tp;
     name = node->name;
 
-    if (type_is_typedef(tp)) {
+    if (node_is_typedef(node)) {
         node->type = ND_TYPEDEF;
         regist_var_def(node);
         return node;
@@ -374,7 +390,7 @@ static Node *init_declarator(Type *decl_spec, Type *tp, char *name) {
 
     //初期値: rhsに初期値を設定する
     if (consume('=')) {
-        if (type_is_extern(tp)) error_at(input, "extern変数は初期化できません");
+        if (node_is_extern(node)) error_at(input, "extern変数は初期化できません");
         //node->rhsに変数=初期値の形のノードを設定する。->そのまま初期値設定のコード生成に用いる
         rhs = initializer();
         long val;
@@ -382,7 +398,7 @@ static Node *init_declarator(Type *decl_spec, Type *tp, char *name) {
             if (rhs->tp->type==ARRAY) {
                 //文字列リテラルで初期化できるのはcharの配列だけ
                 if (rhs->type==ND_STRING && tp->ptr_of->type!=CHAR)
-                    error_at(rhs->input, "%sを文字列リテラルで初期化できません", get_type_str(tp));
+                    error_at(rhs->input, "%sを文字列リテラルで初期化できません", get_node_type_str(node));
                 if (tp->array_size<0) {
                     if (rhs->type==ND_INIT_LIST) {
                         tp->array_size = rhs->lst->len;
@@ -398,20 +414,10 @@ static Node *init_declarator(Type *decl_spec, Type *tp, char *name) {
                 error_at(rhs->input, "配列の初期値が配列形式になっていません");
             }
         }
-        if (node_is_const(rhs, &val)) {
+        if (node_is_constant(rhs, &val)) {
             rhs = new_node_num(val, rhs->input);
         }
-        Status sts;
-        if (!(rhs->type==ND_NUM && rhs->val==0) &&  //右辺が0の場合は無条件にOK
-            rhs->type!=ND_INIT_LIST &&
-            (sts=type_eq_check(node->tp, rhs->tp))!=ST_OK) {
-            if (sts==ST_ERR)
-                error_at(input, "=の左右の型(%s:%s)が異なります", 
-                    get_type_str(node->tp), get_type_str(rhs->tp));
-            if (sts==ST_WARN)
-                warning_at(input, "=の左右の型(%s:%s)が異なります", 
-                    get_type_str(node->tp), get_type_str(rhs->tp));
-        }
+        if (rhs->type!=ND_INIT_LIST) check_assignment(node, rhs, input);
     }
 
     if (rhs) node->rhs = new_node('=', NULL, rhs, tp, input);
@@ -422,7 +428,7 @@ static Node *init_declarator(Type *decl_spec, Type *tp, char *name) {
 
     //初期値のないサイズ未定義のARRAYはエラー
     //externの場合はOK
-    if (node->tp->type==ARRAY && node->tp->array_size<0 && !type_is_extern(node->tp) &&
+    if (node->tp->type==ARRAY && node->tp->array_size<0 && !node_is_extern(node) &&
         (node->rhs==NULL || node->rhs->type!='='))
         error_at(input_str(), "配列のサイズが未定義です");
 
@@ -432,7 +438,7 @@ static Node *init_declarator(Type *decl_spec, Type *tp, char *name) {
         node->rhs->rhs->type!=ND_STRING) {  //文字列リテラルはここではチェックしない
         long val=0;
         Node *var=NULL;
-        if (!node_is_const_or_address(node->rhs->rhs, &val, &var)) {
+        if (!node_is_constant_or_address(node->rhs->rhs, &val, &var)) {
             error_at(node->rhs->rhs->input, "%s変数の初期値が定数ではありません", 
                      node->type==ND_GLOBAL_VAR_DEF?"グローバル":"静的ローカル");
         }
@@ -445,11 +451,13 @@ static Node *init_declarator(Type *decl_spec, Type *tp, char *name) {
         }
     }
 
-    if (node->type==ND_LOCAL_VAR_DEF && type_is_static(node->tp)) {
+    if (node->type==ND_LOCAL_VAR_DEF && node_is_static(node)) {
         char *name = node->name;
+        StorageClass sclass = node->sclass;
         //ローカルstatic変数は初期値を外してreturnする。初期化はvarderのリストから実施される。
         node = new_node(ND_LOCAL_VAR_DEF, NULL, NULL, node->tp, node->input);
         node->name = name;
+        node->sclass = sclass;
     }
     return node;
 }
@@ -530,7 +538,7 @@ static Node *direct_declarator(Type *tp, char *name) {
         case ENUM:
         case STRUCT:
         case UNION:
-            if (tp->node->lst==NULL && tp->sclass!=SC_TYPEDEF) {
+            if (tp->node->lst==NULL && tp->tmp_sclass!=SC_TYPEDEF) {
                 SET_ERROR_WITH_NOTE;
                 error_at(node->input, "%sの型は不完全です", name);
                 note_at(tp->node->input, "型の宣言はここです");
@@ -843,12 +851,11 @@ static Type *declaration_specifiers(int type_only) {
         if (is_unsigned<0) is_unsigned = 0;
         top_tp = tp = new_type(type, is_unsigned);
     }
-    tp->sclass = sclass;
+    tp->tmp_sclass = sclass;
     if (is_const) tp->is_const = 1;
     return top_tp;
 }
 
-static void refresh_typedef(Node *struc);
 //    struct_or_union_specifier = ( "struct" | "union" ) identifier? "{" struct_declaration+ "}"
 //                            | ( "struct" | "union" ) identifier
 //    struct_declaration      = specifier_qualifier_list struct_declarator_list* ";"
@@ -876,7 +883,7 @@ static Node *struct_or_union_specifier(TPType type) {
     if (consume('{')) { //完全定義
         node->lst = new_vector();
         node->map = new_map();
-        if (name) regist_tagname(node);
+        if (name) node = regist_tagname(node);
         do {
             Node *member = struct_declaration();
             if (member->type==ND_LIST) {
@@ -904,7 +911,7 @@ static Node *struct_or_union_specifier(TPType type) {
     } else if (name==NULL) {
         expect('{');    //error
     } else {            //不完全定義
-        regist_tagname(node);
+        node = regist_tagname(node);
     }
     //構造体メンバのoffset(memb->offset)と、構造体のサイズを設定する(node->val)。
     set_struct_size(node, 0/*base_offset*/);
@@ -1013,7 +1020,7 @@ static Node *enum_specifier(void) {
         expect('{');    //error
     }
     node->tp->node = node;
-    if (name) regist_tagname(node);
+    if (name) node = regist_tagname(node);
     return node;
 }
 static Node *enumerator(Node *enum_def, int default_val) {
@@ -1032,7 +1039,7 @@ static Node *enumerator(Node *enum_def, int default_val) {
 }
 
 static Node *statement(void) {
-    Node *node;
+    Node *node, *lhs, *rhs;
     char *input = input_str();
 
     // labeled_statement
@@ -1040,22 +1047,22 @@ static Node *statement(void) {
         char *name;
         expect_ident(&name, "ラベル名");
         consume(':');
-        node = statement();
-        node = new_node(ND_LABEL, NULL, node, node->tp, input);
+        rhs = statement();
+        node = new_node(ND_LABEL, NULL, rhs, rhs->tp, input);
         node->name = name;
         regist_label(node);
         return node;
     } else if (consume(TK_CASE)) {
-        node = constant_expression();
+        lhs = constant_expression();
         expect(':');
-        node = new_node(ND_CASE, node, statement(), node->tp, input);
-        node->val = node->lhs->val;
+        node = new_node(ND_CASE, lhs, statement(), lhs->tp, input);
+        node->val = lhs->val;
         regist_case(node);
         return node;
     } else if (consume(TK_DEFAULT)) {
         expect(':');
-        node = statement();
-        node = new_node(ND_DEFAULT, NULL, node, node->tp, input);
+        rhs = statement();
+        node = new_node(ND_DEFAULT, NULL, rhs, rhs->tp, input);
         regist_case(node);
         return node;
     } else if (token_is('{')) {
@@ -1172,8 +1179,9 @@ static Node *statement(void) {
         if (token_is(';')) {
             node = new_node(ND_RETURN, NULL, NULL, NULL, input);
         } else {
-            node = expression();
-            node = new_node(ND_RETURN, NULL, node, node->tp, input);
+            rhs = expression();
+            node = new_node(ND_RETURN, NULL, rhs, rhs->tp, input);
+            node->sclass = rhs->sclass;
         }
         check_return(node); //戻り値の妥当性をチェック
 
@@ -1202,11 +1210,12 @@ static Node *compound_statement(int is_func_body) {
         Node *string_node = new_node_string(&string, input);
         Type *tp = string_node->tp;
         tp->ptr_of->is_const = 1;
-        tp->ptr_of->sclass = SC_STATIC;
+        tp->ptr_of->tmp_sclass = SC_STATIC;
         Node *func_name_node = new_node_var_def("__func__", tp, input);
         Node *var_node = new_node_ident(func_name_node->name, input);  //=の左辺
         func_name_node->unused = 1; //参照されたときに0となり、有効になる
         func_name_node->rhs = new_node('=', var_node, string_node, tp, input);
+        func_name_node->sclass = SC_STATIC;
     }
 
     while (!consume('}')) {
@@ -1255,7 +1264,7 @@ static Node *constant_expression(void) {
     char *input = input_str();
     Node *node = conditional_expression();
     long val;
-    if (!node_is_const(node, &val))
+    if (!node_is_constant(node, &val))
         error_at(node->input, "定数式が必要です");
     node = new_node(ND_NUM, NULL, node, node->tp, input);
     node->val = val;
@@ -1286,17 +1295,8 @@ static Node *assignment_expression(void) {
     if (consume('=')) {
         if (!is_lvalue || node->tp->type==ARRAY) error_at(node->input, "左辺値ではありません");
         check_arg(node, input, CHK_CONST, "代入");
-        rhs = assignment_expression(); 
-        Status sts;
-        if (!(node->tp->type==PTR && rhs->type==ND_NUM && rhs->val==0) &&  //右辺が0の場合は無条件にOK
-            (sts=type_eq_check(node->tp, rhs->tp))!=ST_OK) {
-            if (sts==ST_ERR)
-                error_at(input, "=の左右の型(%s:%s)が異なります", 
-                    get_type_str(node->tp), get_type_str(rhs->tp));
-            if (sts==ST_WARN)
-                warning_at(input, "=の左右の型(%s:%s)が異なります", 
-                    get_type_str(node->tp), get_type_str(rhs->tp));
-        }
+        rhs = assignment_expression();
+        check_assignment(node, rhs, input);
         node = new_node('=', node, rhs, node->tp, input); //ND_ASIGN
     } else if (consume(TK_PLUS_ASSIGN)      // +=
             || consume(TK_MINUS_ASSIGN)     // -=
@@ -1513,7 +1513,7 @@ static Node *additive_expression(void) {
             if (node_is_ptr(node) && node_is_ptr(rhs)) {
                 if (!type_eq(node->tp, rhs->tp)) 
                     error_at(node->input, "異なるタイプのポインタによる減算です: %s vs %s",
-                        get_type_str(node->tp), get_type_str(rhs->tp));
+                        get_node_type_str(node), get_node_type_str(rhs));
             } else if (!node_is_ptr(node)  && node_is_ptr(rhs)) {
                 error_at(node->input, "ポインタによる減算です");
             }
@@ -1607,7 +1607,7 @@ static Node *unary_expression(void) {
         node = cast_expression();
         check_arg(node, input, CHK_NOT(CHK_ARRAY|CHK_PTR), "*");
         if (!type_is_ptr(node->tp))
-            error_at(node->input, "'*'は非ポインタ型(%s)を参照しています", get_type_str(node->tp));
+            error_at(node->input, "'*'は非ポインタ型(%s)を参照しています", get_node_type_str(node));
         node = new_node(ND_INDIRECT, NULL, node, node->tp->ptr_of, input);
         if (display_name(node->rhs)) {
             char *buf = malloc(strlen(display_name(node->rhs))+2);
@@ -1659,7 +1659,7 @@ static Node *postfix_expression(void) {
         if (consume('(')) {  //関数コール
             #define node_is_func(node) ((node)->tp->type==FUNC||((node)->tp->type==PTR &&(node)->tp->ptr_of->type==FUNC))
             if (node->type!=ND_IDENT && !node_is_func(node))
-                error_at(input, "%sに対して関数コールできません", get_type_str(node->tp));
+                error_at(input, "%sに対して関数コールできません", get_node_type_str(node));
             node = new_node_func_call(node->name, node->input);
             if (!consume(')')) { 
                 node->lhs = expression();
@@ -1678,7 +1678,7 @@ static Node *postfix_expression(void) {
             Node *rhs = expression();
             Node *base_node = node;
             long val;
-            if (tp->type==ARRAY && node_is_const(rhs, &val)) {
+            if (tp->type==ARRAY && node_is_constant(rhs, &val)) {
                 tp = node->tp->ptr_of ? node->tp->ptr_of : rhs->tp->ptr_of;
                 if (tp==NULL) error_at(input_str(), "ここでは配列を指定できません");
                 node->offset -= size_of(tp)*val;

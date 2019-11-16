@@ -23,15 +23,9 @@
 9cc:Note: tmp/test_src.c:1434:     void gc4_func(struct LS*p){};
                                                             ^ 関数の定義はここです
 9cc:Warning: tmp/test_src.c:2712:     return str;
-                                      ^ static char*型の関数func_const2がstatic const char[4]型を返しています
+                                      ^ 戻り値static const char[4]のconst情報は失われます
 9cc:Warning: tmp/test_src.c:2721:     func_const3(p1);
-                                                  ^ 引数[0]の型(char*:const char*)が一致しません
-9cc:Note: tmp/test_src.c:2714: static char *func_const3(char*str){return str;}
-                                                                ^ 関数の定義はここです
-9cc:Warning: tmp/test_src.c:2734:     func_const3(p3);
-                                                  ^ 引数[0]の型(char*:char const*)が一致しません
-9cc:Note: tmp/test_src.c:2714: static char *func_const3(char*str){return str;}
-                                                                ^ 関数の定義はここです
+                                                  ^ 戻り値const char*のconst情報は失われます
 9cc:Warning: tmp/test_src.c:865: static int ga2_b[4]={1,2,{3,99},4}, *ga2_p=&ga2_a, *ga2_q=&ga2_b[2], *ga2_r=ga2_a+3;
                                                            ^ スカラーがリストで初期化されています
 9cc:Warning: tmp/test_src.c:865: static int ga2_b[4]={1,2,{3,99},4}, *ga2_p=&ga2_a, *ga2_q=&ga2_b[2], *ga2_r=ga2_a+3;
