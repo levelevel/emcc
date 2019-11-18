@@ -390,6 +390,7 @@ EXTERN int g_parse_only;//パースのみ
 #define last_token_type()   (tokens[token_pos-1]->type)
 
 // main.c
+char *read_file(const char *path);
 void compile(void);
 
 // tokenize.c

@@ -352,6 +352,8 @@ struct {
     {ER, "int a; struct{int x;}s; a*=s;"},
     {ER, "int a; union {int x;}u; a/=u;"},
     {ER, "int a; struct{int x;}s; a%=s;"},
+
+    {OK, "#include test_src/9cc.c"},
     {ER, NULL}
 };
 
@@ -375,7 +377,11 @@ static void test_error1(int index) {
     }
 
     user_input = test[index].code;
-    if (strstr(user_input, "main")==NULL) {
+    if (strncmp(user_input, "#include", 8)==0) {
+        char *p = user_input+8;
+        while (isspace(*p)) p++;
+        user_input = read_file(p);
+    } else if (strstr(user_input, "main")==NULL) {
         char *buf = malloc(strlen(user_input) + 50);
         sprintf(buf, "int main(){%s}", user_input);
         user_input = buf;
