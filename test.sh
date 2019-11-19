@@ -7,6 +7,7 @@ AFLAGS="-g -no-pie"
 CFLAGS="-D_9cc -std=c11 -pedantic-errors "
 ER=Error
 WR=Warning
+CC=emcc
 
 rm -f $EXE.log
 
@@ -25,15 +26,15 @@ test_src() {
   if [ $? -eq 0 ]; then
     echo "gcc TEST OK    : $src"
   else
-    egrep "error|9cc" $EXE2.gcc.log
+    egrep "error|$CC" $EXE2.gcc.log
     echo "gcc TEST FAIL! : $src"
     echo "see more information: $EXE2.gcc.log"
     exit 1;
   fi
 
   cpp $CFLAGS $src | grep -v "^#" > $EXE2.c
-  ./9cc $src2 > ${EXE2}e.s
-  ./9cc $EXE2.c 2>&1 > $EXE2.s | tee -a $EXE2.log | grep "9cc:Error" > $EXE2.err
+  ./$CC $src2 > ${EXE2}e.s
+  ./$CC $EXE2.c 2>&1 > $EXE2.s | tee -a $EXE2.log | grep "$CC:Error" > $EXE2.err
   if [ $? -eq 0 ]; then
     cat $EXE2.log
     exit 1
@@ -43,10 +44,10 @@ test_src() {
   
   ./$EXE2 >> $EXE2.log
   if [ $? -eq 0 ]; then
-    echo "9cc TEST OK    : $src"
+    echo "$CC TEST OK    : $src"
   else
     tail $EXE2.log
-    echo "9cc TEST FAIL! : $src"
+    echo "$CC TEST FAIL! : $src"
     exit 1;
   fi
 }
@@ -54,7 +55,7 @@ test_src() {
 try1() {
   rm -f $EXE
   make -s
-  ./9cc "$@" > $EXE.s
+  ./$CC "$@" > $EXE.s
   if [ $? != 0 ]; then exit 1; fi
   cat -n $EXE.s
   gcc $AFLAGS -o $EXE $EXE.s
@@ -74,7 +75,7 @@ while [ $# -gt 0 ]; do
 done
 
 test_src test_src/expr.c
-./9cc -test > /dev/null 2> tmp/9cc_test.log
+./$CC -test > /dev/null 2> tmp/9cc_test.log
 tail -4 tmp/9cc_test.log
 
 #rm -f $EXE $EXE.s

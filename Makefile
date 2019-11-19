@@ -1,16 +1,23 @@
-CFLAGS=-Wall -std=c11 -pedantic-errors -g -static
+CFLAGS=-Wall -std=c11 -pedantic-errors -g -static -I.
+
+HEADS=9cc.h
 SRCS=$(wildcard *.c) test_src/test_error.c
 OBJS=$(SRCS:.c=.o)
 
-9cc: $(OBJS)
-	$(CC) $(CFLAGS) -o 9cc $(OBJS) $(LDFLAGS)
+CPPSRCS=cpp/emcpp.c
+CPPOBJS=$(CPPSRCS:.c=.o)
 
-$(OBJS): 9cc.h
+TARGET=emcc
 
-test: 9cc
+$(TARGET): $(OBJS)
+	$(CC) $(CFLAGS) -o $(TARGET) $(OBJS) $(LDFLAGS)
+
+$(OBJS): $(HEADS)
+
+test: $(TARGET)
 	./test.sh
-tester: 9cc
+tester:  $(TARGET)
 	./test.sh -e
 
 clean:
-	rm -f 9cc *.o *~ tmp/*
+	rm -f  $(TARGET) *.o *~ tmp/*

@@ -30,7 +30,7 @@ static ErCtrl get_ctrl(const char*opt) {
 }
 
 static void usage(void) {
-    fprintf(stderr,"Usage: 9cc [option] {-s 'program' | file}\n");
+    fprintf(stderr,"Usage: emcc [option] {-s 'program' | file}\n");
     fprintf(stderr,"  -[ew][cea]: error/warnin制御。c:continue, e:exit, a:abort\n");
     fprintf(stderr,"  -p: parse only (no code generation)\n");
     fprintf(stderr,"  -d[t]: dump node [and type]\n");

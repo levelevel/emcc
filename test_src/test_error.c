@@ -353,7 +353,7 @@ struct {
     {ER, "int a; union {int x;}u; a/=u;"},
     {ER, "int a; struct{int x;}s; a%=s;"},
 
-    {OK, "#include test_src/9cc.c"},
+    {OK, "#include test_src/emcc.c"},
     {ER, NULL}
 };
 
@@ -431,7 +431,7 @@ void test_error(void) {
     for (int i=0; test[i].code; i++) {
         test_error1(i);
     }
-    fprintf(stderr, "9cc self test\n");
+    fprintf(stderr, "emcc self test\n");
     fprintf(stderr, "Total : %d\n", test_cnt);
     fprintf(stderr, "   Ok : %d\n", ok_cnt);
     fprintf(stderr, "   NG : %d\n", ng_cnt);

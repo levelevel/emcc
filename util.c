@@ -424,7 +424,7 @@ static void message_at(const char*loc, const char *level) {
         if (*p == '\n') line_num++;
 
     // 見つかった行を、ファイル名と行番号と一緒に表示
-    int indent = fprintf(stderr, "9cc:%s: %s:%d: ", level, filename, line_num);
+    int indent = fprintf(stderr, "emcc:%s: %s:%d: ", level, filename, line_num);
     fprintf(stderr, "%.*s\n", (int)(end - line), line);
 
     // エラー箇所を"^"で指し示して、エラーメッセージを表示
@@ -480,7 +480,7 @@ void note_at(const char*loc, const char*fmt, ...){
 void error(const char*fmt, ...) {
     va_list ap;
     va_start(ap, fmt);
-    fprintf(stderr, "9cc:Error: ");
+    fprintf(stderr, "emcc:Error: ");
     vfprintf(stderr, fmt, ap);
     fprintf(stderr, "\n");
     exit(1);
@@ -489,7 +489,7 @@ void error(const char*fmt, ...) {
 void warning(const char*fmt, ...) {
     va_list ap;
     va_start(ap, fmt);
-    fprintf(stderr, "9cc:Warning: ");
+    fprintf(stderr, "emcc:Warning: ");
     vfprintf(stderr, fmt, ap);
     fprintf(stderr, "\n");
 }

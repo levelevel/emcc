@@ -1,1470 +1,1470 @@
 # selftest ----------------
 int main(){42}
-9cc:Error: selftest:1: int main(){42}
-                                     ^ ;が期待されています
+emcc:Error: selftest:1: int main(){42}
+                                      ^ ;が期待されています
 # selftest ----------------
 int main(){10 + / 2;}
-9cc:Error: selftest:1: int main(){10 + / 2;}
-                                       ^ 終端記号でないトークンです
+emcc:Error: selftest:1: int main(){10 + / 2;}
+                                        ^ 終端記号でないトークンです
 # selftest ----------------
 main(){}
-9cc:Error: selftest:1: main(){}
-                       ^ 関数・変数の定義がありません
+emcc:Error: selftest:1: main(){}
+                        ^ 関数・変数の定義がありません
 # selftest ----------------
 int main(a){}
-9cc:Error: selftest:1: int main(a){}
-                                 ^ )が期待されています
+emcc:Error: selftest:1: int main(a){}
+                                  ^ )が期待されています
 # selftest ----------------
 int main(1){}
-9cc:Error: selftest:1: int main(1){}
-                                 ^ )が期待されています
+emcc:Error: selftest:1: int main(1){}
+                                  ^ )が期待されています
 # selftest ----------------
 int main(int a+1){}
-9cc:Error: selftest:1: int main(int a+1){}
-                                      ^ )が期待されています
+emcc:Error: selftest:1: int main(int a+1){}
+                                       ^ )が期待されています
 # selftest ----------------
 int main(int a,){}
-9cc:Error: selftest:1: int main(int a,){}
-                                      ^ 型名がありません
+emcc:Error: selftest:1: int main(int a,){}
+                                       ^ 型名がありません
 
 # selftest ----------------
 int main(){a;}
-9cc:Error: selftest:1: int main(){a;}
-                                  ^ 'a'は未定義の変数です
+emcc:Error: selftest:1: int main(){a;}
+                                   ^ 'a'は未定義の変数です
 # selftest ----------------
 int main(){a[1];}
-9cc:Error: selftest:1: int main(){a[1];}
-                                  ^ 'a'は未定義の変数です
+emcc:Error: selftest:1: int main(){a[1];}
+                                   ^ 'a'は未定義の変数です
 # selftest ----------------
 int main(){a++;}
-9cc:Error: selftest:1: int main(){a++;}
-                                  ^ 'a'は未定義の変数です
+emcc:Error: selftest:1: int main(){a++;}
+                                   ^ 'a'は未定義の変数です
 # selftest ----------------
 # [ローカル変数の重複定義]
 int main(){int a; int a;}
-9cc:Error: selftest:1: int main(){int a; int a;}
-                                             ^ ローカル変数の重複定義です
-9cc:Note: selftest:1: int main(){int a; int a;}
-                                     ^ 以前の宣言はここです
+emcc:Error: selftest:1: int main(){int a; int a;}
+                                              ^ ローカル変数の重複定義です
+emcc:Note: selftest:1: int main(){int a; int a;}
+                                      ^ 以前の宣言はここです
 # selftest ----------------
 # [ローカル変数の重複定義]
 int main(){int a=1; int a=1;}
-9cc:Error: selftest:1: int main(){int a=1; int a=1;}
-                                               ^ ローカル変数の重複定義です
-9cc:Note: selftest:1: int main(){int a=1; int a=1;}
-                                     ^ 以前の宣言はここです
+emcc:Error: selftest:1: int main(){int a=1; int a=1;}
+                                                ^ ローカル変数の重複定義です
+emcc:Note: selftest:1: int main(){int a=1; int a=1;}
+                                      ^ 以前の宣言はここです
 # selftest ----------------
 # [静的ローカル変数の重複定義]
 int main(){static int a=1, a=1;}
-9cc:Error: selftest:1: int main(){static int a=1, a=1;}
-                                                  ^ ローカル変数の重複定義です
-9cc:Note: selftest:1: int main(){static int a=1, a=1;}
-                                            ^ 以前の宣言はここです
+emcc:Error: selftest:1: int main(){static int a=1, a=1;}
+                                                   ^ ローカル変数の重複定義です
+emcc:Note: selftest:1: int main(){static int a=1, a=1;}
+                                             ^ 以前の宣言はここです
 # selftest ----------------
 # [グローバル変数の重複定義]
 int a=1, a=1; void main(){}
-9cc:Error: selftest:1: int a=1, a=1; void main(){}
-                                ^ 初期値付きグローバル変数の重複定義です
-9cc:Note: selftest:1: int a=1, a=1; void main(){}
-                           ^ 以前の宣言はここです
+emcc:Error: selftest:1: int a=1, a=1; void main(){}
+                                 ^ 初期値付きグローバル変数の重複定義です
+emcc:Note: selftest:1: int a=1, a=1; void main(){}
+                            ^ 以前の宣言はここです
 # selftest ----------------
 # [ローカル変数のstatic/auto]
 int main(){static int a; int a;}
-9cc:Error: selftest:1: int main(){static int a; int a;}
-                                                    ^ ローカル変数の重複定義です
-9cc:Note: selftest:1: int main(){static int a; int a;}
-                                            ^ 以前の宣言はここです
+emcc:Error: selftest:1: int main(){static int a; int a;}
+                                                     ^ ローカル変数の重複定義です
+emcc:Note: selftest:1: int main(){static int a; int a;}
+                                             ^ 以前の宣言はここです
 # selftest ----------------
 # [グローバル変数のstatic/global]
 static int a; int a;void main(){}
-9cc:Error: selftest:1: static int a; int a;void main(){}
-                                          ^ 型が一致しません
-9cc:Note: selftest:1: static int a; int a;void main(){}
-                                  ^ 以前の宣言はここです
+emcc:Error: selftest:1: static int a; int a;void main(){}
+                                           ^ 型が一致しません
+emcc:Note: selftest:1: static int a; int a;void main(){}
+                                   ^ 以前の宣言はここです
 # selftest ----------------
 int main(){int &a;}
-9cc:Error: selftest:1: int main(){int &a;}
-                                      ^ 識別子（変数名・関数名）が期待されています
+emcc:Error: selftest:1: int main(){int &a;}
+                                       ^ 識別子（変数名・関数名）が期待されています
 # selftest ----------------
 int main(){int +a;}
-9cc:Error: selftest:1: int main(){int +a;}
-                                      ^ 識別子（変数名・関数名）が期待されています
+emcc:Error: selftest:1: int main(){int +a;}
+                                       ^ 識別子（変数名・関数名）が期待されています
 # selftest ----------------
 int main(){return 1++;}
-9cc:Error: selftest:1: int main(){return 1++;}
-                                         ^ アドレスを生成できません
+emcc:Error: selftest:1: int main(){return 1++;}
+                                          ^ アドレスを生成できません
 # selftest ----------------
 int main(){return --1;}
-9cc:Error: selftest:1: int main(){return --1;}
-                                           ^ アドレスを生成できません
+emcc:Error: selftest:1: int main(){return --1;}
+                                            ^ アドレスを生成できません
 # selftest ----------------
 int main(){int a; *a;}
-9cc:Error: selftest:1: int main(){int a; *a;}
-                                         ^ 整数(int)に対して*の指定はできません
-# selftest ----------------
-int main(){int *a; **a;}
-9cc:Error: selftest:1: int main(){int *a; **a;}
+emcc:Error: selftest:1: int main(){int a; *a;}
                                           ^ 整数(int)に対して*の指定はできません
 # selftest ----------------
+int main(){int *a; **a;}
+emcc:Error: selftest:1: int main(){int *a; **a;}
+                                           ^ 整数(int)に対して*の指定はできません
+# selftest ----------------
 int main(){*1;}
-9cc:Error: selftest:1: int main(){*1;}
-                                  ^ 整数(int)に対して*の指定はできません
+emcc:Error: selftest:1: int main(){*1;}
+                                   ^ 整数(int)に対して*の指定はできません
 # selftest ----------------
 int main(){*1=0;}
-9cc:Error: selftest:1: int main(){*1=0;}
-                                  ^ 整数(int)に対して*の指定はできません
+emcc:Error: selftest:1: int main(){*1=0;}
+                                   ^ 整数(int)に対して*の指定はできません
 # selftest ----------------
 int main(){&1; return 1;}
-9cc:Error: selftest:1: int main(){&1; return 1;}
-                                   ^ アドレスを生成できません
+emcc:Error: selftest:1: int main(){&1; return 1;}
+                                    ^ アドレスを生成できません
 # selftest ----------------
 int main(){int a; *a;}
-9cc:Error: selftest:1: int main(){int a; *a;}
-                                         ^ 整数(int)に対して*の指定はできません
+emcc:Error: selftest:1: int main(){int a; *a;}
+                                          ^ 整数(int)に対して*の指定はできません
 # selftest ----------------
 int main(){int a; *a=0;}
-9cc:Error: selftest:1: int main(){int a; *a=0;}
-                                         ^ 整数(int)に対して*の指定はできません
+emcc:Error: selftest:1: int main(){int a; *a=0;}
+                                          ^ 整数(int)に対して*の指定はできません
 # selftest ----------------
 int main(){int a; & &a; return 1;}
-9cc:Error: selftest:1: int main(){int a; & &a; return 1;}
-                                           ^ アドレスを生成できません
+emcc:Error: selftest:1: int main(){int a; & &a; return 1;}
+                                            ^ アドレスを生成できません
 # selftest ----------------
 int main(){int *a; a=1;}
-9cc:Warning: selftest:1: int main(){int *a; a=1;}
-                                             ^ =の左右の型(int*:int)が異なります
+emcc:Warning: selftest:1: int main(){int *a; a=1;}
+                                              ^ =の左右の型(int*:int)が異なります
 # selftest ----------------
 int main(){int a; int*b; a=b;}
-9cc:Warning: selftest:1: int main(){int a; int*b; a=b;}
-                                                   ^ =の左右の型(int:int*)が異なります
+emcc:Warning: selftest:1: int main(){int a; int*b; a=b;}
+                                                    ^ =の左右の型(int:int*)が異なります
 # selftest ----------------
 int main(){int a; int*b; b=a;}
-9cc:Warning: selftest:1: int main(){int a; int*b; b=a;}
-                                                   ^ =の左右の型(int*:int)が異なります
+emcc:Warning: selftest:1: int main(){int a; int*b; b=a;}
+                                                    ^ =の左右の型(int*:int)が異なります
 # selftest ----------------
 int main(){int a; int b; a=&b;}
-9cc:Warning: selftest:1: int main(){int a; int b; a=&b;}
-                                                   ^ =の左右の型(int:int*)が異なります
+emcc:Warning: selftest:1: int main(){int a; int b; a=&b;}
+                                                    ^ =の左右の型(int:int*)が異なります
 # selftest ----------------
 int main(){int*a; int**b; a=b;}
-9cc:Warning: selftest:1: int main(){int*a; int**b; a=b;}
-                                                    ^ =の左右の型(int*:int**)が異なります
+emcc:Warning: selftest:1: int main(){int*a; int**b; a=b;}
+                                                     ^ =の左右の型(int*:int**)が異なります
 # selftest ----------------
 int *f(){int a; return &a;} int main(){int a; a=f();}
-9cc:Warning: selftest:1: int *f(){int a; return &a;} int main(){int a; a=f();}
-                                                                        ^ =の左右の型(int:int*)が異なります
+emcc:Warning: selftest:1: int *f(){int a; return &a;} int main(){int a; a=f();}
+                                                                         ^ =の左右の型(int:int*)が異なります
 # selftest ----------------
 int main(){int *p; p+p;}
-9cc:Error: selftest:1: int main(){int *p; p+p;}
-                                          ^ ポインタ同士の加算です
+emcc:Error: selftest:1: int main(){int *p; p+p;}
+                                           ^ ポインタ同士の加算です
 # selftest ----------------
 int main(){int *p; char*q; p-q;}
-9cc:Error: selftest:1: int main(){int *p; char*q; p-q;}
-                                                  ^ 異なるタイプのポインタによる減算です: int* vs char*
+emcc:Error: selftest:1: int main(){int *p; char*q; p-q;}
+                                                   ^ 異なるタイプのポインタによる減算です: int* vs char*
 # selftest ----------------
 int main(){int *p; 1-p;}
-9cc:Error: selftest:1: int main(){int *p; 1-p;}
-                                          ^ ポインタによる減算です
+emcc:Error: selftest:1: int main(){int *p; 1-p;}
+                                           ^ ポインタによる減算です
 # selftest ----------------
 int main(){int *p; return sizeof(**p);}
-9cc:Error: selftest:1: int main(){int *p; return sizeof(**p);}
-                                                        ^ 整数(int)に対して*の指定はできません
+emcc:Error: selftest:1: int main(){int *p; return sizeof(**p);}
+                                                         ^ 整数(int)に対して*の指定はできません
 # selftest ----------------
 int main(){int a[4]; a=1;}
-9cc:Error: selftest:1: int main(){int a[4]; a=1;}
-                                            ^ 左辺値ではありません
+emcc:Error: selftest:1: int main(){int a[4]; a=1;}
+                                             ^ 左辺値ではありません
 # selftest ----------------
 int main(){char *argv[];}
-9cc:Error: selftest:1: int main(){char *argv[];}
-                                              ^ 配列のサイズが未定義です
+emcc:Error: selftest:1: int main(){char *argv[];}
+                                               ^ 配列のサイズが未定義です
 # selftest ----------------
 int main(){char *argv[0];}
-9cc:Error: selftest:1: int main(){char *argv[0];}
-                                             ^ 配列のサイズが0です
+emcc:Error: selftest:1: int main(){char *argv[0];}
+                                              ^ 配列のサイズが0です
 # selftest ----------------
 int main(){int a; char *argv[a];}
-9cc:Error: selftest:1: int main(){int a; char *argv[a];}
-                                                    ^ 定数式が必要です
+emcc:Error: selftest:1: int main(){int a; char *argv[a];}
+                                                     ^ 定数式が必要です
 # selftest ----------------
 int main(){char  char a;}
-9cc:Error: selftest:1: int main(){char  char a;}
-                                        ^ 型指定が不正です
-
-# selftest ----------------
-int main(){short short a;}
-9cc:Error: selftest:1: int main(){short short a;}
-                                        ^ 型指定が不正です
-
-# selftest ----------------
-int main(){int   int a;}
-9cc:Error: selftest:1: int main(){int   int a;}
-                                        ^ 型指定が不正です
-
-# selftest ----------------
-int main(){long long long a;}
-9cc:Error: selftest:1: int main(){long long long a;}
-                                            ^ 型指定が不正です
-
-# selftest ----------------
-int main(){void  void *p;}
-9cc:Error: selftest:1: int main(){void  void *p;}
-                                        ^ 型指定が不正です
-
-# selftest ----------------
-int main(){signed void *p;}
-9cc:Error: selftest:1: int main(){signed void *p;}
-                                         ^ void型の指定が不正です
-
-# selftest ----------------
-int main(){unsigned void *p;}
-9cc:Error: selftest:1: int main(){unsigned void *p;}
-                                           ^ void型の指定が不正です
-
-# selftest ----------------
-int main(){void a;}
-9cc:Error: selftest:1: int main(){void a;}
-                                        ^ 不正なvoid指定です
-# selftest ----------------
-int main(){signed unsigned a;}
-9cc:Error: selftest:1: int main(){signed unsigned a;}
+emcc:Error: selftest:1: int main(){char  char a;}
                                          ^ 型指定が不正です
 
 # selftest ----------------
+int main(){short short a;}
+emcc:Error: selftest:1: int main(){short short a;}
+                                         ^ 型指定が不正です
+
+# selftest ----------------
+int main(){int   int a;}
+emcc:Error: selftest:1: int main(){int   int a;}
+                                         ^ 型指定が不正です
+
+# selftest ----------------
+int main(){long long long a;}
+emcc:Error: selftest:1: int main(){long long long a;}
+                                             ^ 型指定が不正です
+
+# selftest ----------------
+int main(){void  void *p;}
+emcc:Error: selftest:1: int main(){void  void *p;}
+                                         ^ 型指定が不正です
+
+# selftest ----------------
+int main(){signed void *p;}
+emcc:Error: selftest:1: int main(){signed void *p;}
+                                          ^ void型の指定が不正です
+
+# selftest ----------------
+int main(){unsigned void *p;}
+emcc:Error: selftest:1: int main(){unsigned void *p;}
+                                            ^ void型の指定が不正です
+
+# selftest ----------------
+int main(){void a;}
+emcc:Error: selftest:1: int main(){void a;}
+                                         ^ 不正なvoid指定です
+# selftest ----------------
+int main(){signed unsigned a;}
+emcc:Error: selftest:1: int main(){signed unsigned a;}
+                                          ^ 型指定が不正です
+
+# selftest ----------------
 int main(){signed _Bool b;}
-9cc:Error: selftest:1: int main(){signed _Bool b;}
-                                  ^ _Boolに対してsigned/unsignedの指定はできません
+emcc:Error: selftest:1: int main(){signed _Bool b;}
+                                   ^ _Boolに対してsigned/unsignedの指定はできません
 
 # selftest ----------------
 int main(){unsigned _Bool b;}
-9cc:Error: selftest:1: int main(){unsigned _Bool b;}
-                                  ^ _Boolに対してsigned/unsignedの指定はできません
+emcc:Error: selftest:1: int main(){unsigned _Bool b;}
+                                   ^ _Boolに対してsigned/unsignedの指定はできません
 
 # selftest ----------------
 int main(){static static int a;}
-9cc:Error: selftest:1: int main(){static static int a;}
-                                         ^ strage classが重複しています
+emcc:Error: selftest:1: int main(){static static int a;}
+                                          ^ strage classが重複しています
 
 # selftest ----------------
 int main(){extern extern int a;}
-9cc:Error: selftest:1: int main(){extern extern int a;}
-                                         ^ strage classが重複しています
+emcc:Error: selftest:1: int main(){extern extern int a;}
+                                          ^ strage classが重複しています
 
 # selftest ----------------
 int main(){extern static int a;}
-9cc:Error: selftest:1: int main(){extern static int a;}
-                                         ^ strage classが重複しています
+emcc:Error: selftest:1: int main(){extern static int a;}
+                                          ^ strage classが重複しています
 
 # selftest ----------------
 int main(){extern int x; extern int*x;}
-9cc:Error: selftest:1: int main(){extern int x; extern int*x;}
-                                                           ^ ローカル変数の重複定義です
-9cc:Note: selftest:1: int main(){extern int x; extern int*x;}
-                                            ^ 以前の宣言はここです
+emcc:Error: selftest:1: int main(){extern int x; extern int*x;}
+                                                            ^ ローカル変数の重複定義です
+emcc:Note: selftest:1: int main(){extern int x; extern int*x;}
+                                             ^ 以前の宣言はここです
 # selftest ----------------
 int main(){extern int x; extern int*x;}
-9cc:Error: selftest:1: int main(){extern int x; extern int*x;}
-                                                           ^ ローカル変数の重複定義です
-9cc:Note: selftest:1: int main(){extern int x; extern int*x;}
-                                            ^ 以前の宣言はここです
+emcc:Error: selftest:1: int main(){extern int x; extern int*x;}
+                                                            ^ ローカル変数の重複定義です
+emcc:Note: selftest:1: int main(){extern int x; extern int*x;}
+                                             ^ 以前の宣言はここです
 # selftest ----------------
 static extern func(){} int main(){}
-9cc:Error: selftest:1: static extern func(){} int main(){}
-                              ^ strage classが重複しています
+emcc:Error: selftest:1: static extern func(){} int main(){}
+                               ^ strage classが重複しています
 
 # selftest ----------------
 int main(){sizeof(static int);}
-9cc:Error: selftest:1: int main(){sizeof(static int);}
-                                         ^ storage classは指定できません
+emcc:Error: selftest:1: int main(){sizeof(static int);}
+                                          ^ storage classは指定できません
 # selftest ----------------
 int main(){sizeof(extern int);}
-9cc:Error: selftest:1: int main(){sizeof(extern int);}
-                                         ^ storage classは指定できません
+emcc:Error: selftest:1: int main(){sizeof(extern int);}
+                                          ^ storage classは指定できません
 # selftest ----------------
 int main(){sizeof(int[])}
-9cc:Error: selftest:1: int main(){sizeof(int[])}
-                                        ^ 不完全型のサイズは未定義です
+emcc:Error: selftest:1: int main(){sizeof(int[])}
+                                         ^ 不完全型のサイズは未定義です
 # selftest ----------------
 int main(...){}
-9cc:Error: selftest:1: int main(...){}
-                                   ^ )が期待されています
+emcc:Error: selftest:1: int main(...){}
+                                    ^ )が期待されています
 # selftest ----------------
 int main(int argc, ..., char *argv[]){}
-9cc:Error: selftest:1: int main(int argc, ..., char *argv[]){}
-                                          ^ ...の位置が不正です
+emcc:Error: selftest:1: int main(int argc, ..., char *argv[]){}
+                                           ^ ...の位置が不正です
 # selftest ----------------
 int main(int argc, void){}
-9cc:Error: selftest:1: int main(int argc, void){}
-                                          ^ ここではvoidを指定できません
+emcc:Error: selftest:1: int main(int argc, void){}
+                                           ^ ここではvoidを指定できません
 # selftest ----------------
 int func(int , void); int main(){}
-9cc:Error: selftest:1: int func(int , void); int main(){}
-                                      ^ ここではvoidを指定できません
+emcc:Error: selftest:1: int func(int , void); int main(){}
+                                       ^ ここではvoidを指定できません
 # selftest ----------------
 int func(int a, char *a); int main(){}
-9cc:Error: selftest:1: int func(int a, char *a); int main(){}
-                                              ^ ローカル変数の重複定義です
-9cc:Note: selftest:1: int func(int a, char *a); int main(){}
-                                    ^ 以前の宣言はここです
+emcc:Error: selftest:1: int func(int a, char *a); int main(){}
+                                               ^ ローカル変数の重複定義です
+emcc:Note: selftest:1: int func(int a, char *a); int main(){}
+                                     ^ 以前の宣言はここです
 # selftest ----------------
 int main(){int a = func();}
-9cc:Warning: selftest:1: int main(){int a = func();}
-                                            ^ 未宣言の関数コールです。
+emcc:Warning: selftest:1: int main(){int a = func();}
+                                             ^ 未宣言の関数コールです。
 # selftest ----------------
 void func(){} void func(){} int main(){}
-9cc:Error: selftest:1: void func(){} void func(){} int main(){}
-                                              ^ 関数が再定義されています
-9cc:Note: selftest:1: void func(){} void func(){} int main(){}
-                               ^ 以前の宣言はここです
+emcc:Error: selftest:1: void func(){} void func(){} int main(){}
+                                               ^ 関数が再定義されています
+emcc:Note: selftest:1: void func(){} void func(){} int main(){}
+                                ^ 以前の宣言はここです
 # selftest ----------------
 int func;     void func(){} int main(){}
-9cc:Error: selftest:1: int func;     void func(){} int main(){}
-                                              ^ 'func'は異なる種類のシンボルとして再定義されています
+emcc:Error: selftest:1: int func;     void func(){} int main(){}
+                                               ^ 'func'は異なる種類のシンボルとして再定義されています
 # selftest ----------------
 void func(){} int func;     int main(){}
-9cc:Error: selftest:1: void func(){} int func;     int main(){}
-                                             ^ 型が一致しません
-9cc:Note: selftest:1: void func(){} int func;     int main(){}
-                               ^ 以前の宣言はここです
+emcc:Error: selftest:1: void func(){} int func;     int main(){}
+                                              ^ 型が一致しません
+emcc:Note: selftest:1: void func(){} int func;     int main(){}
+                                ^ 以前の宣言はここです
 # selftest ----------------
 int main(){int func(); *func();}
-9cc:Error: selftest:1: int main(){int func(); *func();}
-                                              ^ 整数(int)に対して*の指定はできません
+emcc:Error: selftest:1: int main(){int func(); *func();}
+                                               ^ 整数(int)に対して*の指定はできません
 # selftest ----------------
 int main(){int func(); int (*fp)()=func; *fp();}
-9cc:Error: selftest:1: int main(){int func(); int (*fp)()=func; *fp();}
-                                                                ^ 整数(int)に対して*の指定はできません
+emcc:Error: selftest:1: int main(){int func(); int (*fp)()=func; *fp();}
+                                                                 ^ 整数(int)に対して*の指定はできません
 # selftest ----------------
 int main(){int func(); func()();}
-9cc:Error: selftest:1: int main(){int func(); func()();}
-                                                    ^ intに対して関数コールできません
+emcc:Error: selftest:1: int main(){int func(); func()();}
+                                                     ^ intに対して関数コールできません
 # selftest ----------------
 int main(){int func(); func()[];}
-9cc:Error: selftest:1: int main(){int func(); func()[];}
-                                                     ^ 終端記号でないトークンです
+emcc:Error: selftest:1: int main(){int func(); func()[];}
+                                                      ^ 終端記号でないトークンです
 # selftest ----------------
 int main(){int a; a();}
-9cc:Error: selftest:1: int main(){int a; a();}
-                                          ^ intに対して関数コールできません
+emcc:Error: selftest:1: int main(){int a; a();}
+                                           ^ intに対して関数コールできません
 # selftest ----------------
 int a; int main(){a();}
-9cc:Error: selftest:1: int a; int main(){a();}
-                                          ^ intに対して関数コールできません
+emcc:Error: selftest:1: int a; int main(){a();}
+                                           ^ intに対して関数コールできません
 # selftest ----------------
 int main(){extern int func(); extern int*func();}
-9cc:Error: selftest:1: int main(){extern int func(); extern int*func();}
-                                                                ^ 関数の型が一致しません
-9cc:Note: selftest:1: int main(){extern int func(); extern int*func();}
-                                            ^ 以前の宣言はここです
+emcc:Error: selftest:1: int main(){extern int func(); extern int*func();}
+                                                                 ^ 関数の型が一致しません
+emcc:Note: selftest:1: int main(){extern int func(); extern int*func();}
+                                             ^ 以前の宣言はここです
 # selftest ----------------
 # [関数内でstaticな関数の宣言]
 int main(){static void func();}
-9cc:Error: selftest:1: int main(){static void func();}
-                                              ^ ブロック内のstatic関数
+emcc:Error: selftest:1: int main(){static void func();}
+                                               ^ ブロック内のstatic関数
 # selftest ----------------
 int main(){break; return 1;}
-9cc:Error: selftest:1: int main(){break; return 1;}
-                                  ^ ここではbreakを使用できません
+emcc:Error: selftest:1: int main(){break; return 1;}
+                                   ^ ここではbreakを使用できません
 # selftest ----------------
 int main(){continue; return 1;}
-9cc:Error: selftest:1: int main(){continue; return 1;}
-                                  ^ ここではcontinueを使用できません
+emcc:Error: selftest:1: int main(){continue; return 1;}
+                                   ^ ここではcontinueを使用できません
 # selftest ----------------
 int main(){int a,b; (1?a:b)=0;}
-9cc:Error: selftest:1: int main(){int a,b; (1?a:b)=0;}
-                                            ^ 左辺値ではありません
+emcc:Error: selftest:1: int main(){int a,b; (1?a:b)=0;}
+                                             ^ 左辺値ではありません
 # selftest ----------------
 int main(){int a; a||1=0;}
-9cc:Error: selftest:1: int main(){int a; a||1=0;}
-                                          ^ 左辺値ではありません
+emcc:Error: selftest:1: int main(){int a; a||1=0;}
+                                           ^ 左辺値ではありません
 # selftest ----------------
 int main(){int a; a&&1=0;}
-9cc:Error: selftest:1: int main(){int a; a&&1=0;}
-                                          ^ 左辺値ではありません
+emcc:Error: selftest:1: int main(){int a; a&&1=0;}
+                                           ^ 左辺値ではありません
 # selftest ----------------
 int main(){int a; a^1=0;}
-9cc:Error: selftest:1: int main(){int a; a^1=0;}
-                                          ^ 左辺値ではありません
+emcc:Error: selftest:1: int main(){int a; a^1=0;}
+                                           ^ 左辺値ではありません
 # selftest ----------------
 int main(){int a; a|1=0;}
-9cc:Error: selftest:1: int main(){int a; a|1=0;}
-                                          ^ 左辺値ではありません
+emcc:Error: selftest:1: int main(){int a; a|1=0;}
+                                           ^ 左辺値ではありません
 # selftest ----------------
 int main(){int a; a&1=0;}
-9cc:Error: selftest:1: int main(){int a; a&1=0;}
-                                          ^ 左辺値ではありません
+emcc:Error: selftest:1: int main(){int a; a&1=0;}
+                                           ^ 左辺値ではありません
 # selftest ----------------
 int main(){int a; a==1=0;}
-9cc:Error: selftest:1: int main(){int a; a==1=0;}
-                                          ^ 左辺値ではありません
+emcc:Error: selftest:1: int main(){int a; a==1=0;}
+                                           ^ 左辺値ではありません
 # selftest ----------------
 int main(){int a; a>1=0;}
-9cc:Error: selftest:1: int main(){int a; a>1=0;}
-                                          ^ 左辺値ではありません
+emcc:Error: selftest:1: int main(){int a; a>1=0;}
+                                           ^ 左辺値ではありません
 # selftest ----------------
 int main(){int a; a+1+=0;}
-9cc:Error: selftest:1: int main(){int a; a+1+=0;}
-                                          ^ 左辺値ではありません
+emcc:Error: selftest:1: int main(){int a; a+1+=0;}
+                                           ^ 左辺値ではありません
 # selftest ----------------
 int main(){int a; a*1-=0;}
-9cc:Error: selftest:1: int main(){int a; a*1-=0;}
-                                          ^ 左辺値ではありません
+emcc:Error: selftest:1: int main(){int a; a*1-=0;}
+                                           ^ 左辺値ではありません
 # selftest ----------------
 int main(){int *a; (char*)a=0;}
-9cc:Error: selftest:1: int main(){int *a; (char*)a=0;}
-                                          ^ 左辺値ではありません
+emcc:Error: selftest:1: int main(){int *a; (char*)a=0;}
+                                           ^ 左辺値ではありません
 # selftest ----------------
 int main(){int a; a&1=0;}
-9cc:Error: selftest:1: int main(){int a; a&1=0;}
-                                          ^ 左辺値ではありません
+emcc:Error: selftest:1: int main(){int a; a&1=0;}
+                                           ^ 左辺値ではありません
 # selftest ----------------
 int main(){int a; a|1=0;}
-9cc:Error: selftest:1: int main(){int a; a|1=0;}
-                                          ^ 左辺値ではありません
+emcc:Error: selftest:1: int main(){int a; a|1=0;}
+                                           ^ 左辺値ではありません
 # selftest ----------------
 int main(){int a; a^1=0;}
-9cc:Error: selftest:1: int main(){int a; a^1=0;}
-                                          ^ 左辺値ではありません
+emcc:Error: selftest:1: int main(){int a; a^1=0;}
+                                           ^ 左辺値ではありません
 # selftest ----------------
 int main(){int a; ~a=0;}
-9cc:Error: selftest:1: int main(){int a; ~a=0;}
-                                         ^ 左辺値ではありません
+emcc:Error: selftest:1: int main(){int a; ~a=0;}
+                                          ^ 左辺値ではありません
 # selftest ----------------
 int main(){int a; a>>1=0;}
-9cc:Error: selftest:1: int main(){int a; a>>1=0;}
-                                          ^ 左辺値ではありません
+emcc:Error: selftest:1: int main(){int a; a>>1=0;}
+                                           ^ 左辺値ではありません
 # selftest ----------------
 int main(){int a; a<<1=0;}
-9cc:Error: selftest:1: int main(){int a; a<<1=0;}
-                                          ^ 左辺値ではありません
+emcc:Error: selftest:1: int main(){int a; a<<1=0;}
+                                           ^ 左辺値ではありません
 # selftest ----------------
 int main(){int*p; p&1;}
-9cc:Error: selftest:1: int main(){int*p; p&1;}
-                                          ^ ポインタ(int*)に対してビット論理和&の指定はできません
+emcc:Error: selftest:1: int main(){int*p; p&1;}
+                                           ^ ポインタ(int*)に対してビット論理和&の指定はできません
 # selftest ----------------
 int main(){int*p; p|1;}
-9cc:Error: selftest:1: int main(){int*p; p|1;}
-                                          ^ ポインタ(int*)に対してビット論理和|の指定はできません
+emcc:Error: selftest:1: int main(){int*p; p|1;}
+                                           ^ ポインタ(int*)に対してビット論理和|の指定はできません
 # selftest ----------------
 int main(){int*p; p^1;}
-9cc:Error: selftest:1: int main(){int*p; p^1;}
-                                          ^ ポインタ(int*)に対してビット排他的論理和^の指定はできません
+emcc:Error: selftest:1: int main(){int*p; p^1;}
+                                           ^ ポインタ(int*)に対してビット排他的論理和^の指定はできません
 # selftest ----------------
 int main(){int*p; ~p;}
-9cc:Error: selftest:1: int main(){int*p; ~p;}
-                                         ^ ポインタ(int*)に対して~の指定はできません
+emcc:Error: selftest:1: int main(){int*p; ~p;}
+                                          ^ ポインタ(int*)に対して~の指定はできません
 # selftest ----------------
 int main(){int*p; p>>1;}
-9cc:Error: selftest:1: int main(){int*p; p>>1;}
-                                          ^ ポインタ(int*)に対して>>の指定はできません
+emcc:Error: selftest:1: int main(){int*p; p>>1;}
+                                           ^ ポインタ(int*)に対して>>の指定はできません
 # selftest ----------------
 int main(){int*p; 1<<p;}
-9cc:Error: selftest:1: int main(){int*p; 1<<p;}
-                                          ^ ポインタ(int*)に対して<<の指定はできません
+emcc:Error: selftest:1: int main(){int*p; 1<<p;}
+                                           ^ ポインタ(int*)に対して<<の指定はできません
 # selftest ----------------
 void main(){return 1;}
-9cc:Warning: selftest:1: void main(){return 1;}
-                                     ^ void型関数が値を返しています
+emcc:Warning: selftest:1: void main(){return 1;}
+                                      ^ void型関数が値を返しています
 # selftest ----------------
 int main(){return;}
-9cc:Warning: selftest:1: int main(){return;}
-                                    ^ 非void関数mainが値を返していません
+emcc:Warning: selftest:1: int main(){return;}
+                                     ^ 非void関数mainが値を返していません
 # selftest ----------------
 int main(){char*p=0; return p;}
-9cc:Warning: selftest:1: int main(){char*p=0; return p;}
-                                              ^ int型の関数mainがchar*型を返しています
+emcc:Warning: selftest:1: int main(){char*p=0; return p;}
+                                               ^ int型の関数mainがchar*型を返しています
 # selftest ----------------
 int main(){goto; return 1;}
-9cc:Error: selftest:1: int main(){goto; return 1;}
-                                      ^ 識別子（ラベル名）が期待されています
+emcc:Error: selftest:1: int main(){goto; return 1;}
+                                       ^ 識別子（ラベル名）が期待されています
 # selftest ----------------
 int main(){goto L1; return 1;}
-9cc:Error: selftest:1: int main(){goto L1; return 1;}
-                                  ^ ラベルが未定義です
+emcc:Error: selftest:1: int main(){goto L1; return 1;}
+                                   ^ ラベルが未定義です
 # selftest ----------------
 int main(){L1:; L1:; return 1;}
-9cc:Error: selftest:1: int main(){L1:; L1:; return 1;}
-                                       ^ ラベルが重複しています
+emcc:Error: selftest:1: int main(){L1:; L1:; return 1;}
+                                        ^ ラベルが重複しています
 # selftest ----------------
 int main(){case 1: ;}
-9cc:Error: selftest:1: int main(){case 1: ;}
-                                  ^ switch文の中ではありません
+emcc:Error: selftest:1: int main(){case 1: ;}
+                                   ^ switch文の中ではありません
 # selftest ----------------
 int main(){default 1: ;}
-9cc:Error: selftest:1: int main(){default 1: ;}
-                                           ^ :が期待されています
+emcc:Error: selftest:1: int main(){default 1: ;}
+                                            ^ :が期待されています
 # selftest ----------------
 int main(){switch(1){case 1:; case 1:;}}
-9cc:Error: selftest:1: int main(){switch(1){case 1:; case 1:;}}
-                                                     ^ Case1は重複しています
+emcc:Error: selftest:1: int main(){switch(1){case 1:; case 1:;}}
+                                                      ^ Case1は重複しています
 # selftest ----------------
 int main(){switch(1){default:; default:;}}
-9cc:Error: selftest:1: int main(){switch(1){default:; default:;}}
-                                                      ^ Defaultは重複しています
+emcc:Error: selftest:1: int main(){switch(1){default:; default:;}}
+                                                       ^ Defaultは重複しています
 # selftest ----------------
 int main(void); int main(int x){return 1:}
-9cc:Error: selftest:1: int main(void); int main(int x){return 1:}
-                                               ^ 関数の型が一致しません
-9cc:Note: selftest:1: int main(void); int main(int x){return 1:}
-                              ^ 以前の宣言はここです
-# selftest ----------------
-int main(void); int main(int){return 1:}
-9cc:Error: selftest:1: int main(void); int main(int){return 1:}
-                                               ^ 関数の型が一致しません
-9cc:Note: selftest:1: int main(void); int main(int){return 1:}
-                              ^ 以前の宣言はここです
-# selftest ----------------
-int main(void); int main(int x);
-9cc:Error: selftest:1: int main(void); int main(int x);
-                                               ^ 関数の型が一致しません
-9cc:Note: selftest:1: int main(void); int main(int x);
-                              ^ 以前の宣言はここです
-# selftest ----------------
-void main(void){} void main(int);
-9cc:Error: selftest:1: void main(void){} void main(int);
-                                                  ^ 関数の型が一致しません
-9cc:Note: selftest:1: void main(void){} void main(int);
+emcc:Error: selftest:1: int main(void); int main(int x){return 1:}
+                                                ^ 関数の型が一致しません
+emcc:Note: selftest:1: int main(void); int main(int x){return 1:}
                                ^ 以前の宣言はここです
 # selftest ----------------
+int main(void); int main(int){return 1:}
+emcc:Error: selftest:1: int main(void); int main(int){return 1:}
+                                                ^ 関数の型が一致しません
+emcc:Note: selftest:1: int main(void); int main(int){return 1:}
+                               ^ 以前の宣言はここです
+# selftest ----------------
+int main(void); int main(int x);
+emcc:Error: selftest:1: int main(void); int main(int x);
+                                                ^ 関数の型が一致しません
+emcc:Note: selftest:1: int main(void); int main(int x);
+                               ^ 以前の宣言はここです
+# selftest ----------------
+void main(void){} void main(int);
+emcc:Error: selftest:1: void main(void){} void main(int);
+                                                   ^ 関数の型が一致しません
+emcc:Note: selftest:1: void main(void){} void main(int);
+                                ^ 以前の宣言はここです
+# selftest ----------------
 int main(int); int main(int, ...);
-9cc:Error: selftest:1: int main(int); int main(int, ...);
-                                              ^ 関数の型が一致しません
-9cc:Note: selftest:1: int main(int); int main(int, ...);
-                              ^ 以前の宣言はここです
+emcc:Error: selftest:1: int main(int); int main(int, ...);
+                                               ^ 関数の型が一致しません
+emcc:Note: selftest:1: int main(int); int main(int, ...);
+                               ^ 以前の宣言はここです
 # selftest ----------------
 int main(int); int main(){return 1;};
-9cc:Error: selftest:1: int main(int); int main(){return 1;};
-                                              ^ 関数の型が一致しません
-9cc:Note: selftest:1: int main(int); int main(){return 1;};
-                              ^ 以前の宣言はここです
+emcc:Error: selftest:1: int main(int); int main(){return 1;};
+                                               ^ 関数の型が一致しません
+emcc:Note: selftest:1: int main(int); int main(){return 1;};
+                               ^ 以前の宣言はここです
 # selftest ----------------
 int func(void); int main(){int func(int);}
-9cc:Error: selftest:1: int func(void); int main(){int func(int);}
-                                                      ^ 関数の型が一致しません
-9cc:Note: selftest:1: int func(void); int main(){int func(int);}
-                              ^ 以前の宣言はここです
+emcc:Error: selftest:1: int func(void); int main(){int func(int);}
+                                                       ^ 関数の型が一致しません
+emcc:Note: selftest:1: int func(void); int main(){int func(int);}
+                               ^ 以前の宣言はここです
 # selftest ----------------
 int main(){int func(void); int func(int);}
-9cc:Error: selftest:1: int main(){int func(void); int func(int);}
-                                                      ^ 関数の型が一致しません
-9cc:Note: selftest:1: int main(){int func(void); int func(int);}
-                                     ^ 以前の宣言はここです
+emcc:Error: selftest:1: int main(){int func(void); int func(int);}
+                                                       ^ 関数の型が一致しません
+emcc:Note: selftest:1: int main(){int func(void); int func(int);}
+                                      ^ 以前の宣言はここです
 # selftest ----------------
 int main(){typedef int INT=1;}
-9cc:Error: selftest:1: int main(){typedef int INT=1;}
-                                                  ^ ;が期待されています
+emcc:Error: selftest:1: int main(){typedef int INT=1;}
+                                                   ^ ;が期待されています
 # selftest ----------------
 int main(){typedef int INT; unsigned INT i;}
-9cc:Error: selftest:1: int main(){typedef int INT; unsigned INT i;}
-                                                   ^ enum/typedef/struct/union名に対してsigned/unsignedの指定はできません
+emcc:Error: selftest:1: int main(){typedef int INT; unsigned INT i;}
+                                                    ^ enum/typedef/struct/union名に対してsigned/unsignedの指定はできません
 
 # selftest ----------------
 # [引数1個に対して0個でコール]
 int func(int a){return 1;}; int main(){return func();}
-9cc:Error: selftest:1: int func(int a){return 1;}; int main(){return func();}
-                                                                     ^ 引数の数が足りません
+emcc:Error: selftest:1: int func(int a){return 1;}; int main(){return func();}
+                                                                      ^ 引数の数が足りません
 # selftest ----------------
 # [引数2個に対して1個でコール]
 int func(int a, int b){return 1;}; int main(){return func(1);}
-9cc:Error: selftest:1: int func(int a, int b){return 1;}; int main(){return func(1);}
-                                                                                 ^ 引数の数が少なすぎます
-9cc:Note: selftest:1: int func(int a, int b){return 1;}; int main(){return func(1);}
-                                      ^ 関数の定義はここです
+emcc:Error: selftest:1: int func(int a, int b){return 1;}; int main(){return func(1);}
+                                                                                  ^ 引数の数が少なすぎます
+emcc:Note: selftest:1: int func(int a, int b){return 1;}; int main(){return func(1);}
+                                       ^ 関数の定義はここです
 # selftest ----------------
 # [引数1個に対して2個でコール]
 int func(int a){return 1;}; int main(){return func(1,2);}
-9cc:Error: selftest:1: int func(int a){return 1;}; int main(){return func(1,2);}
-                                                                            ^ 引数の数が多すぎます
-9cc:Note: selftest:1: int func(int a){return 1;}; int main(){return func(1,2);}
-                                    ^ 関数の定義はここです
+emcc:Error: selftest:1: int func(int a){return 1;}; int main(){return func(1,2);}
+                                                                             ^ 引数の数が多すぎます
+emcc:Note: selftest:1: int func(int a){return 1;}; int main(){return func(1,2);}
+                                     ^ 関数の定義はここです
 # selftest ----------------
 # [引数0個(void)に対して1個でコール]
 int func(void){return 1;}; int main(){return func(1);}
-9cc:Error: selftest:1: int func(void){return 1;}; int main(){return func(1);}
-                                                                         ^ 引数[0]の型(void:int)が一致しません
-9cc:Note: selftest:1: int func(void){return 1;}; int main(){return func(1);}
-                               ^ 関数の定義はここです
+emcc:Error: selftest:1: int func(void){return 1;}; int main(){return func(1);}
+                                                                          ^ 引数[0]の型(void:int)が一致しません
+emcc:Note: selftest:1: int func(void){return 1;}; int main(){return func(1);}
+                                ^ 関数の定義はここです
 # selftest ----------------
 # [引数2+...個に対して1個でコール]
 int func(int a, int b, ...){return 1;}; void main(){func(1);}
-9cc:Error: selftest:1: int func(int a, int b, ...){return 1;}; void main(){func(1);}
-                                                                                ^ 引数の数が少なすぎます
-9cc:Note: selftest:1: int func(int a, int b, ...){return 1;}; void main(){func(1);}
-                                      ^ 関数の定義はここです
+emcc:Error: selftest:1: int func(int a, int b, ...){return 1;}; void main(){func(1);}
+                                                                                 ^ 引数の数が少なすぎます
+emcc:Note: selftest:1: int func(int a, int b, ...){return 1;}; void main(){func(1);}
+                                       ^ 関数の定義はここです
 # selftest ----------------
 # [int*に対してintでコール]
 int func(int*a){return 1;}; int main(){return func(1);}
-9cc:Warning: selftest:1: int func(int*a){return 1;}; int main(){return func(1);}
-                                                                            ^ 引数[0]の型(int*:int)が一致しません
+emcc:Warning: selftest:1: int func(int*a){return 1;}; int main(){return func(1);}
+                                                                             ^ 引数[0]の型(int*:int)が一致しません
 # selftest ----------------
 # [intに対してint*でコール]
 int func(int a){return 1;}; int main(){int a; return func(&a);}
-9cc:Warning: selftest:1: int func(int a){return 1;}; int main(){int a; return func(&a);}
-                                                                                   ^ 引数[0]の型(int:int*)が一致しません
+emcc:Warning: selftest:1: int func(int a){return 1;}; int main(){int a; return func(&a);}
+                                                                                    ^ 引数[0]の型(int:int*)が一致しません
 # selftest ----------------
 # [グローバル変数をグローバル変数で初期化]
 int a, b=a; void main(){}
-9cc:Error: selftest:1: int a, b=a; void main(){}
-                                ^ グローバル変数の初期値が定数ではありません
+emcc:Error: selftest:1: int a, b=a; void main(){}
+                                 ^ グローバル変数の初期値が定数ではありません
 # selftest ----------------
 # [静的ローカル変数をローカル変数で初期化]
 int a; void main(){static int b=a;
-9cc:Error: selftest:1: int a; void main(){static int b=a;
-                                                       ^ 静的ローカル変数の初期値が定数ではありません
+emcc:Error: selftest:1: int a; void main(){static int b=a;
+                                                        ^ 静的ローカル変数の初期値が定数ではありません
 # selftest ----------------
 # [静的ローカル変数を静的ローカル変数で初期化]
 int main(){static int a, b=a;}
-9cc:Error: selftest:1: int main(){static int a, b=a;}
-                                                  ^ 静的ローカル変数の初期値が定数ではありません
+emcc:Error: selftest:1: int main(){static int a, b=a;}
+                                                   ^ 静的ローカル変数の初期値が定数ではありません
 # selftest ----------------
 # [静的ローカル変数を自動変数で初期化]
 int main(){int a; static int b=a;}
-9cc:Error: selftest:1: int main(){int a; static int b=a;}
-                                                      ^ 静的ローカル変数の初期値が定数ではありません
+emcc:Error: selftest:1: int main(){int a; static int b=a;}
+                                                       ^ 静的ローカル変数の初期値が定数ではありません
 # selftest ----------------
 # [静的ローカル変数を自動変数で初期化]
 int main(){int a[4]; static int *b=a;}
-9cc:Error: selftest:1: int main(){int a[4]; static int *b=a;}
-                                                          ^ 静的ローカル変数の初期値が定数ではありません
+emcc:Error: selftest:1: int main(){int a[4]; static int *b=a;}
+                                                           ^ 静的ローカル変数の初期値が定数ではありません
 # selftest ----------------
 # [不正な16進]
 int main(){return 0xx5;}
-9cc:Error: selftest:1: int main(){return 0xx5;}
-                                          ^ 不正な整数サフィックスです
+emcc:Error: selftest:1: int main(){return 0xx5;}
+                                           ^ 不正な整数サフィックスです
 # selftest ----------------
 # [不正な8進]
 int main(){return 08;}
-9cc:Error: selftest:1: int main(){return 08;}
-                                         ^ 不正な8進表記です
+emcc:Error: selftest:1: int main(){return 08;}
+                                          ^ 不正な8進表記です
 # selftest ----------------
 # [uの重複]
 int main(){return 5uu;}
-9cc:Error: selftest:1: int main(){return 5uu;}
-                                          ^ 不正な整数サフィックスです
+emcc:Error: selftest:1: int main(){return 5uu;}
+                                           ^ 不正な整数サフィックスです
 # selftest ----------------
 # [uの重複]
 int main(){return 5ulu;}
-9cc:Error: selftest:1: int main(){return 5ulu;}
-                                          ^ 不正な整数サフィックスです
+emcc:Error: selftest:1: int main(){return 5ulu;}
+                                           ^ 不正な整数サフィックスです
 # selftest ----------------
 # [lの重複]
 int main(){return 5llul;}
-9cc:Error: selftest:1: int main(){return 5llul;}
-                                          ^ 不正な整数サフィックスです
+emcc:Error: selftest:1: int main(){return 5llul;}
+                                           ^ 不正な整数サフィックスです
 # selftest ----------------
 # [ゴミ]
 int main(){return 5x;}
-9cc:Error: selftest:1: int main(){return 5x;}
-                                          ^ 不正な整数サフィックスです
+emcc:Error: selftest:1: int main(){return 5x;}
+                                           ^ 不正な整数サフィックスです
 # selftest ----------------
 # [ゴミ]
 int main(){return 5LUx;}
-9cc:Error: selftest:1: int main(){return 5LUx;}
-                                          ^ 不正な整数サフィックスです
+emcc:Error: selftest:1: int main(){return 5LUx;}
+                                           ^ 不正な整数サフィックスです
 # selftest ----------------
 # [複数文字]
 int main(){return 'ab';}
-9cc:Error: selftest:1: int main(){return 'ab';}
-                                           ^ トークナイズエラー：'が必要です
+emcc:Error: selftest:1: int main(){return 'ab';}
+                                            ^ トークナイズエラー：'が必要です
 # selftest ----------------
 # [未定義のエスケープシーケンス]
 int main(){return '\N';}
-9cc:Warning: selftest:1: int main(){return '\N';}
-                                             ^ 未定義のエスケープシーケンス
+emcc:Warning: selftest:1: int main(){return '\N';}
+                                              ^ 未定義のエスケープシーケンス
 # selftest ----------------
 # [4文字以上のoctal]
 int main(){return '\0123';}
-9cc:Error: selftest:1: int main(){return '\0123';}
-                                              ^ トークナイズエラー：'が必要です
+emcc:Error: selftest:1: int main(){return '\0123';}
+                                               ^ トークナイズエラー：'が必要です
 # selftest ----------------
 # [octal規定外文字]
 int main(){return '\08';}
-9cc:Error: selftest:1: int main(){return '\08';}
-                                            ^ トークナイズエラー：'が必要です
+emcc:Error: selftest:1: int main(){return '\08';}
+                                             ^ トークナイズエラー：'が必要です
 # selftest ----------------
 # [hexadecimal規定外文字]
 int main(){return '\xG';}
-9cc:Error: selftest:1: int main(){return '\xG';}
-                                            ^ トークナイズエラー：'が必要です
+emcc:Error: selftest:1: int main(){return '\xG';}
+                                             ^ トークナイズエラー：'が必要です
 # selftest ----------------
 int main(){int a[][3]={{1,2,3},{11,12,13}; return a[1][2]}}
-9cc:Error: selftest:1: int main(){int a[][3]={{1,2,3},{11,12,13}; return a[1][2]}}
-                                                                  ^ }が期待されています
+emcc:Error: selftest:1: int main(){int a[][3]={{1,2,3},{11,12,13}; return a[1][2]}}
+                                                                   ^ }が期待されています
 # selftest ----------------
 int x; int x[4]; int main(){}
-9cc:Error: selftest:1: int x; int x[4]; int main(){}
-                                   ^ 型が一致しません
-9cc:Note: selftest:1: int x; int x[4]; int main(){}
-                           ^ 以前の宣言はここです
+emcc:Error: selftest:1: int x; int x[4]; int main(){}
+                                    ^ 型が一致しません
+emcc:Note: selftest:1: int x; int x[4]; int main(){}
+                            ^ 以前の宣言はここです
 # selftest ----------------
 int main(){"ABC"=1;}
-9cc:Error: selftest:1: int main(){"ABC"=1;}
-                                  ^ 左辺値ではありません
+emcc:Error: selftest:1: int main(){"ABC"=1;}
+                                   ^ 左辺値ではありません
 # selftest ----------------
 int main(){char p[3]=1;}
-9cc:Error: selftest:1: int main(){char p[3]=1;}
-                                            ^ 配列の初期値が配列形式になっていません
+emcc:Error: selftest:1: int main(){char p[3]=1;}
+                                             ^ 配列の初期値が配列形式になっていません
 # selftest ----------------
 int main(){int a[]="ABC";}
-9cc:Error: selftest:1: int main(){int a[]="ABC";}
-                                          ^ int[]を文字列リテラルで初期化できません
+emcc:Error: selftest:1: int main(){int a[]="ABC";}
+                                           ^ int[]を文字列リテラルで初期化できません
 # selftest ----------------
 int main(){char *p[]="ABC";}
-9cc:Error: selftest:1: int main(){char *p[]="ABC";}
-                                            ^ char*[]を文字列リテラルで初期化できません
+emcc:Error: selftest:1: int main(){char *p[]="ABC";}
+                                             ^ char*[]を文字列リテラルで初期化できません
 # selftest ----------------
 int main(){int a; a[1];}
-9cc:Error: selftest:1: int main(){int a; a[1];}
-                                            ^ ここでは配列を指定できません
+emcc:Error: selftest:1: int main(){int a; a[1];}
+                                             ^ ここでは配列を指定できません
 # ===== LOCAL配列の初期化 =====
 # selftest ----------------
 int main(){char a[3]="abc"; return 0;}
-9cc:Warning: selftest:1: int main(){char a[3]="abc"; return 0;}
-                                                  ^ 初期化リストが配列サイズを超えています
+emcc:Warning: selftest:1: int main(){char a[3]="abc"; return 0;}
+                                                   ^ 初期化リストが配列サイズを超えています
 # selftest ----------------
 int main(){int a[2]={1,2,3}; return 0;}
-9cc:Warning: selftest:1: int main(){int a[2]={1,2,3}; return 0;}
-                                                  ^ 初期化リストが配列サイズを超えています
+emcc:Warning: selftest:1: int main(){int a[2]={1,2,3}; return 0;}
+                                                   ^ 初期化リストが配列サイズを超えています
 # selftest ----------------
 int main(){int a[2][2]={{1,2,3},{4,5,6}}; return 0;}
-9cc:Warning: selftest:1: int main(){int a[2][2]={{1,2,3},{4,5,6}}; return 0;}
-                                                      ^ 初期化リストが配列サイズを超えています
+emcc:Warning: selftest:1: int main(){int a[2][2]={{1,2,3},{4,5,6}}; return 0;}
+                                                       ^ 初期化リストが配列サイズを超えています
 # selftest ----------------
 int main(){int a[2][2]={{1,2},{3,4},{5,6}}; return 0;}
-9cc:Warning: selftest:1: int main(){int a[2][2]={{1,2},{3,4},{5,6}}; return 0;}
-                                                              ^ 初期化リストが配列サイズを超えています
+emcc:Warning: selftest:1: int main(){int a[2][2]={{1,2},{3,4},{5,6}}; return 0;}
+                                                               ^ 初期化リストが配列サイズを超えています
 # selftest ----------------
 int main(){char a[2][2]={"ab","cd"}; return 0;}
-9cc:Warning: selftest:1: int main(){char a[2][2]={"ab","cd"}; return 0;}
-                                                     ^ 初期化リストが配列サイズを超えています
+emcc:Warning: selftest:1: int main(){char a[2][2]={"ab","cd"}; return 0;}
+                                                      ^ 初期化リストが配列サイズを超えています
 # selftest ----------------
 int main(){int a[3]={1,{2,99},3}; return 0;}
-9cc:Warning: selftest:1: int main(){int a[3]={1,{2,99},3}; return 0;}
-                                                 ^ スカラーがリストで初期化されています
+emcc:Warning: selftest:1: int main(){int a[3]={1,{2,99},3}; return 0;}
+                                                  ^ スカラーがリストで初期化されています
 # selftest ----------------
 # [LOCAL配列の初期化:非定数式]
 int main(){int x=1, a[2]={x,2,3}; return 0;}
-9cc:Warning: selftest:1: int main(){int x=1, a[2]={x,2,3}; return 0;}
-                                                       ^ 初期化リストが配列サイズを超えています
+emcc:Warning: selftest:1: int main(){int x=1, a[2]={x,2,3}; return 0;}
+                                                        ^ 初期化リストが配列サイズを超えています
 # selftest ----------------
 int main(){int x=1, a[2][2]={{x,2,3},{4,5,6}}; return 0;}
-9cc:Warning: selftest:1: int main(){int x=1, a[2][2]={{x,2,3},{4,5,6}}; return 0;}
-                                                           ^ 初期化リストが配列サイズを超えています
+emcc:Warning: selftest:1: int main(){int x=1, a[2][2]={{x,2,3},{4,5,6}}; return 0;}
+                                                            ^ 初期化リストが配列サイズを超えています
 # selftest ----------------
 int main(){int x=1, a[2][2]={{x,2},{3,4},{5,6}}; return 0;}
-9cc:Warning: selftest:1: int main(){int x=1, a[2][2]={{x,2},{3,4},{5,6}}; return 0;}
-                                                                   ^ 初期化リストが配列サイズを超えています
+emcc:Warning: selftest:1: int main(){int x=1, a[2][2]={{x,2},{3,4},{5,6}}; return 0;}
+                                                                    ^ 初期化リストが配列サイズを超えています
 # ===== LOCAL STATIC配列の初期化 =====
 # selftest ----------------
 int main(){static char a[3]="abc"; return 0;}
-9cc:Warning: selftest:1: int main(){static char a[3]="abc"; return 0;}
-                                                         ^ 初期化リストが配列サイズを超えています
+emcc:Warning: selftest:1: int main(){static char a[3]="abc"; return 0;}
+                                                          ^ 初期化リストが配列サイズを超えています
 # selftest ----------------
 int main(){static int a[2]={1,2,3}; return 0;}
-9cc:Warning: selftest:1: int main(){static int a[2]={1,2,3}; return 0;}
-                                                         ^ 初期化リストが配列サイズを超えています
+emcc:Warning: selftest:1: int main(){static int a[2]={1,2,3}; return 0;}
+                                                          ^ 初期化リストが配列サイズを超えています
 # selftest ----------------
 int main(){static int a[2][2]={{1,2,3},{4,5,6}}; return 0;}
-9cc:Warning: selftest:1: int main(){static int a[2][2]={{1,2,3},{4,5,6}}; return 0;}
-                                                             ^ 初期化リストが配列サイズを超えています
+emcc:Warning: selftest:1: int main(){static int a[2][2]={{1,2,3},{4,5,6}}; return 0;}
+                                                              ^ 初期化リストが配列サイズを超えています
 # selftest ----------------
 int main(){static int a[2][2]={{1,2},{3,4},{5,6}}; return 0;}
-9cc:Warning: selftest:1: int main(){static int a[2][2]={{1,2},{3,4},{5,6}}; return 0;}
-                                                                     ^ 初期化リストが配列サイズを超えています
+emcc:Warning: selftest:1: int main(){static int a[2][2]={{1,2},{3,4},{5,6}}; return 0;}
+                                                                      ^ 初期化リストが配列サイズを超えています
 # selftest ----------------
 int main(){static char a[2][2]={"ab","cd"}; return 0;}
-9cc:Warning: selftest:1: int main(){static char a[2][2]={"ab","cd"}; return 0;}
-                                                            ^ 初期化リストが配列サイズを超えています
+emcc:Warning: selftest:1: int main(){static char a[2][2]={"ab","cd"}; return 0;}
+                                                             ^ 初期化リストが配列サイズを超えています
 # selftest ----------------
 int main(){static int a[3]={1,{2,99},3}; return 0;}
-9cc:Warning: selftest:1: int main(){static int a[3]={1,{2,99},3}; return 0;}
-                                                        ^ スカラーがリストで初期化されています
+emcc:Warning: selftest:1: int main(){static int a[3]={1,{2,99},3}; return 0;}
+                                                         ^ スカラーがリストで初期化されています
 # ===== GLOBAL配列の初期化 =====
 # selftest ----------------
 char a[3]="abc"; void main(){}
-9cc:Warning: selftest:1: char a[3]="abc"; void main(){}
-                                       ^ 初期化リストが配列サイズを超えています
+emcc:Warning: selftest:1: char a[3]="abc"; void main(){}
+                                        ^ 初期化リストが配列サイズを超えています
 # selftest ----------------
 int a[2]={1,2,3}; void main(){}
-9cc:Warning: selftest:1: int a[2]={1,2,3}; void main(){}
-                                       ^ 初期化リストが配列サイズを超えています
+emcc:Warning: selftest:1: int a[2]={1,2,3}; void main(){}
+                                        ^ 初期化リストが配列サイズを超えています
 # selftest ----------------
 int a[2][2]={{1,2,3},{4,5,6}}; void main(){}
-9cc:Warning: selftest:1: int a[2][2]={{1,2,3},{4,5,6}}; void main(){}
-                                           ^ 初期化リストが配列サイズを超えています
+emcc:Warning: selftest:1: int a[2][2]={{1,2,3},{4,5,6}}; void main(){}
+                                            ^ 初期化リストが配列サイズを超えています
 # selftest ----------------
 int a[2][2]={{1,2},{3,4},{5,6}}; void main(){}
-9cc:Warning: selftest:1: int a[2][2]={{1,2},{3,4},{5,6}}; void main(){}
-                                                   ^ 初期化リストが配列サイズを超えています
+emcc:Warning: selftest:1: int a[2][2]={{1,2},{3,4},{5,6}}; void main(){}
+                                                    ^ 初期化リストが配列サイズを超えています
 # selftest ----------------
 char a[2][2]={"ab","cd"}; void main(){}
-9cc:Warning: selftest:1: char a[2][2]={"ab","cd"}; void main(){}
-                                          ^ 初期化リストが配列サイズを超えています
+emcc:Warning: selftest:1: char a[2][2]={"ab","cd"}; void main(){}
+                                           ^ 初期化リストが配列サイズを超えています
 # selftest ----------------
 int a[3]={1,{2,99},3}; void main(){}
-9cc:Warning: selftest:1: int a[3]={1,{2,99},3}; void main(){}
-                                      ^ スカラーがリストで初期化されています
+emcc:Warning: selftest:1: int a[3]={1,{2,99},3}; void main(){}
+                                       ^ スカラーがリストで初期化されています
 # selftest ----------------
 int main(){_Static_assert(0,"aaa");}
-9cc:Error: selftest:1: int main(){_Static_assert(0,"aaa");}
-                                  ^ static assertionに失敗しました: aaa
+emcc:Error: selftest:1: int main(){_Static_assert(0,"aaa");}
+                                   ^ static assertionに失敗しました: aaa
 # selftest ----------------
 _Static_assert(0,"aaa"); void main(){}
-9cc:Error: selftest:1: _Static_assert(0,"aaa"); void main(){}
-                       ^ static assertionに失敗しました: aaa
+emcc:Error: selftest:1: _Static_assert(0,"aaa"); void main(){}
+                        ^ static assertionに失敗しました: aaa
 # selftest ----------------
 int main(){int a; _Static_assert(a,"aaa");}
-9cc:Error: selftest:1: int main(){int a; _Static_assert(a,"aaa");}
-                                                        ^ 定数式が必要です
+emcc:Error: selftest:1: int main(){int a; _Static_assert(a,"aaa");}
+                                                         ^ 定数式が必要です
 # selftest ----------------
 int main(){int a[2]; _Static_assert(sizeof(a)==1,"aaa");}
-9cc:Error: selftest:1: int main(){int a[2]; _Static_assert(sizeof(a)==1,"aaa");}
-                                            ^ static assertionに失敗しました: aaa
+emcc:Error: selftest:1: int main(){int a[2]; _Static_assert(sizeof(a)==1,"aaa");}
+                                             ^ static assertionに失敗しました: aaa
 # ===== 列挙型 =====
 # selftest ----------------
 int main(){struct E; enum E;}
-9cc:Error: selftest:1: int main(){struct E; enum E;}
-                                                 ^ タグの重複定義です
-9cc:Note: selftest:1: int main(){struct E; enum E;}
-                                        ^ 以前の宣言はここです
+emcc:Error: selftest:1: int main(){struct E; enum E;}
+                                                  ^ タグの重複定義です
+emcc:Note: selftest:1: int main(){struct E; enum E;}
+                                         ^ 以前の宣言はここです
 # selftest ----------------
 int main(){enum E e;}
-9cc:Error: selftest:1: int main(){enum E e;}
-                                         ^ eの型は不完全です
-9cc:Note: selftest:1: int main(){enum E e;}
-                                      ^ 型の宣言はここです
+emcc:Error: selftest:1: int main(){enum E e;}
+                                          ^ eの型は不完全です
+emcc:Note: selftest:1: int main(){enum E e;}
+                                       ^ 型の宣言はここです
 # selftest ----------------
 int main(){return sizeof(enum E);}
-9cc:Error: selftest:1: int main(){return sizeof(enum E);}
-                                                     ^ 不完全な型の定義です
+emcc:Error: selftest:1: int main(){return sizeof(enum E);}
+                                                      ^ 不完全な型の定義です
 # selftest ----------------
 int main(){enum E{};}
-9cc:Error: selftest:1: int main(){enum E{};}
-                                         ^ 識別子（enum名）が期待されています
+emcc:Error: selftest:1: int main(){enum E{};}
+                                          ^ 識別子（enum名）が期待されています
 # selftest ----------------
 int main(){enum E{A}; enum E{A};}
-9cc:Error: selftest:1: int main(){enum E{A}; enum E{A};}
-                                                    ^ enum値の重複定義です
-9cc:Note: selftest:1: int main(){enum E{A}; enum E{A};}
-                                        ^ 以前の宣言はここです
+emcc:Error: selftest:1: int main(){enum E{A}; enum E{A};}
+                                                     ^ enum値の重複定義です
+emcc:Note: selftest:1: int main(){enum E{A}; enum E{A};}
+                                         ^ 以前の宣言はここです
 # selftest ----------------
 int main(){enum E{A}; enum E{B};}
-9cc:Error: selftest:1: int main(){enum E{A}; enum E{B};}
-                                                  ^ enumの重複定義です
-9cc:Note: selftest:1: int main(){enum E{A}; enum E{B};}
-                                      ^ 以前の定義はここです
+emcc:Error: selftest:1: int main(){enum E{A}; enum E{B};}
+                                                   ^ enumの重複定義です
+emcc:Note: selftest:1: int main(){enum E{A}; enum E{B};}
+                                       ^ 以前の定義はここです
 # selftest ----------------
 int main(){enum E; enum E{A,B}; enum E{C,D};}
-9cc:Error: selftest:1: int main(){enum E; enum E{A,B}; enum E{C,D};}
-                                                            ^ enumの重複定義です
-9cc:Note: selftest:1: int main(){enum E; enum E{A,B}; enum E{C,D};}
-                                              ^ 以前の定義はここです
+emcc:Error: selftest:1: int main(){enum E; enum E{A,B}; enum E{C,D};}
+                                                             ^ enumの重複定義です
+emcc:Note: selftest:1: int main(){enum E; enum E{A,B}; enum E{C,D};}
+                                               ^ 以前の定義はここです
 # selftest ----------------
 int main(){int e; enum ABC{A,B,C} e;}
-9cc:Error: selftest:1: int main(){int e; enum ABC{A,B,C} e;}
-                                                         ^ ローカル変数の重複定義です
-9cc:Note: selftest:1: int main(){int e; enum ABC{A,B,C} e;}
-                                     ^ 以前の宣言はここです
+emcc:Error: selftest:1: int main(){int e; enum ABC{A,B,C} e;}
+                                                          ^ ローカル変数の重複定義です
+emcc:Note: selftest:1: int main(){int e; enum ABC{A,B,C} e;}
+                                      ^ 以前の宣言はここです
 # selftest ----------------
 int main(){enum ABC{A,B,C} e; int e;}
-9cc:Error: selftest:1: int main(){enum ABC{A,B,C} e; int e;}
-                                                         ^ ローカル変数の重複定義です
-9cc:Note: selftest:1: int main(){enum ABC{A,B,C} e; int e;}
-                                                 ^ 以前の宣言はここです
+emcc:Error: selftest:1: int main(){enum ABC{A,B,C} e; int e;}
+                                                          ^ ローカル変数の重複定義です
+emcc:Note: selftest:1: int main(){enum ABC{A,B,C} e; int e;}
+                                                  ^ 以前の宣言はここです
 # selftest ----------------
 int main(){enum ABC{A,B,A} e;}
-9cc:Error: selftest:1: int main(){enum ABC{A,B,A} e;}
-                                               ^ enum値の重複定義です
-9cc:Note: selftest:1: int main(){enum ABC{A,B,A} e;}
-                                          ^ 以前の宣言はここです
+emcc:Error: selftest:1: int main(){enum ABC{A,B,A} e;}
+                                                ^ enum値の重複定義です
+emcc:Note: selftest:1: int main(){enum ABC{A,B,A} e;}
+                                           ^ 以前の宣言はここです
 # selftest ----------------
 int main(){enum ABC{A,B,C} e; enum ABC{X,Y,Z} x;}
-9cc:Error: selftest:1: int main(){enum ABC{A,B,C} e; enum ABC{X,Y,Z} x;}
-                                                          ^ enumの重複定義です
-9cc:Note: selftest:1: int main(){enum ABC{A,B,C} e; enum ABC{X,Y,Z} x;}
-                                      ^ 以前の定義はここです
+emcc:Error: selftest:1: int main(){enum ABC{A,B,C} e; enum ABC{X,Y,Z} x;}
+                                                           ^ enumの重複定義です
+emcc:Note: selftest:1: int main(){enum ABC{A,B,C} e; enum ABC{X,Y,Z} x;}
+                                       ^ 以前の定義はここです
 # selftest ----------------
 int main(){enum ABC{A,B,C} e; enum XYZ{A,Y,Z} x;}
-9cc:Error: selftest:1: int main(){enum ABC{A,B,C} e; enum XYZ{A,Y,Z} x;}
-                                                              ^ enum値の重複定義です
-9cc:Note: selftest:1: int main(){enum ABC{A,B,C} e; enum XYZ{A,Y,Z} x;}
-                                          ^ 以前の宣言はここです
+emcc:Error: selftest:1: int main(){enum ABC{A,B,C} e; enum XYZ{A,Y,Z} x;}
+                                                               ^ enum値の重複定義です
+emcc:Note: selftest:1: int main(){enum ABC{A,B,C} e; enum XYZ{A,Y,Z} x;}
+                                           ^ 以前の宣言はここです
 # selftest ----------------
 int main(){enum ABC{A,B,C}; enum ABC{P,Q,R} e;}
-9cc:Error: selftest:1: int main(){enum ABC{A,B,C}; enum ABC{P,Q,R} e;}
-                                                        ^ enumの重複定義です
-9cc:Note: selftest:1: int main(){enum ABC{A,B,C}; enum ABC{P,Q,R} e;}
-                                      ^ 以前の定義はここです
+emcc:Error: selftest:1: int main(){enum ABC{A,B,C}; enum ABC{P,Q,R} e;}
+                                                         ^ enumの重複定義です
+emcc:Note: selftest:1: int main(){enum ABC{A,B,C}; enum ABC{P,Q,R} e;}
+                                       ^ 以前の定義はここです
 # selftest ----------------
 int main(){enum ABC{A,B,C}; unsigned enum ABC abc;}
-9cc:Error: selftest:1: int main(){enum ABC{A,B,C}; unsigned enum ABC abc;}
-                                                   ^ enum/typedef/struct/union名に対してsigned/unsignedの指定はできません
+emcc:Error: selftest:1: int main(){enum ABC{A,B,C}; unsigned enum ABC abc;}
+                                                    ^ enum/typedef/struct/union名に対してsigned/unsignedの指定はできません
 
 # ===== 構造体 =====
 # selftest ----------------
 int main(){enum S; struct S;}
-9cc:Error: selftest:1: int main(){enum S; struct S;}
-                                                 ^ タグの重複定義です
-9cc:Note: selftest:1: int main(){enum S; struct S;}
-                                      ^ 以前の宣言はここです
+emcc:Error: selftest:1: int main(){enum S; struct S;}
+                                                  ^ タグの重複定義です
+emcc:Note: selftest:1: int main(){enum S; struct S;}
+                                       ^ 以前の宣言はここです
 # selftest ----------------
 int main(){struct S e;}
-9cc:Error: selftest:1: int main(){struct S e;}
-                                           ^ eの型は不完全です
-9cc:Note: selftest:1: int main(){struct S e;}
-                                        ^ 型の宣言はここです
+emcc:Error: selftest:1: int main(){struct S e;}
+                                            ^ eの型は不完全です
+emcc:Note: selftest:1: int main(){struct S e;}
+                                         ^ 型の宣言はここです
 # selftest ----------------
 int main(){struct S{}e;}
-9cc:Error: selftest:1: int main(){struct S{}e;}
-                                           ^ 型名がありません
+emcc:Error: selftest:1: int main(){struct S{}e;}
+                                            ^ 型名がありません
 
 # selftest ----------------
 int main(){struct S{int a;}e; struct S{int a;}e2;}
-9cc:Error: selftest:1: int main(){struct S{int a;}e; struct S{int a;}e2;}
-                                                            ^ struct/unionの重複定義です
-9cc:Note: selftest:1: int main(){struct S{int a;}e; struct S{int a;}e2;}
-                                        ^ 以前の定義はここです
+emcc:Error: selftest:1: int main(){struct S{int a;}e; struct S{int a;}e2;}
+                                                             ^ struct/unionの重複定義です
+emcc:Note: selftest:1: int main(){struct S{int a;}e; struct S{int a;}e2;}
+                                         ^ 以前の定義はここです
 # selftest ----------------
 int main(){struct S{int a; int a;}s;}
-9cc:Error: selftest:1: int main(){struct S{int a; int a;}s;}
-                                                      ^ メンバの重複定義です
-9cc:Note: selftest:1: int main(){struct S{int a; int a;}s;}
-                                              ^ 以前の宣言はここです
+emcc:Error: selftest:1: int main(){struct S{int a; int a;}s;}
+                                                       ^ メンバの重複定義です
+emcc:Note: selftest:1: int main(){struct S{int a; int a;}s;}
+                                               ^ 以前の宣言はここです
 # selftest ----------------
 int main(){struct S{int a; int b;}; unsigned struct S s;}
-9cc:Error: selftest:1: int main(){struct S{int a; int b;}; unsigned struct S s;}
-                                                           ^ enum/typedef/struct/union名に対してsigned/unsignedの指定はできません
+emcc:Error: selftest:1: int main(){struct S{int a; int b;}; unsigned struct S s;}
+                                                            ^ enum/typedef/struct/union名に対してsigned/unsignedの指定はできません
 
 # selftest ----------------
 int main(){int a; return a.b;}
-9cc:Error: selftest:1: int main(){int a; return a.b;}
-                                                 ^ 整数(int)に対してメンバ名の指定はできません
+emcc:Error: selftest:1: int main(){int a; return a.b;}
+                                                  ^ 整数(int)に対してメンバ名の指定はできません
 # selftest ----------------
 int main(){int a; return a->b;}
-9cc:Error: selftest:1: int main(){int a; return a->b;}
-                                                 ^ 整数(int)に対してメンバ名の指定はできません
+emcc:Error: selftest:1: int main(){int a; return a->b;}
+                                                  ^ 整数(int)に対してメンバ名の指定はできません
 # selftest ----------------
 int main(){struct S{int a;}s; return s.x}
-9cc:Error: selftest:1: int main(){struct S{int a;}s; return s.x}
-                                                              ^ struct/union Sにxは存在しません
+emcc:Error: selftest:1: int main(){struct S{int a;}s; return s.x}
+                                                               ^ struct/union Sにxは存在しません
 # selftest ----------------
 int main(){struct S{int a;}s; return s->x}
-9cc:Error: selftest:1: int main(){struct S{int a;}s; return s->x}
-                                                             ^ 構造体(struct S)に対してメンバ名の指定はできません
+emcc:Error: selftest:1: int main(){struct S{int a;}s; return s->x}
+                                                              ^ 構造体(struct S)に対してメンバ名の指定はできません
 # selftest ----------------
 # [スコープの違い]
 int main(){typedef struct ST st_t;{struct ST{int a,b;}; st_t st;}}
-9cc:Error: selftest:1: int main(){typedef struct ST st_t;{struct ST{int a,b;}; st_t st;}}
-                                                                                    ^ stの型は不完全です
-9cc:Note: selftest:1: int main(){typedef struct ST st_t;{struct ST{int a,b;}; st_t st;}}
-                                                ^ 型の宣言はここです
+emcc:Error: selftest:1: int main(){typedef struct ST st_t;{struct ST{int a,b;}; st_t st;}}
+                                                                                     ^ stの型は不完全です
+emcc:Note: selftest:1: int main(){typedef struct ST st_t;{struct ST{int a,b;}; st_t st;}}
+                                                 ^ 型の宣言はここです
 # selftest ----------------
 int main(){struct{int a;}st; st=1;}
-9cc:Error: selftest:1: int main(){struct{int a;}st; st=1;}
-                                                      ^ =の左右の型(struct<noname>:int)が異なります
+emcc:Error: selftest:1: int main(){struct{int a;}st; st=1;}
+                                                       ^ =の左右の型(struct<noname>:int)が異なります
 # selftest ----------------
 int main(){struct{int a;}st; int b=st;}
-9cc:Error: selftest:1: int main(){struct{int a;}st; int b=st;}
-                                                        ^ =の左右の型(int:struct<noname>)が異なります
+emcc:Error: selftest:1: int main(){struct{int a;}st; int b=st;}
+                                                         ^ =の左右の型(int:struct<noname>)が異なります
 # selftest ----------------
 int main(){struct{int a;}st; int b; b=st;}
-9cc:Error: selftest:1: int main(){struct{int a;}st; int b; b=st;}
-                                                            ^ =の左右の型(int:struct<noname>)が異なります
+emcc:Error: selftest:1: int main(){struct{int a;}st; int b; b=st;}
+                                                             ^ =の左右の型(int:struct<noname>)が異なります
 # selftest ----------------
 int main(){struct{int a;}st1; struct{int b;}st2=st1;}
-9cc:Error: selftest:1: int main(){struct{int a;}st1; struct{int b;}st2=st1;}
-                                                                   ^ =の左右の型(struct<noname>:struct<noname>)が異なります
+emcc:Error: selftest:1: int main(){struct{int a;}st1; struct{int b;}st2=st1;}
+                                                                    ^ =の左右の型(struct<noname>:struct<noname>)が異なります
 # selftest ----------------
 int main(){struct{int a;}st1; struct{int b;}st2; st1=st2;}
-9cc:Error: selftest:1: int main(){struct{int a;}st1; struct{int b;}st2; st1=st2;}
-                                                                           ^ =の左右の型(struct<noname>:struct<noname>)が異なります
+emcc:Error: selftest:1: int main(){struct{int a;}st1; struct{int b;}st2; st1=st2;}
+                                                                            ^ =の左右の型(struct<noname>:struct<noname>)が異なります
 # selftest ----------------
 int main(){struct{int a;}st; return st;}
-9cc:Error: selftest:1: int main(){struct{int a;}st; return st;}
-                                                    ^ int型の関数mainがstruct<noname>型を返しています
+emcc:Error: selftest:1: int main(){struct{int a;}st; return st;}
+                                                     ^ int型の関数mainがstruct<noname>型を返しています
 # selftest ----------------
 int main(){struct{int a;}st; return &st;}
-9cc:Warning: selftest:1: int main(){struct{int a;}st; return &st;}
-                                                      ^ int型の関数mainがstruct<noname>*型を返しています
+emcc:Warning: selftest:1: int main(){struct{int a;}st; return &st;}
+                                                       ^ int型の関数mainがstruct<noname>*型を返しています
 # selftest ----------------
 int main(){struct{int a;}st; if(st);}
-9cc:Error: selftest:1: int main(){struct{int a;}st; if(st);}
-                                                       ^ 条件部にはスカラー値が必要です
+emcc:Error: selftest:1: int main(){struct{int a;}st; if(st);}
+                                                        ^ 条件部にはスカラー値が必要です
 # selftest ----------------
 int main(){struct{int a;}st; switch(st){};}
-9cc:Error: selftest:1: int main(){struct{int a;}st; switch(st){};}
-                                                           ^ 条件部にはスカラー値が必要です
+emcc:Error: selftest:1: int main(){struct{int a;}st; switch(st){};}
+                                                            ^ 条件部にはスカラー値が必要です
 # selftest ----------------
 int main(){struct{int a;}st; while(st)a;}
-9cc:Error: selftest:1: int main(){struct{int a;}st; while(st)a;}
-                                                          ^ 条件部にはスカラー値が必要です
+emcc:Error: selftest:1: int main(){struct{int a;}st; while(st)a;}
+                                                           ^ 条件部にはスカラー値が必要です
 # selftest ----------------
 int main(){struct{int a;}st; do;while(st);}
-9cc:Error: selftest:1: int main(){struct{int a;}st; do;while(st);}
-                                                             ^ 条件部にはスカラー値が必要です
+emcc:Error: selftest:1: int main(){struct{int a;}st; do;while(st);}
+                                                              ^ 条件部にはスカラー値が必要です
 # selftest ----------------
 int main(){struct{int a;}st; for(;st;;)break;}
-9cc:Error: selftest:1: int main(){struct{int a;}st; for(;st;;)break;}
-                                                         ^ 条件部にはスカラー値が必要です
+emcc:Error: selftest:1: int main(){struct{int a;}st; for(;st;;)break;}
+                                                          ^ 条件部にはスカラー値が必要です
 # selftest ----------------
 int main(){struct{int a;}st; st==1; return 0;}
-9cc:Error: selftest:1: int main(){struct{int a;}st; st==1; return 0;}
-                                                      ^ 構造体(struct<noname>)に対して==の指定はできません
+emcc:Error: selftest:1: int main(){struct{int a;}st; st==1; return 0;}
+                                                       ^ 構造体(struct<noname>)に対して==の指定はできません
 # selftest ----------------
 int main(){struct{int a;}st; st<1; return 0;}
-9cc:Error: selftest:1: int main(){struct{int a;}st; st<1; return 0;}
-                                                      ^ 構造体(struct<noname>)に対して<の指定はできません
+emcc:Error: selftest:1: int main(){struct{int a;}st; st<1; return 0;}
+                                                       ^ 構造体(struct<noname>)に対して<の指定はできません
 # selftest ----------------
 int main(){struct{int a;}st; st>>1; return 0;}
-9cc:Error: selftest:1: int main(){struct{int a;}st; st>>1; return 0;}
-                                                      ^ 構造体(struct<noname>)に対して>>の指定はできません
+emcc:Error: selftest:1: int main(){struct{int a;}st; st>>1; return 0;}
+                                                       ^ 構造体(struct<noname>)に対して>>の指定はできません
 # selftest ----------------
 int main(){struct{int a;}st; 1*st; return 0;}
-9cc:Error: selftest:1: int main(){struct{int a;}st; 1*st; return 0;}
-                                                     ^ 構造体(struct<noname>)に対して乗算*の指定はできません
+emcc:Error: selftest:1: int main(){struct{int a;}st; 1*st; return 0;}
+                                                      ^ 構造体(struct<noname>)に対して乗算*の指定はできません
 # selftest ----------------
 int main(){struct{int a;}st; st/1; return 0;}
-9cc:Error: selftest:1: int main(){struct{int a;}st; st/1; return 0;}
-                                                      ^ 構造体(struct<noname>)に対して除算/の指定はできません
+emcc:Error: selftest:1: int main(){struct{int a;}st; st/1; return 0;}
+                                                       ^ 構造体(struct<noname>)に対して除算/の指定はできません
 # selftest ----------------
 int main(){struct{int a;}st; +st; return 0;}
-9cc:Error: selftest:1: int main(){struct{int a;}st; +st; return 0;}
-                                                    ^ 構造体(struct<noname>)に対して単項+の指定はできません
+emcc:Error: selftest:1: int main(){struct{int a;}st; +st; return 0;}
+                                                     ^ 構造体(struct<noname>)に対して単項+の指定はできません
 # selftest ----------------
 int main(){struct{int a;}st; -st; return 0;}
-9cc:Error: selftest:1: int main(){struct{int a;}st; -st; return 0;}
-                                                    ^ 構造体(struct<noname>)に対して単項-の指定はできません
+emcc:Error: selftest:1: int main(){struct{int a;}st; -st; return 0;}
+                                                     ^ 構造体(struct<noname>)に対して単項-の指定はできません
 # selftest ----------------
 int main(){struct{int a;}st; !st; return 0;}
-9cc:Error: selftest:1: int main(){struct{int a;}st; !st; return 0;}
-                                                    ^ 構造体(struct<noname>)に対して!の指定はできません
+emcc:Error: selftest:1: int main(){struct{int a;}st; !st; return 0;}
+                                                     ^ 構造体(struct<noname>)に対して!の指定はできません
 # selftest ----------------
 int main(){struct{int a;}st; ~st; return 0;}
-9cc:Error: selftest:1: int main(){struct{int a;}st; ~st; return 0;}
-                                                    ^ 構造体(struct<noname>)に対して~の指定はできません
+emcc:Error: selftest:1: int main(){struct{int a;}st; ~st; return 0;}
+                                                     ^ 構造体(struct<noname>)に対して~の指定はできません
 # selftest ----------------
 int main(){struct{int a;}st; ++st; return 0;}
-9cc:Error: selftest:1: int main(){struct{int a;}st; ++st; return 0;}
-                                                    ^ 構造体(struct<noname>)に対して++の指定はできません
+emcc:Error: selftest:1: int main(){struct{int a;}st; ++st; return 0;}
+                                                     ^ 構造体(struct<noname>)に対して++の指定はできません
 # selftest ----------------
 int main(){struct{int a;}st; --st; return 0;}
-9cc:Error: selftest:1: int main(){struct{int a;}st; --st; return 0;}
-                                                    ^ 構造体(struct<noname>)に対して--の指定はできません
+emcc:Error: selftest:1: int main(){struct{int a;}st; --st; return 0;}
+                                                     ^ 構造体(struct<noname>)に対して--の指定はできません
 # selftest ----------------
 int main(){struct{int a;}st; st++; return 0;}
-9cc:Error: selftest:1: int main(){struct{int a;}st; st++; return 0;}
-                                                      ^ 構造体(struct<noname>)に対して++の指定はできません
+emcc:Error: selftest:1: int main(){struct{int a;}st; st++; return 0;}
+                                                       ^ 構造体(struct<noname>)に対して++の指定はできません
 # selftest ----------------
 int main(){struct{int a;}st; st--; return 0;}
-9cc:Error: selftest:1: int main(){struct{int a;}st; st--; return 0;}
-                                                      ^ 構造体(struct<noname>)に対して--の指定はできません
+emcc:Error: selftest:1: int main(){struct{int a;}st; st--; return 0;}
+                                                       ^ 構造体(struct<noname>)に対して--の指定はできません
 # selftest ----------------
 int main(){typedef struct{int a;}ST; ST st; void func(int); func(st);}
-9cc:Error: selftest:1: int main(){typedef struct{int a;}ST; ST st; void func(int); func(st);}
-                                                                                        ^ 引数[0]の型(int:struct<noname>)が一致しません
-9cc:Note: selftest:1: int main(){typedef struct{int a;}ST; ST st; void func(int); func(st);}
-                                                                            ^ 関数の定義はここです
+emcc:Error: selftest:1: int main(){typedef struct{int a;}ST; ST st; void func(int); func(st);}
+                                                                                         ^ 引数[0]の型(int:struct<noname>)が一致しません
+emcc:Note: selftest:1: int main(){typedef struct{int a;}ST; ST st; void func(int); func(st);}
+                                                                             ^ 関数の定義はここです
 # selftest ----------------
 int main(){typedef struct{int a;}ST; ST st; void func(int); func(&st);}
-9cc:Warning: selftest:1: int main(){typedef struct{int a;}ST; ST st; void func(int); func(&st);}
-                                                                                          ^ 引数[0]の型(int:struct<noname>*)が一致しません
+emcc:Warning: selftest:1: int main(){typedef struct{int a;}ST; ST st; void func(int); func(&st);}
+                                                                                           ^ 引数[0]の型(int:struct<noname>*)が一致しません
 # selftest ----------------
 int main(){typedef struct{int a;}ST; ST st; void func(ST); func(1);}
-9cc:Error: selftest:1: int main(){typedef struct{int a;}ST; ST st; void func(ST); func(1);}
-                                                                                       ^ 引数[0]の型(struct<noname>:int)が一致しません
-9cc:Note: selftest:1: int main(){typedef struct{int a;}ST; ST st; void func(ST); func(1);}
-                                                                            ^ 関数の定義はここです
+emcc:Error: selftest:1: int main(){typedef struct{int a;}ST; ST st; void func(ST); func(1);}
+                                                                                        ^ 引数[0]の型(struct<noname>:int)が一致しません
+emcc:Note: selftest:1: int main(){typedef struct{int a;}ST; ST st; void func(ST); func(1);}
+                                                                             ^ 関数の定義はここです
 # selftest ----------------
 int main(){typedef struct{int a;}ST; ST st; void func(ST); func(&st);}
-9cc:Error: selftest:1: int main(){typedef struct{int a;}ST; ST st; void func(ST); func(&st);}
-                                                                                       ^ 引数[0]の型(struct<noname>:struct<noname>*)が一致しません
-9cc:Note: selftest:1: int main(){typedef struct{int a;}ST; ST st; void func(ST); func(&st);}
-                                                                            ^ 関数の定義はここです
+emcc:Error: selftest:1: int main(){typedef struct{int a;}ST; ST st; void func(ST); func(&st);}
+                                                                                        ^ 引数[0]の型(struct<noname>:struct<noname>*)が一致しません
+emcc:Note: selftest:1: int main(){typedef struct{int a;}ST; ST st; void func(ST); func(&st);}
+                                                                             ^ 関数の定義はここです
 # ===== 無意味な宣言 =====
 # selftest ----------------
 int main(){static struct ST{int a;}; return 0;}
-9cc:Warning: selftest:1: int main(){static struct ST{int a;}; return 0;}
-                                    ^ Storage Classは無視されます
+emcc:Warning: selftest:1: int main(){static struct ST{int a;}; return 0;}
+                                     ^ Storage Classは無視されます
 # selftest ----------------
 int main(){const  struct ST{int a;}; return 0;}
-9cc:Warning: selftest:1: int main(){const  struct ST{int a;}; return 0;}
-                                    ^ constは無視されます
+emcc:Warning: selftest:1: int main(){const  struct ST{int a;}; return 0;}
+                                     ^ constは無視されます
 # selftest ----------------
 int main(){static union UN{int a;}; return 0;}
-9cc:Warning: selftest:1: int main(){static union UN{int a;}; return 0;}
-                                    ^ Storage Classは無視されます
+emcc:Warning: selftest:1: int main(){static union UN{int a;}; return 0;}
+                                     ^ Storage Classは無視されます
 # selftest ----------------
 int main(){const  union UN{int a;}; return 0;}
-9cc:Warning: selftest:1: int main(){const  union UN{int a;}; return 0;}
-                                    ^ constは無視されます
+emcc:Warning: selftest:1: int main(){const  union UN{int a;}; return 0;}
+                                     ^ constは無視されます
 # selftest ----------------
 static struct ST{int a;}; void main(){}
-9cc:Warning: selftest:1: static struct ST{int a;}; void main(){}
-                         ^ Storage Classは無視されます
+emcc:Warning: selftest:1: static struct ST{int a;}; void main(){}
+                          ^ Storage Classは無視されます
 # selftest ----------------
 const  struct ST{int a;}; void main(){}
-9cc:Warning: selftest:1: const  struct ST{int a;}; void main(){}
-                         ^ constは無視されます
+emcc:Warning: selftest:1: const  struct ST{int a;}; void main(){}
+                          ^ constは無視されます
 # selftest ----------------
 static union UN{int a;}; void main(){}
-9cc:Warning: selftest:1: static union UN{int a;}; void main(){}
-                         ^ Storage Classは無視されます
+emcc:Warning: selftest:1: static union UN{int a;}; void main(){}
+                          ^ Storage Classは無視されます
 # selftest ----------------
 const  union UN{int a;}; void main(){}
-9cc:Warning: selftest:1: const  union UN{int a;}; void main(){}
-                         ^ constは無視されます
+emcc:Warning: selftest:1: const  union UN{int a;}; void main(){}
+                          ^ constは無視されます
 # ===== 共用体 =====
 # selftest ----------------
 int main(){struct U; union U;}
-9cc:Error: selftest:1: int main(){struct U; union U;}
-                                                  ^ タグの重複定義です
-9cc:Note: selftest:1: int main(){struct U; union U;}
-                                        ^ 以前の宣言はここです
+emcc:Error: selftest:1: int main(){struct U; union U;}
+                                                   ^ タグの重複定義です
+emcc:Note: selftest:1: int main(){struct U; union U;}
+                                         ^ 以前の宣言はここです
 # selftest ----------------
 int main(){union U u;}
-9cc:Error: selftest:1: int main(){union U u;}
-                                          ^ uの型は不完全です
-9cc:Note: selftest:1: int main(){union U u;}
-                                       ^ 型の宣言はここです
+emcc:Error: selftest:1: int main(){union U u;}
+                                           ^ uの型は不完全です
+emcc:Note: selftest:1: int main(){union U u;}
+                                        ^ 型の宣言はここです
 # selftest ----------------
 int main(){union U{};}
-9cc:Error: selftest:1: int main(){union U{};}
-                                          ^ 型名がありません
+emcc:Error: selftest:1: int main(){union U{};}
+                                           ^ 型名がありません
 
 # selftest ----------------
 int main(){union U{int a;}; union U{int a;};}
-9cc:Error: selftest:1: int main(){union U{int a;}; union U{int a;};}
-                                                         ^ struct/unionの重複定義です
-9cc:Note: selftest:1: int main(){union U{int a;}; union U{int a;};}
-                                       ^ 以前の定義はここです
+emcc:Error: selftest:1: int main(){union U{int a;}; union U{int a;};}
+                                                          ^ struct/unionの重複定義です
+emcc:Note: selftest:1: int main(){union U{int a;}; union U{int a;};}
+                                        ^ 以前の定義はここです
 # selftest ----------------
 int main(){union U{int a; int a;};}
-9cc:Error: selftest:1: int main(){union U{int a; int a;};}
-                                                     ^ メンバの重複定義です
-9cc:Note: selftest:1: int main(){union U{int a; int a;};}
-                                             ^ 以前の宣言はここです
+emcc:Error: selftest:1: int main(){union U{int a; int a;};}
+                                                      ^ メンバの重複定義です
+emcc:Note: selftest:1: int main(){union U{int a; int a;};}
+                                              ^ 以前の宣言はここです
 # selftest ----------------
 int main(){union U{int a; int b;}u; int u;}
-9cc:Error: selftest:1: int main(){union U{int a; int b;}u; int u;}
-                                                               ^ ローカル変数の重複定義です
-9cc:Note: selftest:1: int main(){union U{int a; int b;}u; int u;}
-                                                       ^ 以前の宣言はここです
+emcc:Error: selftest:1: int main(){union U{int a; int b;}u; int u;}
+                                                                ^ ローカル変数の重複定義です
+emcc:Note: selftest:1: int main(){union U{int a; int b;}u; int u;}
+                                                        ^ 以前の宣言はここです
 # selftest ----------------
 int main(){union U{int a; int b;}; signed union U u;}
-9cc:Error: selftest:1: int main(){union U{int a; int b;}; signed union U u;}
-                                                          ^ enum/typedef/struct/union名に対してsigned/unsignedの指定はできません
+emcc:Error: selftest:1: int main(){union U{int a; int b;}; signed union U u;}
+                                                           ^ enum/typedef/struct/union名に対してsigned/unsignedの指定はできません
 
 # selftest ----------------
 int main(){union U{int a; int b;}u; return u.x;}
-9cc:Error: selftest:1: int main(){union U{int a; int b;}u; return u.x;}
-                                                                    ^ struct/union Uにxは存在しません
+emcc:Error: selftest:1: int main(){union U{int a; int b;}u; return u.x;}
+                                                                     ^ struct/union Uにxは存在しません
 # selftest ----------------
 int main(){union U{int a; int b;}u; return u->x;}
-9cc:Error: selftest:1: int main(){union U{int a; int b;}u; return u->x;}
-                                                                   ^ 共用体(union)に対してメンバ名の指定はできません
+emcc:Error: selftest:1: int main(){union U{int a; int b;}u; return u->x;}
+                                                                    ^ 共用体(union)に対してメンバ名の指定はできません
 # selftest ----------------
 # [スコープの違い]
 int main(){typedef union UN un_t;{union UN{int a,b;}; un_t un;}}
-9cc:Error: selftest:1: int main(){typedef union UN un_t;{union UN{int a,b;}; un_t un;}}
-                                                                                  ^ unの型は不完全です
-9cc:Note: selftest:1: int main(){typedef union UN un_t;{union UN{int a,b;}; un_t un;}}
-                                               ^ 型の宣言はここです
+emcc:Error: selftest:1: int main(){typedef union UN un_t;{union UN{int a,b;}; un_t un;}}
+                                                                                   ^ unの型は不完全です
+emcc:Note: selftest:1: int main(){typedef union UN un_t;{union UN{int a,b;}; un_t un;}}
+                                                ^ 型の宣言はここです
 # selftest ----------------
 int main(){union{int a;}un1; union{int b;}un2; un1=un2;}
-9cc:Error: selftest:1: int main(){union{int a;}un1; union{int b;}un2; un1=un2;}
-                                                                         ^ =の左右の型(union:union)が異なります
+emcc:Error: selftest:1: int main(){union{int a;}un1; union{int b;}un2; un1=un2;}
+                                                                          ^ =の左右の型(union:union)が異なります
 # selftest ----------------
 int main(){union{int a;}un; return un;}
-9cc:Error: selftest:1: int main(){union{int a;}un; return un;}
-                                                   ^ int型の関数mainがunion型を返しています
+emcc:Error: selftest:1: int main(){union{int a;}un; return un;}
+                                                    ^ int型の関数mainがunion型を返しています
 # selftest ----------------
 int main(){union{int a;}un; return &un;}
-9cc:Warning: selftest:1: int main(){union{int a;}un; return &un;}
-                                                     ^ int型の関数mainがunion*型を返しています
+emcc:Warning: selftest:1: int main(){union{int a;}un; return &un;}
+                                                      ^ int型の関数mainがunion*型を返しています
 # selftest ----------------
 int main(){typedef union{int a;}UN; UN un; void func(int); func(un);}
-9cc:Error: selftest:1: int main(){typedef union{int a;}UN; UN un; void func(int); func(un);}
-                                                                                       ^ 引数[0]の型(int:union)が一致しません
-9cc:Note: selftest:1: int main(){typedef union{int a;}UN; UN un; void func(int); func(un);}
-                                                                           ^ 関数の定義はここです
+emcc:Error: selftest:1: int main(){typedef union{int a;}UN; UN un; void func(int); func(un);}
+                                                                                        ^ 引数[0]の型(int:union)が一致しません
+emcc:Note: selftest:1: int main(){typedef union{int a;}UN; UN un; void func(int); func(un);}
+                                                                            ^ 関数の定義はここです
 # selftest ----------------
 int main(){typedef union{int a;}UN; UN un; void func(int); func(&un);}
-9cc:Warning: selftest:1: int main(){typedef union{int a;}UN; UN un; void func(int); func(&un);}
-                                                                                         ^ 引数[0]の型(int:union*)が一致しません
+emcc:Warning: selftest:1: int main(){typedef union{int a;}UN; UN un; void func(int); func(&un);}
+                                                                                          ^ 引数[0]の型(int:union*)が一致しません
 # selftest ----------------
 int main(){typedef union{int a;}UN; UN un; void func(UN); func(1);}
-9cc:Error: selftest:1: int main(){typedef union{int a;}UN; UN un; void func(UN); func(1);}
-                                                                                      ^ 引数[0]の型(union:int)が一致しません
-9cc:Note: selftest:1: int main(){typedef union{int a;}UN; UN un; void func(UN); func(1);}
-                                                                           ^ 関数の定義はここです
+emcc:Error: selftest:1: int main(){typedef union{int a;}UN; UN un; void func(UN); func(1);}
+                                                                                       ^ 引数[0]の型(union:int)が一致しません
+emcc:Note: selftest:1: int main(){typedef union{int a;}UN; UN un; void func(UN); func(1);}
+                                                                            ^ 関数の定義はここです
 # selftest ----------------
 int main(){typedef union{int a;}UN; UN un; void func(UN); func(&un);}
-9cc:Error: selftest:1: int main(){typedef union{int a;}UN; UN un; void func(UN); func(&un);}
-                                                                                      ^ 引数[0]の型(union:union*)が一致しません
-9cc:Note: selftest:1: int main(){typedef union{int a;}UN; UN un; void func(UN); func(&un);}
-                                                                           ^ 関数の定義はここです
+emcc:Error: selftest:1: int main(){typedef union{int a;}UN; UN un; void func(UN); func(&un);}
+                                                                                       ^ 引数[0]の型(union:union*)が一致しません
+emcc:Note: selftest:1: int main(){typedef union{int a;}UN; UN un; void func(UN); func(&un);}
+                                                                            ^ 関数の定義はここです
 # ===== 構造体・共用体の初期化 =====
 # selftest ----------------
 # [構造体・共用体の初期化リストが要素数を超えています]
 int main(){struct{int x,y;}st={1,2,3}; return 0;}
-9cc:Warning: selftest:1: int main(){struct{int x,y;}st={1,2,3}; return 0;}
-                                                            ^ 構造体・共用体の初期化リストが要素数を超えています
+emcc:Warning: selftest:1: int main(){struct{int x,y;}st={1,2,3}; return 0;}
+                                                             ^ 構造体・共用体の初期化リストが要素数を超えています
 # selftest ----------------
 # [構造体・共用体の初期化リストが要素数を超えています]
 int main(){struct{int a,b; struct{int x,y;}s;}st={0,0,{1,2,3}}; return 0;}
-9cc:Warning: selftest:1: int main(){struct{int a,b; struct{int x,y;}s;}st={0,0,{1,2,3}}; return 0;}
-                                                                                    ^ 構造体・共用体の初期化リストが要素数を超えています
+emcc:Warning: selftest:1: int main(){struct{int a,b; struct{int x,y;}s;}st={0,0,{1,2,3}}; return 0;}
+                                                                                     ^ 構造体・共用体の初期化リストが要素数を超えています
 # selftest ----------------
 # [構造体・共用体の初期化リストが要素数を超えています]
 int main(){struct{int a,b; struct{int x,y;} ;}st={0,0,{1,2,3}}; return 0;}
-9cc:Warning: selftest:1: int main(){struct{int a,b; struct{int x,y;} ;}st={0,0,{1,2,3}}; return 0;}
-                                                                                    ^ 構造体・共用体の初期化リストが要素数を超えています
+emcc:Warning: selftest:1: int main(){struct{int a,b; struct{int x,y;} ;}st={0,0,{1,2,3}}; return 0;}
+                                                                                     ^ 構造体・共用体の初期化リストが要素数を超えています
 # selftest ----------------
 # [構造体・共用体の初期化リストが要素数を超えています]
 int main(){union {int x,y;}un={1,2}; return 0;}
-9cc:Warning: selftest:1: int main(){union {int x,y;}un={1,2}; return 0;}
-                                                          ^ 構造体・共用体の初期化リストが要素数を超えています
+emcc:Warning: selftest:1: int main(){union {int x,y;}un={1,2}; return 0;}
+                                                           ^ 構造体・共用体の初期化リストが要素数を超えています
 # selftest ----------------
 # [構造体・共用体の初期化リストが要素数を超えています]
 int main(){struct{int a,b; union{int x,y;}u;}un={0,0,{1,2}}; return 0;}
-9cc:Warning: selftest:1: int main(){struct{int a,b; union{int x,y;}u;}un={0,0,{1,2}}; return 0;}
-                                                                                 ^ 構造体・共用体の初期化リストが要素数を超えています
+emcc:Warning: selftest:1: int main(){struct{int a,b; union{int x,y;}u;}un={0,0,{1,2}}; return 0;}
+                                                                                  ^ 構造体・共用体の初期化リストが要素数を超えています
 # selftest ----------------
 # [構造体・共用体の初期化リストが要素数を超えています]
 int main(){struct{int a,b; union{int x,y;} ;}un={0,0,{1,2}}; return 0;}
-9cc:Warning: selftest:1: int main(){struct{int a,b; union{int x,y;} ;}un={0,0,{1,2}}; return 0;}
-                                                                                 ^ 構造体・共用体の初期化リストが要素数を超えています
+emcc:Warning: selftest:1: int main(){struct{int a,b; union{int x,y;} ;}un={0,0,{1,2}}; return 0;}
+                                                                                  ^ 構造体・共用体の初期化リストが要素数を超えています
 # selftest ----------------
 # [スカラーがリストで初期化されています]
 int main(){struct{int x,y;}st={1,{2,3}}; return 0;}
-9cc:Warning: selftest:1: int main(){struct{int x,y;}st={1,{2,3}}; return 0;}
-                                                           ^ スカラーがリストで初期化されています
+emcc:Warning: selftest:1: int main(){struct{int x,y;}st={1,{2,3}}; return 0;}
+                                                            ^ スカラーがリストで初期化されています
 # selftest ----------------
 # [スカラーがリストで初期化されています]
 int main(){union {int x,y;}st={{2,3}}; return 0;}
-9cc:Warning: selftest:1: int main(){union {int x,y;}st={{2,3}}; return 0;}
-                                                         ^ スカラーがリストで初期化されています
+emcc:Warning: selftest:1: int main(){union {int x,y;}st={{2,3}}; return 0;}
+                                                          ^ スカラーがリストで初期化されています
 # selftest ----------------
 # [構造体・共用体の初期化リストが要素数を超えています]
 int main(){static struct{int x,y;}st={1,2,3}; return 0;}
-9cc:Warning: selftest:1: int main(){static struct{int x,y;}st={1,2,3}; return 0;}
-                                                                   ^ 構造体・共用体の初期化リストが要素数を超えています
+emcc:Warning: selftest:1: int main(){static struct{int x,y;}st={1,2,3}; return 0;}
+                                                                    ^ 構造体・共用体の初期化リストが要素数を超えています
 # selftest ----------------
 # [構造体・共用体の初期化リストが要素数を超えています]
 int main(){static struct{int a,b; struct{int x,y;}s;}st={0,0,{1,2,3}}; return 0;}
-9cc:Warning: selftest:1: int main(){static struct{int a,b; struct{int x,y;}s;}st={0,0,{1,2,3}}; return 0;}
-                                                                                           ^ 構造体・共用体の初期化リストが要素数を超えています
+emcc:Warning: selftest:1: int main(){static struct{int a,b; struct{int x,y;}s;}st={0,0,{1,2,3}}; return 0;}
+                                                                                            ^ 構造体・共用体の初期化リストが要素数を超えています
 # selftest ----------------
 # [構造体・共用体の初期化リストが要素数を超えています]
 int main(){static struct{int a,b; struct{int x,y;} ;}st={0,0,{1,2,3}}; return 0;}
-9cc:Warning: selftest:1: int main(){static struct{int a,b; struct{int x,y;} ;}st={0,0,{1,2,3}}; return 0;}
-                                                                                           ^ 構造体・共用体の初期化リストが要素数を超えています
+emcc:Warning: selftest:1: int main(){static struct{int a,b; struct{int x,y;} ;}st={0,0,{1,2,3}}; return 0;}
+                                                                                            ^ 構造体・共用体の初期化リストが要素数を超えています
 # selftest ----------------
 # [構造体・共用体の初期化リストが要素数を超えています]
 int main(){static union {int x,y;}un={1,2}; return 0;}
-9cc:Warning: selftest:1: int main(){static union {int x,y;}un={1,2}; return 0;}
-                                                                 ^ 構造体・共用体の初期化リストが要素数を超えています
+emcc:Warning: selftest:1: int main(){static union {int x,y;}un={1,2}; return 0;}
+                                                                  ^ 構造体・共用体の初期化リストが要素数を超えています
 # selftest ----------------
 # [構造体・共用体の初期化リストが要素数を超えています]
 int main(){static struct{int a,b; union{int x,y;}u;}un={0,0,{1,2}}; return 0;}
-9cc:Warning: selftest:1: int main(){static struct{int a,b; union{int x,y;}u;}un={0,0,{1,2}}; return 0;}
-                                                                                        ^ 構造体・共用体の初期化リストが要素数を超えています
+emcc:Warning: selftest:1: int main(){static struct{int a,b; union{int x,y;}u;}un={0,0,{1,2}}; return 0;}
+                                                                                         ^ 構造体・共用体の初期化リストが要素数を超えています
 # selftest ----------------
 # [構造体・共用体の初期化リストが要素数を超えています]
 int main(){static struct{int a,b; union{int x,y;} ;}un={0,0,{1,2}}; return 0;}
-9cc:Warning: selftest:1: int main(){static struct{int a,b; union{int x,y;} ;}un={0,0,{1,2}}; return 0;}
-                                                                                        ^ 構造体・共用体の初期化リストが要素数を超えています
+emcc:Warning: selftest:1: int main(){static struct{int a,b; union{int x,y;} ;}un={0,0,{1,2}}; return 0;}
+                                                                                         ^ 構造体・共用体の初期化リストが要素数を超えています
 # selftest ----------------
 # [スカラーがリストで初期化されています]
 int main(){static struct{int x,y;}st={1,{2,3}}; return 0;}
-9cc:Warning: selftest:1: int main(){static struct{int x,y;}st={1,{2,3}}; return 0;}
-                                                                  ^ スカラーがリストで初期化されています
+emcc:Warning: selftest:1: int main(){static struct{int x,y;}st={1,{2,3}}; return 0;}
+                                                                   ^ スカラーがリストで初期化されています
 # selftest ----------------
 # [スカラーがリストで初期化されています]
 int main(){static union {int x,y;}st={{2,3}}; return 0;}
-9cc:Warning: selftest:1: int main(){static union {int x,y;}st={{2,3}}; return 0;}
-                                                                ^ スカラーがリストで初期化されています
+emcc:Warning: selftest:1: int main(){static union {int x,y;}st={{2,3}}; return 0;}
+                                                                 ^ スカラーがリストで初期化されています
 # ===== 無名構造体・共用体 =====
 # selftest ----------------
 # [ネストしていない無名構造体:]
 int main(){struct {int sa; long sb;};}
-9cc:Warning: selftest:1: int main(){struct {int sa; long sb;};}
-                                    ^ 意味のない宣言です
+emcc:Warning: selftest:1: int main(){struct {int sa; long sb;};}
+                                     ^ 意味のない宣言です
 # selftest ----------------
 # [ネストしていない無名共用体:]
 int main(){union  {int ua; long ub;};}
-9cc:Warning: selftest:1: int main(){union  {int ua; long ub;};}
-                                    ^ 意味のない宣言です
+emcc:Warning: selftest:1: int main(){union  {int ua; long ub;};}
+                                     ^ 意味のない宣言です
 # selftest ----------------
 # [構造体の中の無名共用体:タグ付きは変数名必要]
 int main(){struct{int a; union U{int ua; long ub;};};}
-9cc:Error: selftest:1: int main(){struct{int a; union U{int ua; long ub;};};}
-                                                                         ^ 識別子（変数名）が期待されています
+emcc:Error: selftest:1: int main(){struct{int a; union U{int ua; long ub;};};}
+                                                                          ^ 識別子（変数名）が期待されています
 # selftest ----------------
 # [構造体の中の無名共用体:変数名重複:前]
 int main(){struct{int a; union  {int  a; long ub;};};}
-9cc:Error: selftest:1: int main(){struct{int a; union  {int  a; long ub;};};}
-                                                             ^ メンバの重複定義です
-9cc:Note: selftest:1: int main(){struct{int a; union  {int  a; long ub;};};}
-                                            ^ 以前の宣言はここです
+emcc:Error: selftest:1: int main(){struct{int a; union  {int  a; long ub;};};}
+                                                              ^ メンバの重複定義です
+emcc:Note: selftest:1: int main(){struct{int a; union  {int  a; long ub;};};}
+                                             ^ 以前の宣言はここです
 # selftest ----------------
 # [構造体の中の無名共用体:変数名重複:後]
 int main(){struct{int a; union  {int ua; long ub;}; int ua};}
-9cc:Error: selftest:1: int main(){struct{int a; union  {int ua; long ub;}; int ua};}
-                                                                               ^ メンバの重複定義です
-9cc:Note: selftest:1: int main(){struct{int a; union  {int ua; long ub;}; int ua};}
-                                                           ^ 以前の宣言はここです
+emcc:Error: selftest:1: int main(){struct{int a; union  {int ua; long ub;}; int ua};}
+                                                                                ^ メンバの重複定義です
+emcc:Note: selftest:1: int main(){struct{int a; union  {int ua; long ub;}; int ua};}
+                                                            ^ 以前の宣言はここです
 # selftest ----------------
 # [共用体の中の無名構造体:タグ付きは変数名必要]
 int main(){union{int a; struct S{int sa; long sb;};};}
-9cc:Error: selftest:1: int main(){union{int a; struct S{int sa; long sb;};};}
-                                                                         ^ 識別子（変数名）が期待されています
+emcc:Error: selftest:1: int main(){union{int a; struct S{int sa; long sb;};};}
+                                                                          ^ 識別子（変数名）が期待されています
 # selftest ----------------
 # [共用体の中の無名構造体:変数名重複:前]
 int main(){union{int a; struct  {int  a; long sb;};};}
-9cc:Error: selftest:1: int main(){union{int a; struct  {int  a; long sb;};};}
-                                                             ^ メンバの重複定義です
-9cc:Note: selftest:1: int main(){union{int a; struct  {int  a; long sb;};};}
-                                           ^ 以前の宣言はここです
+emcc:Error: selftest:1: int main(){union{int a; struct  {int  a; long sb;};};}
+                                                              ^ メンバの重複定義です
+emcc:Note: selftest:1: int main(){union{int a; struct  {int  a; long sb;};};}
+                                            ^ 以前の宣言はここです
 # selftest ----------------
 # [共用体の中の無名構造体:変数名重複:後]
 int main(){union{int a; struct  {int sa; long sb;}; int sa};}
-9cc:Error: selftest:1: int main(){union{int a; struct  {int sa; long sb;}; int sa};}
-                                                                               ^ メンバの重複定義です
-9cc:Note: selftest:1: int main(){union{int a; struct  {int sa; long sb;}; int sa};}
-                                                           ^ 以前の宣言はここです
+emcc:Error: selftest:1: int main(){union{int a; struct  {int sa; long sb;}; int sa};}
+                                                                                ^ メンバの重複定義です
+emcc:Note: selftest:1: int main(){union{int a; struct  {int sa; long sb;}; int sa};}
+                                                            ^ 以前の宣言はここです
 # selftest ----------------
 # [ネストしていない無名構造体:]
 int main(){static struct {int sa; long sb;};}
-9cc:Warning: selftest:1: int main(){static struct {int sa; long sb;};}
-                                    ^ Storage Classは無視されます
+emcc:Warning: selftest:1: int main(){static struct {int sa; long sb;};}
+                                     ^ Storage Classは無視されます
 # selftest ----------------
 # [ネストしていない無名共用体:]
 int main(){static union  {int ua; long ub;};}
-9cc:Warning: selftest:1: int main(){static union  {int ua; long ub;};}
-                                    ^ Storage Classは無視されます
+emcc:Warning: selftest:1: int main(){static union  {int ua; long ub;};}
+                                     ^ Storage Classは無視されます
 # selftest ----------------
 # [構造体の中の無名共用体:タグ付きは変数名必要]
 int main(){static struct{int a; union U{int ua; long ub;};};}
-9cc:Error: selftest:1: int main(){static struct{int a; union U{int ua; long ub;};};}
-                                                                                ^ 識別子（変数名）が期待されています
+emcc:Error: selftest:1: int main(){static struct{int a; union U{int ua; long ub;};};}
+                                                                                 ^ 識別子（変数名）が期待されています
 # selftest ----------------
 # [構造体の中の無名共用体:変数名重複:前]
 int main(){static struct{int a; union  {int  a; long ub;};};}
-9cc:Error: selftest:1: int main(){static struct{int a; union  {int  a; long ub;};};}
-                                                                    ^ メンバの重複定義です
-9cc:Note: selftest:1: int main(){static struct{int a; union  {int  a; long ub;};};}
-                                                   ^ 以前の宣言はここです
+emcc:Error: selftest:1: int main(){static struct{int a; union  {int  a; long ub;};};}
+                                                                     ^ メンバの重複定義です
+emcc:Note: selftest:1: int main(){static struct{int a; union  {int  a; long ub;};};}
+                                                    ^ 以前の宣言はここです
 # selftest ----------------
 # [構造体の中の無名共用体:変数名重複:後]
 int main(){static struct{int a; union  {int ua; long ub;}; int ua};}
-9cc:Error: selftest:1: int main(){static struct{int a; union  {int ua; long ub;}; int ua};}
-                                                                                      ^ メンバの重複定義です
-9cc:Note: selftest:1: int main(){static struct{int a; union  {int ua; long ub;}; int ua};}
-                                                                  ^ 以前の宣言はここです
+emcc:Error: selftest:1: int main(){static struct{int a; union  {int ua; long ub;}; int ua};}
+                                                                                       ^ メンバの重複定義です
+emcc:Note: selftest:1: int main(){static struct{int a; union  {int ua; long ub;}; int ua};}
+                                                                   ^ 以前の宣言はここです
 # selftest ----------------
 # [共用体の中の無名構造体:タグ付きは変数名必要]
 int main(){static union{int a; struct S{int sa; long sb;};};}
-9cc:Error: selftest:1: int main(){static union{int a; struct S{int sa; long sb;};};}
-                                                                                ^ 識別子（変数名）が期待されています
+emcc:Error: selftest:1: int main(){static union{int a; struct S{int sa; long sb;};};}
+                                                                                 ^ 識別子（変数名）が期待されています
 # selftest ----------------
 # [共用体の中の無名構造体:変数名重複:前]
 int main(){static union{int a; struct  {int  a; long sb;};};}
-9cc:Error: selftest:1: int main(){static union{int a; struct  {int  a; long sb;};};}
-                                                                    ^ メンバの重複定義です
-9cc:Note: selftest:1: int main(){static union{int a; struct  {int  a; long sb;};};}
-                                                  ^ 以前の宣言はここです
+emcc:Error: selftest:1: int main(){static union{int a; struct  {int  a; long sb;};};}
+                                                                     ^ メンバの重複定義です
+emcc:Note: selftest:1: int main(){static union{int a; struct  {int  a; long sb;};};}
+                                                   ^ 以前の宣言はここです
 # selftest ----------------
 # [共用体の中の無名構造体:変数名重複:後]
 int main(){static union{int a; struct  {int sa; long sb;}; int sa};}
-9cc:Error: selftest:1: int main(){static union{int a; struct  {int sa; long sb;}; int sa};}
-                                                                                      ^ メンバの重複定義です
-9cc:Note: selftest:1: int main(){static union{int a; struct  {int sa; long sb;}; int sa};}
-                                                                  ^ 以前の宣言はここです
+emcc:Error: selftest:1: int main(){static union{int a; struct  {int sa; long sb;}; int sa};}
+                                                                                       ^ メンバの重複定義です
+emcc:Note: selftest:1: int main(){static union{int a; struct  {int sa; long sb;}; int sa};}
+                                                                   ^ 以前の宣言はここです
 # ===== 構造体・共用体の配列の初期化 =====
 # selftest ----------------
 # [初期化リストが配列サイズを超えています]
 int main(){struct{int a,b;}s[2]={1,2,3,4,5}; return 0;}
-9cc:Warning: selftest:1: int main(){struct{int a,b;}s[2]={1,2,3,4,5}; return 0;}
-                                                                  ^ 初期化リストが配列サイズを超えています
+emcc:Warning: selftest:1: int main(){struct{int a,b;}s[2]={1,2,3,4,5}; return 0;}
+                                                                   ^ 初期化リストが配列サイズを超えています
 # selftest ----------------
 # [構造体・共用体の初期化リストが要素数を超えています]
 int main(){struct{int a,b;}s[2]={{1,2,9},{3,4,9}}; return 0;}
-9cc:Warning: selftest:1: int main(){struct{int a,b;}s[2]={{1,2,9},{3,4,9}}; return 0;}
-                                                               ^ 構造体・共用体の初期化リストが要素数を超えています
+emcc:Warning: selftest:1: int main(){struct{int a,b;}s[2]={{1,2,9},{3,4,9}}; return 0;}
+                                                                ^ 構造体・共用体の初期化リストが要素数を超えています
 # selftest ----------------
 # [スカラーがリストで初期化されています]
 int main(){struct{int a,b;}s[2]={1,{2},3,4}; return 0;}
-9cc:Warning: selftest:1: int main(){struct{int a,b;}s[2]={1,{2},3,4}; return 0;}
-                                                             ^ スカラーがリストで初期化されています
+emcc:Warning: selftest:1: int main(){struct{int a,b;}s[2]={1,{2},3,4}; return 0;}
+                                                              ^ スカラーがリストで初期化されています
 # selftest ----------------
 # [初期化リストが配列サイズを超えています]
 int main(){static struct{int a,b;}s[2]={1,2,3,4,5}; return 0;}
-9cc:Warning: selftest:1: int main(){static struct{int a,b;}s[2]={1,2,3,4,5}; return 0;}
-                                                                         ^ 初期化リストが配列サイズを超えています
+emcc:Warning: selftest:1: int main(){static struct{int a,b;}s[2]={1,2,3,4,5}; return 0;}
+                                                                          ^ 初期化リストが配列サイズを超えています
 # selftest ----------------
 # [構造体・共用体の初期化リストが要素数を超えています]
 int main(){static struct{int a,b;}s[2]={{1,2,9},{3,4,9}}; return 0;}
-9cc:Warning: selftest:1: int main(){static struct{int a,b;}s[2]={{1,2,9},{3,4,9}}; return 0;}
-                                                                      ^ 構造体・共用体の初期化リストが要素数を超えています
+emcc:Warning: selftest:1: int main(){static struct{int a,b;}s[2]={{1,2,9},{3,4,9}}; return 0;}
+                                                                       ^ 構造体・共用体の初期化リストが要素数を超えています
 # selftest ----------------
 # [スカラーがリストで初期化されています]
 int main(){static struct{int a,b;}s[2]={1,{2},3,4}; return 0;}
-9cc:Warning: selftest:1: int main(){static struct{int a,b;}s[2]={1,{2},3,4}; return 0;}
-                                                                    ^ スカラーがリストで初期化されています
+emcc:Warning: selftest:1: int main(){static struct{int a,b;}s[2]={1,{2},3,4}; return 0;}
+                                                                     ^ スカラーがリストで初期化されています
 # ===== Const =====
 # selftest ----------------
 int main(){const int ci; ci=1; return ci;}
-9cc:Error: selftest:1: int main(){const int ci; ci=1; return ci;}
-                                                  ^ 読み取り専用変数(const int)に対して代入の実行はできません
+emcc:Error: selftest:1: int main(){const int ci; ci=1; return ci;}
+                                                   ^ 読み取り専用変数(const int)に対して代入の実行はできません
 # selftest ----------------
 int main(){static char str[]="abc"; const char*p1=str; *p1='A';}
-9cc:Error: selftest:1: int main(){static char str[]="abc"; const char*p1=str; *p1='A';}
-                                                                                 ^ 読み取り専用変数(const char)に対して代入の実行はできません
+emcc:Error: selftest:1: int main(){static char str[]="abc"; const char*p1=str; *p1='A';}
+                                                                                  ^ 読み取り専用変数(const char)に対して代入の実行はできません
 # selftest ----------------
 int main(){static char str[]="abc"; char const*p2=str; *p2='A';}
-9cc:Error: selftest:1: int main(){static char str[]="abc"; char const*p2=str; *p2='A';}
-                                                                                 ^ 読み取り専用変数(const char)に対して代入の実行はできません
+emcc:Error: selftest:1: int main(){static char str[]="abc"; char const*p2=str; *p2='A';}
+                                                                                  ^ 読み取り専用変数(const char)に対して代入の実行はできません
 # selftest ----------------
 int main(){static char str[]="abc"; const char const*p12=str; *p12='A';}
-9cc:Error: selftest:1: int main(){static char str[]="abc"; const char const*p12=str; *p12='A';}
-                                                                                         ^ 読み取り専用変数(const char)に対して代入の実行はできません
+emcc:Error: selftest:1: int main(){static char str[]="abc"; const char const*p12=str; *p12='A';}
+                                                                                          ^ 読み取り専用変数(const char)に対して代入の実行はできません
 # selftest ----------------
 int main(){static char str[]="abc"; char*const p3=str; p3=0;}
-9cc:Error: selftest:1: int main(){static char str[]="abc"; char*const p3=str; p3=0;}
-                                                                                ^ 読み取り専用変数(char const*)に対して代入の実行はできません
+emcc:Error: selftest:1: int main(){static char str[]="abc"; char*const p3=str; p3=0;}
+                                                                                 ^ 読み取り専用変数(char const*)に対して代入の実行はできません
 # selftest ----------------
 int main(){static char str[]="abc"; const char*const p13=str; p13=0;}
-9cc:Error: selftest:1: int main(){static char str[]="abc"; const char*const p13=str; p13=0;}
-                                                                                        ^ 読み取り専用変数(const char const*)に対して代入の実行はできません
+emcc:Error: selftest:1: int main(){static char str[]="abc"; const char*const p13=str; p13=0;}
+                                                                                         ^ 読み取り専用変数(const char const*)に対して代入の実行はできません
 # selftest ----------------
 int main(){static char str[]="abc"; const char*p1=str; (*p1)+=1;}
-9cc:Error: selftest:1: int main(){static char str[]="abc"; const char*p1=str; (*p1)+=1;}
-                                                                                   ^ 読み取り専用変数(const char)に対して+=の実行はできません
+emcc:Error: selftest:1: int main(){static char str[]="abc"; const char*p1=str; (*p1)+=1;}
+                                                                                    ^ 読み取り専用変数(const char)に対して+=の実行はできません
 # selftest ----------------
 int main(){static char str[]="abc"; const char*p1=str; (*p1)++;}
-9cc:Error: selftest:1: int main(){static char str[]="abc"; const char*p1=str; (*p1)++;}
-                                                                                   ^ 読み取り専用変数(const char)に対して++の実行はできません
+emcc:Error: selftest:1: int main(){static char str[]="abc"; const char*p1=str; (*p1)++;}
+                                                                                    ^ 読み取り専用変数(const char)に対して++の実行はできません
 # selftest ----------------
 char*func(void) {static const char str[]="abc"; return str;} void main(){}
-9cc:Warning: selftest:1: char*func(void) {static const char str[]="abc"; return str;} void main(){}
-                                                                         ^ 戻り値static const char[4]のconst情報は失われます
+emcc:Warning: selftest:1: char*func(void) {static const char str[]="abc"; return str;} void main(){}
+                                                                          ^ 戻り値static const char[4]のconst情報は失われます
 # selftest ----------------
 void func3(char*str){}          void func3(const char*str); void main(){}
-9cc:Error: selftest:1: void func3(char*str){}          void func3(const char*str); void main(){}
-                                                                 ^ 関数の型が一致しません
-9cc:Note: selftest:1: void func3(char*str){}          void func3(const char*str); void main(){}
-                                ^ 以前の宣言はここです
+emcc:Error: selftest:1: void func3(char*str){}          void func3(const char*str); void main(){}
+                                                                  ^ 関数の型が一致しません
+emcc:Note: selftest:1: void func3(char*str){}          void func3(const char*str); void main(){}
+                                 ^ 以前の宣言はここです
 # selftest ----------------
 char*func3(void){return 0;}          const char*func3(void); void main(){}
-9cc:Error: selftest:1: char*func3(void){return 0;}          const char*func3(void); void main(){}
-                                                                            ^ 関数の型が一致しません
-9cc:Note: selftest:1: char*func3(void){return 0;}          const char*func3(void); void main(){}
-                                ^ 以前の宣言はここです
+emcc:Error: selftest:1: char*func3(void){return 0;}          const char*func3(void); void main(){}
+                                                                             ^ 関数の型が一致しません
+emcc:Note: selftest:1: char*func3(void){return 0;}          const char*func3(void); void main(){}
+                                 ^ 以前の宣言はここです
 # selftest ----------------
 # [戻り値const char*のconst情報は失われます]
 int main(){void func(char*p); const char*p; func(p); return 0;}
-9cc:Warning: selftest:1: int main(){void func(char*p); const char*p; func(p); return 0;}
-                                                                          ^ 戻り値const char*のconst情報は失われます
+emcc:Warning: selftest:1: int main(){void func(char*p); const char*p; func(p); return 0;}
+                                                                           ^ 戻り値const char*のconst情報は失われます
 # selftest ----------------
 int main(){void func(char*p); char* const p; func(p); return 0;}
 # selftest ----------------
@@ -1472,24 +1472,24 @@ int main(){void func(const char*p); char*p; func(p); return 0;}
 # ===== Assign =====
 # selftest ----------------
 int main(){int a; char*p; a+=p;}
-9cc:Error: selftest:1: int main(){int a; char*p; a+=p;}
-                                                    ^ ポインタ(char*)に対して+=の指定はできません
+emcc:Error: selftest:1: int main(){int a; char*p; a+=p;}
+                                                     ^ ポインタ(char*)に対して+=の指定はできません
 # selftest ----------------
 int main(){int a; char*p; a-=p;}
-9cc:Error: selftest:1: int main(){int a; char*p; a-=p;}
-                                                    ^ ポインタ(char*)に対して-=の指定はできません
+emcc:Error: selftest:1: int main(){int a; char*p; a-=p;}
+                                                     ^ ポインタ(char*)に対して-=の指定はできません
 # selftest ----------------
 int main(){int a; struct{int x;}s; a*=s;}
-9cc:Error: selftest:1: int main(){int a; struct{int x;}s; a*=s;}
-                                                             ^ 構造体(struct<noname>)に対して*=の指定はできません
+emcc:Error: selftest:1: int main(){int a; struct{int x;}s; a*=s;}
+                                                              ^ 構造体(struct<noname>)に対して*=の指定はできません
 # selftest ----------------
 int main(){int a; union {int x;}u; a/=u;}
-9cc:Error: selftest:1: int main(){int a; union {int x;}u; a/=u;}
-                                                             ^ 共用体(union)に対して/=の指定はできません
+emcc:Error: selftest:1: int main(){int a; union {int x;}u; a/=u;}
+                                                              ^ 共用体(union)に対して/=の指定はできません
 # selftest ----------------
 int main(){int a; struct{int x;}s; a%=s;}
-9cc:Error: selftest:1: int main(){int a; struct{int x;}s; a%=s;}
-                                                             ^ 構造体(struct<noname>)に対して%=の指定はできません
+emcc:Error: selftest:1: int main(){int a; struct{int x;}s; a%=s;}
+                                                              ^ 構造体(struct<noname>)に対して%=の指定はできません
 # selftest ----------------
 typedef enum {
     ST_ERR=0,
@@ -1766,7 +1766,7 @@ typedef enum {
     ERC_ABORT,
 } ErCtrl;
 
-9cc self test
+emcc self test
 Total : 317
    Ok : 317
    NG : 0
