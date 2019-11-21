@@ -1,4 +1,4 @@
-#ifdef _9cc
+#ifdef _emcc
 //#define void
 #define stdin  (__acrt_iob_func(0))
 #define stdout (__acrt_iob_func(1))
@@ -29,7 +29,7 @@ static int test_cnt = 0;
 
 static int f42() {42; ;;;;;}
 static int logical1(void) {
-#ifdef _9cc
+#ifdef _emcc
         42 == f42() &&    //これはCの仕様とは異なる
 #endif
         14 == 10 + 2 * 3 - 4/2 &&
@@ -428,7 +428,7 @@ static int fib(int a) {
     else return fib(a-1) + fib(a-2);
 }
 static char* stdarg(char fmt, ...) {
-#ifdef _9cc
+#ifdef _emcc
     #define va_start __va_start
     #define va_list char*
 #endif

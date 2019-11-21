@@ -2,23 +2,6 @@
 
 #include "9cc.h"
 
-char *read_file(const char *path) {
-    FILE *fp = fopen(path, "r");
-    if (!fp) error("cannot open %s: %s", path, strerror(errno));
-
-    if (fseek(fp, 0, SEEK_END) == -1) error("%s: fseek: %s", path, strerror(errno));
-    size_t size = ftell(fp);
-    if (fseek(fp, 0, SEEK_SET) == -1) error("%s: fseek: %s", path, strerror(errno));
-
-    char *buf = malloc(size+2);
-    fread(buf, size, 1, fp);
-    fclose(fp);
-
-    if (buf[size-1] != '\n') buf[size++] = '\n';
-    buf[size] = 0;
-    return buf;
-}
-
 static ErCtrl get_ctrl(const char*opt) {
     switch(opt[2]) {
     case 'c': return ERC_CONTINUE;

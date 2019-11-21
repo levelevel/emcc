@@ -4,7 +4,7 @@ ulimit -c unlimited
 
 EXE=tmp/test
 AFLAGS="-g -no-pie"
-CFLAGS="-D_9cc -std=c11 -pedantic-errors "
+CFLAGS="-D_emcc -std=c11 -pedantic-errors "
 ER=Error
 WR=Warning
 CC=emcc
