@@ -1,9 +1,10 @@
 CFLAGS=-Wall -std=c11 -pedantic-errors -g -static -I. -I./include
 
-HEADS=include/emcc.h
+HEADS=include/emcc.h include/util.h
 SRCS=$(wildcard *.c) test_src/test_error.c
 OBJS=$(SRCS:.c=.o)
 
+CPPHEADS=cpp/emcpp.h include/util.h
 CPPSRCS=$(wildcard cpp/*.c)
 CPPOBJS=$(CPPSRCS:.c=.o) util.o
 
@@ -20,7 +21,7 @@ $(OBJS): $(HEADS)
 $(CPPEXE): $(CPPOBJS)
 	$(CC) $(CFLAGS) -o $(CPPEXE) $(CPPOBJS) $(LDFLAGS)
 
-$(CPPOBJS): $(HEADS)
+$(CPPOBJS): $(CPPHEADS)
 
 test: $(TARGET) 
 	./test.sh

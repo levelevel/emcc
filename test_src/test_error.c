@@ -1,4 +1,4 @@
-#include "../9cc.h"
+#include "emcc.h"
 
 struct {
     enum {ER, WR, OK, CM} expect;

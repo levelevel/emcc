@@ -110,3 +110,8 @@ void compile(void) {
     // 抽象構文木を下りながらコード生成
     gen_program();
 }
+
+void run_test(void) {
+    test_error();   //test_src/test_error.c
+    printf("run_test: OK\n");
+}

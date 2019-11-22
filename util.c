@@ -1,4 +1,4 @@
-#include "emcc.h"
+#include "util.h"
 
 //可変長ベクタ ---------------------------------------
 Vector *new_vector(void) {
@@ -194,52 +194,4 @@ void warning(const char*fmt, ...) {
     fprintf(stderr, "emcc:Warning: ");
     vfprintf(stderr, fmt, ap);
     fprintf(stderr, "\n");
-}
-
-// テスト -------------------------------------------------
-static void expect(int line, long expected, long actual) {
-    if (expected == actual) return;
-    fprintf(stderr, "%d: %ld expected, but got actual %ld\n", line, expected, actual);
-    exit(1);
-}
-
-static void test_vector(void) {
-    Vector *vec = new_vector();
-    expect(__LINE__, 0, vec->len);
-
-    for (long i=0; i<100; i++) {
-        vec_push(vec, (void*)i);
-    }
-    expect(__LINE__, 100, vec->len);
-    expect(__LINE__, 0,  (long)vec->data[0]);
-    expect(__LINE__, 50, (long)vec->data[50]);
-    expect(__LINE__, 99, (long)vec->data[99]);
-    expect(__LINE__, 0,  (long)vec_get(vec, 0));
-    expect(__LINE__, 50, (long)vec_get(vec, 50));
-    expect(__LINE__, 99, (long)vec_get(vec, 99));
-}
-
-static void test_map(void) {
-    Map *map = new_map();
-    void *val;
-    expect(__LINE__, 0, map_get(map, "foo", NULL));
-
-    map_put(map, "foo", (void *)2);
-    expect(__LINE__, 1, map_get(map, "foo", &val));
-    expect(__LINE__, 2, (long)val);
-
-    map_put(map, "bar", (void *)4);
-    expect(__LINE__, 1, map_get(map, "bar", &val));
-    expect(__LINE__, 4, (long)val);
-
-    map_put(map, "foo", (void *)6);
-    expect(__LINE__, 1, map_get(map, "foo", &val));
-    expect(__LINE__, 6, (long)val);
-}
-
-void run_test(void) {
-    test_vector();
-    test_map();
-    test_error();   //test_src/test_error.c
-    printf("run_test: OK\n");
 }

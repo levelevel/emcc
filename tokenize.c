@@ -1,6 +1,6 @@
 #define _PARSE_C_
 
-#include "9cc.h"
+#include "emcc.h"
 
 //トークンの種類を定義
 typedef struct {
