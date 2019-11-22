@@ -1,6 +1,6 @@
 #define EXTERN
 
-#include "9cc.h"
+#include "emcc.h"
 
 static ErCtrl get_ctrl(const char*opt) {
     switch(opt[2]) {

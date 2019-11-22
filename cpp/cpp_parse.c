@@ -18,5 +18,8 @@
 */
 
 void preprocessing_file(void) {
-
+    int size = lst_len(token_vec);
+    for (int i=0; i<size; i++) {
+        PPToken *token = lst_data(token_vec, i);
+    }
 }

@@ -1,6 +1,6 @@
 #define _PARSE_C_
 
-#include "9cc.h"
+#include "emcc.h"
 
 /*  文法：
 - A.2.4 External Definitions  http://port70.net/~nsz/c/c11/n1570.html#A.2.4

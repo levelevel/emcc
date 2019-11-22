@@ -1,4 +1,4 @@
-#include "9cc.h"
+#include "emcc.h"
 
 //可変長ベクタ ---------------------------------------
 Vector *new_vector(void) {

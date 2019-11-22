@@ -1,6 +1,6 @@
-CFLAGS=-Wall -std=c11 -pedantic-errors -g -static -I.
+CFLAGS=-Wall -std=c11 -pedantic-errors -g -static -I. -I./include
 
-HEADS=9cc.h
+HEADS=include/emcc.h
 SRCS=$(wildcard *.c) test_src/test_error.c
 OBJS=$(SRCS:.c=.o)
 

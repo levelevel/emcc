@@ -32,9 +32,12 @@ int main(int argc, char**argv) {
     read_opt(argc, argv);
 
     token_vec = new_vector();
+
     cpp_tokenize(user_input);
     tokens             = (Token**)token_vec->data;
     token_pos          = 0;
+
+    preprocessing_file();
 }
 
 void test_error(void){}

@@ -1,6 +1,6 @@
 #define _PARSE_C_
 
-#include "9cc.h"
+#include "emcc.h"
 
 //型のサイズ
 // - 配列の場合、要素のサイズ*要素数

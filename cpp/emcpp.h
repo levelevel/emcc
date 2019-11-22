@@ -1,4 +1,4 @@
-#include "9cc.h"
+#include "emcc.h"
 
 typedef enum {
     PPTK_NUM = 256,
@@ -30,3 +30,5 @@ typedef struct {
 
 void preprocessing_file(void);
 void cpp_tokenize(char *p);
+int cpp_consume(PPTKtype type);
+

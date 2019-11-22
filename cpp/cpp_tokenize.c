@@ -83,6 +83,7 @@ void dump_tokens() {
         }
     }
 }
+
 void cpp_tokenize(char *p) {
     PPToken *token;
     while (*p) {
@@ -175,5 +176,13 @@ void cpp_tokenize(char *p) {
         }
         NEXT_LOOP:;
     }
-    dump_tokens();
+    //dump_tokens();
+}
+
+//次のトークンが期待したものかどうかをチェックし、
+//期待したものの場合だけ入力を1トークン読み進めて真を返す
+int cpp_consume(PPTKtype type) {
+    if (tokens[token_pos]->type != type) return 0;
+    token_pos++;
+    return 1;
 }
