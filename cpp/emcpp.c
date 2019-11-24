@@ -14,9 +14,16 @@ static void usage(void) {
 
 static void read_opt(int argc, char*argv[]) {
     if (argc<=1) usage();
+    error_ctrl   = ERC_EXIT;
+    warning_ctrl = ERC_CONTINUE;
+    note_ctrl    = ERC_CONTINUE;
+    g_dump_token = 0;
+    g_fp = stdout;
 
     for (; argc>1;  argc--, argv++) {
-        if (argc==2) {
+        if (strcmp(argv[0], "-dt")==0) {
+            g_dump_token = 1;
+        } else if (argc==2) {
             filename = argv[1];
             user_input = read_file(filename);
             break;
@@ -24,18 +31,18 @@ static void read_opt(int argc, char*argv[]) {
             usage();
         }
     }
-    puts(user_input);
+    //puts(user_input);
 }
 
 int main(int argc, char**argv) {
     user_input = "nothing";
     read_opt(argc, argv);
 
-    token_vec = new_vector();
+    pptoken_vec = new_vector();
 
     cpp_tokenize(user_input);
-    tokens             = (Token**)token_vec->data;
-    token_pos          = 0;
+    pptokens             = (PPToken**)pptoken_vec->data;
+    pptoken_pos          = 0;
 
     preprocessing_file();
 }

@@ -40,7 +40,6 @@ const char *get_PPTKtype_str(PPTKtype type) {
     ENUM2STR(PPTK_STRING);
     ENUM2STR(PPTK_IDENT);
     ENUM2STR(PPTK_SPACE);
-    ENUM2STR(PPTK_TAB);
     ENUM2STR(PPTK_NEWLINE);
     ENUM2STR(PPTK_IF);
     ENUM2STR(PPTK_IFDEF);
@@ -54,6 +53,7 @@ const char *get_PPTKtype_str(PPTKtype type) {
     ENUM2STR(PPTK_ERROR);
     ENUM2STR(PPTK_PRAGMA);
     ENUM2STR(PPTK_PPTOKEN);
+    ENUM2STR(PPTK_EOF);
     default: return "PPTK_???";
     }
 }
@@ -61,19 +61,16 @@ static PPToken *new_token(PPTKtype type, char *input) {
     PPToken *token = calloc(1, sizeof(PPToken));
     token->type = type;
     token->input = input;
-    vec_push(token_vec, token);
+    vec_push(pptoken_vec, token);
     return token;
 }
 
-void dump_tokens() {
-    int size = lst_len(token_vec);
+static void dump_tokens() {
+    int size = lst_len(pptoken_vec);
     for (int i=0; i<size; i++) {
-        PPToken *token = lst_data(token_vec, i);
+        PPToken *token = lst_data(pptoken_vec, i);
         printf("[%02d] type=%-13s, len=%2d, ", i, get_PPTKtype_str(token->type), token->len);
         switch (token->type) {
-        case PPTK_TAB:
-            printf("input=\"\\t\"\n");
-            break;
         case PPTK_NEWLINE:
             printf("input=\"\\n\"\n");
             break;
@@ -87,14 +84,9 @@ void dump_tokens() {
 void cpp_tokenize(char *p) {
     PPToken *token;
     while (*p) {
-        if (*p == ' ') {
+        if (*p == ' ' || *p == '\t') {
             token = new_token(PPTK_SPACE, p);
-            while (*p==' ') p++;
-            token->len = p - token->input;
-            continue;
-        } else if (*p == '\t') {
-            token = new_token(PPTK_TAB, p);
-            while (*p=='\t') p++;
+            while (*p==' ' || *p == '\t') p++;
             token->len = p - token->input;
             continue;
         } else if (*p == '\n') {
@@ -176,13 +168,6 @@ void cpp_tokenize(char *p) {
         }
         NEXT_LOOP:;
     }
-    //dump_tokens();
-}
-
-//次のトークンが期待したものかどうかをチェックし、
-//期待したものの場合だけ入力を1トークン読み進めて真を返す
-int cpp_consume(PPTKtype type) {
-    if (tokens[token_pos]->type != type) return 0;
-    token_pos++;
-    return 1;
+    token = new_token(PPTK_EOF, p);
+    if (g_dump_token) dump_tokens();
 }

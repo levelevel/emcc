@@ -27,6 +27,12 @@ typedef struct {
 #define lst_data vec_data
 #define get_lst_node(vec,i) ((Node*)vec_data(vec,i))
 
+typedef struct {
+    int *data;
+    int capacity;
+    int len;
+} iVector;
+
 //マップ --------------------------------------------
 typedef struct {
     Vector *keys;
@@ -36,6 +42,7 @@ typedef struct {
 #define map_data(map,i) vec_data((map)->vals,i)
 
 typedef Vector Stack;
+typedef iVector iStack;
 
 void error_at(const char*loc, const char*fmt, ...);
 void warning_at(const char*loc, const char*fmt, ...);
@@ -66,3 +73,34 @@ EXTERN int warning_cnt;
 EXTERN int note_cnt;
 #define SET_ERROR_WITH_NOTE  {note_ctrl = error_ctrl; error_ctrl = ERC_CONTINUE;}
 
+// util.c
+Vector *new_vector(void);
+void vec_push(Vector *vec, void *elem);
+void *vec_get(Vector *vec, int idx);
+void vec_copy(Vector *dst, Vector *src);
+
+iVector *new_ivector(void);
+void ivec_push(iVector *vec, int elem);
+
+Map *new_map(void);
+void map_put(Map *map, const char *key, void *val);
+int  map_get(const Map *map, const char *key, void**val);
+
+Stack *new_stack(void);
+int   stack_push(Stack *stack, void*elem);
+void *stack_pop(Stack *stack);
+void *stack_get(Stack *stack, int idx);
+#define stack_top(stack) stack_get(stack,stack->len-1)
+#define stack_len  vec_len
+#define stack_data vec_data
+
+iStack *new_istack(void);
+int istack_push(iStack *stack, int elem);
+int istack_pop(iStack *stack);
+int istack_get(iStack *stack, int idx);
+
+int is_alnum(char c);
+int is_alpha(char c);
+int is_hex(char c);
+
+char *read_file(const char *path);

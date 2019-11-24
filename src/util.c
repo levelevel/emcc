@@ -28,6 +28,22 @@ void vec_copy(Vector *dst, Vector *src) {
     }
 }
 
+iVector *new_ivector(void) {
+    iVector *vec = calloc(1, sizeof(iVector));
+    vec->data = malloc(sizeof(int)*16);
+    vec->capacity = 16;
+    vec->len = 0;
+    return vec;
+}
+
+void ivec_push(iVector *vec, int elem) {
+    if (vec->capacity == vec->len) {
+        vec->capacity *= 2;
+        vec->data = realloc(vec->data, sizeof(int) * vec->capacity);
+    }
+    vec->data[vec->len++] = elem;
+}
+
 //マップ --------------------------------------------
 Map *new_map(void) {
     Map *map = malloc(sizeof(Map));
@@ -52,7 +68,7 @@ int map_get(const Map *map, const char *key, void**val) {
     return 0;
 }
 
-//スタック -------------------------------------------
+//スタック（ポインタ） -------------------------------------------
 Stack *new_stack(void) {
     return (Stack*)new_vector();
 }
@@ -73,6 +89,30 @@ void *stack_pop(Stack *stack) {
 
 //スタックのidx番目の要素を取り出す。スタックは変化しない。
 void *stack_get(Stack *stack, int idx) {
+    assert(idx < stack->len && idx >= 0);
+    return stack->data[idx];
+}
+
+//スタック（int） -------------------------------------------
+iStack *new_istack(void) {
+    return (iStack*)new_ivector();
+}
+
+//スタックトップにpushする。
+int istack_push(iStack *stack, int elem) {
+    ivec_push(stack, elem);
+    return stack->len;
+}
+
+//スタックトップをpopする。
+int istack_pop(iStack *stack) {
+    assert(stack->len>0);
+    stack->len--;
+    return stack->data[stack->len];
+}
+
+//スタックのidx番目の要素を取り出す。スタックは変化しない。
+int istack_get(iStack *stack, int idx) {
     assert(idx < stack->len && idx >= 0);
     return stack->data[idx];
 }

@@ -29,7 +29,7 @@ tester:  $(TARGET)
 	./test.sh -e
 
 testcpp: $(CPPEXE)
-	./$(CPPEXE) test_src/test_emcpp.c
+	./$(CPPEXE) test_src/test_emcpp.c | cat -n
 
 clean:
 	rm -f  $(TARGET) $(CPPEXE) $(OBJS) $(CPPOBJS) *~ tmp/*

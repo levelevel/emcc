@@ -1,11 +1,24 @@
-//test_emcpp.c
-
-#define MAC1
-#define MAC2 mac2
-"MAC2"=MAC2
-#ifdef MAC1
-int main (void) {
-    int a=123, b=456;
-    return (a+b);
-}
+#if 1
+    Active
+    #if 0
+        NOT ACTIVE
+    #else
+        ACTIVE
+    #endif
+# else
+    NOT Active
+    #if 1
+        NOT Sctive
+    #endif
 #endif
+#if 0
+    xxx
+#elif 1
+    Active
+#endif
+//コメント1
+/* コメント2 */
+int main(){
+    	int a;
+    return a+1;
+}

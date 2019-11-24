@@ -1,4 +1,4 @@
-# 9cc : 自作Cコンパイラの作成
+# emcc : 自作Cコンパイラの作成
 
 参考サイト：[低レイヤを知りたい人のためのCコンパイラ作成入門](https://www.sigbus.info/compilerbook/)
 
