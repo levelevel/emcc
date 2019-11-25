@@ -124,7 +124,7 @@ static char*get_ident(const char*ptop) {
         len++;
     }
     char *name = malloc(len+1);
-    strncpy(name, ptop, len);
+    memcpy(name, ptop, len);
     name[len] = 0;
     return name;
 }

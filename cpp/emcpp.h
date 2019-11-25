@@ -19,13 +19,16 @@ typedef enum {
     PPTK_ERROR,     //#error
     PPTK_PRAGMA,    //#pragma
     PPTK_PPTOKEN,
+    PPTK_DEFARG,    //defineの引数に置換される要素
     PPTK_EOF,       //入力の終わり
 } PPTKtype;
 
 typedef struct {
-    PPTKtype type;  //トークンの型
-    int len;        //トークンの長さ
-    const char *input;    //トークン文字列（エラーメッセージ用）
+    PPTKtype type;      //トークンの型
+    char *ident;        //
+    int len;            //トークンの長さ
+    long val;           //PPTK_NUMの場合の値、PPTK_DEFARGの場合の引数のindex
+    const char *input;  //トークン文字列（エラーメッセージ用）
 } PPToken;
 
 void preprocessing_file(void);
@@ -33,7 +36,14 @@ void cpp_tokenize(char *p);
 
 EXTERN Vector *pptoken_vec;
 EXTERN PPToken **pptokens;  //token_vec->data;
-EXTERN int pptoken_pos;   //tokensの現在位置
+EXTERN int pptoken_pos;     //tokensの現在位置
+
+typedef struct {
+    char *name;
+    Map *args;      //識別子のマップ。値は無し。
+    Vector *body;   //PPTokenのリスト
+} Define;
+EXTERN Map *define_map;
 
 //デバッグオプション
 EXTERN int g_dump_token;

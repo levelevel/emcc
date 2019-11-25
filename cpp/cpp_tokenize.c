@@ -65,6 +65,20 @@ static PPToken *new_token(PPTKtype type, char *input) {
     return token;
 }
 
+//識別子の文字列を返す。
+static char*get_ident(const char*ptop) {
+    const char *p = ptop+1;
+    int len = 1;
+    while (is_alnum(*p)) {
+        p++;
+        len++;
+    }
+    char *name = malloc(len+1);
+    memcpy(name, ptop, len);
+    name[len] = 0;
+    return name;
+}
+
 static void dump_tokens() {
     int size = lst_len(pptoken_vec);
     for (int i=0; i<size; i++) {
@@ -75,7 +89,8 @@ static void dump_tokens() {
             printf("input=\"\\n\"\n");
             break;
         default:
-            printf("input=\"%.*s\"\n", token->len, token->input);
+            if (token->ident) printf("name=\"%s\"\n", token->ident);
+            else              printf("input=\"%.*s\"\n", token->len, token->input);
             break;
         }
     }
@@ -137,6 +152,7 @@ void cpp_tokenize(char *p) {
             p++;
             while (is_alnum(*p)) p++;
             token->len = p - token->input;
+            token->ident = get_ident(token->input);
         } else if (isdigit(*p)) {   //数値
             token = new_token(PPTK_NUM, p);
             if (strncmp(p, "0x", 2)==0 || strncmp(p, "0X", 2)==0) {

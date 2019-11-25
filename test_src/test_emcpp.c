@@ -1,9 +1,10 @@
+#define XXX
 #if 1
     Active
-    #if 0
-        NOT ACTIVE
-    #else
+    #ifdef XXX
         ACTIVE
+    #else
+        NOT ACTIVE
     #endif
 # else
     NOT Active

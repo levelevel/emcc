@@ -14,6 +14,16 @@
     elif_group          = "#" "elif" constant_expression new_line group_part*
     else_group          = "#" "else" new_line group_part*
     endif_line          = "#" "endif" new_line
+    control_line        = "#" "include" pp_tokens new_line
+                        | "#" "define" identifier replacement_list new-_ine
+                        | "#" "define" identifier lparen identifier_list? ")" replacement_list new_line
+                        | "#" "define" identifier lparen "..." ")" replacement_list new_line
+                        | "#" "define" identifier lparen identifier_list "," "..." ")" replacement_list new_line
+                        | "#" "undef" identifier new_line
+                        | "#" "line" pp_tokens new_line
+                        | "#" "error" pp_tokens? new_line
+                        | "#" "pragma" pp_tokens? new_line
+                        | "#" new_line
     pp_token            = 
 */
 
@@ -26,17 +36,17 @@ typedef enum {  // if状態を示す
 
 static PPIFstate cur_ppif_stat;     //現在のif状態
 static iStack *ppif_stat_stack;     //PPITstate
-#define is_active() (cur_ppif_stat==PPIF_NULL||cur_ppif_stat==PPIF_TRUE)
+#define if_is_active() (cur_ppif_stat==PPIF_NULL||cur_ppif_stat==PPIF_TRUE)
 
 //トークンを次の改行まで進めながら出力する
 static void print_line(void) {
     PPToken **token = &pptokens[pptoken_pos];
     for (;(*token)->type != PPTK_EOF; token++) {
-        if (is_active()) fprintf(g_fp, "%.*s", (*token)->len, (*token)->input);
+        if (if_is_active()) fprintf(g_fp, "%.*s", (*token)->len, (*token)->input);
         pptoken_pos++;
         if ((*token)->type == PPTK_NEWLINE) break;
     }
-    if (!is_active()) fprintf(g_fp, "\n");
+    if (!if_is_active()) fprintf(g_fp, "\n");
 }
 
 //トークン上のスペースをスキップする
@@ -68,26 +78,40 @@ int ppconsume_num(long *valp) {
     return 1;
 }
 
-static PPTKtype consume_directive(void) {
+//次のトークンが識別子(TK_IDENT)かどうかをチェックし、
+//その場合はnameを取得し、入力を1トークン読み進めて真を返す
+int ppconsume_ident(char **name) {
+    skip_space();
+    if (pptokens[pptoken_pos]->type != PPTK_IDENT) return 0;
+    *name = pptokens[pptoken_pos]->ident;
+    pptoken_pos++;
+    return 1;
+}
+
+static PPToken *consume_directive(void) {
     int save_pptoken_pos = pptoken_pos;
     skip_space();
     if (ppconsume('#')) {
         skip_space();
-        PPTKtype type = pptokens[pptoken_pos]->type;
-        if (type>=PPTK_IF && type<=PPTK_PRAGMA) {
+        PPToken *token = pptokens[pptoken_pos];
+        if (token->type>=PPTK_IF && token->type<=PPTK_PRAGMA) {
             pptoken_pos++;
-            return type;
+            return token;
         }
     }
     pptoken_pos = save_pptoken_pos;
-    return 0;
+    return NULL;
 }
-static PPTKtype next_is_directive(void) {
-    PPTKtype type;
+static PPToken *next_is_directive(void) {
+    PPToken *token;
     int save_pptoken_pos = pptoken_pos;
-    type = consume_directive();
+    token = consume_directive();
     pptoken_pos = save_pptoken_pos;
-    return type;
+    return token;
+}
+
+static void check_ifblock(void) {
+    if (ppif_stat_stack->len<2) error_at(input_str(), "対応する#ifがありません");
 }
 
 static int group_parts(void);
@@ -96,6 +120,7 @@ static int if_group(PPTKtype type);
 static int elif_group(void);
 static int else_group(void);
 static int endif_group(void);
+static int control_line(PPTKtype type);
 static int constant_expression(long *valp);
 
 void preprocessing_file(void) {
@@ -107,11 +132,19 @@ void preprocessing_file(void) {
     }
 }
 
+/*
+    group_part          = if_section
+                        | control_line
+                        | text_line
+                        | "#" non_directive
+ */
 static int group_parts(void) {
     while (!ppconsume(PPTK_EOF)) {
-        PPTKtype type = next_is_directive();
-        if (type!=0) {
-            if (!if_section(type)) return 0;
+        PPToken *next_token = next_is_directive();
+        if (next_token) {
+            if (if_section(next_token->type)) continue;
+            if (control_line(next_token->type)) continue;
+            return 0;
         } else {
             print_line();
         }
@@ -142,30 +175,42 @@ static int if_section(PPTKtype type) {
                         = "#" "ifndef" identifier new_line group_part*
 */
 static int if_group(PPTKtype type) {
-    long val = 0;
+    char *name;
+    int is_true;
     switch (type) {
     case PPTK_IF:
         consume_directive();
+        long val;
         if (!constant_expression(&val)) error_at(input_str(), "定数式が必要です");
-        if (is_active()) cur_ppif_stat = val?PPIF_TRUE:PPIF_FALSE;
-        else             cur_ppif_stat = PPIF_SKIP;
-        istack_push(ppif_stat_stack, cur_ppif_stat);
+        is_true = val;
         break;
     case PPTK_IFDEF:
+        consume_directive();
+        if (!ppconsume_ident(&name)) error_at(input_str(), "識別子が必要です");
+        is_true = map_get(define_map, name, NULL);
         break;
     case PPTK_IFNDEF:
+        consume_directive();
+        if (!ppconsume_ident(&name)) error_at(input_str(), "識別子が必要です");
+        is_true = !map_get(define_map, name, NULL);
+        break;
         break;
     default:
         return 0;
     }
+
+    if (if_is_active()) cur_ppif_stat = is_true?PPIF_TRUE:PPIF_FALSE;
+    else             cur_ppif_stat = PPIF_SKIP;
+    istack_push(ppif_stat_stack, cur_ppif_stat);
     skip_line();
     group_parts();
     return 1;
 }
 //    else_group          = "#" "else" new_line group_part*
 static int elif_group(void) {
-    PPTKtype type = next_is_directive();
-    if (type != PPTK_ELIF) return 0;
+    PPToken *token = next_is_directive();
+    if (token->type != PPTK_ELIF) return 0;
+    check_ifblock();
     if (cur_ppif_stat==PPIF_TRUE) {
         cur_ppif_stat = PPIF_SKIP;
     } else if (cur_ppif_stat==PPIF_FALSE) {
@@ -182,8 +227,9 @@ static int elif_group(void) {
 }
 //    else_group          = "#" "else" new_line group_part*
 static int else_group(void) {
-    PPTKtype type = next_is_directive();
-    if (type != PPTK_ELSE) return 0;
+    PPToken *token = next_is_directive();
+    if (token->type != PPTK_ELSE) return 0;
+    check_ifblock();
     if (cur_ppif_stat==PPIF_TRUE) {
         cur_ppif_stat = PPIF_SKIP;
     } else if (cur_ppif_stat==PPIF_FALSE) {
@@ -197,11 +243,26 @@ static int else_group(void) {
 }
 //    endif_line          = "#" "endif" new_line
 static int endif_group(void) {
-    PPTKtype type = consume_directive();
-    if (type!=PPTK_ENDIF) return 0;
+    PPToken *token = consume_directive();
+    if (token->type!=PPTK_ENDIF) return 0;
+    check_ifblock();
     skip_line();
     istack_pop(ppif_stat_stack);
     cur_ppif_stat = istack_get(ppif_stat_stack, ppif_stat_stack->len-1);
+    return 1;
+}
+
+static int control_line(PPTKtype type) {
+    if (type==PPTK_DEFINE) {
+        char *name;
+        consume_directive();
+        if (!ppconsume_ident(&name)) error_at(input_str(), "識別子が必要です");
+        map_put(define_map, name, NULL);
+    } else {
+        return 0;
+    }
+
+    skip_line();
     return 1;
 }
 

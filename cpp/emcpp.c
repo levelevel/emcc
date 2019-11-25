@@ -21,7 +21,7 @@ static void read_opt(int argc, char*argv[]) {
     g_fp = stdout;
 
     for (; argc>1;  argc--, argv++) {
-        if (strcmp(argv[0], "-dt")==0) {
+        if (strcmp(argv[1], "-dt")==0) {
             g_dump_token = 1;
         } else if (argc==2) {
             filename = argv[1];
@@ -39,6 +39,7 @@ int main(int argc, char**argv) {
     read_opt(argc, argv);
 
     pptoken_vec = new_vector();
+    define_map = new_map();
 
     cpp_tokenize(user_input);
     pptokens             = (PPToken**)pptoken_vec->data;
