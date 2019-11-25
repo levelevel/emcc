@@ -73,7 +73,7 @@ static int ppconsume(PPTKtype type) {
 //その場合は数値を取得し、入力を1トークン読み進めて真を返す
 int ppconsume_num(long *valp) {
     if (pptokens[pptoken_pos]->type != PPTK_NUM) return 0;
-    *valp = strtol(pptokens[pptoken_pos]->input, NULL, 10);
+    *valp = pptokens[pptoken_pos]->val;
     pptoken_pos++;
     return 1;
 }

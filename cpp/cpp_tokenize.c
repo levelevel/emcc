@@ -89,6 +89,7 @@ static void dump_tokens() {
             printf("input=\"\\n\"\n");
             break;
         default:
+            if (token->val) printf("val=%ld, ", token->val);
             if (token->ident) printf("name=\"%s\"\n", token->ident);
             else              printf("input=\"%.*s\"\n", token->len, token->input);
             break;
@@ -155,12 +156,31 @@ void cpp_tokenize(char *p) {
             token->ident = get_ident(token->input);
         } else if (isdigit(*p)) {   //数値
             token = new_token(PPTK_NUM, p);
+            char *p0 = p;
+            char *suffix;
+            int is_U = 0, is_L = 0;
             if (strncmp(p, "0x", 2)==0 || strncmp(p, "0X", 2)==0) {
-                p += 2;
-                while (is_hex(*p)) p++;
+                token->val = strtoul(p, &p, 0);    //16進
             } else {
-                p++;
-                while (isdigit(*p)) p++;
+                token->val = strtol(p, &p, 0);     //10進、8進
+            }
+            suffix = p;
+            for (;;) {
+                if (*p=='u' || *p=='U') {
+                    if (is_U) error_at(suffix, "不正な整数サフィックスです");
+                    token->val = strtoul(p0, NULL, 0);  //unsignedで読み直す
+                    p++; is_U = 1; continue;
+                } else if (strncmp(p, "ll", 2)==0 || strncmp(p, "LL", 2)==0) {     //LLは無視
+                    if (is_L) error_at(suffix, "不正な整数サフィックスです");
+                    p += 2; is_L = 1; continue;
+                } else if (*p=='l' || *p=='L') {        //Lは無視
+                    if (is_L) error_at(suffix, "不正な整数サフィックスです");
+                    p++; is_L = 1; continue;
+                } else if (is_alnum(*p)) {
+                    if (*suffix=='8' || *suffix=='9') error_at(p0, "不正な8進表記です");
+                    error_at(suffix, "不正な整数サフィックスです");
+                }
+                break;
             }
             token->len = p - token->input;
         } else if (*p == '"') {     //文字列

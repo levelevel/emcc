@@ -1,5 +1,5 @@
 #define XXX
-#if 1
+#if 0x001
     Active
     #ifdef XXX
         ACTIVE

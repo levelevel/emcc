@@ -9,6 +9,7 @@ char *cpp(const char *fname) {
 
 static void usage(void) {
     fprintf(stderr,"Usage: emcpp [option] file\n");
+    fprintf(stderr,"  -dt: dump tokens\n");
     exit(1);
 }
 
