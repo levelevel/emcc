@@ -24,9 +24,11 @@ typedef enum {
 } PPTKtype;
 
 typedef struct {
+    char *name;         //マクロ名
     Map *args;          //引数のマップ
     int para_start,     //マクロの本体：pptokensの開始インデックスと長さ
         para_len;       //
+    char in_use;        //多重展開防止フラグ
 } PPMacro;
 
 typedef struct {
@@ -40,16 +42,12 @@ typedef struct {
 
 void preprocessing_file(void);
 void cpp_tokenize(char *p);
+PPMacro *new_macro(const char*name);
 
 EXTERN Vector *pptoken_vec;
 EXTERN PPToken **pptokens;  //token_vec->data;
 EXTERN int pptoken_pos;     //tokensの現在位置
 
-typedef struct {
-    char *name;
-    Map *args;      //識別子のマップ。値は無し。
-    Vector *body;   //PPTokenのリスト
-} Define;
 EXTERN Map *define_map;
 
 //デバッグオプション

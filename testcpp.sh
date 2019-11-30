@@ -9,6 +9,7 @@ rm -f $TESTDIR/*
 awk \
 -e '
 function run_test() {
+  #system("cpp " f_in " | grep -v ^# > " f_outgcc);
   system("./emcpp " f_in " > " f_out);
   ret = system("diff -c " f_out " " f_expect " > " f_diff);
   if (ret) {
@@ -33,6 +34,7 @@ BEGIN {
     f_in     = base ".c";
     f_expect = base ".expect";
     f_out    = base ".out";
+    f_outgcc = base ".out.gcc";
     f_diff   = base ".diff";
     fname = f_in;
     #print fname;
@@ -51,10 +53,16 @@ END {
     print "OK:" ok_cnt;
     print "NG:" ng_cnt;
   }' << EOF
+@in comment1 ===================
+1;  //comment1
+a;  /*comment2*/
+@expect
+1;  //comment1
+a;  /*comment2*/
 @in if1else ===================
-#if 1
+#if 1   //comment
   TRUE
-#else
+#else   //comment
   FALSE
 #endif
 @expect
@@ -217,6 +225,44 @@ END {
   TRUE
 
 
+@in define_noarg_1 ===================
+#if ONE
+  FALSE
+#else
+  TRUE
+#endif
+@expect
+
+
+
+  TRUE
+
+@in define_noarg_2 ===================
+#define ONE 1 //comment
+  ONE
+@expect
+
+  1
+@in define_noarg_3 ===================
+#define ABC (A B  C) //comment
+  { ABC, ABC }
+@expect
+
+  { (A B  C), (A B  C) }
+@in define_noarg_4 ===================
+#define AB a+B
+#define B b
+  AB
+@expect
+
+
+  a+b
+@in define_noarg_5 ===================
+#define A A B
+  A /*- A -*/ A
+@expect
+
+  A B /*- A -*/ A B
 @ =========================
 EOF
 

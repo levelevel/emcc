@@ -99,6 +99,7 @@ static void dump_tokens() {
 
 void cpp_tokenize(char *p) {
     PPToken *token;
+    int in_define = 0;
     while (*p) {
         if (*p == ' ' || *p == '\t') {
             token = new_token(PPTK_SPACE, p);
@@ -109,6 +110,7 @@ void cpp_tokenize(char *p) {
             token = new_token(PPTK_NEWLINE, p);
             p++;
             token->len = 1;
+            in_define = 0;
             continue;
         } else if (*p == '\r') {
             if (*(p+1) != '\n') {
@@ -116,11 +118,17 @@ void cpp_tokenize(char *p) {
                 token->len = 1;
             }
             p++;
+            in_define = 0;
             continue;
         } else if (strncmp(p, "//", 2)==0) {
             token = new_token(PPTK_PPTOKEN, p);
             while (*p && *p!='\n') p++;
             token->len = p - token->input;
+            if (in_define) {
+                token->type = PPTK_SPACE;
+                token->len = 1;
+                token->input = " ";
+            }
             continue;
         } else if (strncmp(p, "/*", 2)==0) {
             token = new_token(PPTK_PPTOKEN, p);
@@ -128,6 +136,11 @@ void cpp_tokenize(char *p) {
             if (!q) error_at(p, "コメントが閉じられていません");
             p = q + 2;
             token->len = p - token->input;
+            if (in_define) {
+                token->type = PPTK_SPACE;
+                token->len = 1;
+                token->input = " ";
+            }
             continue;
         }
 
@@ -144,6 +157,7 @@ void cpp_tokenize(char *p) {
                 token = new_token(tk->type, p);
                 p += tk->len;
                 token->len = tk->len;
+                if (token->type == PPTK_DEFINE) in_define = 1;
                 goto NEXT_LOOP;
             }
         }
