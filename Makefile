@@ -23,13 +23,15 @@ $(CPPEXE): $(CPPOBJS)
 
 $(CPPOBJS): $(CPPHEADS)
 
+testall: test testcpp
+
 test: $(TARGET) 
 	./test.sh
 tester:  $(TARGET)
 	./test.sh -e
 
 testcpp: $(CPPEXE)
-	./$(CPPEXE) test_src/test_emcpp.c | cat -n
+	./testcpp.sh
 
 clean:
 	rm -f  $(TARGET) $(CPPEXE) $(OBJS) $(CPPOBJS) *~ tmp/*

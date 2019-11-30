@@ -41,6 +41,7 @@ int main(int argc, char**argv) {
 
     pptoken_vec = new_vector();
     define_map = new_map();
+    map_put(define_map, "_emcpp", NULL);
 
     cpp_tokenize(user_input);
     pptokens             = (PPToken**)pptoken_vec->data;

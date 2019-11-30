@@ -89,7 +89,7 @@ static void dump_tokens() {
             printf("input=\"\\n\"\n");
             break;
         default:
-            if (token->val) printf("val=%ld, ", token->val);
+            if (token->type==PPTK_NUM) printf("val=%ld, ", token->val);
             if (token->ident) printf("name=\"%s\"\n", token->ident);
             else              printf("input=\"%.*s\"\n", token->len, token->input);
             break;

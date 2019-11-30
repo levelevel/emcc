@@ -22,6 +22,14 @@ void *vec_get(Vector *vec, int idx) {
     return vec->data[idx];
 }
 
+void *vec_del(Vector *vec, int idx) {
+    assert(idx < vec->len);
+    void *ret = vec->data[idx];
+    memcpy(vec->data + idx, vec->data + idx + 1, sizeof(void*)*(vec->len - idx - 1));
+    vec->len--;
+    return ret;
+}
+
 void vec_copy(Vector *dst, Vector *src) {
     for (int i=0; i<vec_len(src); i++) {
         vec_push(dst, vec_data(src, i));
@@ -65,6 +73,19 @@ int map_get(const Map *map, const char *key, void**val) {
         }
     }
     if (val) *val = NULL;
+    return 0;
+}
+
+//マップから要素を削除する。
+//要素が存在しない場合は0を返す。
+int map_del(Map *map, const char *key) {
+    for (int i=map->keys->len-1; i>=0; i--) {
+        if (strcmp(map->keys->data[i], key)==0) {
+            vec_del(map->keys, i);
+            vec_del(map->vals, i);
+            return 1;
+        }
+    }
     return 0;
 }
 

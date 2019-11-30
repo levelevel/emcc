@@ -24,10 +24,17 @@ typedef enum {
 } PPTKtype;
 
 typedef struct {
+    Map *args;          //引数のマップ
+    int para_start,     //マクロの本体：pptokensの開始インデックスと長さ
+        para_len;       //
+} PPMacro;
+
+typedef struct {
     PPTKtype type;      //トークンの型
-    char *ident;        //
+    char *ident;        //PPTK_IDENTの場合の識別子
     int len;            //トークンの長さ
     long val;           //PPTK_NUMの場合の値、PPTK_DEFARGの場合の引数のindex
+    PPMacro *macro;     //PPTK_DEFINEの場合のマクロ定義
     const char *input;  //トークン文字列（エラーメッセージ用）
 } PPToken;
 

@@ -252,12 +252,29 @@ static int endif_group(void) {
     return 1;
 }
 
+/*
+    control_line        = "#" "include" pp_tokens new_line
+                        | "#" "define" identifier replacement_list new-_ine
+                        | "#" "define" identifier lparen identifier_list? ")" replacement_list new_line
+                        | "#" "define" identifier lparen "..." ")" replacement_list new_line
+                        | "#" "define" identifier lparen identifier_list "," "..." ")" replacement_list new_line
+                        | "#" "undef" identifier new_line
+                        | "#" "line" pp_tokens new_line
+                        | "#" "error" pp_tokens? new_line
+                        | "#" "pragma" pp_tokens? new_line
+                        | "#" new_line
+ */
 static int control_line(PPTKtype type) {
     if (type==PPTK_DEFINE) {
         char *name;
         consume_directive();
         if (!ppconsume_ident(&name)) error_at(input_str(), "識別子が必要です");
         map_put(define_map, name, NULL);
+    } else if (type==PPTK_UNDEF) {
+        char *name;
+        consume_directive();
+        if (!ppconsume_ident(&name)) error_at(input_str(), "識別子が必要です");
+        map_del(define_map, name);
     } else {
         return 0;
     }

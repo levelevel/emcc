@@ -77,6 +77,7 @@ EXTERN int note_cnt;
 Vector *new_vector(void);
 void vec_push(Vector *vec, void *elem);
 void *vec_get(Vector *vec, int idx);
+void *vec_del(Vector *vec, int idx);
 void vec_copy(Vector *dst, Vector *src);
 
 iVector *new_ivector(void);
@@ -84,7 +85,8 @@ void ivec_push(iVector *vec, int elem);
 
 Map *new_map(void);
 void map_put(Map *map, const char *key, void *val);
-int  map_get(const Map *map, const char *key, void**val);
+int map_get(const Map *map, const char *key, void**val);
+int map_del(Map *map, const char *key);
 
 Stack *new_stack(void);
 int   stack_push(Stack *stack, void*elem);
