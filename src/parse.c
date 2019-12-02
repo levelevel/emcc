@@ -988,9 +988,17 @@ static void refresh_typedef(Node *struc) {
     for (int i=0; i<size; i++) {
         Node *typdef = nodes[i];
         if (typdef->type!=ND_TYPEDEF) continue;
-        if (!node_is_noname(struc) && strcmp(struc->name, typdef->tp->node->name)==0) {
-            assert(struc->tp->type==typdef->tp->type);
-            typdef->tp->node = struc;
+        switch (typdef->tp->type) {
+        case ENUM:
+        case STRUCT:
+        case UNION:
+            if (!node_is_noname(struc) && strcmp(struc->name, typdef->tp->node->name)==0) {
+                assert(struc->tp->type==typdef->tp->type);
+                typdef->tp->node = struc;
+            }
+            break;
+        default:
+            break;
         }
     }
 }

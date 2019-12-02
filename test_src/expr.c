@@ -2421,6 +2421,11 @@ static int StructEtc(void) {
         struct Self *self;
         struct NameOnly *p;
     };
+
+    typedef int INT;
+    struct ST1{
+        INT a;
+    };
     return 1;
 }
 static int Struct(void) {
