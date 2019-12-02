@@ -538,7 +538,7 @@ static Node *direct_declarator(Type *tp, char *name) {
         case ENUM:
         case STRUCT:
         case UNION:
-            if (tp->node->lst==NULL && tp->tmp_sclass!=SC_TYPEDEF) {
+            if (tp->node->lst==NULL && tp->tmp_sclass!=SC_TYPEDEF && tp->tmp_sclass!=SC_EXTERN) {
                 SET_ERROR_WITH_NOTE;
                 error_at(node->input, "%sの型は不完全です", name);
                 note_at(tp->node->input, "型の宣言はここです");

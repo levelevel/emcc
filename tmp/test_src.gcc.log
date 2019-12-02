@@ -217,24 +217,24 @@ test_src/expr.c:2338:46: warning: excess elements in scalar initializer
                                               ^
 test_src/expr.c:2338:46: note: (near initialization for ‘gs2a_xyz.z’)
 test_src/expr.c: In function ‘Union2’:
-test_src/expr.c:2548:16: warning: excess elements in union initializer
+test_src/expr.c:2550:16: warning: excess elements in union initializer
      } u10 = {1,2}, u1=u10;
                 ^
-test_src/expr.c:2548:16: note: (near initialization for ‘u10’)
+test_src/expr.c:2550:16: note: (near initialization for ‘u10’)
 test_src/expr.c: In function ‘Union2Arrow’:
-test_src/expr.c:2566:16: warning: excess elements in union initializer
+test_src/expr.c:2568:16: warning: excess elements in union initializer
      } u10 = {1,2}, u1, *u1p=&u1;
                 ^
-test_src/expr.c:2566:16: note: (near initialization for ‘u10’)
+test_src/expr.c:2568:16: note: (near initialization for ‘u10’)
 test_src/expr.c: In function ‘func_const2’:
-test_src/expr.c:2742:12: warning: return discards ‘const’ qualifier from pointer target type [-Wdiscarded-qualifiers]
+test_src/expr.c:2744:12: warning: return discards ‘const’ qualifier from pointer target type [-Wdiscarded-qualifiers]
      return str; //warning: return discards 'const' qualifier from pointer target type [-Wdiscarded-qualifiers]
             ^~~
 test_src/expr.c: In function ‘Const’:
-test_src/expr.c:2751:17: warning: passing argument 1 of ‘func_const3’ discards ‘const’ qualifier from pointer target type [-Wdiscarded-qualifiers]
+test_src/expr.c:2753:17: warning: passing argument 1 of ‘func_const3’ discards ‘const’ qualifier from pointer target type [-Wdiscarded-qualifiers]
      func_const3(p1);    //warning
                  ^~
-test_src/expr.c:2744:14: note: expected ‘char *’ but argument is of type ‘const char *’
+test_src/expr.c:2746:14: note: expected ‘char *’ but argument is of type ‘const char *’
  static char *func_const3(char*str){return str;}
               ^~~~~~~~~~~
   OK: logical1

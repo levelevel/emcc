@@ -2426,6 +2426,8 @@ static int StructEtc(void) {
     struct ST1{
         INT a;
     };
+
+    extern struct UnKnown a;
     return 1;
 }
 static int Struct(void) {
