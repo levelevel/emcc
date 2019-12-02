@@ -15,6 +15,9 @@ long size_of(const Type *tp) {
     case INT:      return sizeof(int);
     case LONG:     return sizeof(long);
     case LONGLONG: return sizeof(long long);
+    case FLOAT:    return sizeof(float);
+    case DOUBLE:   return sizeof(double);
+    case LONGDOUBLE:return sizeof(long double);
     case ENUM:     return sizeof(int);
     case STRUCT:
     case UNION:    return tp->node->val;

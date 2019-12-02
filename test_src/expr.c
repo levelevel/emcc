@@ -10,6 +10,9 @@
 #define __builtin_va_copy(d, s) (0)
 #define __builtin_offsetof(type, member) (0)
 #define __alignof__(type) (0)
+#define __attribute__(a)
+#define __asm__(a)
+#define __extension__
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -20,6 +23,8 @@
 #define stderr (__acrt_iob_func(2))
 #define size_t long
 #define NULL 0
+#define va_start __va_start
+#define va_list char*
 int printf(const char *format, ...);
 void exit(int status);
 char *strcpy(char *dest, const char *src);
@@ -443,10 +448,6 @@ static int fib(int a) {
     else return fib(a-1) + fib(a-2);
 }
 static char* stdarg(char fmt, ...) {
-#ifdef _emcc
-    #define va_start __va_start
-    #define va_list char*
-#endif
     static char buf[256];
 #if 0
     va_list ap;
@@ -1181,6 +1182,7 @@ static int align() {
     return 1;
 }
 
+#define PSIZE sizeof(void*)
 static int size_of1() {
     int n, *p, a[2*4], a2[2][3];
     typedef int INT;
@@ -1192,16 +1194,16 @@ static int size_of1() {
     INTAA2 A3A2={{00,01},{10,11},{20,21}};
     int funci(int);
     return
-        sizeof(n)==4 && sizeof(&n)==8 && sizeof(p)==8 &&
-        sizeof(a)==4*8 && sizeof(a[0])==4 &&
+        sizeof(n)==4 && sizeof(&n)==PSIZE && sizeof(p)==PSIZE &&
+        sizeof(a)==4*2*4 && sizeof(a[0])==4 &&
         sizeof(a2)==4*2*3 && sizeof(a2[0])==4*3 && sizeof(a2[0][1])==4 &&
-        sizeof(int)==4 && sizeof(int*)==8 && sizeof(int(*(*)))==8 &&
-        sizeof(INT)==4 && sizeof(UINTP)==8 && sizeof(INTA3)==4*3 && sizeof(A4)==4*4 &&
+        sizeof(int)==4 && sizeof(int*)==PSIZE && sizeof(int(*(*)))==PSIZE &&
+        sizeof(INT)==4 && sizeof(UINTP)==PSIZE && sizeof(INTA3)==4*3 && sizeof(A4)==4*4 &&
         sizeof(unsigned int)==4 && sizeof(signed int)==4 &&
-        sizeof(int[5])==4*5 && sizeof(int*[3])==8*3 &&
-        sizeof(int[5][2])==4*5*2 && sizeof(int*[3][2])==8*3*2 &&
+        sizeof(int[5])==4*5 && sizeof(int*[3])==PSIZE*3 &&
+        sizeof(int[5][2])==4*5*2 && sizeof(int*[3][2])==PSIZE*3*2 &&
         sizeof(1)==4 && sizeof(1==1)==4 && sizeof(n=1)==4 &&
-        sizeof(A3A2)==4*6 && sizeof(A3A2[1])==4*2 && sizeof(A3A2[1][1])==4 &&
+        sizeof(A3A2)==4*3*2 && sizeof(A3A2[1])==4*2 && sizeof(A3A2[1][1])==4 &&
         sizeof(funci(1))==4;
 }
 static int size_of1b() {
@@ -1214,15 +1216,15 @@ static int size_of1b() {
     BOOLAA2 A3A2={{00,01},{10,11},{20,21}};
     _Bool funcb(void);
     return
-        sizeof(n)==1 && sizeof(&n)==8 && sizeof(p)==8 &&
-        sizeof(a)==1*8 && sizeof(a[0])==1 &&
+        sizeof(n)==1 && sizeof(&n)==PSIZE && sizeof(p)==PSIZE &&
+        sizeof(a)==1*2*4 && sizeof(a[0])==1 &&
         sizeof(a2)==1*2*3 && sizeof(a2[0])==1*3 && sizeof(a2[0][1])==1 &&
-        sizeof(_Bool)==1 && sizeof(_Bool*)==8 && sizeof(_Bool(*(*)))==8 &&
+        sizeof(_Bool)==1 && sizeof(_Bool*)==PSIZE && sizeof(_Bool(*(*)))==PSIZE &&
         sizeof(BOOL)==1 && sizeof(BOOLA3)==1*3 && sizeof(A4)==1*4 &&
-        sizeof(_Bool[5])==1*5 && sizeof(_Bool*[3])==8*3 &&
-        sizeof(_Bool[5][2])==1*5*2 && sizeof(_Bool*[3][2])==8*3*2 &&
-        sizeof(1)==4 && sizeof(1==1)==4 && sizeof(n=1)==1 &&
-        sizeof(A3A2)==1*6 && sizeof(A3A2[1])==1*2 && sizeof(A3A2[1][1])==1 &&
+        sizeof(_Bool[5])==1*5 && sizeof(_Bool*[3])==PSIZE*3 &&
+        sizeof(_Bool[5][2])==1*5*2 && sizeof(_Bool*[3][2])==PSIZE*3*2 &&
+        sizeof(n=1)==1 &&
+        sizeof(A3A2)==1*3*2 && sizeof(A3A2[1])==1*2 && sizeof(A3A2[1][1])==1 &&
         sizeof(funcb())==1;
 }
 static int size_of1c() {
@@ -1236,16 +1238,16 @@ static int size_of1c() {
     CHARAA2 A3A2={{00,01},{10,11},{20,21}};
     char funcc(void);
     return
-        sizeof(n)==1 && sizeof(&n)==8 && sizeof(p)==8 &&
-        sizeof(a)==1*8 && sizeof(a[0])==1 &&
+        sizeof(n)==1 && sizeof(&n)==PSIZE && sizeof(p)==PSIZE &&
+        sizeof(a)==1*2*4 && sizeof(a[0])==1 &&
         sizeof(a2)==1*2*3 && sizeof(a2[0])==1*3 && sizeof(a2[0][1])==1 &&
-        sizeof(char)==1 && sizeof(char*)==8 && sizeof(char(*(*)))==8 &&
-        sizeof(CHAR)==1 && sizeof(UCHARP)==8 && sizeof(CHARA3)==1*3 && sizeof(A4)==1*4 &&
+        sizeof(char)==1 && sizeof(char*)==PSIZE && sizeof(char(*(*)))==PSIZE &&
+        sizeof(CHAR)==1 && sizeof(UCHARP)==PSIZE && sizeof(CHARA3)==1*3 && sizeof(A4)==1*4 &&
         sizeof(unsigned char)==1 && sizeof(signed char)==1 &&
-        sizeof(char[5])==1*5 && sizeof(char*[3])==8*3 &&
-        sizeof(char[5][2])==1*5*2 && sizeof(char*[3][2])==8*3*2 &&
-        sizeof(1)==4 && sizeof(1==1)==4 && sizeof(n=1)==1 &&
-        sizeof(A3A2)==1*6 && sizeof(A3A2[1])==1*2 && sizeof(A3A2[1][1])==1 &&
+        sizeof(char[5])==1*5 && sizeof(char*[3])==PSIZE*3 &&
+        sizeof(char[5][2])==1*5*2 && sizeof(char*[3][2])==PSIZE*3*2 &&
+        sizeof(n=1)==1 &&
+        sizeof(A3A2)==1*3*2 && sizeof(A3A2[1])==1*2 && sizeof(A3A2[1][1])==1 &&
         sizeof(funcc())==1;
 }
 static int size_of1s() {
@@ -1257,16 +1259,16 @@ static int size_of1s() {
     SHORTAA2 A3A2={{00,01},{10,11},{20,21}};
     short funcs(void);
     return
-        sizeof(n)==2 && sizeof(&n)==8 && sizeof(p)==8 &&
-        sizeof(a)==2*8 && sizeof(a[0])==2 &&
+        sizeof(n)==2 && sizeof(&n)==PSIZE && sizeof(p)==PSIZE &&
+        sizeof(a)==2*2*4 && sizeof(a[0])==2 &&
         sizeof(a2)==2*2*3 && sizeof(a2[0])==2*3 && sizeof(a2[0][1])==2 &&
-        sizeof(short)==2 && sizeof(short*)==8 && sizeof(short(*(*)))==8 &&
-        sizeof(SHORT)==2 && sizeof(USHORTP)==8 && sizeof(SHORTA3)==2*3 &&
+        sizeof(short)==2 && sizeof(short*)==PSIZE && sizeof(short(*(*)))==PSIZE &&
+        sizeof(SHORT)==2 && sizeof(USHORTP)==PSIZE && sizeof(SHORTA3)==2*3 &&
         sizeof(unsigned short)==2 && sizeof(signed short)==2 &&
-        sizeof(short[5])==2*5 && sizeof(short*[3])==8*3 &&
-        sizeof(short[5][2])==2*5*2 && sizeof(short*[3][2])==8*3*2 &&
-        sizeof(1)==4 && sizeof(1==1)==4 && sizeof(n=1)==2 &&
-        sizeof(A3A2)==2*6 && sizeof(A3A2[1])==2*2 && sizeof(A3A2[1][1])==2 &&
+        sizeof(short[5])==2*5 && sizeof(short*[3])==PSIZE*3 &&
+        sizeof(short[5][2])==2*5*2 && sizeof(short*[3][2])==PSIZE*3*2 &&
+        sizeof(n=1)==2 &&
+        sizeof(A3A2)==2*3*2 && sizeof(A3A2[1])==2*2 && sizeof(A3A2[1][1])==2 &&
         sizeof(funcs())==2;
 }
 static int size_of1l() {
@@ -1278,16 +1280,17 @@ static int size_of1l() {
     LONGAA2 A3A2={{00,01},{10,11},{20,21}};
     long funcl(void);
     return 
-        sizeof(n)==8 && sizeof(&n)==8 && sizeof(p)==8 &&
-        sizeof(a)==8*8 && sizeof(a[0])==8 &&
+        sizeof(n)==8 && sizeof(&n)==PSIZE && sizeof(p)==PSIZE &&
+        sizeof(a)==8*2*4 && sizeof(a[0])==8 &&
         sizeof(a2)==8*2*3 && sizeof(a2[0])==8*3 && sizeof(a2[0][1])==8 &&
-        sizeof(long)==8 && sizeof(long*)==8 && sizeof(long(*(*)))==8 &&
-        sizeof(LONG)==8 && sizeof(ULONGP)==8 && sizeof(LONGA3)==8*3 &&
+        sizeof(long)==8 && sizeof(long*)==PSIZE && sizeof(long(*(*)))==PSIZE &&
+        sizeof(LONG)==8 && sizeof(ULONGP)==PSIZE && sizeof(LONGA3)==8*3 &&
         sizeof(unsigned long)==8 && sizeof(signed long)==8 &&
-        sizeof(long[5])==8*5 && sizeof(long*[3])==8*3 &&
-        sizeof(long[5][2])==8*5*2 && sizeof(long*[3][2])==8*3*2 &&
-        sizeof(1)==4 && sizeof(1==1)==4 && sizeof(n=1)==8 &&
-        sizeof(A3A2)==8*6 && sizeof(A3A2[1])==8*2 && sizeof(A3A2[1][1])==8 &&
+        sizeof(long[5])==8*5 && sizeof(long*[3])==PSIZE*3 &&
+        sizeof(long[5][2])==8*5*2 && sizeof(long*[3][2])==PSIZE*3*2 &&
+        //sizeof(1L)==8 && //★
+        sizeof(1==1L)==4 && sizeof(n=1)==8 &&
+        sizeof(A3A2)==8*3*2 && sizeof(A3A2[1])==8*2 && sizeof(A3A2[1][1])==8 &&
         sizeof(funcl())==8;
 }
 static int size_of1ll() {
@@ -1295,16 +1298,20 @@ static int size_of1ll() {
     typedef long long LLONG;
     typedef unsigned long long* ULLONGP;
     typedef const LLONG LLONGA3[3];
+    typedef long long LLONGAA2[][2];
+    LLONGAA2 A3A2={{00,01},{10,11},{20,21}};
+    long long funcll(void);
     return 
-        sizeof(n)==8 && sizeof(&n)==8 && sizeof(p)==8 &&
+        sizeof(n)==8 && sizeof(&n)==PSIZE && sizeof(p)==PSIZE &&
         sizeof(a)==8*8 && sizeof(a[0])==8 &&
         sizeof(a2)==8*2*3 && sizeof(a2[0])==8*3 && sizeof(a2[0][1])==8 &&
-        sizeof(long long)==8 && sizeof(long long*)==8 &&
+        sizeof(long long)==8 && sizeof(long long*)==PSIZE &&
         sizeof(unsigned long long)==8 && sizeof(signed long long)==8 &&
-        sizeof(LLONG)==8 && sizeof(ULLONGP)==8 && sizeof(LLONGA3)==8*3 &&
-        sizeof(long long[5])==8*5 && sizeof(long long*[3])==8*3 &&
-        sizeof(long long[5][2])==8*5*2 && sizeof(long long*[3][2])==8*3*2 &&
-        sizeof(1)==4 && sizeof(1==1)==4 && sizeof(n=1)==8;
+        sizeof(LLONG)==8 && sizeof(ULLONGP)==PSIZE && sizeof(LLONGA3)==8*3 &&
+        sizeof(long long[5])==8*5 && sizeof(long long*[3])==PSIZE*3 &&
+        sizeof(long long[5][2])==8*5*2 && sizeof(long long*[3][2])==PSIZE*3*2 &&
+        sizeof(A3A2)==8*3*2 && sizeof(A3A2[1])==8*2 && sizeof(A3A2[1][1])==8 &&
+        sizeof(funcll())==8;
 }
 static int size_of1v() {
     void *p, *a[2*4], *a2[2][3];
@@ -1312,13 +1319,13 @@ static int size_of1v() {
     typedef void* VOIDP;
     typedef const VOIDP VOIDA3[3];
     return
-        sizeof(p)==8 &&
-        sizeof(a)==8*8 && sizeof(a[0])==8 &&
-        sizeof(a2)==8*2*3 && sizeof(a2[0])==8*3 && sizeof(a2[0][1])==8 &&
-        sizeof(void)==1 && sizeof(void*)==8 && sizeof(void(*(*)))==8 &&
-        sizeof(VOID)==1 && sizeof(VOIDP)==8 && sizeof(VOIDA3)==8*3 &&
-        sizeof(char*[3])==8*3 &&
-        sizeof(char*[5][2])==8*5*2 && sizeof(char*[3][2])==8*3*2;
+        sizeof(p)==PSIZE &&
+        sizeof(a)==PSIZE*2*4 && sizeof(a[0])==PSIZE &&
+        sizeof(a2)==PSIZE*2*3 && sizeof(a2[0])==PSIZE*3 && sizeof(a2[0][1])==PSIZE &&
+        sizeof(void)==1 && sizeof(void*)==PSIZE && sizeof(void(*(*)))==PSIZE &&
+        sizeof(VOID)==1 && sizeof(VOIDP)==PSIZE && sizeof(VOIDA3)==PSIZE*3 &&
+        sizeof(void*[3])==PSIZE*3 &&
+        sizeof(void*[5][2])==PSIZE*5*2 && sizeof(void*[3][2])==PSIZE*3*2;
 }
 static int size_of1C() {
     const int n, *p, a[2*4], a2[2][3];
@@ -1326,35 +1333,105 @@ static int size_of1C() {
     typedef const unsigned int* UINTP;
     typedef const INT INTA3[3];
     return
-        sizeof(n)==4 && sizeof(&n)==8 && sizeof(p)==8 &&
-        sizeof(a)==4*8 && sizeof(a[0])==4 &&
+        sizeof(n)==4 && sizeof(&n)==PSIZE && sizeof(p)==PSIZE &&
+        sizeof(a)==4*2*4 && sizeof(a[0])==4 &&
         sizeof(a2)==4*2*3 && sizeof(a2[0])==4*3 && sizeof(a2[0][1])==4 &&
-        sizeof(const int)==4 && sizeof(const int*)==8 && sizeof(const int(*(*)))==8 &&
-        sizeof(INT)==4 && sizeof(UINTP)==8 && sizeof(INTA3)==4*3 && 
+        sizeof(const int)==4 && sizeof(const int*)==PSIZE && sizeof(const int(*(*)))==PSIZE &&
+        sizeof(INT)==4 && sizeof(UINTP)==PSIZE && sizeof(INTA3)==4*3 && 
         sizeof(unsigned const int)==4 && sizeof(const signed int)==4 &&
-        sizeof(const int[5])==4*5 && sizeof(const int*[3])==8*3 &&
-        sizeof(const int[5][2])==4*5*2 && sizeof(int const*[3][2])==8*3*2;
+        sizeof(const int[5])==4*5 && sizeof(const int*[3])==PSIZE*3 &&
+        sizeof(const int[5][2])==4*5*2 && sizeof(int const*[3][2])==PSIZE*3*2;
+}
+static int size_of1f() {
+    float n, *p, a[2*4], a2[2][3];
+    typedef float FLOAT;
+    typedef const FLOAT FLOATA3[3];
+    typedef int FLOATA[];
+    FLOATA A4={10,20,30,40};
+    //FLOATA A4={10.0,20.0,30.0,40.0};//★
+    typedef float FLOATAA2[][2];
+    FLOATAA2 A3A2={{00,01},{10,11},{20,21}};
+    //FLOATAA2 A3A2={{00.0,01.0},{10.0,11.0},{20.0,21.0}};//★
+    float funcf(float);
+    return
+        sizeof(n)==4 && sizeof(&n)==PSIZE && sizeof(p)==PSIZE &&
+        sizeof(a)==4*2*4 && sizeof(a[0])==4 &&
+        sizeof(a2)==4*2*3 && sizeof(a2[0])==4*3 && sizeof(a2[0][1])==4 &&
+        sizeof(float)==4 && sizeof(float*)==PSIZE && sizeof(float(*(*)))==PSIZE &&
+        sizeof(FLOAT)==4 && sizeof(FLOATA3)==4*3 && sizeof(A4)==4*4 &&
+        sizeof(float[5])==4*5 && sizeof(float*[3])==PSIZE*3 &&
+        sizeof(float[5][2])==4*5*2 && sizeof(float*[3][2])==PSIZE*3*2 &&
+        sizeof(A3A2)==4*3*2 && sizeof(A3A2[1])==4*2 && sizeof(A3A2[1][1])==4 &&
+        sizeof(n=1)==4 &&
+        sizeof(funcf(1))==4;
+}
+static int size_of1d() {
+    double n, *p, a[2*4], a2[2][3];
+    typedef double DOUBLE;
+    typedef const DOUBLE DOUBLEA3[3];
+    typedef double DOUBLEAA2[][2];
+    DOUBLEAA2 A3A2={{00,01},{10,11},{20,21}};
+    double funcd(void);
+    return 
+        sizeof(n)==8 && sizeof(&n)==PSIZE && sizeof(p)==PSIZE &&
+        sizeof(a)==8*8 && sizeof(a[0])==8 &&
+        sizeof(a2)==8*2*3 && sizeof(a2[0])==8*3 && sizeof(a2[0][1])==8 &&
+        sizeof(double)==8 && sizeof(double*)==PSIZE && sizeof(double(*(*)))==PSIZE &&
+        sizeof(DOUBLE)==8 && sizeof(DOUBLEA3)==8*3 &&
+        sizeof(double[5])==8*5 && sizeof(double*[3])==PSIZE*3 &&
+        sizeof(double[5][2])==8*5*2 && sizeof(double*[3][2])==PSIZE*3*2 &&
+        sizeof(A3A2)==8*3*2 && sizeof(A3A2[1])==8*2 && sizeof(A3A2[1][1])==8 &&
+        sizeof(n=1)==8 &&
+        sizeof(funcd())==8;
+}
+static int size_of1ld() {
+    long double n, *p, a[2*4], a2[2][3];
+    typedef long double LDOUBLE;
+    typedef const LDOUBLE LDOUBLEA3[3];
+    typedef long double LDOUBLEAA2[][2];
+    //LDOUBLEAA2 A3A2={{00,01},{10,11},{20,21}};
+    long double funcld(void);
+    return 
+        sizeof(n)==16 && sizeof(&n)==PSIZE && sizeof(p)==PSIZE &&
+        sizeof(a)==16*8 && sizeof(a[0])==16 &&
+        sizeof(a2)==16*2*3 && sizeof(a2[0])==16*3 && sizeof(a2[0][1])==16 &&
+        sizeof(long double)==16 && sizeof(long double*)==PSIZE && sizeof(long double(*(*)))==PSIZE &&
+        sizeof(LDOUBLE)==16 && sizeof(LDOUBLEA3)==16*3 &&
+        sizeof(long double[5])==16*5 && sizeof(long double*[3])==PSIZE*3 &&
+        sizeof(long double[5][2])==16*5*2 && sizeof(long double*[3][2])==PSIZE*3*2 &&
+        //sizeof(A3A2)==16*3*2 && sizeof(A3A2[1])==8*2 && sizeof(A3A2[1][1])==8 &&
+        sizeof(n=1)==16 &&
+        sizeof(funcld())==16;
 }
 static int align_of() {
     int funci(int);
     return
-        _Alignof(_Bool)==1           && _Alignof(_Bool*)==8 &&
-        _Alignof(_Bool[5])==1        && _Alignof(_Bool*[3])==8 &&
-        _Alignof(_Bool[5][2])==1     && _Alignof(_Bool*[3][2])==8 &&
-        _Alignof(char)==1            && _Alignof(char*)==8 &&
-        _Alignof(char[5])==1         && _Alignof(char*[3])==8 &&
-        _Alignof(char[5][2])==1      && _Alignof(char*[3][2])==8 &&
-        _Alignof(short)==2           && _Alignof(short*)==8 &&
-        _Alignof(short[5])==2        && _Alignof(short*[3])==8 &&
-        _Alignof(short[5][2])==2     && _Alignof(short*[3][2])==8 &&
-        _Alignof(int)==4             && _Alignof(int*)==8 &&
-        _Alignof(int[5])==4          && _Alignof(int*[3])==8 &&
-        _Alignof(int[5][2])==4       && _Alignof(int*[3][2])==8 &&
-        _Alignof(long)==8            && _Alignof(long*)==8 &&
-        _Alignof(long[5])==8         && _Alignof(long*[3])==8;
-        _Alignof(long[5][2])==8      && _Alignof(long*[3][2])==8;
-        _Alignof(long long)==8       && _Alignof(long long*)==8 &&
-        _Alignof(long long[5][2])==8 && _Alignof(long long*[3][2])==8 &&
+        _Alignof(_Bool)            ==1  && _Alignof(_Bool*)            ==PSIZE &&
+        _Alignof(_Bool[5])         ==1  && _Alignof(_Bool*[3])         ==PSIZE &&
+        _Alignof(_Bool[5][2])      ==1  && _Alignof(_Bool*[3][2])      ==PSIZE &&
+        _Alignof(char)             ==1  && _Alignof(char*)             ==PSIZE &&
+        _Alignof(char[5])          ==1  && _Alignof(char*[3])          ==PSIZE &&
+        _Alignof(char[5][2])       ==1  && _Alignof(char*[3][2])       ==PSIZE &&
+        _Alignof(short)            ==2  && _Alignof(short*)            ==PSIZE &&
+        _Alignof(short[5])         ==2  && _Alignof(short*[3])         ==PSIZE &&
+        _Alignof(short[5][2])      ==2  && _Alignof(short*[3][2])      ==PSIZE &&
+        _Alignof(int)              ==4  && _Alignof(int*)              ==PSIZE &&
+        _Alignof(int[5])           ==4  && _Alignof(int*[3])           ==PSIZE &&
+        _Alignof(int[5][2])        ==4  && _Alignof(int*[3][2])        ==PSIZE &&
+        _Alignof(long)             ==8  && _Alignof(long*)             ==PSIZE &&
+        _Alignof(long[5])          ==8  && _Alignof(long*[3])          ==PSIZE &&
+        _Alignof(long[5][2])       ==8  && _Alignof(long*[3][2])       ==PSIZE &&
+        _Alignof(long long)        ==8  && _Alignof(long long*)        ==PSIZE &&
+        _Alignof(long long[5][2])  ==8  && _Alignof(long long*[3][2])  ==PSIZE &&
+        _Alignof(float)            ==4  && _Alignof(float*)            ==PSIZE &&
+        _Alignof(float[5])         ==4  && _Alignof(float*[3])         ==PSIZE &&
+        _Alignof(float[5][2])      ==4  && _Alignof(float*[3][2])      ==PSIZE &&
+        _Alignof(double)           ==8  && _Alignof(double*)           ==PSIZE &&
+        _Alignof(double[5])        ==8  && _Alignof(double*[3])        ==PSIZE &&
+        _Alignof(double[5][2])     ==8  && _Alignof(double*[3][2])     ==PSIZE &&
+        _Alignof(long double)      ==16 && _Alignof(long double*)      ==PSIZE &&
+        _Alignof(long double[5])   ==16 && _Alignof(long double*[3])   ==PSIZE &&
+        _Alignof(long double[5][2])==16 && _Alignof(long double*[3][2])==PSIZE &&
         _Alignof(funci(1))==4;
 }
 static int size_of() {
@@ -1366,6 +1443,9 @@ static int size_of() {
     TEST(size_of1ll);
     TEST(size_of1v);
     TEST(size_of1C);
+    TEST(size_of1f);
+    TEST(size_of1d);
+    TEST(size_of1ld);
     TEST(align_of);
     return 1;
 }

@@ -16,15 +16,23 @@ emcc:Warning: tmp/test_src.c:783: static char ga2c_b[4]={1,2,{3,99},4}, *ga2c_p=
                                                                         ^ =の左右の型(static char*:char[4]*)が異なります
 emcc:Warning: tmp/test_src.c:1033:  int i2g_x, *i2g_p = 2 + &i2g_x - 1;
                                                ^ =の左右の型(int*:int)が異なります
-emcc:Warning: tmp/test_src.c:1248: }
-                                    ^ 関数が戻り値を返していません
-emcc:Warning: tmp/test_src.c:1332:     gc4_func(&a);
+emcc:Warning: tmp/test_src.c:1249:         sizeof(n=1)==4 &&
+                                                   ^ =の左右の型(float:int)が異なります
+emcc:Warning: tmp/test_src.c:1250:         sizeof(funcf(1))==4;
+                                                        ^ 引数[0]の型(float:int)が一致しません
+emcc:Note: tmp/test_src.c:1239:     float funcf(float);
+                                                ^ 関数の定義はここです
+emcc:Warning: tmp/test_src.c:1268:         sizeof(n=1)==8 &&
+                                                   ^ =の左右の型(doube:int)が異なります
+emcc:Warning: tmp/test_src.c:1285:         sizeof(n=1)==16 &&
+                                                   ^ =の左右の型(long double:int)が異なります
+emcc:Warning: tmp/test_src.c:1405:     gc4_func(&a);
                                                 ^ 引数[0]の型(struct LS*:struct LS*)が一致しません
-emcc:Note: tmp/test_src.c:1320:     void gc4_func(struct LS*p){};
+emcc:Note: tmp/test_src.c:1393:     void gc4_func(struct LS*p){};
                                                              ^ 関数の定義はここです
-emcc:Warning: tmp/test_src.c:2577:     return str;
+emcc:Warning: tmp/test_src.c:2650:     return str;
                                        ^ 戻り値static const char[4]のconst情報は失われます
-emcc:Warning: tmp/test_src.c:2584:     func_const3(p1);
+emcc:Warning: tmp/test_src.c:2657:     func_const3(p1);
                                                    ^ 戻り値const char*のconst情報は失われます
 emcc:Warning: tmp/test_src.c:778: static int ga2_b[4]={1,2,{3,99},4}, *ga2_p=&ga2_a, *ga2_q=&ga2_b[2], *ga2_r=ga2_a+3;
                                                             ^ スカラーがリストで初期化されています
@@ -40,9 +48,9 @@ emcc:Warning: tmp/test_src.c:897:  char sg1_str4[3] = "A\0B";
                                                           ^ 初期化リストが配列サイズを超えています
 emcc:Warning: tmp/test_src.c:1034:  char i2g_c, *i2g_ac[3] = {0,&i2g_c+1,(char*)3,(char*)4};
                                                                                   ^ 初期化リストが配列サイズを超えています
-emcc:Warning: tmp/test_src.c:2184:     static gs2a_XYZ gs2a_xyz = {{1,2,3},4,{5,6}};
+emcc:Warning: tmp/test_src.c:2257:     static gs2a_XYZ gs2a_xyz = {{1,2,3},4,{5,6}};
                                                                     ^ スカラーがリストで初期化されています
-emcc:Warning: tmp/test_src.c:2184:     static gs2a_XYZ gs2a_xyz = {{1,2,3},4,{5,6}};
+emcc:Warning: tmp/test_src.c:2257:     static gs2a_XYZ gs2a_xyz = {{1,2,3},4,{5,6}};
                                                                               ^ スカラーがリストで初期化されています
 emcc:Warning: tmp/test_src.c:790:     static int a[4]={1,2,{3,99},4}, *p=a, *q=&a[2], *r=a+3;
                                                             ^ スカラーがリストで初期化されています
@@ -54,13 +62,13 @@ emcc:Warning: tmp/test_src.c:794:     static char a[4]={1,2,{3,99},4}, *p=a, *q=
                                                                ^ 初期化リストが配列サイズを超えています
 emcc:Warning: tmp/test_src.c:919:     static char str3[4] = "ABCDE";
                                                                  ^ 初期化リストが配列サイズを超えています
-emcc:Warning: tmp/test_src.c:2033:     static XYZ xyz = {{1,2,3},4,{5,6}};
+emcc:Warning: tmp/test_src.c:2106:     static XYZ xyz = {{1,2,3},4,{5,6}};
                                                           ^ スカラーがリストで初期化されています
-emcc:Warning: tmp/test_src.c:2033:     static XYZ xyz = {{1,2,3},4,{5,6}};
+emcc:Warning: tmp/test_src.c:2106:     static XYZ xyz = {{1,2,3},4,{5,6}};
                                                                     ^ スカラーがリストで初期化されています
-emcc:Warning: tmp/test_src.c:2071:     static XYZ xyz = {{1,2,3},4,{5,6}};
+emcc:Warning: tmp/test_src.c:2144:     static XYZ xyz = {{1,2,3},4,{5,6}};
                                                           ^ スカラーがリストで初期化されています
-emcc:Warning: tmp/test_src.c:2071:     static XYZ xyz = {{1,2,3},4,{5,6}};
+emcc:Warning: tmp/test_src.c:2144:     static XYZ xyz = {{1,2,3},4,{5,6}};
                                                                     ^ スカラーがリストで初期化されています
 emcc:Warning: tmp/test_src.c:612:     int b[4]={1,2,{3,99},a[3]};
                                                      ^ スカラーがリストで初期化されています
@@ -86,13 +94,13 @@ emcc:Warning: tmp/test_src.c:878:     char str3[4] = "ABCDE";
                                                           ^ 初期化リストが配列サイズを超えています
 emcc:Warning: tmp/test_src.c:879:     char str4[3] = "A\0B";
                                                          ^ 初期化リストが配列サイズを超えています
-emcc:Warning: tmp/test_src.c:1813:     XYZ xyz = {{1,2,3},4,{5,6}};
+emcc:Warning: tmp/test_src.c:1886:     XYZ xyz = {{1,2,3},4,{5,6}};
                                                    ^ スカラーがリストで初期化されています
-emcc:Warning: tmp/test_src.c:1813:     XYZ xyz = {{1,2,3},4,{5,6}};
+emcc:Warning: tmp/test_src.c:1886:     XYZ xyz = {{1,2,3},4,{5,6}};
                                                              ^ スカラーがリストで初期化されています
-emcc:Warning: tmp/test_src.c:2387:     } u10 = {1,2}, u1=u10;
+emcc:Warning: tmp/test_src.c:2460:     } u10 = {1,2}, u1=u10;
                                                   ^ 構造体・共用体の初期化リストが要素数を超えています
-emcc:Warning: tmp/test_src.c:2405:     } u10 = {1,2}, u1, *u1p=&u1;
+emcc:Warning: tmp/test_src.c:2478:     } u10 = {1,2}, u1, *u1p=&u1;
                                                   ^ 構造体・共用体の初期化リストが要素数を超えています
   OK: logical1
   OK: logical2
@@ -208,6 +216,9 @@ emcc:Warning: tmp/test_src.c:2405:     } u10 = {1,2}, u1, *u1p=&u1;
   OK: size_of1ll
   OK: size_of1v
   OK: size_of1C
+  OK: size_of1f
+  OK: size_of1d
+  OK: size_of1ld
   OK: align_of
   OK: size_of
   OK: type_of

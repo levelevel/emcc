@@ -778,9 +778,17 @@ static Type *declaration_specifiers(int type_only) {
             if (type && type!=SHORT && type!=LONG && type!=LONGLONG) error_at(input, "型指定が不正です\n");
             type = INT;
         } else if (consume(TK_LONG)) {
-            if (type==LONG) type = LONGLONG;
-            else if (type && type!=INT) error_at(input, "型指定が不正です\n");
-            else type = LONG;
+            if      (!type)        type = LONG;
+            else if (type==INT)    type = LONG;
+            else if (type==LONG)   type = LONGLONG;
+            else error_at(input, "型指定が不正です\n");
+        } else if (consume(TK_FLOAT)) {
+            if (type) error_at(input, "型指定が不正です\n");
+            type = FLOAT;
+        } else if (consume(TK_DOUBLE)) {
+            if (type==LONG) type = LONGDOUBLE;
+            else if (type) error_at(input, "型指定が不正です\n");
+            else type = DOUBLE;
         } else if (consume(TK_STRUCT)) {
             if (type) error_at(input, "型指定が不正です\n");
             type = STRUCT;

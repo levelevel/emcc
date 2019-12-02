@@ -47,8 +47,8 @@ typedef enum {
     TK_SHORT,       //short
     TK_INT,         //int
     TK_LONG,        //long
-//  TK_FLOAT,       //float
-//  TK_DOUBLE,      //double
+    TK_FLOAT,       //float
+    TK_DOUBLE,      //double
     TK_ENUM,        //enum
     TK_STRUCT,      //struct
     TK_UNION,       //union
