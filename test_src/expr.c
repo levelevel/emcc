@@ -1,5 +1,20 @@
 #ifdef _emcc
-//#define void
+#if 0
+#define __const const
+#define __restrict restrict
+#define __inline inline
+#define __builtin_va_list void *
+#define __builtin_va_start(a, b) (0)
+#define __builtin_va_end(a) (0)
+#define __builtin_va_arg(ar, t) (0)
+#define __builtin_va_copy(d, s) (0)
+#define __builtin_offsetof(type, member) (0)
+#define __alignof__(type) (0)
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdarg.h>
+#else
 #define stdin  (__acrt_iob_func(0))
 #define stdout (__acrt_iob_func(1))
 #define stderr (__acrt_iob_func(2))
@@ -12,7 +27,7 @@ int strcmp(const char *s1, const char *s2);
 int strncmp(const char *s1, const char *s2, size_t n);
 size_t strlen(const char *s);
 int memcmp(const void *s1, const void *s2, size_t n);
-
+#endif
 
 #else
 #include <stdio.h>
@@ -2395,6 +2410,19 @@ static int AnonymouseStruct2(void) {
         && un2.a==1 && un2.b==1 && un2.c==0 && un2.d==0 && un2.e==1
         && un3.a==1 && un3.b==1 && un3.c==0 && un3.d==0 && un3.e==1;
 }
+    struct NameOnly;
+    struct Self {
+        struct Self *self;
+        struct NameOnly *p;
+    };
+static int StructEtc(void) {
+    struct NameOnly;
+    struct Self {
+        struct Self *self;
+        struct NameOnly *p;
+    };
+    return 1;
+}
 static int Struct(void) {
     TEST(Struct1);
     TEST(Struct1Arrow);
@@ -2417,6 +2445,8 @@ static int Struct(void) {
 
     TEST(AnonymouseStruct1);
     TEST(AnonymouseStruct2);
+    
+    TEST(StructEtc);
     return 1;
 }
 

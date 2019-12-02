@@ -73,6 +73,7 @@ void set_struct_size(Node *node, int base_offset) {
     Type *tp = node->tp;
     assert(type_is_struct_or_union(tp));
     if (node->lst==NULL) return;
+    assert(node->lst->len);
     int max_align_size = 0, max_size = 0, offset = base_offset;
     StorageClass sclass = get_storage_class(tp);
     for (int i=0; i<lst_len(node->lst); i++) {

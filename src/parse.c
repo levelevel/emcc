@@ -908,13 +908,14 @@ static Node *struct_or_union_specifier(TPType type) {
             }
         } while (!consume('}'));
         refresh_typedef(node);  //不完全定義typedefがあれば完全定義に置き換える
+
+        //構造体メンバのoffset(memb->offset)と、構造体のサイズを設定する(node->val)。
+        set_struct_size(node, 0/*base_offset*/);
     } else if (name==NULL) {
         expect('{');    //error
     } else {            //不完全定義
         node = regist_tagname(node);
     }
-    //構造体メンバのoffset(memb->offset)と、構造体のサイズを設定する(node->val)。
-    set_struct_size(node, 0/*base_offset*/);
 
     //dump_symbol(-1, __func__);
     //dump_tagname();
