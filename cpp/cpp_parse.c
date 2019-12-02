@@ -15,7 +15,7 @@
     else_group          = "#" "else" new_line group_part*
     endif_line          = "#" "endif" new_line
     control_line        = "#" "include" pp_tokens new_line
-                        | "#" "define" identifier replacement_list new-_ine
+                        | "#" "define" identifier replacement_list new_line
                         | "#" "define" identifier lparen identifier_list? ")" replacement_list new_line
                         | "#" "define" identifier lparen "..." ")" replacement_list new_line
                         | "#" "define" identifier lparen identifier_list "," "..." ")" replacement_list new_line
@@ -24,6 +24,7 @@
                         | "#" "error" pp_tokens? new_line
                         | "#" "pragma" pp_tokens? new_line
                         | "#" new_line
+    identifier_list     = identifier ( "," identifier )*
     pp_token            = 
 */
 
@@ -61,15 +62,36 @@ static int count_until_line(void) {
 
 //次のトークンが期待したものかどうかをチェックし、
 //期待したものの場合だけ入力を1トークン読み進めて真を返す
-static int ppconsume(PPTKtype type) {
+static int ppconsume_token(PPTKtype type) {
     if (pptokens[pptoken_pos]->type != type) return 0;
     pptoken_pos++;
     return 1;
 }
 
+//次のトークンが期待したものかどうかをチェックし、
+//期待したものの場合だけ入力を1トークン読み進めて真を返す。スペースは読み飛ばす。
+static int ppconsume(PPTKtype type) {
+    int save_pptoken_pos = pptoken_pos;
+    skip_space();
+    if (pptokens[pptoken_pos]->type != type) {
+        pptoken_pos = save_pptoken_pos;
+        return 0;
+    }
+    pptoken_pos++;
+    return 1;
+}
+
+//次のトークンが期待したものでない場合はエラーとする。スペースは読み飛ばす。
+static void ppexpect(PPTKtype type) {
+    skip_space();
+    if (pptokens[pptoken_pos]->type != type) error_at(input_str(), "%cがありません", type);
+    pptoken_pos++;
+}
+
 //次のトークンが数値(PPTK_NUM)かどうかをチェックし、
-//その場合は数値を取得し、入力を1トークン読み進めて真を返す
+//その場合は数値を取得し、入力を1トークン読み進めて真を返す。スペースは読み飛ばす。
 int ppconsume_num(long *valp) {
+    skip_space();
     if (pptokens[pptoken_pos]->type != PPTK_NUM) return 0;
     *valp = pptokens[pptoken_pos]->val;
     pptoken_pos++;
@@ -77,7 +99,7 @@ int ppconsume_num(long *valp) {
 }
 
 //次のトークンが識別子(TK_IDENT)かどうかをチェックし、
-//その場合はnameを取得し、入力を1トークン読み進めて真を返す
+//その場合はnameを取得し、入力を1トークン読み進めて真を返す。スペースは読み飛ばす。
 int ppconsume_ident(char **name) {
     skip_space();
     if (pptokens[pptoken_pos]->type != PPTK_IDENT) return 0;
@@ -86,9 +108,10 @@ int ppconsume_ident(char **name) {
     return 1;
 }
 
+//次のトークンが#かどうかをチェックし、
+//その場合はnameを取得し、入力を1トークン読み進めて真を返す。スペースは読み飛ばす。
 static PPToken *consume_directive(void) {
     int save_pptoken_pos = pptoken_pos;
-    skip_space();
     if (ppconsume('#')) {
         skip_space();
         PPToken *token = pptokens[pptoken_pos];
@@ -122,12 +145,13 @@ static int endif_group(void);
 static int control_line(PPTKtype type);
 static int constant_expression(long *valp);
 static void define_macro(const char*name);
+static Map *identifier_list(void);
 
 void preprocessing_file(void) {
     ppif_stat_stack = new_istack();
     cur_ppif_stat = PPIF_NULL;
     istack_push(ppif_stat_stack, cur_ppif_stat);
-    if (!ppconsume(PPTK_EOF)) {
+    if (!ppconsume_token(PPTK_EOF)) {
         group_parts();
     }
 }
@@ -139,7 +163,7 @@ void preprocessing_file(void) {
                         | "#" non_directive
  */
 static int group_parts(void) {
-    while (!ppconsume(PPTK_EOF)) {
+    while (!ppconsume_token(PPTK_EOF)) {
         PPToken *next_token = next_is_directive();
         if (next_token) {
             if (if_section(next_token->type)) continue;
@@ -152,9 +176,12 @@ static int group_parts(void) {
     return 1;
 }
 static int expand_macro(PPToken *token) {
+    assert(token->type==PPTK_IDENT);
     PPMacro *macro;
     if (!map_get(define_map, token->ident, (void*)&macro)) return 0;
     if (macro->in_use) return 0;
+    if (macro->args && !ppconsume('(')) return 0;
+    if (macro->args) ppexpect(')');
     macro->in_use = 1;
     for (int i=0; i<macro->para_len; i++) {
         token = pptokens[macro->para_start+i];
@@ -166,15 +193,15 @@ static int expand_macro(PPToken *token) {
     return 1;
 }
 static void text_line(void) {
-    PPToken **token = &pptokens[pptoken_pos];
-    for (;(*token)->type != PPTK_EOF; token++) {
+    PPToken *token;
+    while ((token=pptokens[pptoken_pos])->type != PPTK_EOF) {
+        pptoken_pos++;
         if (if_is_active()) {
-            if ((*token)->type != PPTK_IDENT || !expand_macro(*token)) {
-                fprintf(g_fp, "%.*s", (*token)->len, (*token)->input);
+            if (token->type != PPTK_IDENT || !expand_macro(token)) {
+                fprintf(g_fp, "%.*s", token->len, token->input);
             }
         }
-        pptoken_pos++;
-        if ((*token)->type == PPTK_NEWLINE) break;
+        if (token->type == PPTK_NEWLINE) break;
     }
     if (!if_is_active()) fprintf(g_fp, "\n");
 }
@@ -282,7 +309,7 @@ static int endif_group(void) {
 
 /*
     control_line        = "#" "include" pp_tokens new_line
-                        | "#" "define" identifier replacement_list new-_ine
+                        | "#" "define" identifier replacement_list new_line
                         | "#" "define" identifier lparen identifier_list? ")" replacement_list new_line
                         | "#" "define" identifier lparen "..." ")" replacement_list new_line
                         | "#" "define" identifier lparen identifier_list "," "..." ")" replacement_list new_line
@@ -291,6 +318,7 @@ static int endif_group(void) {
                         | "#" "error" pp_tokens? new_line
                         | "#" "pragma" pp_tokens? new_line
                         | "#" new_line
+    identifier_list     = identifier ( "," identifier )*
  */
 static int control_line(PPTKtype type) {
     if (type==PPTK_DEFINE) {
@@ -312,7 +340,6 @@ static int control_line(PPTKtype type) {
 }
 
 static int constant_expression(long *valp) {
-    skip_space();
     if (ppconsume_num(valp)) return 1;
 #if 1    //定数式でない場合は0とする
     if (valp) *valp = 0;
@@ -322,11 +349,22 @@ static int constant_expression(long *valp) {
 #endif
 }
 
+//マクロ定義を処理する
 static void define_macro(const char*name) {
     PPMacro *macro = new_macro(name);
+    if (ppconsume_token('(')) { //引数付きマクロ。スペースなしで(がある場合
+        skip_space();
+        macro->args = identifier_list();
+        skip_space();
+        if (!ppconsume(')')) error_at(input_str(), ")がありません");
+    }
     skip_space();
     macro->para_start = pptoken_pos;
     macro->para_len = count_until_line();   
+}
+static Map *identifier_list(void) {
+    Map *map = new_map();
+    return map;
 }
 
 PPMacro *new_macro(const char*name) {

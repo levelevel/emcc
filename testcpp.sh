@@ -263,6 +263,20 @@ a;  /*comment2*/
 @expect
 
   A B /*- A -*/ A B
+@in define_arg0_1 ===================
+#define A() a()
+#define B() b
+#define C (c)
+  A() B() C() /*- A -*/
+  A () B () C ()
+  A B C
+@expect
+
+
+
+  a() b (c)() /*- A -*/
+  a() b (c) ()
+  A B (c)
 @ =========================
 EOF
 

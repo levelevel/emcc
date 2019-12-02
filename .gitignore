@@ -6,3 +6,5 @@
 tmp*
 emcc
 emcpp
+/test.c
+

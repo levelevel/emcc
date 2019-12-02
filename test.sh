@@ -4,7 +4,8 @@ ulimit -c unlimited
 
 EXE=tmp/test
 AFLAGS="-g -no-pie"
-CFLAGS="-D_emcc -std=c11 -pedantic-errors "
+CPPFLAG="-D_emcc"
+CFLAGS="$CPPFLAG -std=c11 -pedantic-errors "
 ER=Error
 WR=Warning
 CC=emcc
@@ -32,7 +33,7 @@ test_src() {
     exit 1;
   fi
 
-  cpp $CFLAGS $src | grep -v "^#" > $EXE2.c
+  cpp -P $CFLAGS $src > $EXE2.c
   ./$CC $src2 > ${EXE2}e.s
   ./$CC $EXE2.c 2>&1 > $EXE2.s | tee -a $EXE2.log | grep "$CC:Error" > $EXE2.err
   if [ $? -eq 0 ]; then

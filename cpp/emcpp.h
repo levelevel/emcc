@@ -48,6 +48,9 @@ EXTERN Vector *pptoken_vec;
 EXTERN PPToken **pptokens;  //token_vec->data;
 EXTERN int pptoken_pos;     //tokensの現在位置
 
+#define next_token_type()   (pptokens[pptoken_pos+1]->type)
+#define next_token_is(_tp)  (next_token_type()==(_tp))
+
 EXTERN Map *define_map;
 
 //デバッグオプション
