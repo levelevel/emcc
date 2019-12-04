@@ -35,7 +35,8 @@
     type_qualifier          = "const" | "restrict" | "volatile" | "_Atomic"
     function_specifier      = "inline" | "_Noreturn"
     declarator              = pointer? direct_declarator
-    direct_declarator       = identifier | "(" declarator ")"
+    direct_declarator       = identifier 
+                            | "(" declarator ")"
                             | direct_declarator "[" assignment_expression? "]"
                             | direct_declarator "(" parameter_type_list? ")"    //関数
     parameter_type_list     = parameter_declaration ( "," parameter_declaration )* ( "," "..." )?
@@ -463,9 +464,10 @@ static Node *init_declarator(Type *decl_spec, Type *tp, char *name) {
 }
 
 //    declarator              = pointer* direct_declarator
-//    direct_declarator       = identifier | "(" declarator ")"
+//    direct_declarator       = identifier 
+//                            | "(" declarator ")"
 //                            | direct_declarator "[" assignment_expression? "]"
-//                            | direct_abstract_declarator? "(" parameter_type_list? ")"  //関数宣言
+//                            | direct_declarator "(" parameter_type_list? ")"  //関数宣言
 //declaration_specifiers, pointer, identifierまで先読み済みの可能性あり
 //戻り値のnodeはname、lhs（関数の場合の引数）、tp以外未設定
 static Node *declarator(Type *decl_spec, Type *tp, char *name) {
@@ -584,6 +586,9 @@ static Node *parameter_declaration(void) {
     tp = pointer(tp);
     if (consume_ident(&name)) {
         node = declarator(tp, tp, name);
+        regist_var_def(node);
+    } else if (token_is('(')) {    //関数のポインタ
+        node = declarator(tp, tp, NULL);
         regist_var_def(node);
     } else {
         tp = abstract_declarator(tp);

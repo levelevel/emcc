@@ -1,5 +1,4 @@
 #ifdef _emcc
-#if 0
 #define __const const
 #define __restrict restrict
 #define __inline inline
@@ -13,34 +12,12 @@
 #define __attribute__(a)
 #define __asm__(a)
 #define __extension__
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
-#else
-#define stdin  (__acrt_iob_func(0))
-#define stdout (__acrt_iob_func(1))
-#define stderr (__acrt_iob_func(2))
-#define size_t long
-#define NULL 0
-#define va_start __va_start
-#define va_list char*
-int printf(const char *format, ...);
-void exit(int status);
-char *strcpy(char *dest, const char *src);
-int strcmp(const char *s1, const char *s2);
-int strncmp(const char *s1, const char *s2, size_t n);
-size_t strlen(const char *s);
-int memcmp(const void *s1, const void *s2, size_t n);
-#endif
-
-#else
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <stdarg.h>
-#endif
-
 #include <limits.h>
 
 #define GLOBAL
@@ -557,6 +534,15 @@ static int funcp5(void) {
         1;
 }
 
+static int fp6_func1(int a){return a+1;}
+static int fp6_func2(int (*fp)(int a), int a){return fp(a);}
+static int fp6_func3(int (*fp)(int  ), int a){return fp(a);}
+static int funcp6(void) {
+    return
+        fp6_func2(fp6_func1,1)==2;
+        fp6_func3(fp6_func1,1)==2;
+}
+
 static int func() {
     void_func();
     TEST(funcdecl1);
@@ -567,6 +553,7 @@ static int func() {
     TEST(funcp3);
     TEST(funcp4);
     TEST(funcp5);
+    TEST(funcp6);
     //int (**x)[2];
     //int (**x)();
     //int *(*x)[];
