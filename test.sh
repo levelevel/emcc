@@ -33,7 +33,8 @@ test_src() {
     exit 1;
   fi
 
-  cpp -P $CFLAGS $src > $EXE2.c
+#  cpp -P $CFLAGS $src > $EXE2.c
+  cpp $CFLAGS $src > $EXE2.c
   ./$CC $src2 > ${EXE2}e.s
   ./$CC $EXE2.c 2>&1 > $EXE2.s | tee -a $EXE2.log | grep "$CC:Error" > $EXE2.err
   if [ $? -eq 0 ]; then

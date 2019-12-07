@@ -54,8 +54,15 @@ void warning(const char*fmt, ...);
 #define EXTERN extern
 #endif
 
-EXTERN char *filename;
-EXTERN char *user_input;
+EXTERN char *g_cur_filename;//論理的な処理中のファイル（includeファイルを指す場合がある）
+EXTERN int   g_cur_line;
+EXTERN char *g_filename;    //コンパイル対象のソースファイル（コマンドラインで指定されたもの）
+EXTERN char *g_user_input;
+void error_at(const char*loc, const char*fmt, ...);
+void warning_at(const char*loc, const char*fmt, ...);
+void note_at(const char*loc, const char*fmt, ...);
+void error(const char*fmt, ...);
+void warning(const char*fmt, ...);
 void run_test(void);
 
 typedef enum {

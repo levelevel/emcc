@@ -25,25 +25,25 @@ static void read_opt(int argc, char*argv[]) {
         if (strcmp(argv[1], "-dt")==0) {
             g_dump_token = 1;
         } else if (argc==2) {
-            filename = argv[1];
-            user_input = read_file(filename);
+            g_filename = argv[1];
+            g_user_input = read_file(g_filename);
             break;
         } else {
             usage();
         }
     }
-    //puts(user_input);
+    //puts(g_user_input);
 }
 
 int main(int argc, char**argv) {
-    user_input = "nothing";
+    g_user_input = "nothing";
     read_opt(argc, argv);
 
     pptoken_vec = new_vector();
     define_map = new_map();
     new_macro("_emcpp");
 
-    cpp_tokenize(user_input);
+    cpp_tokenize(g_user_input);
     pptokens             = (PPToken**)pptoken_vec->data;
     pptoken_pos          = 0;
 

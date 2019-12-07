@@ -1,3 +1,6 @@
+/*
+ * emccテスト環境
+ */
 #ifdef _emcc
 //#include "gcc_def.h"
 #include "emcc.h"
@@ -17,15 +20,13 @@
 
 
 
-
-
-
 #define GLOBAL
 static int test_cnt = 0;
 #define TEST(f) test_cnt++;if(!f()) {printf("Error at %s:%d:%s\n",__FILE__,__LINE__,#f);exit(1);} else {printf("  OK: %s\n",#f);}
 
 static int f42() {42; ;;;;;}
 static int logical1(void) {
+    return
 #ifdef _emcc
         42 == f42() &&    //これはCの仕様とは異なる
 #endif

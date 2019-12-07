@@ -43,17 +43,17 @@ static void read_opt(int argc, char*argv[]) {
             run_test();
             exit(0);
         } else if (argc==3 && strcmp(argv[1], "-s")==0) {
-            filename = argv[1];
-            user_input = argv[2];
-            if (strstr(user_input, "main")==NULL) {
-                char *buf = malloc(strlen(user_input) + 50);
-                sprintf(buf, "int main(){%s}", user_input);
-                user_input = buf;
+            g_filename = argv[1];
+            g_user_input = argv[2];
+            if (strstr(g_user_input, "main")==NULL) {
+                char *buf = malloc(strlen(g_user_input) + 50);
+                sprintf(buf, "int main(){%s}", g_user_input);
+                g_user_input = buf;
             }
             break;
         } else if (argc==2) {
-            filename = argv[1];
-            user_input = read_file(filename);
+            g_filename = argv[1];
+            g_user_input = read_file(g_filename);
             break;
         } else {
             usage();
@@ -81,7 +81,7 @@ void compile(void) {
     token_vec          = new_vector();
 
     // トークナイズ
-    tokenize(user_input);
+    tokenize(g_user_input);
 
     tokens             = (Token**)token_vec->data;
     token_pos          = 0;

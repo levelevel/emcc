@@ -176,18 +176,13 @@ static void message_at(const char*loc, const char *level) {
     // locが含まれている行の開始地点と終了地点を取得
     if (loc==NULL) loc = "(null)";
     const char *line = loc;
-    while (user_input < line && line[-1] != '\n') line--;
+    while (g_user_input < line && line[-1] != '\n') line--;
 
     const char *end = loc;
     while (*end && *end != '\n') end++;
 
-    // 見つかった行が全体の何行目なのかを調べる
-    int line_num = 1;
-    for (char *p = user_input; p < line; p++)
-        if (*p == '\n') line_num++;
-
     // 見つかった行を、ファイル名と行番号と一緒に表示
-    int indent = fprintf(stderr, "emcc:%s: %s:%d: ", level, filename, line_num);
+    int indent = fprintf(stderr, "emcc:%s: %s:%d: ", level, g_cur_filename, g_cur_line);
     fprintf(stderr, "%.*s\n", (int)(end - line), line);
 
     // エラー箇所を"^"で指し示して、エラーメッセージを表示

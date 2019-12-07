@@ -369,30 +369,30 @@ static void test_error1(int index) {
 
 //  sprintf(fname, "selftest%03d", index);
     sprintf(fname, "selftest");
-    filename = fname;
+    g_filename = fname;
 
     if (test[index].expect==CM) {
         fprintf(fp, "# %s\n", test[index].code);
         return;
     }
 
-    user_input = test[index].code;
-    if (strncmp(user_input, "#include", 8)==0) {
-        char *p = user_input+8;
+    g_user_input = test[index].code;
+    if (strncmp(g_user_input, "#include", 8)==0) {
+        char *p = g_user_input+8;
         while (isspace(*p)) p++;
-        user_input = read_file(p);
-    } else if (strstr(user_input, "main")==NULL) {
-        char *buf = malloc(strlen(user_input) + 50);
-        sprintf(buf, "int main(){%s}", user_input);
-        user_input = buf;
+        g_user_input = read_file(p);
+    } else if (strstr(g_user_input, "main")==NULL) {
+        char *buf = malloc(strlen(g_user_input) + 50);
+        sprintf(buf, "int main(){%s}", g_user_input);
+        g_user_input = buf;
     }
 
     error_ctrl   = ERC_LONGJMP; //エラー発生時にlongjmp
     warning_ctrl = (test[index].expect==WR ? ERC_LONGJMP : ERC_CONTINUE);
     if (setjmp(jmpbuf)==0) {
-        fprintf(fp, "# %s ----------------\n", filename);
+        fprintf(fp, "# %s ----------------\n", g_filename);
         if (test[index].note) fprintf(fp, "# [%s]\n", test[index].note);
-        fprintf(fp, "%s\n", user_input);
+        fprintf(fp, "%s\n", g_user_input);
         compile();
     }
 

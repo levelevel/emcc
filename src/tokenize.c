@@ -111,6 +111,8 @@ static Token *new_token(TKtype type, char *input) {
     Token *token = calloc(1, sizeof(Token));
     token->type = type;
     token->input = input;
+    token->line = g_cur_line;
+    token->file = g_cur_filename;
     vec_push(token_vec, token);
     return token;
 }
@@ -199,7 +201,8 @@ static int get_escape_char(char **pp) {
     return c;
 }
 
-//文字列リテラルの文字列を返す。
+//文字列リテラルの文字列を返す。戻り値の文字列はnul終端されているが、途中にnullを含むことがある。
+//stringが指定されていれば、正しい長さを設定する。
 static char*get_string(char**pp, String *string) {
     char *p, *ptop;
     p = ptop = *pp;
@@ -228,8 +231,10 @@ static char*get_string(char**pp, String *string) {
         }
     }
     *q++ = 0;
-    string->buf = buf;
-    string->size = q-buf;
+    if (string) {
+        string->buf = buf;
+        string->size = q-buf;
+    }
     return buf;
 }
 
@@ -273,14 +278,42 @@ char *escape_ascii(const String *string) {
     return str;
 }
 
+//# 1 "test_src/expr.c"
+static char *read_directive(char *p) {
+    assert(*p=='#');
+    p++;
+    while (isspace(*p)) p++;
+    g_cur_line = strtol(p, &p, 0) - 1;
+    while (isspace(*p)) p++;
+    assert(*p=='\"');
+    p++;
+    g_cur_filename = get_string(&p, NULL);
+    while (*p && *p != '\n') p++;
+    //fprintf(stderr, "%s:%d\n", file, line);
+    return p;
+}
+
 // pが指している文字列をトークンに分割してtokensに保存する
 void tokenize(char *p) {
     Token *token;
+    int new_line = 1;
+    g_cur_line = 1;
+    g_cur_filename = g_filename;
     while (*p) {
         if (isspace(*p)) {
+            if (*p == '\n') {
+                new_line = 1;
+                g_cur_line ++;
+            }
             p++;
             continue;
         }
+
+        if (new_line && *p == '#') {
+            p = read_directive(p);
+            continue;
+        }
+        new_line = 0;
 
         //行コメントをスキップ
         if (strncmp(p, "//", 2)==0) {
@@ -293,10 +326,15 @@ void tokenize(char *p) {
         if (strncmp(p, "/*", 2)==0) {
             char *q = strstr(p + 2, "*/");
             if (!q) error_at(p, "コメントが閉じられていません");
+            while (p<q) {
+                if (*p==('\n')) g_cur_line++;
+                p++;
+            }
             p = q + 2;
             continue;
         }
 
+        //トークンの終わり判定が不要なもの（記号類）
         for (TokenDef *tk = TokenLst1; tk->name; tk++) {
             if (strncmp(p, tk->name, tk->len)==0) {
                 token = new_token(tk->type, p);
@@ -304,6 +342,7 @@ void tokenize(char *p) {
                 goto NEXT_LOOP;
             }
         }
+        //トークンの終わりをis_alnum()で判定するもの（予約語）
         for (TokenDef *tk = TokenLst2; tk->name; tk++) {
             if (strncmp(p, tk->name, tk->len)==0 && !is_alnum(p[tk->len])) {
                 token = new_token(tk->type, p);
@@ -378,6 +417,10 @@ void dump_tokens(void) {
 
 // ==================================================
 // 以下はparse.cローカル
+void set_file_line(void) {
+    g_cur_filename = tokens[token_pos]->file;
+    g_cur_line     = tokens[token_pos]->line;
+}
 
 int token_is_type_spec(void) {
     if (TK_VOID<=token_type() && token_type()<=TK_TYPEDEF) return 1;
@@ -400,6 +443,7 @@ int next_token_is_type_spec(void) {
 //期待したものの場合だけ入力を1トークン読み進めて真を返す
 int consume(TKtype type) {
     if (tokens[token_pos]->type != type) return 0;
+    set_file_line();
     token_pos++;
     return 1;
 }
@@ -408,6 +452,7 @@ int consume(TKtype type) {
 //その場合は数値を取得し、入力を1トークン読み進めて真を返す
 int consume_num(long *valp) {
     if (tokens[token_pos]->type != TK_NUM) return 0;
+    set_file_line();
     *valp = tokens[token_pos]->val;
     token_pos++;
     return 1;
@@ -417,6 +462,7 @@ int consume_num(long *valp) {
 //その場合はstringを取得し、入力を1トークン読み進めて真を返す
 int consume_string(String *string) {
     if (tokens[token_pos]->type != TK_STRING) return 0;
+    set_file_line();
     *string = tokens[token_pos]->string;
     token_pos++;
     return 1;
@@ -426,6 +472,7 @@ int consume_string(String *string) {
 //その場合はnameを取得し、入力を1トークン読み進めて真を返す
 int consume_ident(char **name) {
     if (tokens[token_pos]->type != TK_IDENT) return 0;
+    set_file_line();
     *name = tokens[token_pos]->ident;
     token_pos++;
     return 1;
@@ -435,6 +482,7 @@ int consume_ident(char **name) {
 //その場合はそのNode(ND_TYPEDEF)を取得し、入力を1トークン読み進めて真を返す
 int consume_typedef(Node **ret_node) {
     if (tokens[token_pos]->type != TK_IDENT) return 0;
+    set_file_line();
     Node *node = search_symbol(token_ident());
     if (node==NULL) return 0;
     if (node->type!=ND_TYPEDEF) return 0;
@@ -447,6 +495,7 @@ int consume_typedef(Node **ret_node) {
 // それ以外の場合にはエラーを報告する。
 void expect(TKtype type) {
     if (tokens[token_pos]->type == type) {
+        set_file_line();
         token_pos++;
         return;
     }
@@ -464,6 +513,7 @@ void expect_string(String *string) {
         error_at(input_str(), "文字列リテラルが期待されています");
     }
     *string = tokens[token_pos]->string;
+    set_file_line();
     token_pos++;
 }
 
@@ -473,6 +523,7 @@ void expect_ident(char**name, const char*str) {
     if (tokens[token_pos]->type != TK_IDENT) {
         error_at(input_str(), "識別子（%s）が期待されています", str);
     }
+    set_file_line();
     *name = tokens[token_pos]->ident;
     token_pos++;
 }
