@@ -158,6 +158,7 @@ int main(){int *p; p+p;}
 emcc:Error: selftest:1: int main(){int *p; p+p;}
                                            ^ ポインタ同士の加算です
 # selftest ----------------
+# [異なる種類のポインタの減算]
 int main(){int *p; char*q; p-q;}
 emcc:Error: selftest:1: int main(){int *p; char*q; p-q;}
                                                    ^ 異なるタイプのポインタによる減算です: int* vs char*

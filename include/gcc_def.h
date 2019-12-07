@@ -12,3 +12,4 @@
 #define __attribute__(a)
 #define __asm__(a)
 #define __extension__
+#define __PRETTY_FUNCTION__ __func__

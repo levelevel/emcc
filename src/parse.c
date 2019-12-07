@@ -1551,25 +1551,27 @@ static Node *shift_expression(void) {
 //加減算（左結合）
 //    additive_expression         = multiplicative_expression ( "+" multiplicative_expression | "-" multiplicative_expression )*
 static Node *additive_expression(void) {
-    Node *node = multiplicative_expression(), *rhs;
-    for (;;) {
+    Node *node, *lhs, *rhs;
+    node = lhs = multiplicative_expression();
+    for (;;lhs = node) {
         char *input = input_str();
         if (consume('+')) {
             rhs = multiplicative_expression();
-            if (node_is_ptr(node) && node_is_ptr(rhs))
-                error_at(node->input, "ポインタ同士の加算です");
-            Type *tp = node_is_ptr(node) ? node->tp : rhs->tp;
-            node = new_node('+', node, rhs, tp, input);
+            if (node_is_ptr(lhs) && node_is_ptr(rhs))
+                error_at(lhs->input, "ポインタ同士の加算です");
+            Type *tp = node_is_ptr(lhs) ? lhs->tp : rhs->tp;
+            node = new_node('+', lhs, rhs, tp, input);
         } else if (consume('-')) {
             rhs = multiplicative_expression();
-            if (node_is_ptr(node) && node_is_ptr(rhs)) {
-                if (!type_eq(node->tp, rhs->tp)) 
-                    error_at(node->input, "異なるタイプのポインタによる減算です: %s vs %s",
-                        get_node_type_str(node), get_node_type_str(rhs));
-            } else if (!node_is_ptr(node)  && node_is_ptr(rhs)) {
-                error_at(node->input, "ポインタによる減算です");
+            if (node_is_ptr(lhs) && node_is_ptr(rhs)) {
+                if (!type_eq(lhs->tp, rhs->tp)) 
+                    error_at(lhs->input, "異なるタイプのポインタによる減算です: %s vs %s",
+                        get_node_type_str(lhs), get_node_type_str(rhs));
+            } else if (!node_is_ptr(lhs) && node_is_ptr(rhs)) {
+                error_at(lhs->input, "ポインタによる減算です");
             }
-            node = new_node('-', node, rhs, rhs->tp, input);
+            node = new_node('-', lhs, rhs, rhs->tp, input);
+            if (node_is_ptr(lhs) && node_is_ptr(rhs)) node->tp = new_type(INT, 0);
         } else {
             break;
         }
@@ -1641,7 +1643,7 @@ static Node *unary_expression(void) {
         }
     } else if (consume('!')) {
         node = cast_expression();
-        check_arg(node, input, CHK_NOT(CHK_INTEGER), "!");
+        check_arg(node, input, CHK_NOT(CHK_INTEGER|CHK_PTR), "!");
         node = new_node('!', NULL, node, new_type(INT, 0), input);
     } else if (consume('~')) {
         node = cast_expression();

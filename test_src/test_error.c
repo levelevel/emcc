@@ -40,7 +40,7 @@ struct {
     {WR, "int*a; int**b; a=b;"},
     {WR, "int *f(){int a; return &a;} int main(){int a; a=f();}"},
     {ER, "int *p; p+p;"},
-    {ER, "int *p; char*q; p-q;"},
+    {ER, "int *p; char*q; p-q;",        "異なる種類のポインタの減算"},
     {ER, "int *p; 1-p;"},
     {ER, "int *p; return sizeof(**p);"},
     {ER, "int a[4]; a=1;"},

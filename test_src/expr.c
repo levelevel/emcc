@@ -51,6 +51,7 @@ static int logical2(void) {
         && (p <  a) && (a >  p)
         && (a +  1) && (p +  1) && (1 + a) && (1 + p)
         && (a -  1) && (p -  1)
+        && (!p == 1)
         && 1;
 }
 
@@ -60,31 +61,35 @@ static int logical(void) {
     return 1;
 }
 
-static int addsub1(){
+static int addsub1(void){
     int a=10, b=3, c=a+b*(-2), d=a/b, e=a%b;
     return c==4 && d==3 && e==1;
 }
-static _Bool addsub1b(){
+static _Bool addsub1b(void){
     _Bool a=10, b=3, c=a+b*(-2), d=a/b, e=a%b;
     return c==1 && d==1 && e==0;
 }
-static char addsub1c(){
+static char addsub1c(void){
     char a=10, b=3, c=a+b*(-2), d=a/b, e=a%b;
     return c==4 && d==3 && e==1;
 }
-static short addsub1s(){
+static short addsub1s(void){
     short a=10, b=3, c=a+b*(-2), d=a/b, e=a%b;
     return c==4 && d==3 && e==1;
 }
-static long addsub1l(){
+static long addsub1l(void){
     long a=10, b=3, c=a+b*(-2), d=a/b, e=a%b;
     return c==4 && d==3 && e==1;
 }
-static long long addsub1ll(){
+static long long addsub1ll(void){
     long long a=10, b=3, c=a+b*(-2), d=a/b, e=a%b;
     return c==4 && d==3 && e==1;
 }
-static int addsub_mix1() {
+static int addsub1p(void){
+    int a[5], *p=&a[0], *q=&a[4];
+    return p+4==q && q-4==p && q-p==4;
+}
+static int addsub_mix1(void) {
     _Bool b1=0xff, b0=0, ib=1;
     char c = 0x7f; unsigned char uc = 0x7f; int ic = 0x7f;
     short s = 0x7fff; unsigned short us = 0x7fff; int is = 0x7fff;
@@ -97,7 +102,7 @@ static int addsub_mix1() {
         i+ui == ui*2 && li+i == ui*2 &&
         l+ul == ul*2;
 }
-static int addsub_mix2() {
+static int addsub_mix2(void) {
     char  c = -1; unsigned char  uc = 1;
     short s = -1; unsigned short us = 1;
     int   i = -1; unsigned int   ui = 1;
@@ -151,6 +156,7 @@ static int addsub() {
     TEST(addsub1s);
     TEST(addsub1l);
     TEST(addsub1ll);
+    TEST(addsub1p);
     TEST(addsub_mix1);
     TEST(addsub_mix2);
     TEST(CompoundAssign);
