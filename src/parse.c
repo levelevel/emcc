@@ -480,9 +480,10 @@ static Node *declarator(Type *decl_spec, Type *tp, char *name) {
 
     return node;
 }
+static void replace_nest(Type *p, Type *tp);
 static Node *direct_declarator(Type *tp, char *name) {
-    Node *node=NULL, *lhs=NULL;
-    Type *nest_tp=NULL;
+    Node *node=NULL;
+    Type *nest_tp = NULL;
     char *input = input_str();
     if (name == NULL) {
         if (consume('(')) {
@@ -503,19 +504,7 @@ static Node *direct_declarator(Type *tp, char *name) {
             node->lhs = parameter_type_list();
             end_scope();
             cur_funcdef = org_funcdef;      //一時的なcur_funcdefはここで捨てる
-            Type *p = nest_tp;
-            for (;;) {
-                if (p->type==PTR) {
-                    if (p->ptr_of->type==NEST) {
-                        p->ptr_of = tp;
-                        break;
-                    } else if (p->ptr_of->type==PTR) {
-                        p = p->ptr_of;
-                    } else {
-                        assert(0);
-                    }
-                }
-            }
+            replace_nest(nest_tp, tp);
             node->tp = tp = nest_tp;
         } else {
             if (cur_funcdef && type_is_static(tp)) {
@@ -526,13 +515,13 @@ static Node *direct_declarator(Type *tp, char *name) {
             node->lhs = parameter_type_list();
             end_scope();
             if (org_funcdef) cur_funcdef = org_funcdef;
+            tp->node = node;
         }
-        tp->node = node;
         expect(')');
         if (node->type==ND_FUNC_DECL) regist_func(node, 1);
     } else {    //変数
         if (token_is('[')) tp = array_def(tp);
-        node = new_node(ND_UNDEF, lhs, NULL, tp, NULL);
+        node = new_node(ND_UNDEF, NULL, NULL, tp, NULL);
         node->name = name;
         node->input = input;
 
@@ -551,6 +540,18 @@ static Node *direct_declarator(Type *tp, char *name) {
         }
     }
     return node;
+}
+static void replace_nest(Type *p, Type *tp) {
+    for (;p->type==PTR;) {
+        if (p->ptr_of->type==NEST) {
+            p->ptr_of = tp;
+            break;
+        } else if (p->ptr_of->type==PTR) {
+            p = p->ptr_of;
+        } else {
+            assert(0);
+        }
+    }
 }
 
 //    parameter_type_list     = parameter_declaration ( "," parameter_declaration )* ( "," "..." )?
@@ -579,6 +580,13 @@ static Node *parameter_type_list(void) {
         error_at(vararg_ptr, "...の位置が不正です");
     return node;
 }
+static int is_abstract_declarator(Type *tp) {
+    int save_token_pos = token_pos;
+    int ret = 0;
+    if (consume('(') && pointer(tp) && consume(')')) ret = 1;
+    token_pos = save_token_pos;
+    return ret;
+}
 static Node *parameter_declaration(void) {
     Node *node;
     char *name, *input = input_str();
@@ -588,8 +596,14 @@ static Node *parameter_declaration(void) {
         node = declarator(tp, tp, name);
         regist_var_def(node);
     } else if (token_is('(')) {    //関数のポインタ
+        if (is_abstract_declarator(tp)) {
+            tp = abstract_declarator(tp);
+            node = tp->ptr_of->node;
+            assert(node);
+        } else {
         node = declarator(tp, tp, NULL);
         regist_var_def(node);
+        }
     } else {
         tp = abstract_declarator(tp);
         node = new_node_var_def(NULL, tp, input);
@@ -725,11 +739,27 @@ static Type *abstract_declarator(Type *tp) {
     return tp;
 }
 static Type *direct_abstract_declarator(Type *tp) {
+    Type *nest_tp;
+    char *input = input_str();
     if (consume('(')){
-        tp = abstract_declarator(tp);
+        nest_tp = abstract_declarator(new_type(NEST, 0));
         expect(')');
     }
-    if (token_is('[')) tp = array_def(tp);
+    if (consume('(')){  //関数定義・宣言確定
+        Node *node = new_node(0, NULL, NULL, NULL, input);
+        Funcdef *org_funcdef = cur_funcdef;
+        tp = new_type_func(tp, node);
+        cur_funcdef = new_funcdef();    //一時的にcur_funcdefを作成しスコープを生成
+        begin_func_scope();
+        node->lhs = parameter_type_list();
+        end_scope();
+        cur_funcdef = org_funcdef;      //一時的なcur_funcdefはここで捨てる
+        replace_nest(nest_tp, tp);
+        node->tp = tp = nest_tp;
+        expect(')');
+    } else if (token_is('[')) {
+        tp = array_def(tp);
+    }
     return tp;
 }
 

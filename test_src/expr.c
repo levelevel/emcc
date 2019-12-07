@@ -1,17 +1,6 @@
 #ifdef _emcc
-#define __const const
-#define __restrict restrict
-#define __inline inline
-#define __builtin_va_list void *
-#define __builtin_va_start(a, b) (0)
-#define __builtin_va_end(a) (0)
-#define __builtin_va_arg(ar, t) (0)
-#define __builtin_va_copy(d, s) (0)
-#define __builtin_offsetof(type, member) (0)
-#define __alignof__(type) (0)
-#define __attribute__(a)
-#define __asm__(a)
-#define __extension__
+//#include "gcc_def.h"
+#include "emcc.h"
 #endif
 
 #include <stdio.h>
@@ -19,6 +8,17 @@
 #include <string.h>
 #include <stdarg.h>
 #include <limits.h>
+
+
+
+
+
+
+
+
+
+
+
 
 #define GLOBAL
 static int test_cnt = 0;
@@ -470,7 +470,7 @@ static int funcdecl2(void) {
 }
 
 static int funcdecl3() {
-    fd3_func(); //未定義の関数
+    fd3_func(); //未宣言の関数
     return 1;
 }
 int fd3_func() {
@@ -530,17 +530,19 @@ static int funcp5(void) {
     return
         fp()==10 && 
         (fp)()==10 &&
-        //(*fpp)()==10 &&
+        //(*fpp)()==10 && //★
         1;
 }
 
+static int fp6_func2(int (*fp)(int a), int a);
+static int fp6_func2(int (*)(int), int);
 static int fp6_func1(int a){return a+1;}
 static int fp6_func2(int (*fp)(int a), int a){return fp(a);}
-static int fp6_func3(int (*fp)(int  ), int a){return fp(a);}
 static int funcp6(void) {
+    int fp6_func2(int (*fp)(int a), int a);
+    int fp6_func2(int (*)(int), int);
     return
         fp6_func2(fp6_func1,1)==2;
-        fp6_func3(fp6_func1,1)==2;
 }
 
 static int func() {
@@ -554,14 +556,17 @@ static int func() {
     TEST(funcp4);
     TEST(funcp5);
     TEST(funcp6);
-    //int (**x)[2];
-    //int (**x)();
-    //int *(*x)[];
+
+    //{int (**x)[];}
+    {int (**x)[2];}
+    {int (**x)();}
+    //{int *(*x)[];}
+    {int *(*x)[2];}
     //int (*x)[][];
     //int (*x[])[];
-    //int (*x[])();
-    //int (*x())[];
-    //int (*x())();
+    {int (*x[2])();}
+    //{int (*x())[];}
+    //{int (*x())();}
     return
         fact(10) == 55 &&
         fib(10) == 55;
@@ -1184,7 +1189,7 @@ static int size_of1() {
         sizeof(n)==4 && sizeof(&n)==PSIZE && sizeof(p)==PSIZE &&
         sizeof(a)==4*2*4 && sizeof(a[0])==4 &&
         sizeof(a2)==4*2*3 && sizeof(a2[0])==4*3 && sizeof(a2[0][1])==4 &&
-        sizeof(int)==4 && sizeof(int*)==PSIZE && sizeof(int(*(*)))==PSIZE &&
+        sizeof(int)==4 && sizeof(int*)==PSIZE && sizeof(int(*)(int))==PSIZE &&
         sizeof(INT)==4 && sizeof(UINTP)==PSIZE && sizeof(INTA3)==4*3 && sizeof(A4)==4*4 &&
         sizeof(unsigned int)==4 && sizeof(signed int)==4 &&
         sizeof(int[5])==4*5 && sizeof(int*[3])==PSIZE*3 &&
@@ -1206,7 +1211,7 @@ static int size_of1b() {
         sizeof(n)==1 && sizeof(&n)==PSIZE && sizeof(p)==PSIZE &&
         sizeof(a)==1*2*4 && sizeof(a[0])==1 &&
         sizeof(a2)==1*2*3 && sizeof(a2[0])==1*3 && sizeof(a2[0][1])==1 &&
-        sizeof(_Bool)==1 && sizeof(_Bool*)==PSIZE && sizeof(_Bool(*(*)))==PSIZE &&
+        sizeof(_Bool)==1 && sizeof(_Bool*)==PSIZE && sizeof(_Bool(*)(_Bool))==PSIZE &&
         sizeof(BOOL)==1 && sizeof(BOOLA3)==1*3 && sizeof(A4)==1*4 &&
         sizeof(_Bool[5])==1*5 && sizeof(_Bool*[3])==PSIZE*3 &&
         sizeof(_Bool[5][2])==1*5*2 && sizeof(_Bool*[3][2])==PSIZE*3*2 &&
@@ -1228,7 +1233,7 @@ static int size_of1c() {
         sizeof(n)==1 && sizeof(&n)==PSIZE && sizeof(p)==PSIZE &&
         sizeof(a)==1*2*4 && sizeof(a[0])==1 &&
         sizeof(a2)==1*2*3 && sizeof(a2[0])==1*3 && sizeof(a2[0][1])==1 &&
-        sizeof(char)==1 && sizeof(char*)==PSIZE && sizeof(char(*(*)))==PSIZE &&
+        sizeof(char)==1 && sizeof(char*)==PSIZE && sizeof(char(*)(char))==PSIZE &&
         sizeof(CHAR)==1 && sizeof(UCHARP)==PSIZE && sizeof(CHARA3)==1*3 && sizeof(A4)==1*4 &&
         sizeof(unsigned char)==1 && sizeof(signed char)==1 &&
         sizeof(char[5])==1*5 && sizeof(char*[3])==PSIZE*3 &&
@@ -1249,7 +1254,7 @@ static int size_of1s() {
         sizeof(n)==2 && sizeof(&n)==PSIZE && sizeof(p)==PSIZE &&
         sizeof(a)==2*2*4 && sizeof(a[0])==2 &&
         sizeof(a2)==2*2*3 && sizeof(a2[0])==2*3 && sizeof(a2[0][1])==2 &&
-        sizeof(short)==2 && sizeof(short*)==PSIZE && sizeof(short(*(*)))==PSIZE &&
+        sizeof(short)==2 && sizeof(short*)==PSIZE && sizeof(short(*)(short))==PSIZE &&
         sizeof(SHORT)==2 && sizeof(USHORTP)==PSIZE && sizeof(SHORTA3)==2*3 &&
         sizeof(unsigned short)==2 && sizeof(signed short)==2 &&
         sizeof(short[5])==2*5 && sizeof(short*[3])==PSIZE*3 &&
@@ -1270,7 +1275,7 @@ static int size_of1l() {
         sizeof(n)==8 && sizeof(&n)==PSIZE && sizeof(p)==PSIZE &&
         sizeof(a)==8*2*4 && sizeof(a[0])==8 &&
         sizeof(a2)==8*2*3 && sizeof(a2[0])==8*3 && sizeof(a2[0][1])==8 &&
-        sizeof(long)==8 && sizeof(long*)==PSIZE && sizeof(long(*(*)))==PSIZE &&
+        sizeof(long)==8 && sizeof(long*)==PSIZE && sizeof(long(*)(long))==PSIZE &&
         sizeof(LONG)==8 && sizeof(ULONGP)==PSIZE && sizeof(LONGA3)==8*3 &&
         sizeof(unsigned long)==8 && sizeof(signed long)==8 &&
         sizeof(long[5])==8*5 && sizeof(long*[3])==PSIZE*3 &&
@@ -1292,7 +1297,7 @@ static int size_of1ll() {
         sizeof(n)==8 && sizeof(&n)==PSIZE && sizeof(p)==PSIZE &&
         sizeof(a)==8*8 && sizeof(a[0])==8 &&
         sizeof(a2)==8*2*3 && sizeof(a2[0])==8*3 && sizeof(a2[0][1])==8 &&
-        sizeof(long long)==8 && sizeof(long long*)==PSIZE &&
+        sizeof(long long)==8 && sizeof(long long*)==PSIZE && sizeof(long long(*)(long long))==PSIZE &&
         sizeof(unsigned long long)==8 && sizeof(signed long long)==8 &&
         sizeof(LLONG)==8 && sizeof(ULLONGP)==PSIZE && sizeof(LLONGA3)==8*3 &&
         sizeof(long long[5])==8*5 && sizeof(long long*[3])==PSIZE*3 &&
@@ -1309,7 +1314,7 @@ static int size_of1v() {
         sizeof(p)==PSIZE &&
         sizeof(a)==PSIZE*2*4 && sizeof(a[0])==PSIZE &&
         sizeof(a2)==PSIZE*2*3 && sizeof(a2[0])==PSIZE*3 && sizeof(a2[0][1])==PSIZE &&
-        sizeof(void)==1 && sizeof(void*)==PSIZE && sizeof(void(*(*)))==PSIZE &&
+        sizeof(void)==1 && sizeof(void*)==PSIZE && sizeof(void(*)(void))==PSIZE &&
         sizeof(VOID)==1 && sizeof(VOIDP)==PSIZE && sizeof(VOIDA3)==PSIZE*3 &&
         sizeof(void*[3])==PSIZE*3 &&
         sizeof(void*[5][2])==PSIZE*5*2 && sizeof(void*[3][2])==PSIZE*3*2;
@@ -1323,7 +1328,7 @@ static int size_of1C() {
         sizeof(n)==4 && sizeof(&n)==PSIZE && sizeof(p)==PSIZE &&
         sizeof(a)==4*2*4 && sizeof(a[0])==4 &&
         sizeof(a2)==4*2*3 && sizeof(a2[0])==4*3 && sizeof(a2[0][1])==4 &&
-        sizeof(const int)==4 && sizeof(const int*)==PSIZE && sizeof(const int(*(*)))==PSIZE &&
+        sizeof(const int)==4 && sizeof(const int*)==PSIZE && sizeof(const int(*)(const int))==PSIZE &&
         sizeof(INT)==4 && sizeof(UINTP)==PSIZE && sizeof(INTA3)==4*3 && 
         sizeof(unsigned const int)==4 && sizeof(const signed int)==4 &&
         sizeof(const int[5])==4*5 && sizeof(const int*[3])==PSIZE*3 &&
@@ -1344,7 +1349,7 @@ static int size_of1f() {
         sizeof(n)==4 && sizeof(&n)==PSIZE && sizeof(p)==PSIZE &&
         sizeof(a)==4*2*4 && sizeof(a[0])==4 &&
         sizeof(a2)==4*2*3 && sizeof(a2[0])==4*3 && sizeof(a2[0][1])==4 &&
-        sizeof(float)==4 && sizeof(float*)==PSIZE && sizeof(float(*(*)))==PSIZE &&
+        sizeof(float)==4 && sizeof(float*)==PSIZE && sizeof(float(*)(float))==PSIZE &&
         sizeof(FLOAT)==4 && sizeof(FLOATA3)==4*3 && sizeof(A4)==4*4 &&
         sizeof(float[5])==4*5 && sizeof(float*[3])==PSIZE*3 &&
         sizeof(float[5][2])==4*5*2 && sizeof(float*[3][2])==PSIZE*3*2 &&
@@ -1363,7 +1368,7 @@ static int size_of1d() {
         sizeof(n)==8 && sizeof(&n)==PSIZE && sizeof(p)==PSIZE &&
         sizeof(a)==8*8 && sizeof(a[0])==8 &&
         sizeof(a2)==8*2*3 && sizeof(a2[0])==8*3 && sizeof(a2[0][1])==8 &&
-        sizeof(double)==8 && sizeof(double*)==PSIZE && sizeof(double(*(*)))==PSIZE &&
+        sizeof(double)==8 && sizeof(double*)==PSIZE && sizeof(double(*)(double))==PSIZE &&
         sizeof(DOUBLE)==8 && sizeof(DOUBLEA3)==8*3 &&
         sizeof(double[5])==8*5 && sizeof(double*[3])==PSIZE*3 &&
         sizeof(double[5][2])==8*5*2 && sizeof(double*[3][2])==PSIZE*3*2 &&
@@ -1382,7 +1387,7 @@ static int size_of1ld() {
         sizeof(n)==16 && sizeof(&n)==PSIZE && sizeof(p)==PSIZE &&
         sizeof(a)==16*8 && sizeof(a[0])==16 &&
         sizeof(a2)==16*2*3 && sizeof(a2[0])==16*3 && sizeof(a2[0][1])==16 &&
-        sizeof(long double)==16 && sizeof(long double*)==PSIZE && sizeof(long double(*(*)))==PSIZE &&
+        sizeof(long double)==16 && sizeof(long double*)==PSIZE && sizeof(long double(*)(long double))==PSIZE &&
         sizeof(LDOUBLE)==16 && sizeof(LDOUBLEA3)==16*3 &&
         sizeof(long double[5])==16*5 && sizeof(long double*[3])==PSIZE*3 &&
         sizeof(long double[5][2])==16*5*2 && sizeof(long double*[3][2])==PSIZE*3*2 &&
@@ -1390,7 +1395,7 @@ static int size_of1ld() {
         sizeof(n=1)==16 &&
         sizeof(funcld())==16;
 }
-static int align_of() {
+static int align_of1() {
     int funci(int);
     return
         _Alignof(_Bool)            ==1  && _Alignof(_Bool*)            ==PSIZE &&
@@ -1421,7 +1426,7 @@ static int align_of() {
         _Alignof(long double[5][2])==16 && _Alignof(long double*[3][2])==PSIZE &&
         _Alignof(funci(1))==4;
 }
-static int size_of() {
+static int Size_of() {
     TEST(size_of1);
     TEST(size_of1b);
     TEST(size_of1c);
@@ -1433,7 +1438,7 @@ static int size_of() {
     TEST(size_of1f);
     TEST(size_of1d);
     TEST(size_of1ld);
-    TEST(align_of);
+    TEST(align_of1);
     return 1;
 }
 
@@ -2864,7 +2869,7 @@ int main() {
     TEST(integer);
     TEST(init);
     TEST(align);
-    TEST(size_of);
+    TEST(Size_of);
     TEST(type_of);
     TEST(scope);
     TEST(overflow);

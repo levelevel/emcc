@@ -1,3 +1,7 @@
+#ifdef _emcc
+#include "gcc_def.h"
+#endif
+
 #include <errno.h>
 #include <stdarg.h>
 #include <ctype.h>

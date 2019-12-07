@@ -335,6 +335,7 @@ Node *search_tagname(const char *name) {
 //未登録の変数であればローカル変数またはグローバル変数として登録する
 void regist_var_def(Node *node) {
     char *name = node->name;
+    assert(name);
     Node *reg_node;
     StorageClass sclass = node->sclass = get_storage_class(node->tp);
 

@@ -446,7 +446,10 @@ int consume_typedef(Node **ret_node) {
 // 次のトークンが期待したものである場合、トークンを1つ読み進める。
 // それ以外の場合にはエラーを報告する。
 void expect(TKtype type) {
-    if (tokens[token_pos++]->type == type) return;
+    if (tokens[token_pos]->type == type) {
+        token_pos++;
+        return;
+    }
     if (type<128) {
         error_at(input_str(), "%cが期待されています", type);
     } else {

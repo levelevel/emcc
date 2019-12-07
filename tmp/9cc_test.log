@@ -1,7 +1,7 @@
 # selftest ----------------
 int main(){42}
 emcc:Error: selftest:1: int main(){42}
-                                      ^ ;が期待されています
+                                     ^ ;が期待されています
 # selftest ----------------
 int main(){10 + / 2;}
 emcc:Error: selftest:1: int main(){10 + / 2;}
@@ -13,15 +13,15 @@ emcc:Error: selftest:1: main(){}
 # selftest ----------------
 int main(a){}
 emcc:Error: selftest:1: int main(a){}
-                                  ^ )が期待されています
+                                 ^ )が期待されています
 # selftest ----------------
 int main(1){}
 emcc:Error: selftest:1: int main(1){}
-                                  ^ )が期待されています
+                                 ^ )が期待されています
 # selftest ----------------
 int main(int a+1){}
 emcc:Error: selftest:1: int main(int a+1){}
-                                       ^ )が期待されています
+                                      ^ )が期待されています
 # selftest ----------------
 int main(int a,){}
 emcc:Error: selftest:1: int main(int a,){}
@@ -286,7 +286,7 @@ emcc:Error: selftest:1: int main(){sizeof(int[])}
 # selftest ----------------
 int main(...){}
 emcc:Error: selftest:1: int main(...){}
-                                    ^ )が期待されています
+                                 ^ )が期待されています
 # selftest ----------------
 int main(int argc, ..., char *argv[]){}
 emcc:Error: selftest:1: int main(int argc, ..., char *argv[]){}
@@ -491,7 +491,7 @@ emcc:Error: selftest:1: int main(){case 1: ;}
 # selftest ----------------
 int main(){default 1: ;}
 emcc:Error: selftest:1: int main(){default 1: ;}
-                                            ^ :が期待されています
+                                           ^ :が期待されています
 # selftest ----------------
 int main(){switch(1){case 1:; case 1:;}}
 emcc:Error: selftest:1: int main(){switch(1){case 1:; case 1:;}}
@@ -551,7 +551,7 @@ emcc:Note: selftest:1: int main(){int func(void); int func(int);}
 # selftest ----------------
 int main(){typedef int INT=1;}
 emcc:Error: selftest:1: int main(){typedef int INT=1;}
-                                                   ^ ;が期待されています
+                                                  ^ ;が期待されています
 # selftest ----------------
 int main(){typedef int INT; unsigned INT i;}
 emcc:Error: selftest:1: int main(){typedef int INT; unsigned INT i;}
@@ -688,7 +688,7 @@ emcc:Error: selftest:1: int main(){return '\xG';}
 # selftest ----------------
 int main(){int a[][3]={{1,2,3},{11,12,13}; return a[1][2]}}
 emcc:Error: selftest:1: int main(){int a[][3]={{1,2,3},{11,12,13}; return a[1][2]}}
-                                                                   ^ }が期待されています
+                                                                 ^ }が期待されています
 # selftest ----------------
 int x; int x[4]; int main(){}
 emcc:Error: selftest:1: int x; int x[4]; int main(){}

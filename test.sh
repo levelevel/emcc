@@ -5,7 +5,7 @@ ulimit -c unlimited
 EXE=tmp/test
 AFLAGS="-g -no-pie"
 CPPFLAG="-D_emcc"
-CFLAGS="$CPPFLAG -std=c11 -pedantic-errors "
+CFLAGS="$CPPFLAG -I./include -std=c11 -pedantic-errors "
 ER=Error
 WR=Warning
 CC=emcc
