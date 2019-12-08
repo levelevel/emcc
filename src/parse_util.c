@@ -23,7 +23,7 @@ long size_of(const Type *tp) {
     case UNION:    return tp->node->val;
     case PTR:      return sizeof(void*);
     case ARRAY:
-        if (tp->array_size<0) return 0;
+        if (tp->array_size<0) return sizeof(void*); //ポインタと同じ扱い
         else                  return tp->array_size * size_of(tp->ptr_of);
     case FUNC:     return sizeof(void*);
     default:    //NEST
@@ -41,7 +41,8 @@ int align_of(const Type *tp) {
     assert(tp);
     switch (tp->type) {
     case ARRAY:
-        align = align_of(tp->ptr_of);
+        if (tp->array_size<0) align = size_of(tp); //ポインタと同じ扱い
+        else                  align = align_of(tp->ptr_of);
         break;
     case STRUCT:
     case UNION:;
@@ -62,6 +63,7 @@ int align_of(const Type *tp) {
 //ローカル変数のRBPからのoffset（バイト数）を返し、var_stack_sizeを更新する。
 int get_var_offset(const Type *tp) {
     int size = size_of(tp);
+    assert(size);
     int align_size = align_of(tp);
     cur_funcdef->var_stack_size += size;
     // アラインメント（align_sizeバイト単位に切り上げ）

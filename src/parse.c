@@ -194,7 +194,8 @@ enum {
     CHK_BINARY  = 0x1000,   //2項演算子のlhs/rhsに対してチェックする。このビットが0の場合はそのnode自身をチェックする
     CHK_CONST   = 0x2000,   //constの場合にエラーとする
 };
-#define CHK_NOT(val) (CHK_ALL ^ (val))
+#define CHK_NOT(_val) (CHK_ALL ^ (_val))
+#define type_is_array(_t) ((_t)->type==ARRAY && (_t)->array_size>=0)
 static void check_arg(Node *node, const SrcInfo *info, unsigned int check_mode, const char *msg) {
     if (check_mode & CHK_BINARY) {
         check_arg(node->lhs, info, check_mode ^ CHK_BINARY, msg);
@@ -207,7 +208,7 @@ static void check_arg(Node *node, const SrcInfo *info, unsigned int check_mode, 
     if ((check_mode & CHK_INTEGER) && type_is_integer(tp)) error_at(info, "整数(%s)に対して%sの指定はできません", tp_str, msg);
     if ((check_mode & CHK_STRUCT)  && tp->type==STRUCT) error_at(info, "構造体(%s)に対して%sの指定はできません", tp_str, msg);
     if ((check_mode & CHK_UNION)   && tp->type==UNION)  error_at(info, "共用体(%s)に対して%sの指定はできません",  tp_str, msg);
-    if ((check_mode & CHK_ARRAY)   && tp->type==ARRAY)  error_at(info, "配列(%s)に対して%sの指定はできません", tp_str, msg);
+    if ((check_mode & CHK_ARRAY)   && type_is_array(tp))error_at(info, "配列(%s)に対して%sの指定はできません", tp_str, msg);
     if ((check_mode & CHK_PTR)     && tp->type==PTR)    error_at(info, "ポインタ(%s)に対して%sの指定はできません", tp_str, msg);
     if ((check_mode & CHK_CONST)   && tp->is_const)     error_at(info, "読み取り専用変数(%s)に対して%sの実行はできません", tp_str, msg);
 }

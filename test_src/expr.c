@@ -497,6 +497,52 @@ static int funcdecl4b(char*fmt, ...) {
     return 1;
 }
 
+static int funcarg1_i1(int i, char c, short s, long l, long long ll, _Bool b) {
+    return i + c + s + l + ll + b;
+}
+static int funcarg1_ip1(int *i, char *c, short *s, long *l, long long *ll, _Bool *b) {
+    return *i + *c + *s + *l + *ll + *b;
+}
+static int funcarg1_p1(int argc, int *argv) {
+    int sum = 0;
+    for (int i=0; i<argc; argv++,i++) sum += *argv;
+    return sum;
+}
+static int funcarg1_a1(int argc, int argv[]) {
+    int sum = 0;
+    for (int i=0; i<argc; argv++,i++) sum += *argv;
+    return sum;
+}
+static int funcarg1(void) {
+    int argi[3]={1,2,3};
+    int i=1; char c=2; short s=3; long l=4; long long ll=5; _Bool b=6;
+    return 
+        funcarg1_i1(1, 2, 3, 4, 5, 6)==1+2+3+4+5+1 &&
+        funcarg1_ip1(&i, &c, &s, &l, &ll, &b)==1+2+3+4+5+1 &&
+        funcarg1_p1(3, argi)==6 &&
+        funcarg1_a1(3, argi)==6 &&
+        1;
+}
+
+    static char *fa_argv[] = {"abc", "def", "xyz"};
+static int funcarg1_p2(int argc, char **argv) {
+    for (int i=0; i<argc; argv++, i++) {
+        if (strcmp(*argv, fa_argv[i])) return 0;
+    }
+    return 1;
+}
+static int funcarg1_a2(int argc, char *argv[]) {
+    for (int i=0; i<argc; argv++, i++) {
+        if (strcmp(*argv, fa_argv[i])) return 0;
+    }
+    return 1;
+}
+static int funcarg2(void) {
+    return
+        funcarg1_p2(3, fa_argv) &&
+        funcarg1_a2(3, fa_argv);
+}
+
 static int fp1_add(int a, int b) { return a+b; }
 static int (*fp1_fp)(int, int)=fp1_add;
 static int funcp1(void) {
@@ -557,6 +603,8 @@ static int func() {
     TEST(funcdecl1);
     TEST(funcdecl2);
     TEST(funcdecl3);
+    TEST(funcarg1)
+    TEST(funcarg2)
     TEST(funcp1);
     TEST(funcp2);
     TEST(funcp3);

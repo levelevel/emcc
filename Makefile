@@ -12,7 +12,7 @@ OBJS2=obj2/util.o $(SRCS2:.c=.o)
 
 CPPHEADS=cpp/emcpp.h include/util.h
 CPPSRCS=$(wildcard cpp/*.c)
-CPPOBJS=$(CPPSRCS:.c=.o) obj2/util.o
+CPPOBJS=cpp/emcpp.o cpp/cpp_parse.o cpp/cpp_tokenize.o obj2/util.o
 
 TARGET=emcc
 TARGET2=emcc2
@@ -20,10 +20,18 @@ CPPEXE=emcpp
 
 all:$(TARGET) $(TARGET2) $(CPPEXE)
 
-obj/util.o: src/util.c
+obj2/emcpp.o: cpp/emcpp.c
+	cpp $(CFLAGS2) cpp/emcpp.c -o obj2/emcpp.cpp.c
+	$(EMCC) obj2/emcpp.cpp.c > obj2/emcpp.s
+	$(CC) -c $(CFLAGS2) obj2/emcpp.s -o obj2/emcpp.o
+obj2/util.o: src/util.c
 	cpp $(CFLAGS2) src/util.c -o obj2/util.cpp.c
 	$(EMCC) obj2/util.cpp.c > obj2/util.s
 	$(CC) -c $(CFLAGS2) obj2/util.s -o obj2/util.o
+obj2/cpp_tokenize.o: cpp/cpp_tokenize.c
+	cpp $(CFLAGS2) cpp/cpp_tokenize.c -o obj2/cpp_tokenize.cpp.c
+	$(EMCC) obj2/cpp_tokenize.cpp.c > obj2/cpp_tokenize.s
+	$(CC) -c $(CFLAGS2) obj2/cpp_tokenize.s -o obj2/cpp_tokenize.o
 
 $(TARGET): $(OBJS)
 	$(CC) $(CFLAGS) -o $(TARGET) $(OBJS) $(LDFLAGS)

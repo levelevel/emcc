@@ -86,7 +86,7 @@ static void gen_div_reg(char *reg_name, int val) {
 
 //型に応じたデータ型名を返す。例：intならDWORD
 static char* ptr_name_of_type(const Type *tp) {
-    if (tp->type==ARRAY) tp = tp->ptr_of;
+    if (tp->type==ARRAY && tp->array_size>=0) tp = tp->ptr_of;
     switch (size_of(tp)) {
     case 8: return "QWORD";
     case 4: return "DWORD";
@@ -101,7 +101,7 @@ static char* ptr_name_of_type(const Type *tp) {
 
 //型に応じたデータ型名（初期値）を返す。
 static char* val_name_of_type(const Type *tp) {
-    while (tp->type==ARRAY) tp = tp->ptr_of;
+    while (tp->type==ARRAY && tp->array_size>=0) tp = tp->ptr_of;
     switch (size_of(tp)) {
     case 8: return "quad";
     case 4: return "long";
@@ -117,7 +117,7 @@ static char* val_name_of_type(const Type *tp) {
 //型に応じたレジスタ名を返す。例：intならrax->eax
 static char* reg_name_of_type(const char*reg_name, const Type *tp) {
     int idx;
-    while (tp->type==ARRAY) tp = tp->ptr_of;
+    while (tp->type==ARRAY && tp->array_size>=0) tp = tp->ptr_of;
     switch (size_of(tp)) {
     case 8: idx = 3; break; //32bit
     case 4: idx = 2; break;
@@ -896,7 +896,9 @@ static int gen(Node*node) {
         return gen(node->rhs);  //代入
     case ND_LOCAL_VAR:
     case ND_GLOBAL_VAR:     //変数参照
-        if (node->tp->type==ARRAY || node->tp->type==STRUCT) {
+        //if (node->tp->type==ARRAY || node->tp->type==STRUCT) {
+        if ((node->tp->type==ARRAY && !(node->type==ND_LOCAL_VAR && node->tp->array_size<0))
+            || node->tp->type==STRUCT) {
             //アドレスをそのまま返す
             comment("%s_VAR:%s(%s)\n", node->type==ND_LOCAL_VAR?"LOCAL":"GLOBAL", display_name(node), get_node_type_str(node));
             gen_lval(node, 1);  //nodeのアドレスをpush
@@ -1666,14 +1668,14 @@ void gen_program(void) {
         if (size && arg_nodes[0]->tp->type!=VOID) {
             char buf[128];
             assert(size<=6);
-            printf("  mov rax, rbp\n");
             for (int j=0; j < size; j++) {
                 Node *arg = arg_nodes[j];
                 if (arg->type==ND_VARARGS) {  //...（可変引数）
                     ; 
                 } else {
-                    printf("  sub rax, %ld\n", size_of(arg->tp));
-                    sprintf(buf, "arg:%s %s", get_node_type_str(arg) ,arg->name);
+                    printf("  mov rax, rbp\n");
+                    printf("  sub rax, %d\n", arg->offset);
+                    sprintf(buf, "arg[%d]:%s %s", j, get_node_type_str(arg) ,arg->name);
                     gen_write_reg("rax", arg_regs[j], arg->tp, buf);
                 }
             }
