@@ -641,6 +641,7 @@ void check_funccall(Node *node) {
                 warning_at(&node_info(call_arg), "戻り値%sのconst情報は失われます", get_node_type_str(call_arg));
             }
         }
+        if (decl_size && decl_args[decl_size-1]->tp->type==VARARGS) decl_size--;
         if (decl_size>call_size)              error_with_note(call_args[call_size-1], decl_args[call_size], "引数の数が少なすぎます", "関数の定義・宣言はここです");
         if (decl_size && decl_size<call_size) error_with_note(call_args[decl_size], decl_args[decl_size-1], "引数の数が多すぎます", "関数の定義・宣言はここです");
     }

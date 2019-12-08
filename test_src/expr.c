@@ -431,13 +431,11 @@ static int fib(int a) {
     else if (a==1) return 1;
     else return fib(a-1) + fib(a-2);
 }
-static char* stdarg(char fmt, ...) {
+static char* stdarg(char *fmt, ...) {
     static char buf[256];
-#if 0
     va_list ap;
     va_start(ap, fmt);
     vsprintf(buf, fmt, ap);
-#endif
     return buf;
 }
 
@@ -494,6 +492,8 @@ static int funcdecl4b(char*fmp, ...);
 static int funcdecl4b(char*, ...);
 //static int funcdecl4b();  //GCCではこれはエラーになる
 static int funcdecl4b(char*fmt, ...) {
+    if (0) funcdecl4b("aaa");
+    if (0) funcdecl4b("aaa", 1);
     return 1;
 }
 

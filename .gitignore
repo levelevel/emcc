@@ -5,6 +5,7 @@
 *.bak
 tmp*
 emcc
+emcc2
 emcpp
 /test.c
-/obj/
+/obj2/

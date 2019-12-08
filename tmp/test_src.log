@@ -6,7 +6,7 @@ emcc:Warning: test_src/expr.c:428: }
                                    ^ 関数が戻り値を返していません
 emcc:Warning: test_src/expr.c:433: }
                                    ^ 関数が戻り値を返していません
-emcc:Warning: test_src/expr.c:480:     fd3_func();
+emcc:Warning: test_src/expr.c:478:     fd3_func();
                                        ^ 未宣言の関数コールです。
 emcc:Warning: test_src/expr.c:866: static int ga2_b[4]={1,2,{3,99},4}, *ga2_p=&ga2_a, *ga2_q=&ga2_b[2], *ga2_r=ga2_a+3;
                                                                        ^ =の左右の型(static int*:int[4]*)が異なります

@@ -56,7 +56,7 @@ test_src() {
 
 try1() {
   rm -f $EXE
-  make -s
+  make -s emcc
   ./$CC "$@" > $EXE.s
   if [ $? != 0 ]; then exit 1; fi
   cat -n $EXE.s
