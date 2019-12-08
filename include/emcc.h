@@ -97,13 +97,11 @@ typedef struct {
     long val;       //typeがTK_TOKENの場合、値
     char is_U;      //123U
     char is_L;      //123L
-    int line;       //行番号
-    char *file;     //ソースファイル
     union {
     char *ident;    //typeがTK_IDENTの場合、その文字列
     String string;  //typeがTK_STRINGの場合、その文字列
     };
-    char *input;    //トークン文字列（エラーメッセージ用）
+    SrcInfo info;   //ソースファイルの情報
 } Token;
 
 //抽象構文木 ----------------------------------------
@@ -255,7 +253,7 @@ struct Node {
     };
     char *disp_name;//nameの代わりの表示名(構造体のメンバ名アクセス:st.a)
     Type *tp;       //型情報
-    char *input;    //トークン文字列（エラーメッセージ用）。Token.inputと同じ。
+    Token *token;   //トークン
 };
 #define display_name(_node) ((_node)->disp_name ? (_node)->disp_name : (_node)->name)
 //タグなしenum/struct/union
@@ -286,7 +284,7 @@ typedef struct {
 //アサーション
 #define COMPILE_ERROR 0
 #define _ERROR_ assert(COMPILE_ERROR)
-#define _NOT_YET_(node) {dump_node(node,__func__); error_at((node)->input, "未実装です（%s:%d in %s）",__FILE__,__LINE__,__func__);} 
+#define _NOT_YET_(node) {dump_node(node,__func__); error_at(&node_info(node), "未実装です（%s:%d in %s）",__FILE__,__LINE__,__func__);} 
 
 //グローバル変数 ----------------------------------------
 #ifndef EXTERN
@@ -342,8 +340,17 @@ EXTERN int g_dump_node; //関数をダンプする
 EXTERN int g_dump_type; //型をダンプする
 EXTERN int g_parse_only;//パースのみ
 
+//ノードのソース情報
+#define node_info(_node)       ((_node)->token->info)
+#define node_info_input(_node) ((_node)->token->info.input)
+#define node_info_file(_node)  ((_node)->token->info.file)
+#define node_info_line(_node)  ((_node)->token->info.line)
+//現在のトークン
+#define cur_token() (tokens[token_pos])
+//現在のトークンのsソースファイル情報
+#define cur_token_info() (tokens[token_pos]->info)
 //現在のトークン（エラー箇所）の入力文字列
-#define input_str() (tokens[token_pos]->input)
+#define input_str() (tokens[token_pos]->info.input)
 
 //トークンへのアクセス
 #define token_ident()       (tokens[token_pos]->ident)
@@ -362,6 +369,7 @@ char *escape_ascii(const String *string);
 char *escape_string(const String *string);
 void tokenize(char *p);
 void dump_tokens(void);
+void set_file_line(const Token *token);
 int token_is_type_spec(void);
 int next_token_is_type_spec(void);
 
@@ -422,22 +430,22 @@ Type *new_type_array(Type*ptr, size_t size);
 Type *new_type(int type, int is_unsigned);
 Type *dup_type(const Type *tp);
 Node *dup_node(const Node *node);
-Node *new_node(int type, Node *lhs, Node *rhs, Type *tp, char *input);
-Node *new_node_num(long val, char *input);
-Node *new_node_var_def(char *name, Type*tp, char *input);
-Node *new_node_string(String *string, char *input);
-Node *new_node_ident(char *name, char *input);
-Node *new_node_func_call(char *name, char *input);
-Node *new_node_func(char *name, Type *tp, char *input);
-Node *new_node_empty(char *input);
-Node *new_node_block(char *input);
-Node *new_node_list(Node *item, char *input);
-Node *new_node_init_list(Node *item, char *input);
+Node *new_node(int type, Node *lhs, Node *rhs, Type *tp, Token *token);
+Node *new_node_num(long val, Token *token);
+Node *new_node_var_def(char *name, Type*tp, Token *token);
+Node *new_node_string(String *string, Token *token);
+Node *new_node_ident(char *name, Token *token);
+Node *new_node_func_call(char *name, Token *token);
+Node *new_node_func(char *name, Type *tp, Token *token);
+Node *new_node_empty(Token *token);
+Node *new_node_block(Token *token);
+Node *new_node_list(Node *item, Token *token);
+Node *new_node_init_list(Node *item, Token *token);
 #endif
 
 // parse.c
 void translation_unit(void);
-void check_assignment(const Node *node, const Node *rhs, const char *input);
+void check_assignment(const Node *node, const Node *rhs, const SrcInfo *info);
 
 // codegen.c
 void gen_program(void);

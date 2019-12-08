@@ -37,7 +37,7 @@ typedef struct {
     int len;            //トークンの長さ
     long val;           //PPTK_NUMの場合の値、PPTK_DEFARGの場合の引数のindex
     PPMacro *macro;     //PPTK_DEFINEの場合のマクロ定義
-    const char *input;  //トークン文字列（エラーメッセージ用）
+    SrcInfo info;       //ソースファイルの情報
 } PPToken;
 
 void preprocessing_file(void);
@@ -57,5 +57,9 @@ EXTERN Map *define_map;
 EXTERN int g_dump_token;
 EXTERN FILE *g_fp;
 
+//現在のトークン
+#define cur_token() (pptokens[pptoken_pos])
+//現在のトークンのsソースファイル情報
+#define cur_token_info() (pptokens[pptoken_pos]->info)
 //現在のトークン（エラー箇所）の入力文字列
 #define input_str() (pptokens[pptoken_pos]->input)

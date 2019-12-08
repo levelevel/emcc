@@ -110,9 +110,9 @@ TokenDef TokenLst2[] = {
 static Token *new_token(TKtype type, char *input) {
     Token *token = calloc(1, sizeof(Token));
     token->type = type;
-    token->input = input;
-    token->line = g_cur_line;
-    token->file = g_cur_filename;
+    token->info.input = input;
+    token->info.line = g_cur_line;
+    token->info.file = g_cur_filename;
     vec_push(token_vec, token);
     return token;
 }
@@ -192,8 +192,9 @@ static int get_escape_char(char **pp) {
         case '6':
         case '7':  --p; c = get_octa(&p); break;
         case 'x':       c = get_hexa(&p); break;
-        default:
-            warning_at(p-1, "未定義のエスケープシーケンス");
+        default:;
+            SrcInfo info = {p-1, g_cur_filename, g_cur_line};
+            warning_at(&info, "未定義のエスケープシーケンス");
         }
     }
 
@@ -325,7 +326,8 @@ void tokenize(char *p) {
         //ブロックコメントをスキップ
         if (strncmp(p, "/*", 2)==0) {
             char *q = strstr(p + 2, "*/");
-            if (!q) error_at(p, "コメントが閉じられていません");
+            SrcInfo info = {p, g_cur_filename, g_cur_line};
+            if (!q) error_at(&info, "コメントが閉じられていません");
             while (p<q) {
                 if (*p==('\n')) g_cur_line++;
                 p++;
@@ -366,20 +368,22 @@ void tokenize(char *p) {
                 token->val = strtol(p, &p, 0);     //10進、8進
             }
             suffix = p;
+            SrcInfo info0 = {p0, g_cur_filename, g_cur_line};
+            SrcInfo info = {suffix, g_cur_filename, g_cur_line};
             for (;;) {
                 if (*p=='u' || *p=='U') {
-                    if (is_U) error_at(suffix, "不正な整数サフィックスです");
+                    if (is_U) error_at(&info, "不正な整数サフィックスです");
                     token->val = strtoul(p0, NULL, 0);  //unsignedで読み直す
                     p++; is_U = 1; continue;
                 } else if (strncmp(p, "ll", 2)==0 || strncmp(p, "LL", 2)==0) {     //LLは無視
-                    if (is_L) error_at(suffix, "不正な整数サフィックスです");
+                    if (is_L) error_at(&info, "不正な整数サフィックスです");
                     p += 2; is_L = 1; continue;
                 } else if (*p=='l' || *p=='L') {        //Lは無視
-                    if (is_L) error_at(suffix, "不正な整数サフィックスです");
+                    if (is_L) error_at(&info, "不正な整数サフィックスです");
                     p++; is_L = 1; continue;
                 } else if (is_alnum(*p)) {
-                    if (*suffix=='8' || *suffix=='9') error_at(p0, "不正な8進表記です");
-                    error_at(suffix, "不正な整数サフィックスです");
+                    if (*suffix=='8' || *suffix=='9') error_at(&info0, "不正な8進表記です");
+                    error_at(&info, "不正な整数サフィックスです");
                 }
                 break;
             }
@@ -391,9 +395,11 @@ void tokenize(char *p) {
         } else if (*p == '\'') {    //文字
             token = new_token(TK_NUM, p++);
             token->val = get_escape_char(&p);
-            if (*p++ != '\'') error_at(p-1, "トークナイズエラー：'が必要です");
+            SrcInfo info = {p, g_cur_filename, g_cur_line};
+            if (*p++ != '\'') error_at(&info, "トークナイズエラー：'が必要です");
         } else {
-            error_at(p, "トークナイズエラー");
+            SrcInfo info = {p, g_cur_filename, g_cur_line};
+            error_at(&info, "トークナイズエラー");
             exit(1);
         }
         NEXT_LOOP:;
@@ -408,18 +414,19 @@ void dump_tokens(void) {
     for (int i=0; i<token_vec->len; i++) {
         tp = tk[i];
         if (tp->type < TK_NUM) {
-            printf("%d: type='%c', input='%s'\n", i, tp->type, tp->input);
+            printf("%d: type='%c', input='%s'\n", i, tp->type, tp->info.input);
         } else {
-            printf("%d: type='%d', val=%ld, input='%s'\n", i, tp->type, tp->val, tp->input);
+            printf("%d: type='%d', val=%ld, input='%s'\n", i, tp->type, tp->val, tp->info.input);
         }
     }
 }
 
 // ==================================================
 // 以下はparse.cローカル
-void set_file_line(void) {
-    g_cur_filename = tokens[token_pos]->file;
-    g_cur_line     = tokens[token_pos]->line;
+void set_file_line(const Token *token) {
+    if (!token) token = tokens[token_pos];
+    g_cur_filename = token->info.file;
+    g_cur_line     = token->info.line;
 }
 
 int token_is_type_spec(void) {
@@ -443,7 +450,7 @@ int next_token_is_type_spec(void) {
 //期待したものの場合だけ入力を1トークン読み進めて真を返す
 int consume(TKtype type) {
     if (tokens[token_pos]->type != type) return 0;
-    set_file_line();
+    set_file_line(tokens[token_pos]);
     token_pos++;
     return 1;
 }
@@ -452,7 +459,7 @@ int consume(TKtype type) {
 //その場合は数値を取得し、入力を1トークン読み進めて真を返す
 int consume_num(long *valp) {
     if (tokens[token_pos]->type != TK_NUM) return 0;
-    set_file_line();
+    set_file_line(tokens[token_pos]);
     *valp = tokens[token_pos]->val;
     token_pos++;
     return 1;
@@ -462,7 +469,7 @@ int consume_num(long *valp) {
 //その場合はstringを取得し、入力を1トークン読み進めて真を返す
 int consume_string(String *string) {
     if (tokens[token_pos]->type != TK_STRING) return 0;
-    set_file_line();
+    set_file_line(tokens[token_pos]);
     *string = tokens[token_pos]->string;
     token_pos++;
     return 1;
@@ -472,7 +479,7 @@ int consume_string(String *string) {
 //その場合はnameを取得し、入力を1トークン読み進めて真を返す
 int consume_ident(char **name) {
     if (tokens[token_pos]->type != TK_IDENT) return 0;
-    set_file_line();
+    set_file_line(tokens[token_pos]);
     *name = tokens[token_pos]->ident;
     token_pos++;
     return 1;
@@ -482,7 +489,7 @@ int consume_ident(char **name) {
 //その場合はそのNode(ND_TYPEDEF)を取得し、入力を1トークン読み進めて真を返す
 int consume_typedef(Node **ret_node) {
     if (tokens[token_pos]->type != TK_IDENT) return 0;
-    set_file_line();
+    set_file_line(tokens[token_pos]);
     Node *node = search_symbol(token_ident());
     if (node==NULL) return 0;
     if (node->type!=ND_TYPEDEF) return 0;
@@ -495,14 +502,14 @@ int consume_typedef(Node **ret_node) {
 // それ以外の場合にはエラーを報告する。
 void expect(TKtype type) {
     if (tokens[token_pos]->type == type) {
-        set_file_line();
+        set_file_line(tokens[token_pos]);
         token_pos++;
         return;
     }
     if (type<128) {
-        error_at(input_str(), "%cが期待されています", type);
+        error_at(&cur_token_info(), "%cが期待されています", type);
     } else {
-        error_at(input_str(), "%sが期待されています", get_NDtype_str(type));
+        error_at(&cur_token_info(), "%sが期待されています", get_NDtype_str(type));
     }
 }
 
@@ -510,10 +517,10 @@ void expect(TKtype type) {
 // それ以外の場合にはエラーを報告する。
 void expect_string(String *string) {
     if (tokens[token_pos]->type != TK_STRING) {
-        error_at(input_str(), "文字列リテラルが期待されています");
+        error_at(&cur_token_info(), "文字列リテラルが期待されています");
     }
     *string = tokens[token_pos]->string;
-    set_file_line();
+    set_file_line(tokens[token_pos]);
     token_pos++;
 }
 
@@ -521,9 +528,9 @@ void expect_string(String *string) {
 // それ以外の場合にはエラーを報告する。
 void expect_ident(char**name, const char*str) {
     if (tokens[token_pos]->type != TK_IDENT) {
-        error_at(input_str(), "識別子（%s）が期待されています", str);
+        error_at(&cur_token_info(), "識別子（%s）が期待されています", str);
     }
-    set_file_line();
+    set_file_line(tokens[token_pos]);
     *name = tokens[token_pos]->ident;
     token_pos++;
 }

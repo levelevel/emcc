@@ -187,7 +187,7 @@ int node_is_constant_or_address(Node *node, long *valp, Node **varp) {
     //グローバルな配列、関数は静的なアドレスに変換されるので定数
     if ((node->type==ND_GLOBAL_VAR || node_is_local_static_var(node))
         && (node->tp->type==ARRAY || node->tp->type==FUNC)) {
-        if (varp) *varp = new_node(ND_ADDRESS, NULL, node, node->tp->ptr_of, node->input);
+        if (varp) *varp = new_node(ND_ADDRESS, NULL, node, node->tp->ptr_of, node->token);
         if (valp) *valp = 0;
         return 1;
     }
@@ -303,10 +303,10 @@ void unuse_string_literal(int index) {
 // ==================================================
 // 以下はparse.cローカル
 
-static void error_with_note(const Node *node, const Node *prev, const char *msg) {
+static void error_with_note(const Node *node, const Node *prev, const char *msg1, const char *msg2) {
     SET_ERROR_WITH_NOTE;
-    error_at(node->input, msg);
-    note_at(prev->input, "以前の宣言はここです");
+    error_at(&node_info(node), msg1);
+    note_at(&node_info(prev), msg2);
 }
 
 //nameをスコープの内側から検索してNodeを返す
@@ -343,7 +343,7 @@ void regist_var_def(Node *node) {
         if (map_get(cur_structdef->map, node->name, (void**)&reg_node)==0) {
             map_put(cur_structdef->map, name, node);
         } else {
-            error_with_note(node, reg_node, "メンバの重複定義です");
+            error_with_note(node, reg_node, "メンバの重複定義です", "以前の定義はここです");
         }
         return;
     } else if (cur_funcdef!=NULL) { //関数内であればローカル
@@ -352,7 +352,7 @@ void regist_var_def(Node *node) {
         Node *reg_node2 = search_symbol(name);
         if (sclass==SC_EXTERN || node->tp->type==FUNC) {
             if (reg_node2 && !type_eq_ex_sclass(reg_node2->tp, node->tp)) {
-                error_with_note(node, reg_node2, "ローカル変数の重複定義です");
+                error_with_note(node, reg_node2, "ローカル変数の重複定義です", "以前の定義はここです");
             }
             map_put(symbol_map, name, node);
         } else if (reg_node==NULL) {
@@ -370,7 +370,7 @@ void regist_var_def(Node *node) {
             if (node->type==ND_UNDEF) node->type = ND_LOCAL_VAR_DEF;
             map_put(symbol_map, name, node);
         } else {
-            error_with_note(node, reg_node, "ローカル変数の重複定義です");
+            error_with_note(node, reg_node, "ローカル変数の重複定義です", "以前の定義はここです");
         }
         if (node->type==ND_UNDEF) node->type = ND_LOCAL_VAR_DEF;
     }
@@ -381,12 +381,12 @@ void regist_var_def(Node *node) {
         if (map_get(global_symbol_map, name, (void**)&reg_node)==0) {
             map_put(global_symbol_map, name, node);
         } else if (node->type!=ND_LOCAL_VAR_DEF && !node_type_eq_global(reg_node, node)) {
-            error_with_note(node, reg_node, "型が一致しません");
+            error_with_note(node, reg_node, "型が一致しません", "以前の定義はここです");
         } else {
             int has_init_value1 = (reg_node->rhs!=NULL);
             int has_init_value2 = (node->rhs!=NULL);
             if (has_init_value1 && has_init_value2) {
-                error_with_note(node, reg_node, "初期値付きグローバル変数の重複定義です");
+                error_with_note(node, reg_node, "初期値付きグローバル変数の重複定義です", "以前の定義はここです");
             } else if (has_init_value2) {
                 reg_node->unused = 1;
                 map_put(global_symbol_map, name, node);
@@ -395,7 +395,7 @@ void regist_var_def(Node *node) {
     }
 
     if (node_is_var_def(node) && node->tp->type==VOID) {
-        error_at(input_str(), "不正なvoid指定です"); 
+        error_at(&cur_token_info(), "不正なvoid指定です"); 
     }
 }
 
@@ -409,13 +409,13 @@ void regist_func(Node *node, int full_check) {
     } else if (def_node==node) {
         return;
     } else if (def_node->type==ND_GLOBAL_VAR_DEF) {
-        error_at(node->input, "'%s'は異なる種類のシンボルとして再定義されています", node->name);
+        error_at(&node_info(node), "'%s'は異なる種類のシンボルとして再定義されています", node->name);
     } else if (!type_eq_ex_sclass(def_node->tp, node->tp)) {
-        error_with_note(node, def_node, "関数の型が一致しません");
+        error_with_note(node, def_node, "関数の型が一致しません", "以前の定義・宣言はここです");
     } else if (!full_check) {
         return;
     } else if (def_node->type==ND_FUNC_DEF && node->type==ND_FUNC_DEF) {
-        error_with_note(node, def_node, "関数が再定義されています");
+        error_with_note(node, def_node, "関数が再定義されています", "以前の定義はここです");
     } else if (def_node->type==ND_FUNC_DECL && node->type==ND_FUNC_DEF) {
         map_put(global_symbol_map, node->name, node);
     }
@@ -429,7 +429,7 @@ void regist_symbol(Node *node) {
     if (map_get(symbol_map, name, (void**)&node2)==0) {
         map_put(symbol_map, name, node);
     } else {
-        error_with_note(node, node2, "enum値の重複定義です");
+        error_with_note(node, node2, "enum値の重複定義です", "以前の定義はここです");
     }
 }
 
@@ -451,26 +451,21 @@ Node *regist_tagname(Node *node) {
             if (map_get(tagname_map, name, (void**)&node3)) {
                 //同一スコープ内での再定義はできない
                 SET_ERROR_WITH_NOTE;
-                error_at(node->input, "%sの重複定義です", node->type==ND_ENUM_DEF?"enum":"struct/union");
-                note_at(node3->input, "以前の定義はここです");
+                error_at(&node_info(node), "%sの重複定義です", node->type==ND_ENUM_DEF?"enum":"struct/union");
+                note_at(&node_info(node3), "以前の定義はここです");
             } 
             map_put(tagname_map, name, node);
         } else if (prev_node->lst==NULL && node->lst!=NULL) {   //先行が不完全、新規が完全
             map_put(tagname_map, name, node);
             prev_node->tp = node->tp;
-            //prev_node->lst = node->lst;
-            //prev_node->map = node->map;
-            //ret_node = prev_node;
         } else if (prev_node->lst!=NULL && node->lst==NULL) {   //先行が完全、新規が不完全
-            //node->lst = prev_node->lst;
-            //node->map = prev_node->map;
             ret_node = prev_node;
         } else {                                                //共に不完全
             //ret_node = prev_node;
         }
     } else if (map_get(tagname_map, name, (void**)&node3)) {
         //同一スコープ内での再定義はできない
-        error_with_note(node, node3, "タグの重複定義です");
+        error_with_note(node, node3, "タグの重複定義です", "以前の定義はここです");
     } else {
         //異なるスコープであれば問題ない
         map_put(tagname_map, name, node);
@@ -485,14 +480,14 @@ void regist_label(Node *node) {
     Node *node2;
     if (map_get(cur_funcdef->label_map, node->name, (void**)&node2)!=0) {
         if (node->type==ND_GOTO) return;
-        if (node2->type==ND_LABEL) error_at(node->input, "ラベルが重複しています");
+        if (node2->type==ND_LABEL) error_at(&node_info(node), "ラベルが重複しています");
     }
     map_put(cur_funcdef->label_map, node->name, node);
 }
 
 //重複をチェックしてcase,defaultをcur_switch->mapに登録する。
 void regist_case(Node *node) {
-    if (cur_switch==NULL) error_at(node->input, "switch文の中ではありません");
+    if (cur_switch==NULL) error_at(&node_info(node), "switch文の中ではありません");
     char *name;
     if (node->type==ND_DEFAULT) {
         name = "Default";
@@ -505,7 +500,7 @@ void regist_case(Node *node) {
     }
     node->name = name;
     if (map_get(cur_switch->map, name, NULL)!=0)
-        error_at(node->input, "%sは重複しています", name);
+        error_at(&node_info(node), "%sは重複しています", name);
     map_put(cur_switch->map, name, node);
 }
 
@@ -529,20 +524,20 @@ void check_return(Node *node) {
     if (func_tp->type==VOID) {
         if (ret_tp==NULL) return;
         if (ret_tp->type==VOID) return;
-        warning_at(node->input, "void型関数が値を返しています");
+        warning_at(&node_info(node), "void型関数が値を返しています");
     } else if (ret_tp==NULL || ret_tp->type==VOID) {
-        warning_at(node->input, "非void関数%sが値を返していません", cur_funcdef->func_name);
+        warning_at(&node_info(node), "非void関数%sが値を返していません", cur_funcdef->func_name);
     } else if (!(func_tp->type==PTR && node->rhs->type==ND_NUM && node->rhs->val==0) &&   //右辺が0の場合は無条件にOK
         (sts=type_eq_check(func_tp, ret_tp))!=ST_OK) {
         if (sts==ST_WARN)
-            warning_at(node->input, "%s型の関数%sが%s型を返しています",
+            warning_at(&node_info(node), "%s型の関数%sが%s型を返しています",
                 get_type_str(func_tp), cur_funcdef->func_name, get_node_type_str(node));
         if (sts==ST_ERR)
-            error_at(node->input, "%s型の関数%sが%s型を返しています",
+            error_at(&node_info(node), "%s型の関数%sが%s型を返しています",
                 get_type_str(func_tp), cur_funcdef->func_name, get_node_type_str(node));
     } else if (func_tp->type==PTR && !func_tp->ptr_of->is_const 
             && (ret_tp->type==PTR || ret_tp->type==ARRAY) && ret_tp->ptr_of->is_const) {
-        warning_at(node->input, "戻り値%sのconst情報は失われます", get_node_type_str(node));
+        warning_at(&node_info(node), "戻り値%sのconst情報は失われます", get_node_type_str(node));
     }
 }
 
@@ -553,7 +548,9 @@ void check_func_return(Funcdef *funcdef) {
     Node **nodes = (Node**)funcdef->node->rhs->lst->data;
     int len = funcdef->node->rhs->lst->len;
     if (len==0 || nodes[len-1]->type!=ND_RETURN) {
-        warning_at(input_str()-1, "関数が戻り値を返していません");
+        SrcInfo info = cur_token_info();
+        info.input -= 2;
+        warning_at(&info, "関数が戻り値を返していません");
     }
 
 }
@@ -567,11 +564,11 @@ void check_funcargs(Node *node, int def_mode) {
         Node *arg = arg_nodes[i];
         if (arg->type==ND_VARARGS) continue;
         if (arg->tp->type==VOID) {
-            if (i>0) error_at(arg->input, "ここではvoidを指定できません");
+            if (i>0) error_at(&node_info(arg), "ここではvoidを指定できません");
             continue;
         }
         if (def_mode && arg->name==NULL)
-            error_at(arg->input, "関数定義の引数には名前が必要です");
+            error_at(&node_info(arg), "関数定義の引数には名前が必要です");
     }
 }
 
@@ -614,7 +611,7 @@ void check_funccall(Node *node) {
 
     if (call_size==0) { //
         if (decl_size==0 || (decl_size==1 && decl_args[0]->tp->type==VOID)) return;
-        error_at(node->input, "引数の数が足りません");
+        error_at(&node_info(node), "引数の数が足りません");
     } else {
         for (int i=0;i<decl_size && i<call_size;i++) {
             if (decl_args[i]->type==ND_VARARGS) return; //唯一引数の数が一致しないケース
@@ -625,35 +622,27 @@ void check_funccall(Node *node) {
             switch (type_eq_check(decl_tp, call_tp)) {
             case ST_ERR:
                 SET_ERROR_WITH_NOTE;
-                error_at(call_arg->input, "引数[%d]の型(%s:%s)が一致しません", i,
+                error_at(&node_info(call_arg), "引数[%d]の型(%s:%s)が一致しません", i,
                     get_node_type_str(decl_arg),
                     get_node_type_str(call_arg));
-                note_at(decl_arg->input, "関数の定義はここです");
+                note_at(&node_info(decl_arg), "関数の定義はここです");
                 break;
             case ST_WARN:
-                warning_at(call_arg->input, "引数[%d]の型(%s:%s)が一致しません", i,
+                warning_at(&node_info(call_arg), "引数[%d]の型(%s:%s)が一致しません", i,
                     get_node_type_str(decl_arg),
                     get_node_type_str(call_arg));
-                note_at(decl_arg->input, "関数の定義はここです");
+                note_at(&node_info(decl_arg), "関数の定義はここです");
                 break;
             default:
                 break;
             }
             if (decl_tp->type==PTR && !decl_tp->ptr_of->is_const &&
                 (call_tp->type==PTR || call_tp->type==ARRAY) && call_tp->ptr_of->is_const) {
-                warning_at(call_arg->input, "戻り値%sのconst情報は失われます", get_node_type_str(call_arg));
+                warning_at(&node_info(call_arg), "戻り値%sのconst情報は失われます", get_node_type_str(call_arg));
             }
         }
-        if (decl_size>call_size) {
-            SET_ERROR_WITH_NOTE;
-            error_at(call_args[call_size-1]->input, "引数の数が少なすぎます");
-            note_at (decl_args[call_size  ]->input, "関数の定義はここです");
-        }
-        if (decl_size && decl_size<call_size) {
-            SET_ERROR_WITH_NOTE;
-            error_at(call_args[decl_size  ]->input, "引数の数が多すぎます");
-            note_at (decl_args[decl_size-1]->input, "関数の定義はここです");
-        }
+        if (decl_size>call_size)              error_with_note(call_args[call_size-1], decl_args[call_size], "引数の数が少なすぎます", "関数の定義・宣言はここです");
+        if (decl_size && decl_size<call_size) error_with_note(call_args[decl_size], decl_args[decl_size-1], "引数の数が多すぎます", "関数の定義・宣言はここです");
     }
 }
 
@@ -809,37 +798,37 @@ Node *dup_node(const Node *node) {
 }
 
 //抽象構文木の生成（演算子）
-Node *new_node(int type, Node *lhs, Node *rhs, Type *tp, char *input) {
+Node *new_node(int type, Node *lhs, Node *rhs, Type *tp, Token *token) {
     Node *node = calloc(1, sizeof(Node));
     node->type = type;
     node->lhs  = lhs;
     node->rhs  = rhs;
     node->tp   = tp;
-    node->input = input;
+    node->token = token;
     return node;
 }
 
 //抽象構文木の生成（数値）
-Node *new_node_num(long val, char *input) {
+Node *new_node_num(long val, Token *token) {
     NDtype type = (val>UINT_MAX || val<INT_MIN) ? LONG : INT;
-    Node *node = new_node(ND_NUM, NULL, NULL, new_type(type, 0), input);
+    Node *node = new_node(ND_NUM, NULL, NULL, new_type(type, 0), token);
     node->val = val;
 //    fprintf(stderr, "val=%ld\n", val);
     return node;
 }
 
 //抽象構文木の生成（変数定義）
-Node *new_node_var_def(char *name, Type*tp, char *input) {
-    Node *node = new_node(ND_UNDEF, NULL, NULL, tp, input);
+Node *new_node_var_def(char *name, Type*tp, Token *token) {
+    Node *node = new_node(ND_UNDEF, NULL, NULL, tp, token);
     node->name = name;
     if (name) regist_var_def(node);
     return node;
 }
 
 //抽象構文木の生成（文字列リテラル）
-Node *new_node_string(String *string, char *input) {
+Node *new_node_string(String *string, Token *token) {
     Type *tp = new_type_array(new_type(CHAR, 0), string->size);
-    Node *node = new_node(ND_STRING, NULL, NULL, tp, input);
+    Node *node = new_node(ND_STRING, NULL, NULL, tp, token);
     node->string = *string;
     node->index = new_string_literal(string); //インデックス
 
@@ -847,7 +836,7 @@ Node *new_node_string(String *string, char *input) {
 }
 
 //抽象構文木の生成（識別子：ローカル変数・グローバル変数）
-Node *new_node_ident(char *name, char *input) {
+Node *new_node_ident(char *name, Token *token) {
     Node *node, *var_def;
     NDtype type;
     StorageClass sclass = SC_UNDEF;
@@ -883,7 +872,7 @@ Node *new_node_ident(char *name, char *input) {
         tp = NULL;
     }
 
-    node = new_node(type, NULL, NULL, tp, input);
+    node = new_node(type, NULL, NULL, tp, token);
     node->name   = name;
     node->sclass = sclass;
     node->offset = offset;
@@ -894,7 +883,7 @@ Node *new_node_ident(char *name, char *input) {
 }
 
 //抽象構文木の生成（関数コール）
-Node *new_node_func_call(char *name, char *input) {
+Node *new_node_func_call(char *name, Token *token) {
     Node *node, *func_node;
     Type *tp;
     func_node = search_symbol(name);
@@ -903,9 +892,9 @@ Node *new_node_func_call(char *name, char *input) {
         case ND_LOCAL_VAR_DEF:  //関数ポインタ
         case ND_GLOBAL_VAR_DEF: //関数ポインタ
             if (func_node->tp->type!=PTR || func_node->tp->ptr_of->type!=FUNC)
-                error_at(input, "%sは関数ではありません", name);
+                error_at(&token->info, "%sは関数ではありません", name);
             node = new_node(func_node->type==ND_LOCAL_VAR_DEF?ND_LOCAL_VAR:ND_GLOBAL_VAR,
-                            NULL, NULL, func_node->tp, func_node->input);
+                            NULL, NULL, func_node->tp, func_node->token);
             node->name = name;
             node->offset = func_node->offset;
             func_node = node;
@@ -919,13 +908,13 @@ Node *new_node_func_call(char *name, char *input) {
             tp = func_node->tp->ptr_of;
             break;
         default:
-            error_at(input, "不正な関数コールです。");
+            error_at(&token->info, "不正な関数コールです。");
         }
     } else {
-        warning_at(input, "未宣言の関数コールです。");
+        warning_at(&token->info, "未宣言の関数コールです。");
         tp = new_type(INT, 0);
     }
-    node = new_node(ND_FUNC_CALL, NULL, func_node, tp, input);
+    node = new_node(ND_FUNC_CALL, NULL, func_node, tp, token);
     node->name = name;
     if (func_node) node->sclass = func_node->sclass;
 //  node->lhs   //引数リスト
@@ -936,8 +925,8 @@ Node *new_node_func_call(char *name, char *input) {
 
 //抽象構文木の生成（関数定義・宣言）
 //この時点では宣言(ND_FUNC_DECL)として作成し、あとで定義であることが確定したら定義(ND_FUNC_DEF)に変更する
-Node *new_node_func(char *name, Type *tp, char *input) {
-    Node *node = new_node(ND_FUNC_DECL, NULL, NULL, tp, input);
+Node *new_node_func(char *name, Type *tp, Token *token) {
+    Node *node = new_node(ND_FUNC_DECL, NULL, NULL, tp, token);
     node->name = name;
     node->sclass = get_storage_class(tp);
 //  node->lhs       //引数リスト(ND_LIST)
@@ -955,30 +944,30 @@ Node *new_node_func(char *name, Type *tp, char *input) {
 }
 
 //抽象構文木の生成（空文）
-Node *new_node_empty(char *input) {
-    Node *node = new_node(ND_EMPTY, NULL, NULL, NULL, input);
+Node *new_node_empty(Token *token) {
+    Node *node = new_node(ND_EMPTY, NULL, NULL, NULL, token);
     return node;
 }
 
 //抽象構文木の生成（ブロック）
-Node *new_node_block(char *input) {
-    Node *node = new_node(ND_BLOCK, NULL, NULL, NULL, input);
+Node *new_node_block(Token *token) {
+    Node *node = new_node(ND_BLOCK, NULL, NULL, NULL, token);
     node->lst  = new_vector();
     return node;
 }
 
 //抽象構文木の生成（コンマリスト）
 //型は最後の要素の型であるべきだがここでは設定しない
-Node *new_node_list(Node *item, char *input) {
-    Node *node = new_node(ND_LIST, NULL, NULL, NULL, input);
+Node *new_node_list(Node *item, Token *token) {
+    Node *node = new_node(ND_LIST, NULL, NULL, NULL, token);
     node->lst  = new_vector();
     if (item) vec_push(node->lst, item);
     return node;
 }
 
 //抽象構文木の生成（初期化リスト）
-Node *new_node_init_list(Node *item, char *input) {
-    Node *node = new_node(ND_INIT_LIST, NULL, NULL, NULL, input);
+Node *new_node_init_list(Node *item, Token *token) {
+    Node *node = new_node(ND_INIT_LIST, NULL, NULL, NULL, token);
     node->lst  = new_vector();
     if (item) vec_push(node->lst, item);
     return node;

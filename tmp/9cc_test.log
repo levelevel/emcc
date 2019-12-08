@@ -45,42 +45,42 @@ int main(){int a; int a;}
 emcc:Error: selftest:1: int main(){int a; int a;}
                                               ^ ローカル変数の重複定義です
 emcc:Note: selftest:1: int main(){int a; int a;}
-                                      ^ 以前の宣言はここです
+                                      ^ 以前の定義はここです
 # selftest ----------------
 # [ローカル変数の重複定義]
 int main(){int a=1; int a=1;}
 emcc:Error: selftest:1: int main(){int a=1; int a=1;}
                                                 ^ ローカル変数の重複定義です
 emcc:Note: selftest:1: int main(){int a=1; int a=1;}
-                                      ^ 以前の宣言はここです
+                                      ^ 以前の定義はここです
 # selftest ----------------
 # [静的ローカル変数の重複定義]
 int main(){static int a=1, a=1;}
 emcc:Error: selftest:1: int main(){static int a=1, a=1;}
                                                    ^ ローカル変数の重複定義です
 emcc:Note: selftest:1: int main(){static int a=1, a=1;}
-                                             ^ 以前の宣言はここです
+                                             ^ 以前の定義はここです
 # selftest ----------------
 # [グローバル変数の重複定義]
 int a=1, a=1; void main(){}
 emcc:Error: selftest:1: int a=1, a=1; void main(){}
                                  ^ 初期値付きグローバル変数の重複定義です
 emcc:Note: selftest:1: int a=1, a=1; void main(){}
-                            ^ 以前の宣言はここです
+                            ^ 以前の定義はここです
 # selftest ----------------
 # [ローカル変数のstatic/auto]
 int main(){static int a; int a;}
 emcc:Error: selftest:1: int main(){static int a; int a;}
                                                      ^ ローカル変数の重複定義です
 emcc:Note: selftest:1: int main(){static int a; int a;}
-                                             ^ 以前の宣言はここです
+                                             ^ 以前の定義はここです
 # selftest ----------------
 # [グローバル変数のstatic/global]
 static int a; int a;void main(){}
 emcc:Error: selftest:1: static int a; int a;void main(){}
                                            ^ 型が一致しません
 emcc:Note: selftest:1: static int a; int a;void main(){}
-                                   ^ 以前の宣言はここです
+                                   ^ 以前の定義はここです
 # selftest ----------------
 int main(){int &a;}
 emcc:Error: selftest:1: int main(){int &a;}
@@ -260,13 +260,13 @@ int main(){extern int x; extern int*x;}
 emcc:Error: selftest:1: int main(){extern int x; extern int*x;}
                                                             ^ ローカル変数の重複定義です
 emcc:Note: selftest:1: int main(){extern int x; extern int*x;}
-                                             ^ 以前の宣言はここです
+                                             ^ 以前の定義はここです
 # selftest ----------------
 int main(){extern int x; extern int*x;}
 emcc:Error: selftest:1: int main(){extern int x; extern int*x;}
                                                             ^ ローカル変数の重複定義です
 emcc:Note: selftest:1: int main(){extern int x; extern int*x;}
-                                             ^ 以前の宣言はここです
+                                             ^ 以前の定義はここです
 # selftest ----------------
 static extern func(){} int main(){}
 emcc:Error: selftest:1: static extern func(){} int main(){}
@@ -305,7 +305,7 @@ int func(int a, char *a); int main(){}
 emcc:Error: selftest:1: int func(int a, char *a); int main(){}
                                                ^ ローカル変数の重複定義です
 emcc:Note: selftest:1: int func(int a, char *a); int main(){}
-                                     ^ 以前の宣言はここです
+                                     ^ 以前の定義はここです
 # selftest ----------------
 int main(){int a = func();}
 emcc:Warning: selftest:1: int main(){int a = func();}
@@ -315,7 +315,7 @@ void func(){} void func(){} int main(){}
 emcc:Error: selftest:1: void func(){} void func(){} int main(){}
                                                ^ 関数が再定義されています
 emcc:Note: selftest:1: void func(){} void func(){} int main(){}
-                                ^ 以前の宣言はここです
+                                ^ 以前の定義はここです
 # selftest ----------------
 int func;     void func(){} int main(){}
 emcc:Error: selftest:1: int func;     void func(){} int main(){}
@@ -325,7 +325,7 @@ void func(){} int func;     int main(){}
 emcc:Error: selftest:1: void func(){} int func;     int main(){}
                                               ^ 型が一致しません
 emcc:Note: selftest:1: void func(){} int func;     int main(){}
-                                ^ 以前の宣言はここです
+                                ^ 以前の定義はここです
 # selftest ----------------
 int main(){int func(); *func();}
 emcc:Error: selftest:1: int main(){int func(); *func();}
@@ -355,7 +355,7 @@ int main(){extern int func(); extern int*func();}
 emcc:Error: selftest:1: int main(){extern int func(); extern int*func();}
                                                                  ^ 関数の型が一致しません
 emcc:Note: selftest:1: int main(){extern int func(); extern int*func();}
-                                             ^ 以前の宣言はここです
+                                             ^ 以前の定義・宣言はここです
 # selftest ----------------
 # [関数内でstaticな関数の宣言]
 int main(){static void func();}
@@ -506,49 +506,49 @@ int main(void); int main(int x){return 1:}
 emcc:Error: selftest:1: int main(void); int main(int x){return 1:}
                                                 ^ 関数の型が一致しません
 emcc:Note: selftest:1: int main(void); int main(int x){return 1:}
-                               ^ 以前の宣言はここです
+                               ^ 以前の定義・宣言はここです
 # selftest ----------------
 int main(void); int main(int){return 1:}
 emcc:Error: selftest:1: int main(void); int main(int){return 1:}
                                                 ^ 関数の型が一致しません
 emcc:Note: selftest:1: int main(void); int main(int){return 1:}
-                               ^ 以前の宣言はここです
+                               ^ 以前の定義・宣言はここです
 # selftest ----------------
 int main(void); int main(int x);
 emcc:Error: selftest:1: int main(void); int main(int x);
                                                 ^ 関数の型が一致しません
 emcc:Note: selftest:1: int main(void); int main(int x);
-                               ^ 以前の宣言はここです
+                               ^ 以前の定義・宣言はここです
 # selftest ----------------
 void main(void){} void main(int);
 emcc:Error: selftest:1: void main(void){} void main(int);
                                                    ^ 関数の型が一致しません
 emcc:Note: selftest:1: void main(void){} void main(int);
-                                ^ 以前の宣言はここです
+                                ^ 以前の定義・宣言はここです
 # selftest ----------------
 int main(int); int main(int, ...);
 emcc:Error: selftest:1: int main(int); int main(int, ...);
                                                ^ 関数の型が一致しません
 emcc:Note: selftest:1: int main(int); int main(int, ...);
-                               ^ 以前の宣言はここです
+                               ^ 以前の定義・宣言はここです
 # selftest ----------------
 int main(int); int main(){return 1;};
 emcc:Error: selftest:1: int main(int); int main(){return 1;};
                                                ^ 関数の型が一致しません
 emcc:Note: selftest:1: int main(int); int main(){return 1;};
-                               ^ 以前の宣言はここです
+                               ^ 以前の定義・宣言はここです
 # selftest ----------------
 int func(void); int main(){int func(int);}
 emcc:Error: selftest:1: int func(void); int main(){int func(int);}
                                                        ^ 関数の型が一致しません
 emcc:Note: selftest:1: int func(void); int main(){int func(int);}
-                               ^ 以前の宣言はここです
+                               ^ 以前の定義・宣言はここです
 # selftest ----------------
 int main(){int func(void); int func(int);}
 emcc:Error: selftest:1: int main(){int func(void); int func(int);}
                                                        ^ 関数の型が一致しません
 emcc:Note: selftest:1: int main(){int func(void); int func(int);}
-                                      ^ 以前の宣言はここです
+                                      ^ 以前の定義・宣言はここです
 # selftest ----------------
 int main(){typedef int INT=1;}
 emcc:Error: selftest:1: int main(){typedef int INT=1;}
@@ -569,14 +569,14 @@ int func(int a, int b){return 1;}; int main(){return func(1);}
 emcc:Error: selftest:1: int func(int a, int b){return 1;}; int main(){return func(1);}
                                                                                   ^ 引数の数が少なすぎます
 emcc:Note: selftest:1: int func(int a, int b){return 1;}; int main(){return func(1);}
-                                       ^ 関数の定義はここです
+                                       ^ 関数の定義・宣言はここです
 # selftest ----------------
 # [引数1個に対して2個でコール]
 int func(int a){return 1;}; int main(){return func(1,2);}
 emcc:Error: selftest:1: int func(int a){return 1;}; int main(){return func(1,2);}
                                                                              ^ 引数の数が多すぎます
 emcc:Note: selftest:1: int func(int a){return 1;}; int main(){return func(1,2);}
-                                     ^ 関数の定義はここです
+                                     ^ 関数の定義・宣言はここです
 # selftest ----------------
 # [引数0個(void)に対して1個でコール]
 int func(void){return 1;}; int main(){return func(1);}
@@ -590,7 +590,7 @@ int func(int a, int b, ...){return 1;}; void main(){func(1);}
 emcc:Error: selftest:1: int func(int a, int b, ...){return 1;}; void main(){func(1);}
                                                                                  ^ 引数の数が少なすぎます
 emcc:Note: selftest:1: int func(int a, int b, ...){return 1;}; void main(){func(1);}
-                                       ^ 関数の定義はここです
+                                       ^ 関数の定義・宣言はここです
 # selftest ----------------
 # [int*に対してintでコール]
 int func(int*a){return 1;}; int main(){return func(1);}
@@ -695,7 +695,7 @@ int x; int x[4]; int main(){}
 emcc:Error: selftest:1: int x; int x[4]; int main(){}
                                     ^ 型が一致しません
 emcc:Note: selftest:1: int x; int x[4]; int main(){}
-                            ^ 以前の宣言はここです
+                            ^ 以前の定義はここです
 # selftest ----------------
 int main(){"ABC"=1;}
 emcc:Error: selftest:1: int main(){"ABC"=1;}
@@ -826,7 +826,7 @@ int main(){struct E; enum E;}
 emcc:Error: selftest:1: int main(){struct E; enum E;}
                                                   ^ タグの重複定義です
 emcc:Note: selftest:1: int main(){struct E; enum E;}
-                                         ^ 以前の宣言はここです
+                                         ^ 以前の定義はここです
 # selftest ----------------
 int main(){enum E e;}
 emcc:Error: selftest:1: int main(){enum E e;}
@@ -846,7 +846,7 @@ int main(){enum E{A}; enum E{A};}
 emcc:Error: selftest:1: int main(){enum E{A}; enum E{A};}
                                                      ^ enum値の重複定義です
 emcc:Note: selftest:1: int main(){enum E{A}; enum E{A};}
-                                         ^ 以前の宣言はここです
+                                         ^ 以前の定義はここです
 # selftest ----------------
 int main(){enum E{A}; enum E{B};}
 emcc:Error: selftest:1: int main(){enum E{A}; enum E{B};}
@@ -864,19 +864,19 @@ int main(){int e; enum ABC{A,B,C} e;}
 emcc:Error: selftest:1: int main(){int e; enum ABC{A,B,C} e;}
                                                           ^ ローカル変数の重複定義です
 emcc:Note: selftest:1: int main(){int e; enum ABC{A,B,C} e;}
-                                      ^ 以前の宣言はここです
+                                      ^ 以前の定義はここです
 # selftest ----------------
 int main(){enum ABC{A,B,C} e; int e;}
 emcc:Error: selftest:1: int main(){enum ABC{A,B,C} e; int e;}
                                                           ^ ローカル変数の重複定義です
 emcc:Note: selftest:1: int main(){enum ABC{A,B,C} e; int e;}
-                                                  ^ 以前の宣言はここです
+                                                  ^ 以前の定義はここです
 # selftest ----------------
 int main(){enum ABC{A,B,A} e;}
 emcc:Error: selftest:1: int main(){enum ABC{A,B,A} e;}
                                                 ^ enum値の重複定義です
 emcc:Note: selftest:1: int main(){enum ABC{A,B,A} e;}
-                                           ^ 以前の宣言はここです
+                                           ^ 以前の定義はここです
 # selftest ----------------
 int main(){enum ABC{A,B,C} e; enum ABC{X,Y,Z} x;}
 emcc:Error: selftest:1: int main(){enum ABC{A,B,C} e; enum ABC{X,Y,Z} x;}
@@ -888,7 +888,7 @@ int main(){enum ABC{A,B,C} e; enum XYZ{A,Y,Z} x;}
 emcc:Error: selftest:1: int main(){enum ABC{A,B,C} e; enum XYZ{A,Y,Z} x;}
                                                                ^ enum値の重複定義です
 emcc:Note: selftest:1: int main(){enum ABC{A,B,C} e; enum XYZ{A,Y,Z} x;}
-                                           ^ 以前の宣言はここです
+                                           ^ 以前の定義はここです
 # selftest ----------------
 int main(){enum ABC{A,B,C}; enum ABC{P,Q,R} e;}
 emcc:Error: selftest:1: int main(){enum ABC{A,B,C}; enum ABC{P,Q,R} e;}
@@ -906,7 +906,7 @@ int main(){enum S; struct S;}
 emcc:Error: selftest:1: int main(){enum S; struct S;}
                                                   ^ タグの重複定義です
 emcc:Note: selftest:1: int main(){enum S; struct S;}
-                                       ^ 以前の宣言はここです
+                                       ^ 以前の定義はここです
 # selftest ----------------
 int main(){struct S e;}
 emcc:Error: selftest:1: int main(){struct S e;}
@@ -929,7 +929,7 @@ int main(){struct S{int a; int a;}s;}
 emcc:Error: selftest:1: int main(){struct S{int a; int a;}s;}
                                                        ^ メンバの重複定義です
 emcc:Note: selftest:1: int main(){struct S{int a; int a;}s;}
-                                               ^ 以前の宣言はここです
+                                               ^ 以前の定義はここです
 # selftest ----------------
 int main(){struct S{int a; int b;}; unsigned struct S s;}
 emcc:Error: selftest:1: int main(){struct S{int a; int b;}; unsigned struct S s;}
@@ -938,11 +938,11 @@ emcc:Error: selftest:1: int main(){struct S{int a; int b;}; unsigned struct S s;
 # selftest ----------------
 int main(){int a; return a.b;}
 emcc:Error: selftest:1: int main(){int a; return a.b;}
-                                                  ^ 整数(int)に対してメンバ名の指定はできません
+                                                  ^ 整数(int)に対して.の指定はできません
 # selftest ----------------
 int main(){int a; return a->b;}
 emcc:Error: selftest:1: int main(){int a; return a->b;}
-                                                  ^ 整数(int)に対してメンバ名の指定はできません
+                                                  ^ 整数(int)に対して->の指定はできません
 # selftest ----------------
 int main(){struct S{int a;}s; return s.x}
 emcc:Error: selftest:1: int main(){struct S{int a;}s; return s.x}
@@ -950,7 +950,7 @@ emcc:Error: selftest:1: int main(){struct S{int a;}s; return s.x}
 # selftest ----------------
 int main(){struct S{int a;}s; return s->x}
 emcc:Error: selftest:1: int main(){struct S{int a;}s; return s->x}
-                                                              ^ 構造体(struct S)に対してメンバ名の指定はできません
+                                                              ^ 構造体(struct S)に対して->の指定はできません
 # selftest ----------------
 # [スコープの違い]
 int main(){typedef struct ST st_t;{struct ST{int a,b;}; st_t st;}}
@@ -1119,7 +1119,7 @@ int main(){struct U; union U;}
 emcc:Error: selftest:1: int main(){struct U; union U;}
                                                    ^ タグの重複定義です
 emcc:Note: selftest:1: int main(){struct U; union U;}
-                                         ^ 以前の宣言はここです
+                                         ^ 以前の定義はここです
 # selftest ----------------
 int main(){union U u;}
 emcc:Error: selftest:1: int main(){union U u;}
@@ -1142,13 +1142,13 @@ int main(){union U{int a; int a;};}
 emcc:Error: selftest:1: int main(){union U{int a; int a;};}
                                                       ^ メンバの重複定義です
 emcc:Note: selftest:1: int main(){union U{int a; int a;};}
-                                              ^ 以前の宣言はここです
+                                              ^ 以前の定義はここです
 # selftest ----------------
 int main(){union U{int a; int b;}u; int u;}
 emcc:Error: selftest:1: int main(){union U{int a; int b;}u; int u;}
                                                                 ^ ローカル変数の重複定義です
 emcc:Note: selftest:1: int main(){union U{int a; int b;}u; int u;}
-                                                        ^ 以前の宣言はここです
+                                                        ^ 以前の定義はここです
 # selftest ----------------
 int main(){union U{int a; int b;}; signed union U u;}
 emcc:Error: selftest:1: int main(){union U{int a; int b;}; signed union U u;}
@@ -1161,7 +1161,7 @@ emcc:Error: selftest:1: int main(){union U{int a; int b;}u; return u.x;}
 # selftest ----------------
 int main(){union U{int a; int b;}u; return u->x;}
 emcc:Error: selftest:1: int main(){union U{int a; int b;}u; return u->x;}
-                                                                    ^ 共用体(union)に対してメンバ名の指定はできません
+                                                                    ^ 共用体(union)に対して->の指定はできません
 # selftest ----------------
 # [スコープの違い]
 int main(){typedef union UN un_t;{union UN{int a,b;}; un_t un;}}
@@ -1306,14 +1306,14 @@ int main(){struct{int a; union  {int  a; long ub;};};}
 emcc:Error: selftest:1: int main(){struct{int a; union  {int  a; long ub;};};}
                                                               ^ メンバの重複定義です
 emcc:Note: selftest:1: int main(){struct{int a; union  {int  a; long ub;};};}
-                                             ^ 以前の宣言はここです
+                                             ^ 以前の定義はここです
 # selftest ----------------
 # [構造体の中の無名共用体:変数名重複:後]
 int main(){struct{int a; union  {int ua; long ub;}; int ua};}
 emcc:Error: selftest:1: int main(){struct{int a; union  {int ua; long ub;}; int ua};}
                                                                                 ^ メンバの重複定義です
 emcc:Note: selftest:1: int main(){struct{int a; union  {int ua; long ub;}; int ua};}
-                                                            ^ 以前の宣言はここです
+                                                            ^ 以前の定義はここです
 # selftest ----------------
 # [共用体の中の無名構造体:タグ付きは変数名必要]
 int main(){union{int a; struct S{int sa; long sb;};};}
@@ -1325,14 +1325,14 @@ int main(){union{int a; struct  {int  a; long sb;};};}
 emcc:Error: selftest:1: int main(){union{int a; struct  {int  a; long sb;};};}
                                                               ^ メンバの重複定義です
 emcc:Note: selftest:1: int main(){union{int a; struct  {int  a; long sb;};};}
-                                            ^ 以前の宣言はここです
+                                            ^ 以前の定義はここです
 # selftest ----------------
 # [共用体の中の無名構造体:変数名重複:後]
 int main(){union{int a; struct  {int sa; long sb;}; int sa};}
 emcc:Error: selftest:1: int main(){union{int a; struct  {int sa; long sb;}; int sa};}
                                                                                 ^ メンバの重複定義です
 emcc:Note: selftest:1: int main(){union{int a; struct  {int sa; long sb;}; int sa};}
-                                                            ^ 以前の宣言はここです
+                                                            ^ 以前の定義はここです
 # selftest ----------------
 # [ネストしていない無名構造体:]
 int main(){static struct {int sa; long sb;};}
@@ -1354,14 +1354,14 @@ int main(){static struct{int a; union  {int  a; long ub;};};}
 emcc:Error: selftest:1: int main(){static struct{int a; union  {int  a; long ub;};};}
                                                                      ^ メンバの重複定義です
 emcc:Note: selftest:1: int main(){static struct{int a; union  {int  a; long ub;};};}
-                                                    ^ 以前の宣言はここです
+                                                    ^ 以前の定義はここです
 # selftest ----------------
 # [構造体の中の無名共用体:変数名重複:後]
 int main(){static struct{int a; union  {int ua; long ub;}; int ua};}
 emcc:Error: selftest:1: int main(){static struct{int a; union  {int ua; long ub;}; int ua};}
                                                                                        ^ メンバの重複定義です
 emcc:Note: selftest:1: int main(){static struct{int a; union  {int ua; long ub;}; int ua};}
-                                                                   ^ 以前の宣言はここです
+                                                                   ^ 以前の定義はここです
 # selftest ----------------
 # [共用体の中の無名構造体:タグ付きは変数名必要]
 int main(){static union{int a; struct S{int sa; long sb;};};}
@@ -1373,14 +1373,14 @@ int main(){static union{int a; struct  {int  a; long sb;};};}
 emcc:Error: selftest:1: int main(){static union{int a; struct  {int  a; long sb;};};}
                                                                      ^ メンバの重複定義です
 emcc:Note: selftest:1: int main(){static union{int a; struct  {int  a; long sb;};};}
-                                                   ^ 以前の宣言はここです
+                                                   ^ 以前の定義はここです
 # selftest ----------------
 # [共用体の中の無名構造体:変数名重複:後]
 int main(){static union{int a; struct  {int sa; long sb;}; int sa};}
 emcc:Error: selftest:1: int main(){static union{int a; struct  {int sa; long sb;}; int sa};}
                                                                                        ^ メンバの重複定義です
 emcc:Note: selftest:1: int main(){static union{int a; struct  {int sa; long sb;}; int sa};}
-                                                                   ^ 以前の宣言はここです
+                                                                   ^ 以前の定義はここです
 # ===== 構造体・共用体の配列の初期化 =====
 # selftest ----------------
 # [初期化リストが配列サイズを超えています]
@@ -1454,13 +1454,13 @@ void func3(char*str){}          void func3(const char*str); void main(){}
 emcc:Error: selftest:1: void func3(char*str){}          void func3(const char*str); void main(){}
                                                                   ^ 関数の型が一致しません
 emcc:Note: selftest:1: void func3(char*str){}          void func3(const char*str); void main(){}
-                                 ^ 以前の宣言はここです
+                                 ^ 以前の定義・宣言はここです
 # selftest ----------------
 char*func3(void){return 0;}          const char*func3(void); void main(){}
 emcc:Error: selftest:1: char*func3(void){return 0;}          const char*func3(void); void main(){}
                                                                              ^ 関数の型が一致しません
 emcc:Note: selftest:1: char*func3(void){return 0;}          const char*func3(void); void main(){}
-                                 ^ 以前の宣言はここです
+                                 ^ 以前の定義・宣言はここです
 # selftest ----------------
 # [戻り値const char*のconst情報は失われます]
 int main(){void func(char*p); const char*p; func(p); return 0;}

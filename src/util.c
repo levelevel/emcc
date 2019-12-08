@@ -200,8 +200,8 @@ static void err_ctrl(ErCtrl ctrl) {
     }
 }
 
-void error_at(const char*loc, const char*fmt, ...){
-    message_at(loc, "Error");
+void error_at(const SrcInfo *info, const char *fmt, ...){
+    message_at(info->input, "Error");
 
     va_list ap;
     va_start(ap, fmt);
@@ -211,8 +211,8 @@ void error_at(const char*loc, const char*fmt, ...){
     err_ctrl(error_ctrl);
 }
 
-void warning_at(const char*loc, const char*fmt, ...){
-    message_at(loc, "Warning");
+void warning_at(const SrcInfo *info, const char *fmt, ...){
+    message_at(info->input, "Warning");
 
     va_list ap;
     va_start(ap, fmt);
@@ -222,8 +222,8 @@ void warning_at(const char*loc, const char*fmt, ...){
     err_ctrl(warning_ctrl);
 }
 
-void note_at(const char*loc, const char*fmt, ...){
-    message_at(loc, "Note");
+void note_at(const SrcInfo *info, const char *fmt, ...){
+    message_at(info->input, "Note");
 
     va_list ap;
     va_start(ap, fmt);
@@ -235,7 +235,7 @@ void note_at(const char*loc, const char*fmt, ...){
 
 // エラーと警告を報告するための関数 --------------------------
 // printfと同じ引数を取る
-void error(const char*fmt, ...) {
+void error(const char *fmt, ...) {
     va_list ap;
     va_start(ap, fmt);
     fprintf(stderr, "emcc:Error: ");
@@ -244,7 +244,7 @@ void error(const char*fmt, ...) {
     exit(1);
 }
 
-void warning(const char*fmt, ...) {
+void warning(const char *fmt, ...) {
     va_list ap;
     va_start(ap, fmt);
     fprintf(stderr, "emcc:Warning: ");

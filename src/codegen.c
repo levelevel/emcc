@@ -255,9 +255,9 @@ static char *get_byte_string(Node *node, int start_idx, int array_size, int data
     Node **nodes = (Node**)node->lst->data;
     for (int i=start_idx; i<end_idx; i++) {
         if (nodes[i]->type==ND_INIT_LIST) {
-            warning_at(nodes[i]->input, "スカラーがリストで初期化されています");
+            warning_at(&node_info(nodes[i]), "スカラーがリストで初期化されています");
             if (!node_is_constant(lst_data(nodes[i]->lst,0), &val)) return NULL;
-            if (lst_len(nodes[i]->lst)>1) warning_at(get_lst_node(nodes[i]->lst,1)->input,
+            if (lst_len(nodes[i]->lst)>1) warning_at(&node_info(get_lst_node(nodes[i]->lst,1)),
                 "初期化リストが配列サイズを超えています");
         } else if (!node_is_constant(nodes[i], &val)) {
             return NULL;
@@ -333,7 +333,7 @@ static int gen_array_init_local(Type *tp, Node *init, int start_idx, int offset)
                     int ret = gen_array_init_local(tp->ptr_of, val_node, start_idx, new_offset);
                     cnt++;
                     if (val_node->type==ND_INIT_LIST && start_idx+ret < lst_len(val_node->lst)) {
-                        warning_at(get_lst_node(val_node->lst, ret)->input, "初期化リストが配列サイズを超えています");
+                        warning_at(&node_info(get_lst_node(val_node->lst, ret)), "初期化リストが配列サイズを超えています");
                     }
                 } else {
                     gen_array_init_local(tp->ptr_of, init, start_idx+cnt, new_offset);
@@ -356,7 +356,9 @@ static int gen_array_init_local(Type *tp, Node *init, int start_idx, int offset)
         printf("  rep movsb\n");
         if (array_size > data_len) gen_fill_zero("rdi", 0, array_size-data_len, sizeof(char));
         if (array_size < init->tp->array_size) {
-            warning_at(init->input+array_size+1, "初期化リストが配列サイズを超えています");
+            SrcInfo info = node_info(init);
+            info.input += array_size+1;
+            warning_at(&info, "初期化リストが配列サイズを超えています");
         }
         return array_size;
     }
@@ -385,7 +387,7 @@ static int gen_array_init_local(Type *tp, Node *init, int start_idx, int offset)
                     int ret = gen_struct_init_local(struct_def, offset+struct_def->val*idx, val_node, 0);
                     cnt ++;
                     if (ret < lst_len(val_node->lst)) {
-                        warning_at(get_lst_node(val_node->lst, ret)->input, "構造体・共用体の初期化リストが要素数を超えています");
+                        warning_at(&node_info(get_lst_node(val_node->lst, ret)), "構造体・共用体の初期化リストが要素数を超えています");
                     }
                 } else {
                     cnt += gen_struct_init_local(struct_def, offset+struct_def->val*idx, init, start_idx+cnt);
@@ -434,7 +436,7 @@ static int gen_array_init_local(Type *tp, Node *init, int start_idx, int offset)
             Node *val_node = lst_data(init->lst, start_idx+idx);
             static Node node = {0};
             node.tp = tp->ptr_of;
-            check_assignment(&node, val_node, val_node->input);
+            check_assignment(&node, val_node, &node_info(val_node));
             if (val_node->type==ND_NUM) {
                 printf("  %s %s PTR [rdi+%d], %ld\n", 
                     write_command_of_type(tp->ptr_of),
@@ -483,7 +485,7 @@ static int gen_array_init_global(Type *tp, Node *init, int start_idx) {
                     int ret = gen_array_init_global(tp->ptr_of, val_node, 0);
                     cnt++;
                     if (val_node->type==ND_INIT_LIST && ret < lst_len(val_node->lst)) {
-                        warning_at(get_lst_node(val_node->lst, start_idx+ret)->input, "初期化リストが配列サイズを超えています");
+                        warning_at(&node_info(get_lst_node(val_node->lst, start_idx+ret)), "初期化リストが配列サイズを超えています");
                     }
                 } else {
                     gen_array_init_global(tp->ptr_of, init, start_idx+cnt);
@@ -509,7 +511,9 @@ static int gen_array_init_global(Type *tp, Node *init, int start_idx) {
         }
         if (array_size > data_len) printf("  .zero %d\n", array_size-data_len);
         if (array_size < init->tp->array_size) {
-            warning_at(init->input+array_size+1, "初期化リストが配列サイズを超えています");
+            SrcInfo info = node_info(init);
+            info.input += array_size+1;
+            warning_at(&info, "初期化リストが配列サイズを超えています");
         }
         return array_size;
     }
@@ -533,7 +537,7 @@ static int gen_array_init_global(Type *tp, Node *init, int start_idx) {
                     int ret = gen_struct_init_global(struct_def, val_node, 0);
                     cnt++;
                     if (ret < lst_len(val_node->lst)) {
-                        warning_at(get_lst_node(val_node->lst, start_idx+ret)->input, "構造体・共用体の初期化リストが要素数を超えています");
+                        warning_at(&node_info(get_lst_node(val_node->lst, start_idx+ret)), "構造体・共用体の初期化リストが要素数を超えています");
                     }
                 } else {
                     cnt += gen_struct_init_global(struct_def, init, start_idx+cnt);
@@ -552,13 +556,13 @@ static int gen_array_init_global(Type *tp, Node *init, int start_idx) {
         //val_nodeがアドレス+定数の形式になっているかどうかを調べる。
         //varにND_ADDRESS(&var)のノード、valに定数を返す
         if (val_node->type==ND_INIT_LIST) {
-            warning_at(val_node->input, "スカラーがリストで初期化されています");
+            warning_at(&node_info(val_node), "スカラーがリストで初期化されています");
             if (!node_is_constant_or_address(lst_data(val_node->lst,0), &val, &var)) {
-                error_at(val_node->input, "初期値が定数式ではありません");
+                error_at(&node_info(val_node), "初期値が定数式ではありません");
             }
-            if (lst_len(val_node->lst)>1) warning_at(((Node*)lst_data(val_node->lst,1))->input, "初期化リストが配列サイズを超えています");
+            if (lst_len(val_node->lst)>1) warning_at(&node_info(get_lst_node(val_node->lst,1)), "初期化リストが配列サイズを超えています");
         } else if (!node_is_constant_or_address(val_node, &val, &var)) {
-            error_at(val_node->input, "初期値が定数式ではありません");
+            error_at(&node_info(val_node), "初期値が定数式ではありません");
         }
         if (var && val) {
             printf("  .%s %s%+ld\n", val_name, get_asm_var_name(var->rhs), val*size_of(var->rhs->tp));
@@ -587,7 +591,7 @@ static void gen_array_init(Node *node) {
         printf("  pop rax\n");
     } else abort();
     if (init->type==ND_INIT_LIST && cnt < lst_len(init->lst)) {
-        warning_at(get_lst_node(init->lst, cnt)->input, "初期化リストが配列サイズを超えています");
+        warning_at(&node_info(get_lst_node(init->lst, cnt)), "初期化リストが配列サイズを超えています");
     }
 }
 
@@ -625,7 +629,7 @@ static int gen_struct_init_local(Node *node, int offset, Node *init, int start_i
                 ret = gen_struct_init_local(member, offset, val_node, 0);
                 cnt++;
                 if (val_node->type==ND_INIT_LIST && ret < lst_len(val_node->lst)) 
-                    warning_at(get_lst_node(val_node->lst, ret)->input, "構造体・共用体の初期化リストが要素数を超えています");
+                    warning_at(&node_info(get_lst_node(val_node->lst, ret)), "構造体・共用体の初期化リストが要素数を超えています");
             } else {
                 ret = gen_struct_init_local(member, offset, init, start_idx+i);
                 cnt += ret;
@@ -655,13 +659,13 @@ static int gen_struct_init_local(Node *node, int offset, Node *init, int start_i
             val_node = &zero_node;
             cnt = 0;
         }
-        check_assignment(node, val_node, val_node->input);
+        check_assignment(node, val_node, &node_info(val_node));
         sprintf(buf, "rdi+%d", offset + node->offset);
         sprintf(cbuf, "%s(%s)", node->name, get_node_type_str(node));
         if (val_node->type==ND_NUM) {
             gen_write_reg_const_val(buf, val_node->val, node->tp, cbuf, 0);
         } else {
-            if (val_node->type==ND_INIT_LIST) warning_at(val_node->input, "スカラーがリストで初期化されています");
+            if (val_node->type==ND_INIT_LIST) warning_at(&node_info(val_node), "スカラーがリストで初期化されています");
             gen(val_node);
             printf("  pop rax\n");
             printf("  mov rdi, [rsp]\n");
@@ -702,7 +706,7 @@ static int gen_struct_init_global(Node *node, Node *init, int start_idx) {
                 ret = gen_struct_init_global(member, val_node, 0);
                 cnt++;
                 if (val_node->type==ND_INIT_LIST && ret < lst_len(val_node->lst)) 
-                    warning_at(get_lst_node(val_node->lst, ret)->input, "構造体・共用体の初期化リストが要素数を超えています");
+                    warning_at(&node_info(get_lst_node(val_node->lst, ret)), "構造体・共用体の初期化リストが要素数を超えています");
             } else {
                 ret = gen_struct_init_global(member, init, start_idx+i);
                 cnt += ret;
@@ -734,13 +738,13 @@ static int gen_struct_init_global(Node *node, Node *init, int start_idx) {
             val_node = &zero_node;
             cnt = 0;
         }
-        check_assignment(node, val_node, val_node->input);
-        if (val_node->type==ND_INIT_LIST) warning_at(val_node->input, "スカラーがリストで初期化されています");
+        check_assignment(node, val_node, &node_info(val_node));
+        if (val_node->type==ND_INIT_LIST) warning_at(&node_info(val_node), "スカラーがリストで初期化されています");
         char *val_name = val_name_of_type(tp);
         long val;
         Node *var = NULL;
         if (!node_is_constant_or_address(val_node, &val, &var)) {
-            error_at(val_node->input, "初期値が定数式ではありません");
+            error_at(&node_info(val_node), "初期値が定数式ではありません");
         }
         if (var && val) {
             printf("  .%s %s%+ld\n", val_name, get_asm_var_name(var->rhs), val*size_of(var->rhs->tp));
@@ -775,7 +779,7 @@ static void gen_struct_init(Node *node) {
         cnt = gen_struct_init_local(struct_def, 0/*=offset*/, init, 0/*=start_idx*/);
     } else abort();
     if (init->type==ND_INIT_LIST && cnt < lst_len(init->lst)) {
-        warning_at(get_lst_node(init->lst, cnt)->input, "構造体・共用体の初期化リストが要素数を超えています");
+        warning_at(&node_info(get_lst_node(init->lst, cnt)), "構造体・共用体の初期化リストが要素数を超えています");
     }
 }
 
@@ -798,7 +802,7 @@ static void gen_lval(Node*node, int push) {
         comment("LVALUE (%s)var\n", get_node_type_str(node));
         gen_lval(node->rhs, push);
     } else {
-        error_at(node->input, "アドレスを生成できません");
+        error_at(&node_info(node), "アドレスを生成できません");
     }
 }
 
@@ -956,7 +960,7 @@ static int gen(Node*node) {
     {
         Node *tmp;
         if (map_get(cur_funcdef->label_map, node->name, (void**)&tmp)!=0) {
-            if (tmp->type!=ND_LABEL) error_at(node->input, "ラベルが未定義です");
+            if (tmp->type!=ND_LABEL) error_at(&node_info(node), "ラベルが未定義です");
         }
         printf("  jmp .L%s\n", node->name);
         return 0;
@@ -1101,11 +1105,11 @@ static int gen(Node*node) {
         continue_label = org_continue_label;
         return 0;
     case ND_BREAK:          //break
-        if (break_label==NULL) error_at(node->input,"ここではbreakを使用できません");
+        if (break_label==NULL) error_at(&node_info(node),"ここではbreakを使用できません");
         printf("  jmp %s\t# break\n", break_label);
         return 0;
     case ND_CONTINUE:       //continue
-        if (continue_label==NULL) error_at(node->input,"ここではcontinueを使用できません");
+        if (continue_label==NULL) error_at(&node_info(node),"ここではcontinueを使用できません");
         printf("  jmp %s\t# continue\n", continue_label);
         return 0;
     case ND_BLOCK:          //{ ブロック }
@@ -1500,7 +1504,7 @@ static void gen_single_val(const char*size, Node *node) {
         printf("  .%s %ld\n", size, ((Node*)node->lst->data[0])->val);
         break;
     default:
-        error_at(node->input, "スカラー定数ではありません");
+        error_at(&node_info(node), "スカラー定数ではありません");
     }
 }
 
@@ -1570,7 +1574,7 @@ static void gen_global_var(Node *node) {
                 if (node_is_static(rhs)) {
                     printf("  .quad %s\n", get_asm_var_name(rhs));
                 } else {
-                    error_at(rhs->input,"静的変数の初期化には定数式が必要です");
+                    error_at(&node_info(rhs),"静的変数の初期化には定数式が必要です");
                 }
                 break;
             case ND_NUM:

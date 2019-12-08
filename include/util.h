@@ -48,12 +48,6 @@ typedef struct {
 typedef Vector Stack;
 typedef iVector iStack;
 
-void error_at(const char*loc, const char*fmt, ...);
-void warning_at(const char*loc, const char*fmt, ...);
-void note_at(const char*loc, const char*fmt, ...);
-void error(const char*fmt, ...);
-void warning(const char*fmt, ...);
-
 #ifndef EXTERN
 #define EXTERN extern
 #endif
@@ -62,11 +56,18 @@ EXTERN char *g_cur_filename;//論理的な処理中のファイル（includeフ�
 EXTERN int   g_cur_line;
 EXTERN char *g_filename;    //コンパイル対象のソースファイル（コマンドラインで指定されたもの）
 EXTERN char *g_user_input;
-void error_at(const char*loc, const char*fmt, ...);
-void warning_at(const char*loc, const char*fmt, ...);
-void note_at(const char*loc, const char*fmt, ...);
-void error(const char*fmt, ...);
-void warning(const char*fmt, ...);
+
+//エラー出力のためのソースファイルの情報
+typedef struct {
+    char *input;    //トークン文字列（エラーメッセージ用）
+    char *file;     //ソースファイル名
+    int line;       //行番号
+} SrcInfo;
+void error_at  (const SrcInfo *info, const char *fmt, ...);
+void warning_at(const SrcInfo *info, const char *fmt, ...);
+void note_at   (const SrcInfo *info, const char *fmt, ...);
+void error     (const char *fmt, ...);
+void warning   (const char *fmt, ...);
 void run_test(void);
 
 typedef enum {

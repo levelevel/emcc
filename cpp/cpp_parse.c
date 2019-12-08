@@ -84,7 +84,7 @@ static int ppconsume(PPTKtype type) {
 //次のトークンが期待したものでない場合はエラーとする。スペースは読み飛ばす。
 static void ppexpect(PPTKtype type) {
     skip_space();
-    if (pptokens[pptoken_pos]->type != type) error_at(input_str(), "%cがありません", type);
+    if (pptokens[pptoken_pos]->type != type) error_at(&cur_token_info(), "%cがありません", type);
     pptoken_pos++;
 }
 
@@ -132,7 +132,7 @@ static PPToken *next_is_directive(void) {
 }
 
 static void check_ifblock(void) {
-    if (ppif_stat_stack->len<2) error_at(input_str(), "対応する#ifがありません");
+    if (ppif_stat_stack->len<2) error_at(&cur_token_info(), "対応する#ifがありません");
 }
 
 static int group_parts(void);
@@ -186,7 +186,7 @@ static int expand_macro(PPToken *token) {
     for (int i=0; i<macro->para_len; i++) {
         token = pptokens[macro->para_start+i];
         if (token->type != PPTK_IDENT || !expand_macro(token)) {
-            fprintf(g_fp, "%.*s", token->len, token->input);
+            fprintf(g_fp, "%.*s", token->len, token->info.input);
         }
     }
     macro->in_use = 0;
@@ -198,7 +198,7 @@ static void text_line(void) {
         pptoken_pos++;
         if (if_is_active()) {
             if (token->type != PPTK_IDENT || !expand_macro(token)) {
-                fprintf(g_fp, "%.*s", token->len, token->input);
+                fprintf(g_fp, "%.*s", token->len, token->info.input);
             }
         }
         if (token->type == PPTK_NEWLINE) break;
@@ -220,7 +220,7 @@ static int if_section(PPTKtype type) {
     if (!if_group(type)) return 0;
     elif_group();
     else_group();
-    if (!endif_group()) error_at(input_str(), "#endifがありません");
+    if (!endif_group()) error_at(&cur_token_info(), "#endifがありません");
 
     return 1;
 }
@@ -236,17 +236,17 @@ static int if_group(PPTKtype type) {
     case PPTK_IF:
         consume_directive();
         long val;
-        if (!constant_expression(&val)) error_at(input_str(), "定数式が必要です");
+        if (!constant_expression(&val)) error_at(&cur_token_info(), "定数式が必要です");
         is_true = val;
         break;
     case PPTK_IFDEF:
         consume_directive();
-        if (!ppconsume_ident(&name)) error_at(input_str(), "識別子が必要です");
+        if (!ppconsume_ident(&name)) error_at(&cur_token_info(), "識別子が必要です");
         is_true = map_get(define_map, name, NULL);
         break;
     case PPTK_IFNDEF:
         consume_directive();
-        if (!ppconsume_ident(&name)) error_at(input_str(), "識別子が必要です");
+        if (!ppconsume_ident(&name)) error_at(&cur_token_info(), "識別子が必要です");
         is_true = !map_get(define_map, name, NULL);
         break;
         break;
@@ -271,7 +271,7 @@ static int elif_group(void) {
     } else if (cur_ppif_stat==PPIF_FALSE) {
         long val = 0;
         consume_directive();
-        if (!constant_expression(&val)) error_at(input_str(), "定数式が必要です");
+        if (!constant_expression(&val)) error_at(&cur_token_info(), "定数式が必要です");
         if (val) cur_ppif_stat = PPIF_TRUE;
     } else {
         cur_ppif_stat = PPIF_SKIP;
@@ -324,12 +324,12 @@ static int control_line(PPTKtype type) {
     if (type==PPTK_DEFINE) {
         char *name;
         consume_directive();
-        if (!ppconsume_ident(&name)) error_at(input_str(), "識別子が必要です");
+        if (!ppconsume_ident(&name)) error_at(&cur_token_info(), "識別子が必要です");
         define_macro(name);
     } else if (type==PPTK_UNDEF) {
         char *name;
         consume_directive();
-        if (!ppconsume_ident(&name)) error_at(input_str(), "識別子が必要です");
+        if (!ppconsume_ident(&name)) error_at(&cur_token_info(), "識別子が必要です");
         map_del(define_map, name);
     } else {
         return 0;
@@ -356,7 +356,7 @@ static void define_macro(const char*name) {
         skip_space();
         macro->args = identifier_list();
         skip_space();
-        if (!ppconsume(')')) error_at(input_str(), ")がありません");
+        if (!ppconsume(')')) error_at(&cur_token_info(), ")がありません");
     }
     skip_space();
     macro->para_start = pptoken_pos;

@@ -60,7 +60,7 @@ const char *get_PPTKtype_str(PPTKtype type) {
 static PPToken *new_token(PPTKtype type, char *input) {
     PPToken *token = calloc(1, sizeof(PPToken));
     token->type = type;
-    token->input = input;
+    token->info.input = input;
     vec_push(pptoken_vec, token);
     return token;
 }
@@ -91,7 +91,7 @@ static void dump_tokens() {
         default:
             if (token->type==PPTK_NUM) printf("val=%ld, ", token->val);
             if (token->ident) printf("name=\"%s\"\n", token->ident);
-            else              printf("input=\"%.*s\"\n", token->len, token->input);
+            else              printf("input=\"%.*s\"\n", token->len, token->info.input);
             break;
         }
     }
@@ -104,7 +104,7 @@ void cpp_tokenize(char *p) {
         if (*p == ' ' || *p == '\t') {
             token = new_token(PPTK_SPACE, p);
             while (*p==' ' || *p == '\t') p++;
-            token->len = p - token->input;
+            token->len = p - token->info.input;
             continue;
         } else if (*p == '\n') {
             token = new_token(PPTK_NEWLINE, p);
@@ -123,23 +123,24 @@ void cpp_tokenize(char *p) {
         } else if (strncmp(p, "//", 2)==0) {
             token = new_token(PPTK_PPTOKEN, p);
             while (*p && *p!='\n') p++;
-            token->len = p - token->input;
+            token->len = p - token->info.input;
             if (in_define) {
                 token->type = PPTK_SPACE;
                 token->len = 1;
-                token->input = " ";
+                token->info.input = " ";
             }
             continue;
         } else if (strncmp(p, "/*", 2)==0) {
             token = new_token(PPTK_PPTOKEN, p);
             char *q = strstr(p + 2, "*/");
-            if (!q) error_at(p, "コメントが閉じられていません");
+            SrcInfo info = {p, g_cur_filename, g_cur_line};
+            if (!q) error_at(&info, "コメントが閉じられていません");
             p = q + 2;
-            token->len = p - token->input;
+            token->len = p - token->info.input;
             if (in_define) {
                 token->type = PPTK_SPACE;
                 token->len = 1;
-                token->input = " ";
+                token->info.input = " ";
             }
             continue;
         }
@@ -166,8 +167,8 @@ void cpp_tokenize(char *p) {
             token = new_token(PPTK_IDENT, p);
             p++;
             while (is_alnum(*p)) p++;
-            token->len = p - token->input;
-            token->ident = get_ident(token->input);
+            token->len = p - token->info.input;
+            token->ident = get_ident(token->info.input);
         } else if (isdigit(*p)) {   //数値
             token = new_token(PPTK_NUM, p);
             char *p0 = p;
@@ -179,24 +180,26 @@ void cpp_tokenize(char *p) {
                 token->val = strtol(p, &p, 0);     //10進、8進
             }
             suffix = p;
+            SrcInfo info0 = {p0, g_cur_filename, g_cur_line};
+            SrcInfo info = {suffix, g_cur_filename, g_cur_line};
             for (;;) {
                 if (*p=='u' || *p=='U') {
-                    if (is_U) error_at(suffix, "不正な整数サフィックスです");
+                    if (is_U) error_at(&info, "不正な整数サフィックスです");
                     token->val = strtoul(p0, NULL, 0);  //unsignedで読み直す
                     p++; is_U = 1; continue;
                 } else if (strncmp(p, "ll", 2)==0 || strncmp(p, "LL", 2)==0) {     //LLは無視
-                    if (is_L) error_at(suffix, "不正な整数サフィックスです");
+                    if (is_L) error_at(&info, "不正な整数サフィックスです");
                     p += 2; is_L = 1; continue;
                 } else if (*p=='l' || *p=='L') {        //Lは無視
-                    if (is_L) error_at(suffix, "不正な整数サフィックスです");
+                    if (is_L) error_at(&info, "不正な整数サフィックスです");
                     p++; is_L = 1; continue;
                 } else if (is_alnum(*p)) {
-                    if (*suffix=='8' || *suffix=='9') error_at(p0, "不正な8進表記です");
-                    error_at(suffix, "不正な整数サフィックスです");
+                    if (*suffix=='8' || *suffix=='9') error_at(&info0, "不正な8進表記です");
+                    error_at(&info, "不正な整数サフィックスです");
                 }
                 break;
             }
-            token->len = p - token->input;
+            token->len = p - token->info.input;
         } else if (*p == '"') {     //文字列
             token = new_token(PPTK_STRING, p++);
             while (*p && (*p)!='"') {
@@ -206,12 +209,12 @@ void cpp_tokenize(char *p) {
                 }
             }
             p++;
-            token->len = p - token->input;
+            token->len = p - token->info.input;
         } else if (*p == '\'') {    //文字
             token = new_token(PPTK_PPTOKEN, p++);
             if (*p=='\\') p++;
             while (*p && (*p)!='\'') p++;
-            token->len = p - token->input;
+            token->len = p - token->info.input;
         } else {
             token = new_token(PPTK_PPTOKEN, p++);
             token->len = 1;
