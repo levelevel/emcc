@@ -1040,7 +1040,7 @@ static int gen(Node*node) {
         org_break_label = break_label;
         org_continue_label = continue_label;
         sprintf(b_label, ".LWhileEnd%03d",  cnt); break_label = b_label;
-        sprintf(c_label, ".LWhileBody%03d", cnt); continue_label = c_label;
+        sprintf(c_label, ".LWhileBegin%03d", cnt); continue_label = c_label;
         comment("WHILE(A)B\n");
         printf(".LWhileBegin%03d:\n", cnt);
         ret = gen(node->lhs); //A

@@ -220,6 +220,12 @@ static int while1() {
     while(0);
     int i=0, sum=0;
     while (i<=10) {sum = sum + i; i++;}
+    i=0;
+    while (i<10) {
+        i++;
+        continue;
+        abort();
+    }
     return a==0 && sum==55;
 }
 
@@ -230,6 +236,11 @@ static int do1() {
     do ; while(0);
     int i=0, sum=0;
     do {sum += i; i++;} while (i<=10);
+    do {
+        i++;
+        continue;
+        abort();
+    } while (i<10);
     return a==0 && sum==55;
 }
 

@@ -48,6 +48,8 @@ int main(int argc, char**argv) {
     pptoken_pos          = 0;
 
     preprocessing_file();
+
+    return 0;
 }
 
 void test_error(void){}

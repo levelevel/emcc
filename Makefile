@@ -12,11 +12,14 @@ OBJS2=obj2/util.o $(SRCS2:.c=.o)
 
 CPPHEADS=cpp/emcpp.h include/util.h
 CPPSRCS=$(wildcard cpp/*.c)
-CPPOBJS=cpp/emcpp.o cpp/cpp_parse.o cpp/cpp_tokenize.o obj2/util.o
+CPPSRCS2=$(wildcard cpp/*.c)
+CPPOBJS=$(SRCS:.c=.o)
+CPPOBJS2=cpp/emcpp.o cpp/cpp_parse.o obj2/cpp_tokenize.o obj2/util.o
 
 TARGET=emcc
 TARGET2=emcc2
 CPPEXE=emcpp
+CPPEXE2=emcpp2
 
 all:$(TARGET) $(TARGET2) $(CPPEXE)
 
@@ -36,7 +39,7 @@ obj2/cpp_tokenize.o: cpp/cpp_tokenize.c
 $(TARGET): $(OBJS)
 	$(CC) $(CFLAGS) -o $(TARGET) $(OBJS) $(LDFLAGS)
 
-$(TARGET2): $(OBJS2)
+$(TARGET2): $(OBJS2) $(TARGET)
 	$(CC) $(CFLAGS) -o $(TARGET2) $(OBJS2) $(LDFLAGS)
 
 $(OBJS): $(HEADS)
@@ -44,6 +47,9 @@ $(OBJS2): $(HEADS)
 
 $(CPPEXE): $(CPPOBJS)
 	$(CC) $(CFLAGS) -o $(CPPEXE) $(CPPOBJS) $(LDFLAGS)
+
+$(CPPEXE2): $(CPPOBJS2) $(TARGET)
+	$(CC) $(CFLAGS) -o $(CPPEXE2) $(CPPOBJS2) $(LDFLAGS)
 
 $(CPPOBJS): $(CPPHEADS)
 
@@ -58,4 +64,4 @@ testcpp: $(CPPEXE)
 	./testcpp.sh
 
 clean:
-	rm -f  $(TARGET) $(CPPEXE) $(OBJS) $(CPPOBJS) *~ tmp/*
+	rm -f  $(TARGET) $(TARGET2) $(CPPEXE) $(CPPEXE2) $(OBJS) $(OBJS2) $(CPPOBJS) $(CPPOBJS2) *~ tmp/*
