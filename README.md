@@ -14,14 +14,18 @@
 
 ## セルフホストに向けたTODOリスト
 
-- プリプロセッサを実装
-- セルフホスト用に最低限のヘッダファイルを用意する（または本物を読み込む）
+- 地道にデバッグ
+- 可変長引数（stdarg）
 
-## 当面実装予定なし
+## セルフホストに必須ではないが実装したいもの
 
+- プリプロセッサ（emcpp）
 - 引数の数が6より多い関数
 - 関数の引数・戻り値での構造体の値渡し
 - ビットフィールド
+
+## 当面実装予定なし
+
 - [複合リテラル (Compound Literal)](http://seclan.dll.jp/c99d/c99d07.htm#dt19991101)
 - [指示付きの初期化子 (Designated Initializer)](http://seclan.dll.jp/c99d/c99d07.htm#dt19991025)
 - 実数（float, double, long double, _Complex, _Imaginar）
