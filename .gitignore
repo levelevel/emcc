@@ -3,9 +3,10 @@
 *~
 *.o
 *.bak
-tmp*
-emcc
-emcc2
-emcpp
+tmp*/
+/emcc
+/emcc2
+/emcpp
+/emcpp2
 /test.c
 /obj2/

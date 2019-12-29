@@ -8,12 +8,12 @@ HEADS=include/emcc.h include/util.h
 SRCS=$(wildcard src/*.c) test_src/test_error.c
 OBJS=$(SRCS:.c=.o)
 SRCS2=$(wildcard src/[^u]*.c) test_src/test_error.c
-OBJS2=obj2/util.o $(SRCS2:.c=.o)
+OBJS2=$(SRCS2:.c=.o) obj2/util.o
 
 CPPHEADS=cpp/emcpp.h include/util.h
 CPPSRCS=$(wildcard cpp/*.c)
 CPPSRCS2=$(wildcard cpp/*.c)
-CPPOBJS=$(SRCS:.c=.o)
+CPPOBJS=$(CPPSRCS:.c=.o) obj2/util.o
 CPPOBJS2=cpp/emcpp.o cpp/cpp_parse.o obj2/cpp_tokenize.o obj2/util.o
 
 TARGET=emcc
@@ -61,7 +61,9 @@ tester:  $(TARGET)
 	./test.sh -e
 
 testcpp: $(CPPEXE)
-	./testcpp.sh
+	./testcpp.sh emcpp
+testcpp2: $(CPPEXE2)
+	./testcpp.sh emcpp2
 
 clean:
 	rm -f  $(TARGET) $(TARGET2) $(CPPEXE) $(CPPEXE2) $(OBJS) $(OBJS2) $(CPPOBJS) $(CPPOBJS2) *~ tmp/*

@@ -1,7 +1,28 @@
 #!/bin/bash
 set -u
 
-TESTDIR=./tmpcpp
+function Usage() {
+  echo "Usage: testcpp.sh [emcpp|emcpp2]"
+  exit 1
+}
+
+TESTDIR=./tmp_emcpp
+CPP=./emcpp
+
+while [ $# -gt 0 ]; do
+  case $1 in
+  emcpp*)
+    TESTDIR=./tmp_$1
+    CPP=./$1 ;;
+  *) Usage; exit 1 ;;
+  esac
+  shift
+done
+
+if [ ! -e $CPP ]; then
+  echo "ERROR: $CPP not found"
+  exit 1
+fi
 
 if [ ! -e $TESTDIR ]; then mkdir $TESTDIR; fi
 rm -f $TESTDIR/*
@@ -10,7 +31,7 @@ awk \
 -e '
 function run_test() {
   #system("cpp " f_in " | grep -v ^# > " f_outgcc);
-  system("./emcpp " f_in " > " f_out);
+  system("'$CPP' " f_in " > " f_out);
   ret = system("diff -c " f_out " " f_expect " > " f_diff);
   if (ret) {
     ng_cnt++;
@@ -18,6 +39,7 @@ function run_test() {
     system("cat " f_diff);
   } else {
     ok_cnt++;
+    system("rm " f_diff);
   }
 }
 BEGIN {
