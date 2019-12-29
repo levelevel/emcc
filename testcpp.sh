@@ -45,12 +45,14 @@ function run_test() {
 BEGIN {
   dir = "'$TESTDIR'";
   name = "";
+  cnt = 0;
   ok_cnt = 0;
   ng_cnt = 0;
 }
 /^@in/ { 
     if (name != "") run_test();
-    name = $2;
+    cnt++;
+    name = cnt "_" $2;
     if (name == "") { print "line:" NR " " $1": ファイル名がありません" | "cat 1>&2"; exit };
     base = dir "/" name;
     f_in     = base ".c";
@@ -81,7 +83,7 @@ a;  /*comment2*/
 @expect
 1;  //comment1
 a;  /*comment2*/
-@in if1else ===================
+@in if1_else ===================
 #if 1   //comment
   TRUE
 #else   //comment
@@ -93,7 +95,7 @@ a;  /*comment2*/
 
 
 
-@in if0else ===================
+@in if0_else ===================
 #if 0
   FALSE
 #else
@@ -137,7 +139,7 @@ a;  /*comment2*/
 
   TRUE
 
-@in if1nest ===================
+@in if1_nest ===================
 #if 1
   TRUE
   #if 0

@@ -1095,6 +1095,7 @@ static Node *enumerator(Node *enum_def, int default_val) {
 static Node *statement(void) {
     Node *node, *lhs, *rhs;
     Token *token = cur_token();
+    Token *token2;
 
     // labeled_statement
     if (token_is(TK_IDENT) && next_token_is(':')) {
@@ -1130,12 +1131,11 @@ static Node *statement(void) {
         node_A = expression();          //A
         check_scalar(node_A, "条件部");
         expect(')');
-        token = cur_token();
+        token2 = cur_token();
         begin_local_scope();
         node_B = statement();           //B
         end_scope();
-        node = new_node(ND_UNDEF, node_A, node_B, NULL, token); //lhs
-        token = cur_token();
+        node = new_node(ND_UNDEF, node_A, node_B, NULL, token2); //lhs
         if (consume(TK_ELSE)) {
             begin_local_scope();
             node = new_node(ND_IF, node, statement(), NULL, token); //C
@@ -1272,6 +1272,7 @@ static Node *compound_statement(int is_func_body) {
         func_name_node->sclass = SC_STATIC;
     }
 
+    Token *last_token = cur_token();  //'}'のはず
     while (!consume('}')) {
         Node *block_item;
         if (token_is_type_spec() || token_is(TK_SASSERT)) {
@@ -1286,8 +1287,14 @@ static Node *compound_statement(int is_func_body) {
         }
         if (block_item->type==ND_EMPTY) continue;
         vec_push(node->lst, block_item);
+        last_token = cur_token();
     }
     end_scope();
+
+    if (is_func_body) {
+        Node *node2 = new_node(ND_FUNC_END, NULL, NULL, NULL, last_token);
+        vec_push(node->lst, node2);
+    }
     return node;
 }
 

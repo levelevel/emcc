@@ -22,13 +22,20 @@ static void usage(void) {
 }
 
 static void read_opt(int argc, char*argv[]) {
-    g_dump_node = 0;
-    g_dump_type = 0;
+    //コンパイラオプション
+    g_g_opt         = 0;    //-g
+
+    //デバッグオプション
+    g_dump_node     = 0;
+    g_dump_type     = 0;
+    g_parse_only    = 0;
     
     if (argc<=1) usage();
 
     for (; argc>1;  argc--, argv++) {
-        if (strncmp(argv[1], "-e", 2)==0) {
+        if (strcmp(argv[1], "-g")==0) {
+            g_g_opt = 1;
+        } else if (strncmp(argv[1], "-e", 2)==0) {
             error_ctrl = get_ctrl(argv[1]);
         } else if (strncmp(argv[1], "-w", 2)==0) {
             warning_ctrl = get_ctrl(argv[1]);

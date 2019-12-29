@@ -76,6 +76,7 @@ while [ $# -gt 0 ]; do
   shift
 done
 
+#テストプログラムをコンパイルする
 test_src test_src/expr.c
 ./$CC -test > /dev/null 2> tmp/9cc_test.log
 tail -4 tmp/9cc_test.log

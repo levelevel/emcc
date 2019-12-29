@@ -113,6 +113,7 @@ static Token *new_token(TKtype type, char *input) {
     token->info.input = input;
     token->info.line = g_cur_line;
     token->info.file = g_cur_filename;
+    token->info.col  = 0;
     vec_push(token_vec, token);
     return token;
 }

@@ -549,6 +549,7 @@ void check_func_return(Funcdef *funcdef) {
     if (func_tp->type==VOID) return;    //void関数が値を返す場合はreturn側でチェックする
     Node **nodes = (Node**)funcdef->node->rhs->lst->data;
     int len = funcdef->node->rhs->lst->len;
+    if (len && nodes[len-1]->type==ND_FUNC_END) len--;  //関数の最後にはND_FUNC_ENDがあるので除外
     if (len==0 || nodes[len-1]->type!=ND_RETURN) {
         SrcInfo info = cur_token_info();
         info.input -= 2;

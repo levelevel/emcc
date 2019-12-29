@@ -31,6 +31,32 @@ static void comment(const char*fmt, ...) {
     vprintf(fmt, ap);
 }
 
+//デバッガ向けにソースのロケーションを出力する
+static void print_loc(Node *node) {
+    if (!g_g_opt) return;
+    SrcInfo *info = &node->token->info;
+    static int file_no = 0;
+    static char *file = NULL;
+    static int line = -1;
+    static int col  = -1;
+    //同じ情報が連続する場合はスキップする
+    int file_eq = file && (info->file==file || strcmp(info->file, file)==0); 
+    //if (file_eq && info->line==line && info->col==col) return;
+
+    if (!file_eq) {
+        file = info->file;
+        file_no++;
+        printf("  .file %d \"%s\"\n", file_no, file);
+    }
+    line = info->line;
+    col  = info->col;
+    printf("  .loc %d %d %d\n", file_no, line, col);
+}
+static void print_cfi(const char *fmt) {
+    if (!g_g_opt) return;
+    puts(fmt);
+}
+
 //乗算をシフトで実現できるときのシフト量
 static int shift_size(int val) {
     switch (val) {
@@ -891,12 +917,15 @@ static int gen(Node*node) {
     case ND_FUNC_DEF:       //関数定義
     case ND_FUNC_DECL:      //関数宣言
         return 0;
+    case ND_FUNC_END:       //関数の最後
+        print_loc(node);
+        return 0;
     case ND_LOCAL_VAR_DEF:  //ローカル変数定義
         if (node->rhs==NULL) return 0;
+        print_loc(node);
         return gen(node->rhs);  //代入
     case ND_LOCAL_VAR:
     case ND_GLOBAL_VAR:     //変数参照
-        //if (node->tp->type==ARRAY || node->tp->type==STRUCT) {
         if ((node->tp->type==ARRAY && !(node->type==ND_LOCAL_VAR && node->tp->array_size<0))
             || node->tp->type==STRUCT) {
             //アドレスをそのまま返す
@@ -918,6 +947,7 @@ static int gen(Node*node) {
             Vector *formal_list = get_func_args(node);
             Node **formal_nodes = formal_list?(Node**)formal_list->data:NULL;
             for (i=0; i < actual_list->len; i++) {
+                print_loc(node);
                 comment("ARGLIST[%d]\n", i);
                 gen(actual_nodes[i]);  //スタックトップに引数がセットされる
                 if (formal_nodes && i<formal_list->len &&
@@ -926,6 +956,7 @@ static int gen(Node*node) {
                 }
             }
         }
+        print_loc(node);
         if (node->rhs==NULL ||          //未定義の関数のコール
             node->rhs->tp->type==FUNC) {//定義済み関数のコール
             for (; i; i--) {
@@ -960,6 +991,7 @@ static int gen(Node*node) {
         return gen(node->rhs);
     case ND_GOTO:
     {
+        print_loc(node);
         Node *tmp;
         if (map_get(cur_funcdef->label_map, node->name, (void**)&tmp)!=0) {
             if (tmp->type!=ND_LABEL) error_at(&node_info(node), "ラベルが未定義です");
@@ -968,6 +1000,7 @@ static int gen(Node*node) {
         return 0;
     }
     case ND_RETURN:         //return
+        print_loc(node);
         if (node->rhs) {
             comment("RETURN (%s)\n", get_node_type_str(node));
             gen(node->rhs);
@@ -976,11 +1009,10 @@ static int gen(Node*node) {
         } else {
             comment("RETURN\n");
         }
-        printf("  mov rsp, rbp\n");
-        printf("  pop rbp\n");
-        printf("  ret\n");
+        printf("  jmp .%s.RET\n", cur_funcdef->func_name);
         return 0;
     case ND_IF:             //if (A) B [else C]
+        print_loc(node);
         cnt = ++global_index;
         comment("IF(A) B [else C]\n");
         ret = gen(node->lhs->lhs); //A
@@ -1004,6 +1036,7 @@ static int gen(Node*node) {
         return 0;
     case ND_SWITCH:         //switch (A) B
     {
+        print_loc(node);
         cnt = ++global_index;
         Node *org_cur_switch = cur_switch;
         cur_switch = node;
@@ -1036,6 +1069,7 @@ static int gen(Node*node) {
         return 0;
     }
     case ND_WHILE:          //while (A) B
+        print_loc(node);
         cnt = ++global_index;
         org_break_label = break_label;
         org_continue_label = continue_label;
@@ -1056,6 +1090,7 @@ static int gen(Node*node) {
         continue_label = org_continue_label;
         return 0;
     case ND_DO:             //do A while(B));
+        print_loc(node);
         cnt = ++global_index;
         org_break_label = break_label;
         org_continue_label = continue_label;
@@ -1076,6 +1111,7 @@ static int gen(Node*node) {
         continue_label = org_continue_label;
         return 0;
     case ND_FOR:            //for (A;B;C) D
+        print_loc(node);
         cnt = ++global_index;
         org_break_label = break_label;
         org_continue_label = continue_label;
@@ -1085,6 +1121,7 @@ static int gen(Node*node) {
         if (gen(node->lhs->lhs))//A
             printf("  pop rax\n");
         printf(".LForBegin%03d:\n", cnt);
+        print_loc(node);
         comment("FOR:B\n");
         if (gen(node->lhs->rhs)) {//B
             printf("  pop rax\n");
@@ -1094,10 +1131,12 @@ static int gen(Node*node) {
             printf("  jmp .LForEnd%03d\n", cnt);
         }
         printf(".LForBody%03d:\n", cnt);
+        print_loc(node);
         comment("FOR:D\n");
         if (gen(node->rhs->rhs))    //D
             printf("  pop rax\n");
         printf(".LForNext%03d:\n", cnt);
+        print_loc(node);
         comment("FOR:C\n");
         if (gen(node->rhs->lhs))//C
             printf("  pop rax\n");
@@ -1107,15 +1146,18 @@ static int gen(Node*node) {
         continue_label = org_continue_label;
         return 0;
     case ND_BREAK:          //break
+        print_loc(node);
         if (break_label==NULL) error_at(&node_info(node),"ここではbreakを使用できません");
         printf("  jmp %s\t# break\n", break_label);
         return 0;
     case ND_CONTINUE:       //continue
+        print_loc(node);
         if (continue_label==NULL) error_at(&node_info(node),"ここではcontinueを使用できません");
         printf("  jmp %s\t# continue\n", continue_label);
         return 0;
     case ND_BLOCK:          //{ ブロック }
     {
+        print_loc(node);
         Vector *blocks = node->lst;
         Node **nodes = (Node**)blocks->data;
         for (int i=0; i < blocks->len; i++) {
@@ -1141,6 +1183,7 @@ static int gen(Node*node) {
         printf("  push rax\n");
         break;
     case ND_ASSIGN:         //代入('=')
+        print_loc(node);
         comment("%s=\n", display_name(node->lhs));
         if (node->lhs->tp->type==ARRAY) {   //ローカル変数の配列の初期値
             //ここに到達するのはローカル変数の配列の初期化のはず
@@ -1180,6 +1223,7 @@ static int gen(Node*node) {
     case ND_AND_ASSIGN:
     case ND_XOR_ASSIGN:
     case ND_OR_ASSIGN:
+        print_loc(node);
         comment("A <op>= B");
         gen_lval(node->lhs, 1); //lhsのアドレスをpush
         printf("  mov rdi, QWORD PTR [rsp]\n");  //lhsのアドレス
@@ -1517,8 +1561,10 @@ static void gen_global_var(Node *node) {
     switch (node->type) {
     case ND_FUNC_DEF:
     case ND_FUNC_DECL:
-        if (!node_is_static(node))
+        if (!node_is_static(node)) {
             printf(".global %s\n", node->name);
+            printf(".type %s, @function\n", node->name);
+        }
         return;
     case ND_GLOBAL_VAR_DEF:
         break;
@@ -1621,6 +1667,7 @@ void gen_program(void) {
 
     // アセンブリのヘッダ部分を出力
     printf(".intel_syntax noprefix\n");
+    printf(".file \"%s\"\n", g_filename);
     printf(".section .data\n");
 
     //グローバル変数
@@ -1655,11 +1702,16 @@ void gen_program(void) {
         printf("%s:\t#%s %s(%s)\n", funcdef[i]->func_name, 
             get_type_str(funcdef[i]->tp), funcdef[i]->func_name,
             get_func_args_str(funcdef[i]->node->lhs));
+        print_loc(cur_funcdef->node);
+        print_cfi("  .cfi_startproc");
 
         // プロローグ
         // ローカル変数用の領域を確保する
         printf("  push rbp\n");
+        print_cfi("  .cfi_def_cfa_offset 16");
+        print_cfi("  .cfi_offset rbp, -16");
         printf("  mov rbp, rsp\n");
+        print_cfi("  .cfi_def_cfa_register rbp");
         printf("  sub rsp, %d\n", calc_stack_offset(funcdef[i]->var_stack_size));
 
         // 引数をスタックのローカル変数領域にコピー
@@ -1686,10 +1738,14 @@ void gen_program(void) {
 
         // エピローグ
         // 最後の式の結果がRAXに残っているのでそれが返り値になる
+        printf(".%s.RET:\n", funcdef[i]->func_name);
         printf("  # Epilogue\n");
         printf("  mov rsp, rbp\n");
         printf("  pop rbp\n");
+        print_cfi("  .cfi_def_cfa rsp, 8");
         printf("  ret\n");
+        print_cfi("  .cfi_endproc");
+        if (g_g_opt) printf("  .size %s, .-%s\n", funcdef[i]->func_name, funcdef[i]->func_name);
     }
 
 }

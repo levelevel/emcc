@@ -16,54 +16,59 @@ CPPSRCS2=$(wildcard cpp/*.c)
 CPPOBJS=$(CPPSRCS:.c=.o) obj2/util.o
 CPPOBJS2=cpp/emcpp.o cpp/cpp_parse.o obj2/cpp_tokenize.o obj2/util.o
 
-TARGET=emcc
-TARGET2=emcc2
-CPPEXE=emcpp
-CPPEXE2=emcpp2
+EMCPP=emcpp
+EMCPP2=emcpp2
 
-all:$(TARGET) $(TARGET2) $(CPPEXE)
+all:$(EMCC) $(EMCC2) $(EMCPP)
 
-obj2/emcpp.o: cpp/emcpp.c
+obj2/emcpp.o: cpp/emcpp.c $(EMCC)
 	cpp $(CFLAGS2) cpp/emcpp.c -o obj2/emcpp.cpp.c
 	$(EMCC) obj2/emcpp.cpp.c > obj2/emcpp.s
 	$(CC) -c $(CFLAGS2) obj2/emcpp.s -o obj2/emcpp.o
-obj2/util.o: src/util.c
+obj2/util.o: src/util.c $(EMCC)
 	cpp $(CFLAGS2) src/util.c -o obj2/util.cpp.c
 	$(EMCC) obj2/util.cpp.c > obj2/util.s
 	$(CC) -c $(CFLAGS2) obj2/util.s -o obj2/util.o
-obj2/cpp_tokenize.o: cpp/cpp_tokenize.c
+obj2/cpp_tokenize.o: cpp/cpp_tokenize.c $(EMCC)
 	cpp $(CFLAGS2) cpp/cpp_tokenize.c -o obj2/cpp_tokenize.cpp.c
 	$(EMCC) obj2/cpp_tokenize.cpp.c > obj2/cpp_tokenize.s
 	$(CC) -c $(CFLAGS2) obj2/cpp_tokenize.s -o obj2/cpp_tokenize.o
 
-$(TARGET): $(OBJS)
-	$(CC) $(CFLAGS) -o $(TARGET) $(OBJS) $(LDFLAGS)
+$(EMCC): $(OBJS)
+	$(CC) $(CFLAGS) -o $(EMCC) $(OBJS) $(LDFLAGS)
 
-$(TARGET2): $(OBJS2) $(TARGET)
-	$(CC) $(CFLAGS) -o $(TARGET2) $(OBJS2) $(LDFLAGS)
+$(EMCC2): $(OBJS2) $(EMCC)
+	$(CC) $(CFLAGS) -o $(EMCC2) $(OBJS2) $(LDFLAGS)
 
 $(OBJS): $(HEADS)
 $(OBJS2): $(HEADS)
 
-$(CPPEXE): $(CPPOBJS)
-	$(CC) $(CFLAGS) -o $(CPPEXE) $(CPPOBJS) $(LDFLAGS)
+$(EMCPP): $(CPPOBJS)
+	$(CC) $(CFLAGS) -o $(EMCPP) $(CPPOBJS) $(LDFLAGS)
 
-$(CPPEXE2): $(CPPOBJS2) $(TARGET)
-	$(CC) $(CFLAGS) -o $(CPPEXE2) $(CPPOBJS2) $(LDFLAGS)
+$(EMCPP2): $(CPPOBJS2) $(EMCC)
+	$(CC) $(CFLAGS) -o $(EMCPP2) $(CPPOBJS2) $(LDFLAGS)
 
 $(CPPOBJS): $(CPPHEADS)
 
 testall: test testcpp
 
-test: $(TARGET) 
+test: $(EMCC) 
 	./test.sh
-tester:  $(TARGET)
+tester:  $(EMCC)
 	./test.sh -e
 
-testcpp: $(CPPEXE)
+testcpp: $(EMCPP)
 	./testcpp.sh emcpp
-testcpp2: $(CPPEXE2)
+testcpp2: $(EMCPP2)
 	./testcpp.sh emcpp2
 
+test_gdb: $(EMCC)
+	cpp $(CFLAGS) test_src/test_gdb.c -o test_src/test_gdb.cpp.c
+	$(EMCC) test_src/test_gdb.cpp.c > test_src/test_gdb.s
+	$(CC) $(CFLAGS) -o test_src/test_gdb test_src/test_gdb.s
+	$(CC) $(CFLAGS) -o test_src/test_gdb0 test_src/test_gdb.c
+	gdb ./test_src/test_gdb
+
 clean:
-	rm -f  $(TARGET) $(TARGET2) $(CPPEXE) $(CPPEXE2) $(OBJS) $(OBJS2) $(CPPOBJS) $(CPPOBJS2) *~ tmp/*
+	rm -f  $(EMCC) $(EMCC2) $(EMCPP) $(EMCPP2) $(OBJS) $(OBJS2) $(CPPOBJS) $(CPPOBJS2) *~ tmp/*

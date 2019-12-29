@@ -4,6 +4,7 @@
 *.o
 *.bak
 tmp*/
+test*/
 /emcc
 /emcc2
 /emcpp

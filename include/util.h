@@ -62,6 +62,7 @@ typedef struct {
     char *input;    //トークン文字列（エラーメッセージ用）
     char *file;     //ソースファイル名
     int line;       //行番号
+    int col;        //カラム位置
 } SrcInfo;
 void error_at  (const SrcInfo *info, const char *fmt, ...);
 void warning_at(const SrcInfo *info, const char *fmt, ...);

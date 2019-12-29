@@ -180,6 +180,7 @@ typedef enum {
                     //                 rhs=ND_FUNC_DEF|DECL/ND_LOCAL|GLOBAL_VAR_DEF(FUNC)
     ND_FUNC_DEF,    //関数定義          lhs=引数リスト(ND_LIST), rhs=ブロック(ND_BLOCK：関数本体)
     ND_FUNC_DECL,   //関数宣言          lhs=引数リスト(ND_LIST)
+    ND_FUNC_END,    //関数の最後
     ND_VARARGS,     //...
     ND_EMPTY,       //空のノード
 } NDtype;
@@ -334,6 +335,9 @@ EXTERN int global_index;
 
 //現在処理中のswitch文: cur_switch->valをラベルの識別indexとして用いる
 EXTERN Node *cur_switch;
+
+//コンパイラオプション
+EXTERN int g_g_opt;     //-g
 
 //デバッグオプション
 EXTERN int g_dump_node; //関数をダンプする
