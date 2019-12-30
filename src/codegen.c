@@ -1127,7 +1127,6 @@ static int gen(Node*node) {
             printf("  pop rax\n");
             printf("  cmp rax, 0\n");
             printf("  jne .LForBody%03d\n", cnt);
-            printf("  push rax\n");
             printf("  jmp .LForEnd%03d\n", cnt);
         }
         printf(".LForBody%03d:\n", cnt);

@@ -248,7 +248,7 @@ static int for1() {
     int a, b, i, j;
     for (i=0; i<5; i++) a=i;
     for (i=10; i; i--) {b=i; continue; b=999;};
-    //for (int i=10; i; i--) {};
+    for (int i=10; i; i--) {};
     for (;;) {break;}
 
     int x=0;
@@ -269,6 +269,14 @@ static int for2() {
         n3 = i;
     }
     return n1==5 && n2==10 && n3==20;
+}
+static int for3() {
+    int aaa = 1, bbb = 1;
+    for (int idx=0;idx<3;idx++) {
+        aaa += bbb;
+    }
+    printf("aaa=%d\n", aaa);
+    return aaa;
 }
 
 static int gtri_x;
@@ -295,6 +303,8 @@ static int iterate() {
     TEST(while1);
     TEST(do1);
     TEST(for1);
+    TEST(for2);
+    TEST(for3);
     TEST(tri_cond);
     TEST(goto1);
     return 1;
