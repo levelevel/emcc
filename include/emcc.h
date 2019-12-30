@@ -472,10 +472,6 @@ void *stack_get(Stack *stack, int idx);
 #define stack_len  vec_len
 #define stack_data vec_data
 
-int is_alnum(char c);
-int is_alpha(char c);
-int is_hex(char c);
-
 char *read_file(const char *path);
 
 char* get_type_str(const Type *tp);

@@ -68,6 +68,7 @@ test_gdb: $(EMCC)
 	$(EMCC) test_src/test_gdb.cpp.c > test_src/test_gdb.s
 	$(CC) $(CFLAGS) -o test_src/test_gdb test_src/test_gdb.s
 	$(CC) $(CFLAGS) -o test_src/test_gdb0 test_src/test_gdb.c
+	$(CC) $(CFLAGS) -S -o test_src/test_gdb0.s test_src/test_gdb.c
 	gdb ./test_src/test_gdb
 
 clean:

@@ -169,7 +169,7 @@ void cpp_tokenize(char *p) {
             while (is_alnum(*p)) p++;
             token->len = p - token->info.input;
             token->ident = get_ident(token->info.input);
-        } else if (isdigit(*p)) {   //数値
+        } else if (is_digit(*p)) {   //数値
             token = new_token(PPTK_NUM, p);
             char *p0 = p;
             char *suffix;

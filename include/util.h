@@ -114,8 +114,9 @@ int istack_push(iStack *stack, int elem);
 int istack_pop(iStack *stack);
 int istack_get(iStack *stack, int idx);
 
-int is_alnum(char c);
-int is_alpha(char c);
-int is_hex(char c);
+int is_alnum(int c);
+int is_alpha(int c);
+int is_xdigit(int c);
+int is_digit(int c);
 
 char *read_file(const char *path);

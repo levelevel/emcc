@@ -140,17 +140,20 @@ int istack_get(iStack *stack, int idx) {
 
 // ユーティリティ ----------------------------------------
 //識別子に使用できる文字
-int is_alnum(char c) {
+int is_alnum(int c) {
     return ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z') ||
            ('0' <= c && c <= '9') || (c == '_');
 }
 //識別子の先頭に使用できる文字
-int is_alpha(char c) {
+int is_alpha(int c) {
     return ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z') || (c == '_');
 }
 //16進数に使用できる文字
-int is_hex(char c) {
+int is_xdigit(int c) {
     return ('0' <= c && c <= '9') || ('a' <= c && c <= 'F') || ('A' <= c && c <= 'F');
+}
+int is_digit(int c) {
+    return '0' <= c && c <= '9';
 }
 
 //ファイルを1個の文字列バッファに読み込む
