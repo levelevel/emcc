@@ -384,8 +384,9 @@ static Node *init_declarator(Type *decl_spec, Type *tp, char *name) {
     tp   = node->tp;
     name = node->name;
 
-    if (node_is_typedef(node)) {
+    if (get_storage_class(tp)==SC_TYPEDEF) {
         node->type = ND_TYPEDEF;
+        node->sclass = SC_TYPEDEF;
         regist_var_def(node);
         return node;
     }
