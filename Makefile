@@ -1,3 +1,5 @@
+CPP=cpp
+
 EMCC=./emcc
 EMCC2=./emcc2
 
@@ -18,24 +20,25 @@ CPPOBJS2=cpp/emcpp.o obj2/cpp_parse.o obj2/cpp_tokenize.o obj2/util.o
 
 EMCPP=emcpp
 EMCPP2=emcpp2
+EMCCFLAGS=-g
 
 all:$(EMCC) $(EMCC2) $(EMCPP)
 
 obj2/emcpp.o: cpp/emcpp.c $(EMCC)
-	cpp $(CFLAGS2) cpp/emcpp.c -o obj2/emcpp.cpp.c
-	$(EMCC) obj2/emcpp.cpp.c > obj2/emcpp.s
+	$(CPP) $(CFLAGS2) cpp/emcpp.c -o obj2/emcpp.cpp.c
+	$(EMCC) $(EMCCFLAGS) obj2/emcpp.cpp.c > obj2/emcpp.s
 	$(CC) -c $(CFLAGS2) obj2/emcpp.s -o obj2/emcpp.o
 obj2/cpp_parse.o: cpp/cpp_parse.c $(EMCC)
-	cpp $(CFLAGS2) cpp/cpp_parse.c -o obj2/cpp_parse.cpp.c
-	$(EMCC) obj2/cpp_parse.cpp.c > obj2/cpp_parse.s
+	$(CPP) $(CFLAGS2) cpp/cpp_parse.c -o obj2/cpp_parse.cpp.c
+	$(EMCC) $(EMCCFLAGS) obj2/cpp_parse.cpp.c > obj2/cpp_parse.s
 	$(CC) -c $(CFLAGS2) obj2/cpp_parse.s -o obj2/cpp_parse.o
 obj2/cpp_tokenize.o: cpp/cpp_tokenize.c $(EMCC)
-	cpp $(CFLAGS2) cpp/cpp_tokenize.c -o obj2/cpp_tokenize.cpp.c
-	$(EMCC) obj2/cpp_tokenize.cpp.c > obj2/cpp_tokenize.s
+	$(CPP) $(CFLAGS2) cpp/cpp_tokenize.c -o obj2/cpp_tokenize.cpp.c
+	$(EMCC) $(EMCCFLAGS) obj2/cpp_tokenize.cpp.c > obj2/cpp_tokenize.s
 	$(CC) -c $(CFLAGS2) obj2/cpp_tokenize.s -o obj2/cpp_tokenize.o
 obj2/util.o: src/util.c $(EMCC)
-	cpp $(CFLAGS2) src/util.c -o obj2/util.cpp.c
-	$(EMCC) obj2/util.cpp.c > obj2/util.s
+	$(CPP) $(CFLAGS2) src/util.c -o obj2/util.cpp.c
+	$(EMCC) $(EMCCFLAGS) obj2/util.cpp.c > obj2/util.s
 	$(CC) -c $(CFLAGS2) obj2/util.s -o obj2/util.o
 
 $(EMCC): $(OBJS)
@@ -55,7 +58,7 @@ $(EMCPP2): $(CPPOBJS2) $(EMCC)
 
 $(CPPOBJS): $(CPPHEADS)
 
-testall: test testcpp
+testall: test testcpp testcpp2
 
 test: $(EMCC) 
 	./test.sh
@@ -68,7 +71,7 @@ testcpp2: $(EMCPP2)
 	./testcpp.sh emcpp2
 
 test_gdb: $(EMCC)
-	cpp $(CFLAGS) test_src/test_gdb.c -o test_src/test_gdb.cpp.c
+	$(CPP) $(CFLAGS) test_src/test_gdb.c -o test_src/test_gdb.cpp.c
 	$(EMCC) test_src/test_gdb.cpp.c > test_src/test_gdb.s
 	$(CC) $(CFLAGS) -o test_src/test_gdb test_src/test_gdb.s
 	$(CC) $(CFLAGS) -o test_src/test_gdb0 test_src/test_gdb.c
@@ -76,4 +79,6 @@ test_gdb: $(EMCC)
 	gdb ./test_src/test_gdb
 
 clean:
-	rm -f  $(EMCC) $(EMCC2) $(EMCPP) $(EMCPP2) $(OBJS) $(OBJS2) $(CPPOBJS) $(CPPOBJS2) *~ tmp/*
+	rm -f $(EMCC) $(EMCC2) $(EMCPP) $(EMCPP2) $(OBJS) $(OBJS2) $(CPPOBJS) $(CPPOBJS2)
+	rm -f */*.s */*.cpp.c *~ tmp/*
+	rm -f ./test_src/test_gdb ./test_src/test_gdb0

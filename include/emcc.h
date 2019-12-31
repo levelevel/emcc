@@ -396,7 +396,7 @@ void set_struct_size(Node *node, int base_offset);
 int node_is_constant(Node *node, long *val);
 int node_is_constant_or_address(Node *node, long *valp, Node **varp);
 #define type_is_static(_tp) (get_storage_class(_tp)==SC_STATIC)
-#define node_is_static(_node) (get_storage_class(_node->tp)==SC_STATIC || (_node)->sclass==SC_STATIC)
+#define node_is_static(_node) ((_node)->sclass==SC_STATIC)
 #define node_is_extern(_node) (get_storage_class(_node->tp)==SC_EXTERN || (_node)->sclass==SC_EXTERN)
 #define node_is_typedef(_node) (get_storage_class(_node->tp)==SC_TYPEDEF || (_node)->sclass==SC_TYPEDEF)
 #define node_is_local_static_var(_node) (((_node)->type==ND_LOCAL_VAR||(_node)->type==ND_LOCAL_VAR_DEF) && node_is_static(_node))
