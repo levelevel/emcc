@@ -217,24 +217,24 @@ test_src/expr.c:2486:46: warning: excess elements in scalar initializer
                                               ^
 test_src/expr.c:2486:46: note: (near initialization for ‘gs2a_xyz.z’)
 test_src/expr.c: In function ‘Union2’:
-test_src/expr.c:2698:16: warning: excess elements in union initializer
+test_src/expr.c:2712:16: warning: excess elements in union initializer
      } u10 = {1,2}, u1=u10;
                 ^
-test_src/expr.c:2698:16: note: (near initialization for ‘u10’)
+test_src/expr.c:2712:16: note: (near initialization for ‘u10’)
 test_src/expr.c: In function ‘Union2Arrow’:
-test_src/expr.c:2716:16: warning: excess elements in union initializer
+test_src/expr.c:2730:16: warning: excess elements in union initializer
      } u10 = {1,2}, u1, *u1p=&u1;
                 ^
-test_src/expr.c:2716:16: note: (near initialization for ‘u10’)
+test_src/expr.c:2730:16: note: (near initialization for ‘u10’)
 test_src/expr.c: In function ‘func_const2’:
-test_src/expr.c:2892:12: warning: return discards ‘const’ qualifier from pointer target type [-Wdiscarded-qualifiers]
+test_src/expr.c:2906:12: warning: return discards ‘const’ qualifier from pointer target type [-Wdiscarded-qualifiers]
      return str; //warning: return discards 'const' qualifier from pointer target type [-Wdiscarded-qualifiers]
             ^~~
 test_src/expr.c: In function ‘Const’:
-test_src/expr.c:2901:17: warning: passing argument 1 of ‘func_const3’ discards ‘const’ qualifier from pointer target type [-Wdiscarded-qualifiers]
+test_src/expr.c:2915:17: warning: passing argument 1 of ‘func_const3’ discards ‘const’ qualifier from pointer target type [-Wdiscarded-qualifiers]
      func_const3(p1);    //warning
                  ^~
-test_src/expr.c:2894:14: note: expected ‘char *’ but argument is of type ‘const char *’
+test_src/expr.c:2908:14: note: expected ‘char *’ but argument is of type ‘const char *’
  static char *func_const3(char*str){return str;}
               ^~~~~~~~~~~
   OK: logical1
@@ -414,6 +414,7 @@ aaa=4
   OK: AnonymouseStruct1
   OK: AnonymouseStruct2
   OK: StructEtc
+  OK: StructEtc2
   OK: Struct
   OK: Union1
   OK: Union1Arrow

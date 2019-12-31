@@ -2578,6 +2578,19 @@ static int StructEtc(void) {
     extern struct UnKnown a;
     return 1;
 }
+static int StructEtc2(void) {
+    struct{int a;} st[3] = {1,2,3}, *p;
+    return (p=&st[0])->a == 1
+        && (p++)->a == 1
+        && (++p)->a == 3
+        && (&st[0])->a == 1
+        && (&st[0]+1)->a == 2
+        && (&*p)->a == 3
+        && (p?&st[0]:&st[1])->a == 1
+        && (*&st[1]).a == 2
+        && (*(&st[1]+1)).a == 3;
+    //  && (p?st[0]:st[1]).a == 1;//★
+}
 static int Struct(void) {
     TEST(Struct1);
     TEST(Struct1Arrow);
@@ -2602,6 +2615,7 @@ static int Struct(void) {
     TEST(AnonymouseStruct2);
     
     TEST(StructEtc);
+    TEST(StructEtc2);
     return 1;
 }
 

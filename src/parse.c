@@ -1293,6 +1293,7 @@ static Node *compound_statement(int is_func_body) {
 
     if (is_func_body) {
         Node *node2 = new_node(ND_FUNC_END, NULL, NULL, NULL, last_token);
+        node2->name = cur_funcdef->func_name;
         vec_push(node->lst, node2);
     }
     return node;
@@ -1332,6 +1333,7 @@ static Node *constant_expression(void) {
     return node;
 }
 
+#define copy_node_name(_n1,_n2) ((_n1)->name=(_n2)->name, (_n1)->disp_name=(_n2)->disp_name)
 //代入（右結合）
 //    assignment_expression   = conditional_expression
 //                            | unary_expression ( "=" | "+=" | "-=" ) assignment_expression
@@ -1358,7 +1360,8 @@ static Node *assignment_expression(void) {
         check_arg(node, &token->info, CHK_CONST, "代入");
         rhs = assignment_expression();
         check_assignment(node, rhs, &token->info);
-        node = new_node('=', node, rhs, node->tp, token); //ND_ASIGN
+        node = new_node('=', node, rhs, node->tp, token); //ND_ASSIGN
+        copy_node_name(node, node->lhs);
     } else if (consume(TK_PLUS_ASSIGN)      // +=
             || consume(TK_MINUS_ASSIGN)     // -=
             || consume(TK_MUL_ASSIGN)       // *=
@@ -1389,6 +1392,7 @@ static Node *assignment_expression(void) {
         rhs = assignment_expression(); 
         check_arg(rhs, &node_info(rhs), CHK_NOT(CHK_INTEGER), msg);
         node = new_node(type, node, rhs, node->tp, token);
+        copy_node_name(node, node->lhs);
     }
     return node;
 }
@@ -1405,6 +1409,7 @@ static Node *conditional_expression(void) {
         rhs = conditional_expression();
         sub_node = new_node(ND_UNDEF, lhs, rhs, lhs->tp, token);
         node = new_node(ND_TRI_COND, node, sub_node, lhs->tp, node->token);
+        node->disp_name = "?:";
     }
     return node;
 }
@@ -1570,6 +1575,7 @@ static Node *additive_expression(void) {
                 error_at(&node_info(lhs), "ポインタ同士の加算です");
             Type *tp = node_is_ptr(lhs) ? lhs->tp : rhs->tp;
             node = new_node('+', lhs, rhs, tp, token);
+            node->disp_name = "+";
         } else if (consume('-')) {
             rhs = multiplicative_expression();
             if (node_is_ptr(lhs) && node_is_ptr(rhs)) {
@@ -1580,6 +1586,7 @@ static Node *additive_expression(void) {
                 error_at(&node_info(lhs), "ポインタによる減算です");
             }
             node = new_node('-', lhs, rhs, rhs->tp, token);
+            node->disp_name = "-";
             if (node_is_ptr(lhs) && node_is_ptr(rhs)) node->tp = new_type(INT, 0);
         } else {
             break;
@@ -1662,10 +1669,12 @@ static Node *unary_expression(void) {
         node = unary_expression();
         check_arg(node, &token->info, CHK_STRUCT|CHK_UNION|CHK_ARRAY|CHK_CONST, "++");
         node = new_node(ND_INC_PRE, NULL, node, node->tp, token);
+        copy_node_name(node, node->rhs);
     } else if (consume(TK_DEC)) {
         node = unary_expression();
         check_arg(node, &token->info, CHK_STRUCT|CHK_UNION|CHK_ARRAY|CHK_CONST, "--");
         node = new_node(ND_DEC_PRE, NULL, node, node->tp, token);
+        copy_node_name(node, node->rhs);
     } else if (consume('*')) {
         node = cast_expression();
         check_arg(node, &token->info, CHK_NOT(CHK_ARRAY|CHK_PTR), "*");
@@ -1673,13 +1682,18 @@ static Node *unary_expression(void) {
             error_at(&node_info(node), "'*'は非ポインタ型(%s)を参照しています", get_node_type_str(node));
         node = new_node(ND_INDIRECT, NULL, node, node->tp->ptr_of, token);
         if (display_name(node->rhs)) {
-            char *buf = malloc(strlen(display_name(node->rhs))+2);
-            sprintf(buf, "*%s", display_name(node->rhs));
+            char *buf = malloc(strlen(display_name(node->rhs))+4);
+            sprintf(buf, "*(%s)", display_name(node->rhs));
             node->disp_name = buf;
         }
     } else if (consume('&')) {
         node = cast_expression();
         node = new_node(ND_ADDRESS, NULL, node, new_type_ptr(node->tp), token);
+        if (display_name(node->rhs)) {
+            char *buf = malloc(strlen(display_name(node->rhs))+4);
+            sprintf(buf, "&(%s)", display_name(node->rhs));
+            node->disp_name = buf;
+        }
     } else if (consume(TK_SIZEOF) || consume(TK_ALIGNOF)) {
         int is_sizeof = (last_token_type()==TK_SIZEOF);
         Type *tp;
@@ -1796,6 +1810,7 @@ static Node *postfix_expression(void) {
             }
             assert(node->offset-sizeof(node->tp)>=0);
             if (node->disp_name==NULL) node->disp_name = node->name;
+            assert(node->disp_name);
             char *buf = malloc(strlen(node->disp_name)+strlen(member_def->name)+3);
             sprintf(buf, "%s->%s", node->disp_name, member_def->name);
             node->disp_name = buf;
@@ -1811,9 +1826,11 @@ static Node *postfix_expression(void) {
         } else if (consume(TK_INC)) {
             check_arg(node, &token->info, CHK_STRUCT|CHK_UNION|CHK_ARRAY|CHK_CONST, "++");
             node = new_node(ND_INC, node, NULL, node->tp, token);
+            copy_node_name(node, node->lhs);
         } else if (consume(TK_DEC)) {
             check_arg(node, &token->info, CHK_STRUCT|CHK_UNION|CHK_ARRAY|CHK_CONST, "--");
             node = new_node(ND_DEC, node, NULL, node->tp, token);
+            copy_node_name(node, node->lhs);
         } else {
             break;
         }
