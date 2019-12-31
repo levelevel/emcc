@@ -270,7 +270,7 @@ char *escape_ascii(const String *string) {
         case '"':  *q++ = '\\'; *q++ = '"'; break;
         default: 
             if (*p<' ' || *p>'\x7f') {
-                q += sprintf(q, "\\%03o", *p);
+                q += sprintf(q, "\\%03o", (unsigned char)(*p));
             } else {
                 *q++ = *p;
             }
