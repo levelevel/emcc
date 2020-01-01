@@ -545,23 +545,33 @@ static int funcarg1(void) {
         1;
 }
 
-    static char *fa_argv[] = {"abc", "def", "xyz"};
+    static char *fa_argv[] = {"abc", "def", "pqy", "xyz"};
 static int funcarg1_p2(int argc, char **argv) {
-    for (int i=0; i<argc; argv++, i++) {
-        if (strcmp(*argv, fa_argv[i])) return 0;
+    for (int i=0; i<argc; i++) {
+        if (strcmp(  argv[i], fa_argv[i])) return 0;
+        if (strcmp(*(argv+i), fa_argv[i])) return 0;
+    }
+    for (int i=0; i<argc-1; argv++, i++) {
+        if (strcmp(*argv,    fa_argv[i]  )) return 0;
+        if (strcmp( argv[1], fa_argv[i+1])) return 0;
     }
     return 1;
 }
 static int funcarg1_a2(int argc, char *argv[]) {
-    for (int i=0; i<argc; argv++, i++) {
-        if (strcmp(*argv, fa_argv[i])) return 0;
+    for (int i=0; i<argc; i++) {
+        if (strcmp(  argv[i], fa_argv[i])) return 0;
+        if (strcmp(*(argv+i), fa_argv[i])) return 0;
+    }
+    for (int i=0; i<argc-1; argv++, i++) {
+        if (strcmp(*argv,    fa_argv[i]  )) return 0;
+        if (strcmp( argv[1], fa_argv[i+1])) return 0;
     }
     return 1;
 }
 static int funcarg2(void) {
     return
-        funcarg1_p2(3, fa_argv) &&
-        funcarg1_a2(3, fa_argv);
+        funcarg1_p2(sizeof(fa_argv)/sizeof(fa_argv[0]), fa_argv) &&
+        funcarg1_a2(sizeof(fa_argv)/sizeof(fa_argv[0]), fa_argv);
 }
 
 static int fp1_add(int a, int b) { return a+b; }

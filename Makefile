@@ -16,7 +16,7 @@ CPPHEADS=cpp/emcpp.h include/util.h
 CPPSRCS=$(wildcard cpp/*.c)
 CPPSRCS2=$(wildcard cpp/*.c)
 CPPOBJS=$(CPPSRCS:.c=.o) obj2/util.o
-CPPOBJS2=cpp/emcpp.o obj2/cpp_parse.o obj2/cpp_tokenize.o obj2/util.o
+CPPOBJS2=obj2/emcpp.o cpp/cpp_parse.o obj2/cpp_tokenize.o obj2/util.o
 
 EMCPP=emcpp
 EMCPP2=emcpp2

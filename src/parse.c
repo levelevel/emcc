@@ -565,6 +565,7 @@ static Node *parameter_type_list(void) {
     if (!token_is_type_spec()) return node; //空のリスト
 
     vec_push(node->lst, last_node=parameter_declaration());
+    if (last_node->tp->type==ARRAY && last_node->tp->array_size<0) last_node->tp->type = PTR;
     while (consume(',')) {
         Token *token = cur_token();
         if (token_is('}')){
@@ -577,6 +578,7 @@ static Node *parameter_type_list(void) {
             last_node->token = token;
         }
         vec_push(node->lst, last_node);
+        if (last_node->tp->type==ARRAY && last_node->tp->array_size<0) last_node->tp->type = PTR;
     }
     if (info && last_node->type!=ND_VARARGS)
         error_at(info, "...の位置が不正です");
