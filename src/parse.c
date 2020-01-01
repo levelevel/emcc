@@ -1786,7 +1786,7 @@ static Node *postfix_expression(void) {
             node->tp = member_def->tp;
             if (sclass != get_storage_class(node->tp)) {
                 node->tp = dup_type(node->tp);
-                set_storage_class(node->tp, SC_STATIC);
+                set_storage_class(node->tp, sclass);
             }
             node->offset -= member_def->offset;
             assert(node->offset-sizeof(node->tp)>=0);
@@ -1807,7 +1807,7 @@ static Node *postfix_expression(void) {
             node->tp = new_type_ptr(member_def->tp);
             if (sclass != get_storage_class(node->tp)) {
                 node->tp = dup_type(node->tp);
-                set_storage_class(node->tp, SC_STATIC);
+                set_storage_class(node->tp, sclass);
             }
             assert(node->offset-sizeof(node->tp)>=0);
             if (node->disp_name==NULL) node->disp_name = node->name;

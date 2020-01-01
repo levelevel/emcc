@@ -32,7 +32,7 @@ awk \
 function run_test() {
   #system("cpp " f_in " | grep -v ^# > " f_outgcc);
   system("'$CPP' " f_in " > " f_out);
-  ret = system("diff -c " f_out " " f_expect " > " f_diff);
+  ret = system("diff -c " f_expect " " f_out " > " f_diff);
   if (ret) {
     ng_cnt++;
     print "ERROR:" name;
