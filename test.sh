@@ -2,13 +2,12 @@
 set -u
 ulimit -c unlimited
 
-EXE=tmp/test
+EMCC=emcc
+TESTDIR=./tmp
+EXE=$TESTDIR/test
 AFLAGS="-g -no-pie"
 CPPFLAG="-D_emcc"
 CFLAGS="$CPPFLAG -I./include -std=c11 -pedantic-errors "
-ER=Error
-WR=Warning
-EMCC=emcc
 
 rm -f $EXE.log
 
@@ -18,7 +17,7 @@ cnt=0
 test_src() {
   src=$1
   src2=./test_src/extern.c
-  EXE2=tmp/test_src
+  EXE2=${EXE}_src
   rm -f $EXE2 $EXE2.log
 
 # gcc $CFLAGS -g $src $src2 -o $EXE2 > $EXE2.gcc.log 2>&1
@@ -56,7 +55,7 @@ test_src() {
 
 try1() {
   rm -f $EXE
-  make -s emcc
+  make -s $EMCC
   ./$EMCC "$@" > $EXE.s
   if [ $? != 0 ]; then exit 1; fi
   cat -n $EXE.s
@@ -70,16 +69,21 @@ try1() {
 
 while [ $# -gt 0 ]; do
   case $1 in
+  emcpp2)
+    TESTDIR=./tmp2
+    EMCC=./$1
+    EXE=$TESTDIR/test;;
   -gdb) GDB=gdb;;
   *) try1 "$@";;
   esac
   shift
 done
 
+if [ ! -e $TESTDIR ]; then md $TESTDIR; fi
+
 #テストプログラムをコンパイルする
 test_src test_src/expr.c
-./$EMCC -test > /dev/null 2> tmp/${EMCC}_test.log
-tail -4 tmp/${EMCC}_test.log
+./$EMCC -test > /dev/null 2> $TESTDIR/${EMCC}_test.log
+tail -4 $TESTDIR/${EMCC}_test.log
 
-#rm -f $EXE $EXE.s
 echo "test: OK"

@@ -9,20 +9,45 @@ CFLAGS2=$(CFLAGS) -D_emcc
 HEADS=include/emcc.h include/util.h
 SRCS=$(wildcard src/*.c) test_src/test_error.c
 OBJS=$(SRCS:.c=.o)
-SRCS2=$(wildcard src/[^u]*.c) test_src/test_error.c
-OBJS2=$(SRCS2:.c=.o) obj2/util.o
+SRCS2=$(wildcard src/*.c) test_src/test_error.c
+OBJS2=$(shell echo $(OBJS) | sed -e s/^cpp/obj2/g -e s/^src/obj2/g )
 
 CPPHEADS=cpp/emcpp.h include/util.h
-CPPSRCS=$(wildcard cpp/*.c)
-CPPSRCS2=$(wildcard cpp/*.c)
-CPPOBJS=$(CPPSRCS:.c=.o) obj2/util.o
-CPPOBJS2=obj2/emcpp.o obj2/cpp_parse.o obj2/cpp_tokenize.o obj2/util.o
+CPPSRCS=$(wildcard cpp/*.c) src/util.c
+CPPSRCS2=$(wildcard cpp/*.c) src/util.c
+CPPOBJS=$(CPPSRCS:.c=.o)
+CPPOBJS2=$(shell echo $(CPPOBJS) | sed -e s/^cpp/obj2/g -e s/^src/obj2/g )
 
 EMCPP=emcpp
 EMCPP2=emcpp2
 EMCCFLAGS=-g
 
-all:$(EMCC) $(EMCC2) $(EMCPP)
+all:$(EMCC) $(EMCC2) $(EMCPP) $(EMCPP2)
+
+obj2/main.o:       src/main.c       $(EMCC)
+	$(CPP)   $(CFLAGS2)   $< -o $*.cpp.c
+	$(EMCC)  $(EMCCFLAGS) $*.cpp.c > $*.s
+	$(CC) -c $(CFLAGS2)   $*.s -o $@
+obj2/codegen.o:    src/codegen.c    $(EMCC)
+	$(CPP)   $(CFLAGS2)   $< -o $*.cpp.c
+	$(EMCC)  $(EMCCFLAGS) $*.cpp.c > $*.s
+	$(CC) -c $(CFLAGS2)   $*.s -o $@
+obj2/parse.o:      src/parse.c      $(EMCC)
+	$(CPP)   $(CFLAGS2)   $< -o $*.cpp.c
+	$(EMCC)  $(EMCCFLAGS) $*.cpp.c > $*.s
+	$(CC) -c $(CFLAGS2)   $*.s -o $@
+obj2/parse_util.o: src/parse_util.c $(EMCC)
+	$(CPP)   $(CFLAGS2)   $< -o $*.cpp.c
+	$(EMCC)  $(EMCCFLAGS) $*.cpp.c > $*.s
+	$(CC) -c $(CFLAGS2)   $*.s -o $@
+obj2/tokenize.o:   src/tokenize.c   $(EMCC)
+	$(CPP)   $(CFLAGS2)   $< -o $*.cpp.c
+	$(EMCC)  $(EMCCFLAGS) $*.cpp.c > $*.s
+	$(CC) -c $(CFLAGS2)   $*.s -o $@
+obj2/dump.o:       src/dump.c       $(EMCC)
+	$(CPP)   $(CFLAGS2)   $< -o $*.cpp.c
+	$(EMCC)  $(EMCCFLAGS) $*.cpp.c > $*.s
+	$(CC) -c $(CFLAGS2)   $*.s -o $@
 
 obj2/emcpp.o:        cpp/emcpp.c        $(EMCC)
 	$(CPP)   $(CFLAGS2)   $< -o $*.cpp.c
