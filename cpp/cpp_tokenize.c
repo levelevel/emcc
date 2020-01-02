@@ -79,7 +79,7 @@ static char*get_ident(const char*ptop) {
     return name;
 }
 
-static void dump_tokens() {
+void dump_tokens(void) {
     int size = lst_len(pptoken_vec);
     for (int i=0; i<size; i++) {
         PPToken *token = lst_data(pptoken_vec, i);

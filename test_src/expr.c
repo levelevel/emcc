@@ -54,10 +54,16 @@ static int logical2(void) {
         && (!p == 1)
         && 1;
 }
-
+static int logical3(void) {
+    int f1=1, f2=1;
+    1 || (f1=0) || (f1=0);
+    0 && (f2=0) && (f2=0);
+    return f1 && f2;
+}
 static int logical(void) {
     TEST(logical1);
     TEST(logical2);
+    TEST(logical3);
     return 1;
 }
 

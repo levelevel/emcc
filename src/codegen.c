@@ -1384,6 +1384,44 @@ static int gen(Node*node) {
         gen(node->rhs->rhs);    //C
         printf(".LTriEnd%03d:\n", cnt);
         break;
+    case ND_LOR:    //"||"
+        cnt = ++global_index;
+        assert(node->lhs!=NULL);
+        assert(node->rhs!=NULL);
+        comment("'||'\n");
+        gen(node->lhs);
+        printf("  pop rax\n");      //lhs
+        printf("  cmp rax, 0\n");   //lhs
+        printf("  jne .LTrue%03d\n", cnt);
+        gen(node->rhs);
+        printf("  pop rax\n");      //rhs
+        printf("  cmp rax, 0\n");   //rhs
+        printf("  jne .LTrue%03d\n", cnt);
+        printf("  push 0\n");       //False
+        printf("  jmp .LEnd%03d\n", cnt);
+        printf(".LTrue%03d:\n", cnt);
+        printf("  push 1\n");       //True
+        printf(".LEnd%03d:\n", cnt);
+        break;
+    case ND_LAND:   //"&&"
+        cnt = ++global_index;
+        assert(node->lhs!=NULL);
+        assert(node->rhs!=NULL);
+        comment("'&&'\n");
+        gen(node->lhs);
+        printf("  pop rax\n");      //lhs
+        printf("  cmp rax, 0\n");   //lhs
+        printf("  je .LFalse%03d\n", cnt);
+        gen(node->rhs);
+        printf("  pop rax\n");      //rhs
+        printf("  cmp rax, 0\n");   //rhs
+        printf("  je .LFalse%03d\n", cnt);
+        printf("  push 1\n");       //True
+        printf("  jmp .LEnd%03d\n", cnt);
+        printf(".LFalse%03d:\n", cnt);
+        printf("  push 0\n");       //False
+        printf(".LEnd%03d:\n", cnt);
+        break;
     default:                //2項演算子
         gen_op2(node);
     }
@@ -1392,7 +1430,6 @@ static int gen(Node*node) {
 
 //２項演算子の処理
 static void gen_op2(Node *node) {
-    int cnt;
     Node *lhs = node->lhs;
     Node *rhs = node->rhs;
     //lhsとrhsを処理して結果をPUSHする
@@ -1417,32 +1454,6 @@ static void gen_op2(Node *node) {
     }
 
     switch(node->type) {
-    case ND_LOR:    //"||"
-        cnt = ++global_index;
-        comment("'||'\n");
-        printf("  cmp rax, 0\n");   //lhs
-        printf("  jne .LTrue%03d\n", cnt);
-        printf("  cmp rdi, 0\n");   //rhs
-        printf("  jne .LTrue%03d\n", cnt);
-        printf("  mov rax, 0\n");   //False
-        printf("  jmp .LEnd%03d\n", cnt);
-        printf(".LTrue%03d:\n", cnt);
-        printf("  mov rax, 1\n");   //True
-        printf(".LEnd%03d:\n", cnt);
-        break;
-    case ND_LAND:   //"&&"
-        cnt = ++global_index;
-        comment("'&&'\n");
-        printf("  cmp rax, 0\n");   //lhs
-        printf("  je .LFalse%03d\n", cnt);
-        printf("  cmp rdi, 0\n");   //rhs
-        printf("  je .LFalse%03d\n", cnt);
-        printf("  mov rax, 1\n");   //True
-        printf("  jmp .LEnd%03d\n", cnt);
-        printf(".LFalse%03d:\n", cnt);
-        printf("  mov rax, 0\n");   //False
-        printf(".LEnd%03d:\n", cnt);
-        break;
     case ND_OR:     //'|'
         printf("  or rax, rdi\t # |\n");
         break;
