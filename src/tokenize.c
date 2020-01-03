@@ -211,11 +211,12 @@ static char*get_string(char**pp, String *string) {
     int len = 0;
     //まずはエスケープシーケンスもそのまま取得する。
     while (*p && (*p)!='"') {
-        p++;
-        len++;
-        if (*p=='\\' && *(p+1)=='"') {
+        if (*p=='\\' && (*(p+1)=='"' || *(p+1)=='\\')) {
             p += 2;
             len += 2;
+        } else {
+            p++;
+            len++;
         }
     }
     *pp = *p ? p+1 : p;
@@ -268,6 +269,7 @@ char *escape_ascii(const String *string) {
         case '\r': *q++ = '\\'; *q++ = 'r'; break;
         case '\v': *q++ = '\\'; *q++ = 'v'; break;
         case '"':  *q++ = '\\'; *q++ = '"'; break;
+        case '\\': *q++ = '\\'; *q++ = '\\'; break;
         default: 
             if (*p<' ' || *p>'\x7f') {
                 q += sprintf(q, "\\%03o", (unsigned char)(*p));

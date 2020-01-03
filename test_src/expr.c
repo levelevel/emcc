@@ -1125,10 +1125,11 @@ static int chara1(void) {
     char sq='\'', dq='\"', q='\?', bs='\\';
     char o0='\0', o1='\12', o2='\123';
     char h0='\x0', h1='\xFF', h2='\xffff';
+    char *str = "\a\b\f\n\r\t\v\'\"\?\\";
     return a==7 && b==8 && f==12 && n==10 && r==13 && t==9 && v==11 &&
            sq==39 && dq==34 && q=='?' && bs==92 &&
            o0==0 && o1==10 && o2==83 &&
-           h0==0 && h1==-1 && h2==-1;
+           h0==0 && h1==-1 && h2==-1 && strlen(str)==11;
 }
 static int func_name(void) {
     return strcmp(__func__,"func_name")==0;
