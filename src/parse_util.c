@@ -722,7 +722,7 @@ Status type_eq_check(const Type *tp1, const Type *tp2) {
     //if (!tp1->is_const && tp2->is_const) {
     //    return ST_WARN; //引数、戻り値の場合はWARN。代入の場合はERRだがここではチェックしない
     //} else
-     if (type_is_integer(tp1) && type_is_integer(tp2)) {
+    if (type_is_integer(tp1) && type_is_integer(tp2)) {
         ;   //inter同士はOK
     } else if (tp1->type==PTR && tp2->type==ARRAY) {
         ;   //ポインタに対する配列はOK
@@ -735,7 +735,7 @@ Status type_eq_check(const Type *tp1, const Type *tp2) {
             //voidポインタと非voidポインタの相互代入はOK
         return ST_OK;
     } else if (type_is_struct_or_union(tp1) || type_is_struct_or_union(tp2)) {
-        if (!type_eq(tp1, tp2)) return ST_ERR;
+        if (tp1->node != tp2->node) return ST_ERR;
     } else if (tp1->type != tp2->type) {
         if (tp1->type==VOID) return ST_ERR;
         return ST_WARN;
