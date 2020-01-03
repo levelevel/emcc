@@ -230,7 +230,7 @@ test_src/expr.c: In function ‘func_const2’:
 test_src/expr.c:2922:12: warning: return discards ‘const’ qualifier from pointer target type [-Wdiscarded-qualifiers]
      return str; //warning: return discards 'const' qualifier from pointer target type [-Wdiscarded-qualifiers]
             ^~~
-test_src/expr.c: In function ‘Const’:
+test_src/expr.c: In function ‘const2’:
 test_src/expr.c:2931:17: warning: passing argument 1 of ‘func_const3’ discards ‘const’ qualifier from pointer target type [-Wdiscarded-qualifiers]
      func_const3(p1);    //warning
                  ^~
@@ -433,5 +433,7 @@ aaa=4
   OK: typedef3
   OK: Typedef
   OK: Assert
+  OK: const2
+  OK: const3
   OK: Const
   OK: Ignore

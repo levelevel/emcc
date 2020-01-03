@@ -2922,7 +2922,7 @@ static char*func_const2(void) {
     return str; //warning: return discards 'const' qualifier from pointer target type [-Wdiscarded-qualifiers]
 }
 static char *func_const3(char*str){return str;}
-static int Const(void) {
+static int const2(void) {
     static char str[]="abc";
 
     const char * p1=str;
@@ -2946,6 +2946,24 @@ static int Const(void) {
     const char * const p13=str;
     //*p13 = 'A'; //error: assignment of read-only location '*p13'
     //p13 = 0;    //error: assignment of read-only variable 'p13'
+
+    return 1;
+}
+static int const3(void) {
+    char c;
+    const char*cp="abc";
+    c = *cp;    //*cpはconstではない
+
+    typedef struct {int a;} ST;
+    ST st1={1}, st2;
+    const ST *cstp=&st1;
+    st2 = *cstp; //*cstpはconstではない
+
+    return c=='a' && st2.a==1;
+}
+static int Const(void) {
+    TEST(const2);
+    TEST(const3);
 
     return 1;
 }

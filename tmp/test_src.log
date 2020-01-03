@@ -32,73 +32,73 @@ emcc:Warning: test_src/expr.c:2922:     return str;
                                         ^ 戻り値static const char[4]のconst情報は失われます
 emcc:Warning: test_src/expr.c:2931:     func_const3(p1);
                                                     ^ 戻り値const char*のconst情報は失われます
-emcc:Warning: test_src/expr.c:2994: static int ga2_b[4]={1,2,{3,99},4}, *ga2_p=&ga2_a, *ga2_q=&ga2_b[2], *ga2_r=ga2_a+3;
+emcc:Warning: test_src/expr.c:3012: static int ga2_b[4]={1,2,{3,99},4}, *ga2_p=&ga2_a, *ga2_q=&ga2_b[2], *ga2_r=ga2_a+3;
                                                               ^ スカラーがリストで初期化されています
-emcc:Warning: test_src/expr.c:2994: static int ga2_b[4]={1,2,{3,99},4}, *ga2_p=&ga2_a, *ga2_q=&ga2_b[2], *ga2_r=ga2_a+3;
+emcc:Warning: test_src/expr.c:3012: static int ga2_b[4]={1,2,{3,99},4}, *ga2_p=&ga2_a, *ga2_q=&ga2_b[2], *ga2_r=ga2_a+3;
                                                                 ^ 初期化リストが配列サイズを超えています
-emcc:Warning: test_src/expr.c:2994: static char ga2c_b[4]={1,2,{3,99},4}, *ga2c_p=&ga2c_a, *ga2c_q=&ga2c_b[2], *ga2c_r=ga2c_a+3;
+emcc:Warning: test_src/expr.c:3012: static char ga2c_b[4]={1,2,{3,99},4}, *ga2c_p=&ga2c_a, *ga2c_q=&ga2c_b[2], *ga2c_r=ga2c_a+3;
                                                                 ^ スカラーがリストで初期化されています
-emcc:Warning: test_src/expr.c:2994: static char ga2c_b[4]={1,2,{3,99},4}, *ga2c_p=&ga2c_a, *ga2c_q=&ga2c_b[2], *ga2c_r=ga2c_a+3;
+emcc:Warning: test_src/expr.c:3012: static char ga2c_b[4]={1,2,{3,99},4}, *ga2c_p=&ga2c_a, *ga2c_q=&ga2c_b[2], *ga2c_r=ga2c_a+3;
                                                                   ^ 初期化リストが配列サイズを超えています
-emcc:Warning: test_src/expr.c:2994:  char sg1_str3[4] = "ABCDE";
+emcc:Warning: test_src/expr.c:3012:  char sg1_str3[4] = "ABCDE";
                                                              ^ 初期化リストが配列サイズを超えています
-emcc:Warning: test_src/expr.c:2994:  char sg1_str4[3] = "A\0B";
+emcc:Warning: test_src/expr.c:3012:  char sg1_str4[3] = "A\0B";
                                                             ^ 初期化リストが配列サイズを超えています
-emcc:Warning: test_src/expr.c:2994:  char i2g_c, *i2g_ac[3] = {0,&i2g_c+1,(char*)3,(char*)4};
+emcc:Warning: test_src/expr.c:3012:  char i2g_c, *i2g_ac[3] = {0,&i2g_c+1,(char*)3,(char*)4};
                                                                                    ^ 初期化リストが配列サイズを超えています
-emcc:Warning: test_src/expr.c:2994:     static gs2a_XYZ gs2a_xyz = {{1,2,3},4,{5,6}};
+emcc:Warning: test_src/expr.c:3012:     static gs2a_XYZ gs2a_xyz = {{1,2,3},4,{5,6}};
                                                                      ^ スカラーがリストで初期化されています
-emcc:Warning: test_src/expr.c:2994:     static gs2a_XYZ gs2a_xyz = {{1,2,3},4,{5,6}};
+emcc:Warning: test_src/expr.c:3012:     static gs2a_XYZ gs2a_xyz = {{1,2,3},4,{5,6}};
                                                                                ^ スカラーがリストで初期化されています
-emcc:Warning: test_src/expr.c:2994:     static int a[4]={1,2,{3,99},4}, *p=a, *q=&a[2], *r=a+3;
+emcc:Warning: test_src/expr.c:3012:     static int a[4]={1,2,{3,99},4}, *p=a, *q=&a[2], *r=a+3;
                                                               ^ スカラーがリストで初期化されています
-emcc:Warning: test_src/expr.c:2994:     static int a[4]={1,2,{3,99},4}, *p=a, *q=&a[2], *r=a+3;
+emcc:Warning: test_src/expr.c:3012:     static int a[4]={1,2,{3,99},4}, *p=a, *q=&a[2], *r=a+3;
                                                                 ^ 初期化リストが配列サイズを超えています
-emcc:Warning: test_src/expr.c:2994:     static char a[4]={1,2,{3,99},4}, *p=a, *q=&a[2], *r=a+3;
+emcc:Warning: test_src/expr.c:3012:     static char a[4]={1,2,{3,99},4}, *p=a, *q=&a[2], *r=a+3;
                                                                ^ スカラーがリストで初期化されています
-emcc:Warning: test_src/expr.c:2994:     static char a[4]={1,2,{3,99},4}, *p=a, *q=&a[2], *r=a+3;
+emcc:Warning: test_src/expr.c:3012:     static char a[4]={1,2,{3,99},4}, *p=a, *q=&a[2], *r=a+3;
                                                                  ^ 初期化リストが配列サイズを超えています
-emcc:Warning: test_src/expr.c:2994:     static char str3[4] = "ABCDE";
+emcc:Warning: test_src/expr.c:3012:     static char str3[4] = "ABCDE";
                                                                    ^ 初期化リストが配列サイズを超えています
-emcc:Warning: test_src/expr.c:2994:     static XYZ xyz = {{1,2,3},4,{5,6}};
+emcc:Warning: test_src/expr.c:3012:     static XYZ xyz = {{1,2,3},4,{5,6}};
                                                            ^ スカラーがリストで初期化されています
-emcc:Warning: test_src/expr.c:2994:     static XYZ xyz = {{1,2,3},4,{5,6}};
+emcc:Warning: test_src/expr.c:3012:     static XYZ xyz = {{1,2,3},4,{5,6}};
                                                                      ^ スカラーがリストで初期化されています
-emcc:Warning: test_src/expr.c:2994:     static XYZ xyz = {{1,2,3},4,{5,6}};
+emcc:Warning: test_src/expr.c:3012:     static XYZ xyz = {{1,2,3},4,{5,6}};
                                                            ^ スカラーがリストで初期化されています
-emcc:Warning: test_src/expr.c:2994:     static XYZ xyz = {{1,2,3},4,{5,6}};
+emcc:Warning: test_src/expr.c:3012:     static XYZ xyz = {{1,2,3},4,{5,6}};
                                                                      ^ スカラーがリストで初期化されています
-emcc:Warning: test_src/expr.c:2994:     int b[4]={1,2,{3,99},a[3]};
+emcc:Warning: test_src/expr.c:3012:     int b[4]={1,2,{3,99},a[3]};
                                                        ^ スカラーがリストで初期化されています
-emcc:Warning: test_src/expr.c:2994:     int b[4]={1,2,{3,99},a[3]};
+emcc:Warning: test_src/expr.c:3012:     int b[4]={1,2,{3,99},a[3]};
                                                          ^ 初期化リストが配列サイズを超えています
-emcc:Warning: test_src/expr.c:2994:     _Bool b[4]={1,2,{3,99},a[3]};
+emcc:Warning: test_src/expr.c:3012:     _Bool b[4]={1,2,{3,99},a[3]};
                                                          ^ スカラーがリストで初期化されています
-emcc:Warning: test_src/expr.c:2994:     _Bool b[4]={1,2,{3,99},a[3]};
+emcc:Warning: test_src/expr.c:3012:     _Bool b[4]={1,2,{3,99},a[3]};
                                                            ^ 初期化リストが配列サイズを超えています
-emcc:Warning: test_src/expr.c:2994:     char b[4]={1,2,{3,99},a[3]};
+emcc:Warning: test_src/expr.c:3012:     char b[4]={1,2,{3,99},a[3]};
                                                         ^ スカラーがリストで初期化されています
-emcc:Warning: test_src/expr.c:2994:     char b[4]={1,2,{3,99},a[3]};
+emcc:Warning: test_src/expr.c:3012:     char b[4]={1,2,{3,99},a[3]};
                                                           ^ 初期化リストが配列サイズを超えています
-emcc:Warning: test_src/expr.c:2994:     short b[4]={1,2,{3,99},a[3]};
+emcc:Warning: test_src/expr.c:3012:     short b[4]={1,2,{3,99},a[3]};
                                                          ^ スカラーがリストで初期化されています
-emcc:Warning: test_src/expr.c:2994:     short b[4]={1,2,{3,99},a[3]};
+emcc:Warning: test_src/expr.c:3012:     short b[4]={1,2,{3,99},a[3]};
                                                            ^ 初期化リストが配列サイズを超えています
-emcc:Warning: test_src/expr.c:2994:     long b[4]={1,2,{3,99},a[3]};
+emcc:Warning: test_src/expr.c:3012:     long b[4]={1,2,{3,99},a[3]};
                                                         ^ スカラーがリストで初期化されています
-emcc:Warning: test_src/expr.c:2994:     long b[4]={1,2,{3,99},a[3]};
+emcc:Warning: test_src/expr.c:3012:     long b[4]={1,2,{3,99},a[3]};
                                                           ^ 初期化リストが配列サイズを超えています
-emcc:Warning: test_src/expr.c:2994:     char str3[4] = "ABCDE";
+emcc:Warning: test_src/expr.c:3012:     char str3[4] = "ABCDE";
                                                             ^ 初期化リストが配列サイズを超えています
-emcc:Warning: test_src/expr.c:2994:     char str4[3] = "A\0B";
+emcc:Warning: test_src/expr.c:3012:     char str4[3] = "A\0B";
                                                            ^ 初期化リストが配列サイズを超えています
-emcc:Warning: test_src/expr.c:2994:     XYZ xyz = {{1,2,3},4,{5,6}};
+emcc:Warning: test_src/expr.c:3012:     XYZ xyz = {{1,2,3},4,{5,6}};
                                                     ^ スカラーがリストで初期化されています
-emcc:Warning: test_src/expr.c:2994:     XYZ xyz = {{1,2,3},4,{5,6}};
+emcc:Warning: test_src/expr.c:3012:     XYZ xyz = {{1,2,3},4,{5,6}};
                                                               ^ スカラーがリストで初期化されています
-emcc:Warning: test_src/expr.c:2994:     } u10 = {1,2}, u1=u10;
+emcc:Warning: test_src/expr.c:3012:     } u10 = {1,2}, u1=u10;
                                                    ^ 構造体・共用体の初期化リストが要素数を超えています
-emcc:Warning: test_src/expr.c:2994:     } u10 = {1,2}, u1, *u1p=&u1;
+emcc:Warning: test_src/expr.c:3012:     } u10 = {1,2}, u1, *u1p=&u1;
                                                    ^ 構造体・共用体の初期化リストが要素数を超えています
   OK: logical1
   OK: logical2
@@ -296,5 +296,7 @@ aaa=4
   OK: typedef3
   OK: Typedef
   OK: Assert
+  OK: const2
+  OK: const3
   OK: Const
   OK: Ignore

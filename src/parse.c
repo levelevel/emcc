@@ -220,7 +220,7 @@ static void check_scalar(Node *node, const char *msg) {
 //代入：node = rhs に対する型チェックを行う
 void check_assignment(const Node *node, const Node *rhs, const SrcInfo *info){
     Status sts;
-    if (!(node->tp->type==PTR && rhs->type==ND_NUM && rhs->val==0) &&  //ポンタの右辺が0の場合は無条件にOK
+    if (!(node->tp->type==PTR && rhs->type==ND_NUM && rhs->val==0) &&  //ポインタの右辺が0の場合は無条件にOK
         (sts=type_eq_check(node->tp, rhs->tp))!=ST_OK) {
         if (sts==ST_ERR)
             error_at(info, "=の左右の型(%s:%s)が異なります", 
@@ -421,9 +421,9 @@ static Node *init_declarator(Type *decl_spec, Type *tp, char *name) {
             rhs = new_node_num(val, rhs->token);
         }
         if (rhs->type!=ND_INIT_LIST) check_assignment(node, rhs, &token->info);
+        node->rhs = new_node('=', NULL, rhs, tp, token);
     }
 
-    if (rhs) node->rhs = new_node('=', NULL, rhs, tp, token);
     //初期値により配列のサイズが決まるケースがあるので、regist_var_def()は初期値の確定後に行う必要あり
     regist_var_def(node);   //ND_UNDEF -> ND_(LOCAL|GLOBAL)_VAR_DEFに確定する。ND_FUNC_DECLはそのまま
     if (rhs) node->rhs->lhs = new_node_ident(name, token);  //=の左辺
@@ -890,6 +890,7 @@ static Type *declaration_specifiers(int type_only) {
     if (node) { //enum,typedef_name,struct,union
         if (is_unsigned>=0) error_at(us_info, "enum/typedef/struct/union名に対してsigned/unsignedの指定はできません\n");
         top_tp = tp = node->tp;
+        top_tp = tp = dup_type(node->tp);
         while (tp->ptr_of) tp = tp->ptr_of; //PTRとARRAYを飛ばす
     } else if (type==BOOL) {
         if (is_unsigned>=0) error_at(us_info, "_Boolに対してsigned/unsignedの指定はできません\n");
@@ -1362,6 +1363,10 @@ static Node *assignment_expression(void) {
         if (!is_lvalue || node->tp->type==ARRAY) error_at(&node_info(node), "左辺値ではありません");
         check_arg(node, &token->info, CHK_CONST, "代入");
         rhs = assignment_expression();
+        if (rhs->type==ND_INDIRECT && rhs->tp->type!=PTR && rhs->tp->is_const) {
+            rhs->tp = dup_type(rhs->tp);
+            rhs->tp->is_const = 0;
+        }
         check_assignment(node, rhs, &token->info);
         node = new_node('=', node, rhs, node->tp, token); //ND_ASSIGN
         copy_node_name(node, node->lhs);
