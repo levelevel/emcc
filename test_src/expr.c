@@ -720,6 +720,12 @@ static int pointer7() {
     int a, *p=&a, *q=&a+5;
     return p+5==q && q-p==5;
 }
+static int pointer8() {
+    char *p = "abc" + 1;
+    char *p1 = p+1;
+    char *p2 = p-1;
+    return *p1=='c' && *p2=='a';
+}
 static int pointer() {
     TEST(pointer1);
     TEST(pointer1g);
@@ -729,6 +735,7 @@ static int pointer() {
     TEST(pointer5);
     TEST(pointer6);
     TEST(pointer7);
+    TEST(pointer8);
     return 1;
 }
 

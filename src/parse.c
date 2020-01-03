@@ -1574,6 +1574,7 @@ static Node *shift_expression(void) {
 //    additive_expression         = multiplicative_expression ( "+" multiplicative_expression | "-" multiplicative_expression )*
 static Node *additive_expression(void) {
     Node *node, *lhs, *rhs;
+    Type *tp;
     node = lhs = multiplicative_expression();
     for (;;lhs = node) {
         Token *token = cur_token();
@@ -1581,7 +1582,7 @@ static Node *additive_expression(void) {
             rhs = multiplicative_expression();
             if (node_is_ptr(lhs) && node_is_ptr(rhs))
                 error_at(&node_info(lhs), "ポインタ同士の加算です");
-            Type *tp = node_is_ptr(lhs) ? lhs->tp : rhs->tp;
+            tp = node_is_ptr(lhs) ? lhs->tp : rhs->tp;
             node = new_node('+', lhs, rhs, tp, token);
             node->disp_name = "+";
         } else if (consume('-')) {
@@ -1593,9 +1594,14 @@ static Node *additive_expression(void) {
             } else if (!node_is_ptr(lhs) && node_is_ptr(rhs)) {
                 error_at(&node_info(lhs), "ポインタによる減算です");
             }
-            node = new_node('-', lhs, rhs, rhs->tp, token);
+            if (node_is_ptr(lhs)) {
+                if (node_is_ptr(rhs)) tp = new_type(INT, 0);
+                else                  tp = lhs->tp;
+            } else {
+                tp = rhs->tp;
+            }
+            node = new_node('-', lhs, rhs, tp, token);
             node->disp_name = "-";
-            if (node_is_ptr(lhs) && node_is_ptr(rhs)) node->tp = new_type(INT, 0);
         } else {
             break;
         }
