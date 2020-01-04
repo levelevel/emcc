@@ -4,57 +4,12 @@ ulimit -c unlimited
 
 EMCC=emcc
 TESTDIR=./tmp
-EXE=$TESTDIR/test
 AFLAGS="-g -no-pie"
-CPPFLAG="-D_emcc"
-CFLAGS="$CPPFLAG -I./include -std=c11 -pedantic-errors "
-
-rm -f $EXE.log
-
 GDB=""
-cnt=0
-
-test_src() {
-  src=$1
-  src2=./test_src/extern.c
-  EXE2=${EXE}_src
-  rm -f $EXE2 $EXE2.log
-
-# gcc $CFLAGS -g $src $src2 -o $EXE2 > $EXE2.gcc.log 2>&1
-  gcc -g $src $src2 -o $EXE2 > $EXE2.gcc.log 2>&1
-  ./$EXE2          >> $EXE2.gcc.log
-  if [ $? -eq 0 ]; then
-    echo "gcc TEST OK    : $src"
-  else
-    egrep "error|$EMCC" $EXE2.gcc.log
-    echo "gcc TEST FAIL! : $src"
-    echo "see more information: $EXE2.gcc.log"
-    exit 1;
-  fi
-
-#  cpp -P $CFLAGS $src > $EXE2.c
-  cpp $CFLAGS $src > $EXE2.c
-  ./$EMCC $src2 > ${EXE2}e.s
-  ./$EMCC $EXE2.c 2>&1 > $EXE2.s | tee -a $EXE2.log | grep "$EMCC:Error" > $EXE2.err
-  if [ $? -eq 0 ]; then
-    cat $EXE2.log
-    exit 1
-  fi
-
-  gcc $AFLAGS -o $EXE2 $EXE2.s ${EXE2}e.s
-  
-  ./$EXE2 >> $EXE2.log
-  if [ $? -eq 0 ]; then
-    echo "$EMCC TEST OK    : $src"
-  else
-    tail $EXE2.log
-    echo "$EMCC TEST FAIL! : $src"
-    exit 1;
-  fi
-}
 
 try1() {
-  rm -f $EXE
+  EXE=$TESTDIR/test1
+  rm -f $EXE $EXE.log
   make -s $EMCC
   ./$EMCC "$@" > $EXE.s
   if [ $? != 0 ]; then exit 1; fi
@@ -69,21 +24,53 @@ try1() {
 
 while [ $# -gt 0 ]; do
   case $1 in
-  emcpp2)
+  emcc2)
     TESTDIR=./tmp2
-    EMCC=./$1
-    EXE=$TESTDIR/test;;
+    EMCC=$1;;
   -gdb) GDB=gdb;;
   *) try1 "$@";;
   esac
   shift
 done
 
-if [ ! -e $TESTDIR ]; then md $TESTDIR; fi
+if [ ! -e $TESTDIR ]; then mkdir $TESTDIR; fi
 
-#テストプログラムをコンパイルする
-test_src test_src/expr.c
-./$EMCC -test > /dev/null 2> $TESTDIR/${EMCC}_test.log
-tail -4 $TESTDIR/${EMCC}_test.log
+TESTEXEGCC=tmp/test_gcc
+TESTEXEEMCC=tmp/test_emcc
+make -s $TESTEXEGCC $TESTEXEEMCC
 
-echo "test: OK"
+#gcc版テスト
+$TESTEXEGCC > $TESTEXEGCC.log
+if [ $? -eq 0 ]; then
+  echo "### gcc TEST OK"
+else
+  egrep "error|$EMCC" $TESTEXEGCC.log
+  echo "### gcc TEST FAIL!"
+  echo "### see more information: $TESTEXEGCC.log"
+  exit 1;
+fi
+
+#emcc版テスト
+$TESTEXEEMCC > $TESTEXEEMCC.log
+if [ $? -eq 0 ]; then
+  echo "### $EMCC TEST OK"
+else
+  tail $TESTEXEEMCC.log
+  echo "### $EMCC TEST FAIL!"
+  exit 1;
+fi
+
+#セルフテスト
+./$EMCC -test > /dev/null 2> $TESTDIR/${EMCC}.self_test.log
+if [ $? -eq 0 ]; then
+  tail -4 $TESTDIR/${EMCC}.self_test.log
+  echo "### $EMCC SELF TEST OK"
+else
+  echo ...
+  tail -4 $TESTDIR/${EMCC}.self_test.log
+  echo "### $EMCC SELF TEST FAIL!"
+  exit 1;
+fi
+
+echo "### test: OK"
+exit 0
