@@ -152,14 +152,11 @@ int is_alpha(int c) {
 int is_xdigit(int c) {
     return ('0' <= c && c <= '9') || ('a' <= c && c <= 'F') || ('A' <= c && c <= 'F');
 }
-int is_digit(int c) {
-    return '0' <= c && c <= '9';
-}
 
 //ファイルを1個の文字列バッファに読み込む
 char *read_file(const char *path) {
     FILE *fp = fopen(path, "r");
-    if (!fp) error("cannot open %s: %s", path, strerror(errno));
+    if (!fp) error("cannot open \"%s\": %s", path, strerror(errno));
 
     if (fseek(fp, 0, SEEK_END) == -1) error("%s: fseek: %s", path, strerror(errno));
     size_t size = ftell(fp);

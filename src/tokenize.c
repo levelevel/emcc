@@ -360,7 +360,7 @@ void tokenize(char *p) {
             token = new_token(TK_IDENT, p);
             token->ident = get_ident(p);
             p += strlen(token->ident);
-        } else if (is_digit(*p)) {   //数値
+        } else if (isdigit(*p)) {   //数値
             token = new_token(TK_NUM, p);
             char *p0 = p;
             char *suffix;

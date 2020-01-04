@@ -50,6 +50,8 @@ struct {
     {ER, "char  char a;"},
     {ER, "short short a;"},
     {ER, "int   int a;"},
+    {ER, "short int int a;"},
+    {ER, "long int int a;"},
     {ER, "long long long a;"},
     {ER, "void  void *p;"},
     {ER, "signed void *p;"},

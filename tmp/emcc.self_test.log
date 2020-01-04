@@ -202,6 +202,16 @@ emcc:Error: selftest:1: int main(){int   int a;}
                                          ^ 型指定が不正です
 
 # selftest ----------------
+int main(){short int int a;}
+emcc:Error: selftest:1: int main(){short int int a;}
+                                             ^ 型指定が不正です
+
+# selftest ----------------
+int main(){long int int a;}
+emcc:Error: selftest:1: int main(){long int int a;}
+                                            ^ 型指定が不正です
+
+# selftest ----------------
 int main(){long long long a;}
 emcc:Error: selftest:1: int main(){long long long a;}
                                              ^ 型指定が不正です
@@ -1768,6 +1778,6 @@ typedef enum {
 } ErCtrl;
 
 emcc self test
-Total : 317
-   Ok : 317
+Total : 319
+   Ok : 319
    NG : 0

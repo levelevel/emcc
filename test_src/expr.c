@@ -11,7 +11,7 @@
 #include <string.h>
 #include <stdarg.h>
 #include <limits.h>
-
+#include <ctype.h>
 
 
 
@@ -81,7 +81,8 @@ static char addsub1c(void){
 }
 static short addsub1s(void){
     short a=10, b=3, c=a+b*(-2), d=a/b, e=a%b;
-    return c==4 && d==3 && e==1;
+    return c==4 && d==3 && e==1 &&
+        isdigit('1') && !isalpha('1') && isspace(' ');
 }
 static long addsub1l(void){
     long a=10, b=3, c=a+b*(-2), d=a/b, e=a%b;
@@ -1345,7 +1346,9 @@ static int size_of1c() {
 static int size_of1s() {
     short n, *p, a[2*4], a2[2][3];
     typedef short SHORT;
+    typedef short int SHORTI;
     typedef unsigned short* USHORTP;
+    typedef unsigned short int USHORTI;
     typedef const SHORT SHORTA3[3];
     typedef short SHORTAA2[][2];
     SHORTAA2 A3A2={{00,01},{10,11},{20,21}};
@@ -1355,7 +1358,8 @@ static int size_of1s() {
         sizeof(a)==2*2*4 && sizeof(a[0])==2 &&
         sizeof(a2)==2*2*3 && sizeof(a2[0])==2*3 && sizeof(a2[0][1])==2 &&
         sizeof(short)==2 && sizeof(short*)==PSIZE && sizeof(short(*)(short))==PSIZE &&
-        sizeof(SHORT)==2 && sizeof(USHORTP)==PSIZE && sizeof(SHORTA3)==2*3 &&
+        sizeof(SHORT)==2 && sizeof(SHORTI)==2 && sizeof(int short)==2 &&
+        sizeof(USHORTP)==PSIZE && sizeof(USHORTI)==2 && sizeof(SHORTA3)==2*3 &&
         sizeof(unsigned short)==2 && sizeof(signed short)==2 &&
         sizeof(short[5])==2*5 && sizeof(short*[3])==PSIZE*3 &&
         sizeof(short[5][2])==2*5*2 && sizeof(short*[3][2])==PSIZE*3*2 &&
@@ -1366,7 +1370,9 @@ static int size_of1s() {
 static int size_of1l() {
     long n, *p, a[2*4], a2[2][3];
     typedef long LONG;
+    typedef long int LONGI;
     typedef unsigned long* ULONGP;
+    typedef unsigned long int ULONGI;
     typedef const LONG LONGA3[3];
     typedef long LONGAA2[][2];
     LONGAA2 A3A2={{00,01},{10,11},{20,21}};
@@ -1376,7 +1382,8 @@ static int size_of1l() {
         sizeof(a)==8*2*4 && sizeof(a[0])==8 &&
         sizeof(a2)==8*2*3 && sizeof(a2[0])==8*3 && sizeof(a2[0][1])==8 &&
         sizeof(long)==8 && sizeof(long*)==PSIZE && sizeof(long(*)(long))==PSIZE &&
-        sizeof(LONG)==8 && sizeof(ULONGP)==PSIZE && sizeof(LONGA3)==8*3 &&
+        sizeof(LONG)==8 && sizeof(LONGI)==8 && sizeof(int long)==8 &&
+        sizeof(ULONGP)==PSIZE && sizeof(ULONGI)==8 && sizeof(LONGA3)==8*3 &&
         sizeof(unsigned long)==8 && sizeof(signed long)==8 &&
         sizeof(long[5])==8*5 && sizeof(long*[3])==PSIZE*3 &&
         sizeof(long[5][2])==8*5*2 && sizeof(long*[3][2])==PSIZE*3*2 &&
@@ -1388,7 +1395,9 @@ static int size_of1l() {
 static int size_of1ll() {
     long long n, *p, a[2*4], a2[2][3];
     typedef long long LLONG;
+    typedef long long int LLONGI;
     typedef unsigned long long* ULLONGP;
+    typedef unsigned long long int ULLONGI;
     typedef const LLONG LLONGA3[3];
     typedef long long LLONGAA2[][2];
     LLONGAA2 A3A2={{00,01},{10,11},{20,21}};
@@ -1399,7 +1408,8 @@ static int size_of1ll() {
         sizeof(a2)==8*2*3 && sizeof(a2[0])==8*3 && sizeof(a2[0][1])==8 &&
         sizeof(long long)==8 && sizeof(long long*)==PSIZE && sizeof(long long(*)(long long))==PSIZE &&
         sizeof(unsigned long long)==8 && sizeof(signed long long)==8 &&
-        sizeof(LLONG)==8 && sizeof(ULLONGP)==PSIZE && sizeof(LLONGA3)==8*3 &&
+        sizeof(LLONG)==8 && sizeof(LLONGI)==8 && sizeof(int long long)==8 && sizeof(long int long)==8 &&
+        sizeof(ULLONGP)==PSIZE && sizeof(ULLONGI)==8 && sizeof(LLONGA3)==8*3 &&
         sizeof(long long[5])==8*5 && sizeof(long long*[3])==PSIZE*3 &&
         sizeof(long long[5][2])==8*5*2 && sizeof(long long*[3][2])==PSIZE*3*2 &&
         sizeof(A3A2)==8*3*2 && sizeof(A3A2[1])==8*2 && sizeof(A3A2[1][1])==8 &&
@@ -2984,7 +2994,6 @@ static int Ignore(void) {
 
     return 1;
 }
-static inline void func_inline(void){};
 
 int main() {
     TEST(logical);

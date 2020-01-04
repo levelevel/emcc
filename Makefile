@@ -13,7 +13,7 @@ SRCS=$(wildcard ./src/*.c) test_src/test_error.c
 OBJS=$(SRCS:.c=.o)
 SRCS2=$(wildcard ./src/*.c) test_src/test_error.c
 #OBJS2=$(shell echo $(OBJS) | sed -e s^/src/^/obj2/^g )
-OBJS2=src/main.o src/codegen.o src/parse.o src/parse_util.o src/tokenize.o src/dump.o src/util.o obj2/test_error.o
+OBJS2=obj2/main.o src/codegen.o src/parse.o src/parse_util.o obj2/tokenize.o src/dump.o src/util.o obj2/test_error.o
 
 CPPHEADS=cpp/emcpp.h include/util.h
 CPPSRCS=$(wildcard ./cpp/*.c) ./src/util.c
@@ -107,7 +107,7 @@ test2: $(TESTEXEGCC) $(TESTEXEEMCC2)
 	./test.sh $(EMCC2)
 
 $(TESTEXEGCC): $(TESTSRCS)
-	$(CC) $(TESTSRCS) -o $(TESTEXEGCC) > tmp/expr.gcc.log 2>&1
+	$(CC) -g $(TESTSRCS) -o $(TESTEXEGCC) > tmp/expr.gcc.log 2>&1
 
 $(TESTEXEEMCC): $(EMCC) $(TESTSRCS)
 	$(CPP) $(CFLAGS2) test_src/expr.c -o tmp/expr.cpp.c
@@ -132,12 +132,14 @@ testcpp2: $(EMCPP2)
 	./testcpp.sh emcpp2
 
 test_gdb: $(EMCC)
-	$(CPP) $(CFLAGS) test_src/test_gdb.c -o test_src/test_gdb.cpp.c
-	./$(EMCC) test_src/test_gdb.cpp.c > test_src/test_gdb.s
-	$(CC) $(CFLAGS) -o test_src/test_gdb test_src/test_gdb.s
-	$(CC) $(CFLAGS) -o test_src/test_gdb0 test_src/test_gdb.c
-	$(CC) $(CFLAGS) -S -o test_src/test_gdb0.s test_src/test_gdb.c
-	gdb ./test_src/test_gdb
+	$(CPP) $(CFLAGS) test_src/test_gdb.c    -o test_src/test_gdb.cpp.c
+	./$(EMCC)  -g    test_src/test_gdb.cpp.c > test_src/test_gdb.emcc.s
+	#./$(EMCC2) -g    test_src/test_gdb.cpp.c > test_src/test_gdb.emcc2.s
+	$(CC) $(CFLAGS)    -o test_src/test_gdb_emcc  test_src/test_gdb.emcc.s
+	#$(CC) $(CFLAGS)    -o test_src/test_gdb_emcc2 test_src/test_gdb.emcc2.s
+	$(CC) $(CFLAGS)    -o test_src/test_gdb_gcc   test_src/test_gdb.c
+	$(CC) $(CFLAGS) -S -masm=intel -o test_src/test_gdb_gcc.s test_src/test_gdb.c
+	@#gdb ./test_src/test_gdb
 
 clean:
 	rm -f $(EMCC) $(EMCC2) $(EMCPP) $(EMCPP2) $(OBJS) $(OBJS2) $(CPPOBJS) $(CPPOBJS2)

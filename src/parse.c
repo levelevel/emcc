@@ -798,6 +798,7 @@ static Type *declaration_specifiers(int type_only) {
     StorageClass sclass = SC_UNDEF;
     int is_unsigned = -1;   //-1:未指定、0:signed、1:unsigned
     int is_const  = 0;
+    int int_cnt = 0;
 
     while (1) {
         SrcInfo *info = &cur_token_info();
@@ -815,8 +816,9 @@ static Type *declaration_specifiers(int type_only) {
             if (type && type!=INT) error_at(info, "型指定が不正です\n");
             type = SHORT;
         } else if (consume(TK_INT)) {
-            if (type && type!=SHORT && type!=LONG && type!=LONGLONG) error_at(info, "型指定が不正です\n");
-            type = INT;
+            if      (!type)        type = INT;
+            else if (type!=SHORT && type!=LONG && type!=LONGLONG) error_at(info, "型指定が不正です\n");
+            if (int_cnt++) error_at(info, "型指定が不正です\n");
         } else if (consume(TK_LONG)) {
             if      (!type)        type = LONG;
             else if (type==INT)    type = LONG;
