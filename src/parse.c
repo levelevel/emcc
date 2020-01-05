@@ -1645,6 +1645,10 @@ static Node *cast_expression(void) {
         tp = type_name();
         expect(')');
         node = new_node(ND_CAST, NULL, cast_expression(), tp, token);
+        char *name = get_type_str(tp);
+        char *buf = malloc(strlen(name)+3);
+        sprintf(buf, "(%s)", name);
+        node->name = buf;
     } else {
         node = unary_expression();
     }

@@ -13,7 +13,7 @@ SRCS=$(wildcard ./src/*.c) test_src/test_error.c
 OBJS=$(SRCS:.c=.o)
 SRCS2=$(wildcard ./src/*.c) test_src/test_error.c
 #OBJS2=$(shell echo $(OBJS) | sed -e s^/src/^/obj2/^g )
-OBJS2=obj2/main.o src/codegen.o src/parse.o src/parse_util.o obj2/tokenize.o src/dump.o src/util.o obj2/test_error.o
+OBJS2=obj2/main.o obj2/codegen.o src/parse.o src/parse_util.o obj2/tokenize.o src/dump.o src/util.o obj2/test_error.o
 
 CPPHEADS=cpp/emcpp.h include/util.h
 CPPSRCS=$(wildcard ./cpp/*.c) ./src/util.c
