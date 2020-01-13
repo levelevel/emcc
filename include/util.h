@@ -53,16 +53,18 @@ typedef iVector iStack;
 #endif
 
 EXTERN char *g_cur_filename;//論理的な処理中のファイル（includeファイルを指す場合がある）
-EXTERN int   g_cur_line;
+EXTERN int   g_cur_line;    //g_cur_filenameの行番号
 EXTERN char *g_filename;    //コンパイル対象のソースファイル（コマンドラインで指定されたもの）
+EXTERN int   g_fileline;    //g_filenameの行番号
 EXTERN char *g_user_input;
 
 //エラー出力のためのソースファイルの情報
 typedef struct {
-    char *input;    //トークン文字列（エラーメッセージ用）
     char *file;     //ソースファイル名
     int line;       //行番号
     int col;        //カラム位置
+    int cpp_line;   //cpp処理後ソースの行番号
+    char *input;    //トークン文字列（エラーメッセージ用）
 } SrcInfo;
 void error_at  (const SrcInfo *info, const char *fmt, ...);
 void warning_at(const SrcInfo *info, const char *fmt, ...);

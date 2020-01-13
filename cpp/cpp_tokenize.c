@@ -133,7 +133,7 @@ void cpp_tokenize(char *p) {
         } else if (strncmp(p, "/*", 2)==0) {
             token = new_token(PPTK_PPTOKEN, p);
             char *q = strstr(p + 2, "*/");
-            SrcInfo info = {p, g_cur_filename, g_cur_line};
+            SrcInfo info = {g_cur_filename, g_cur_line, 0, g_fileline, p};
             if (!q) error_at(&info, "コメントが閉じられていません");
             p = q + 2;
             token->len = p - token->info.input;
@@ -180,8 +180,8 @@ void cpp_tokenize(char *p) {
                 token->val = strtol(p, &p, 0);     //10進、8進
             }
             suffix = p;
-            SrcInfo info0 = {p0, g_cur_filename, g_cur_line};
-            SrcInfo info = {suffix, g_cur_filename, g_cur_line};
+            SrcInfo info0 = {g_cur_filename, g_cur_line, 0, g_fileline, p0};
+            SrcInfo info  = {g_cur_filename, g_cur_line, 0, g_fileline, suffix};
             for (;;) {
                 if (*p=='u' || *p=='U') {
                     if (is_U) error_at(&info, "不正な整数サフィックスです");

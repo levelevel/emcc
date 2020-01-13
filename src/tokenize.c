@@ -114,6 +114,7 @@ static Token *new_token(TKtype type, char *input) {
     token->info.line = g_cur_line;
     token->info.file = g_cur_filename;
     token->info.col  = 0;
+    token->info.cpp_line = g_fileline;
     vec_push(token_vec, token);
     return token;
 }
@@ -194,7 +195,7 @@ static int get_escape_char(char **pp) {
         case '7':  --p; c = get_octa(&p); break;
         case 'x':       c = get_hexa(&p); break;
         default:;
-            SrcInfo info = {p-1, g_cur_filename, g_cur_line};
+            SrcInfo info = {g_cur_filename, g_cur_line, 0, g_fileline, p-1};
             warning_at(&info, "未定義のエスケープシーケンス");
         }
     }
@@ -301,13 +302,14 @@ static char *read_directive(char *p) {
 void tokenize(char *p) {
     Token *token;
     int new_line = 1;
-    g_cur_line = 1;
+    g_cur_line = g_fileline = 1;
     g_cur_filename = g_filename;
     while (*p) {
         if (isspace(*p)) {
             if (*p == '\n') {
                 new_line = 1;
-                g_cur_line ++;
+                g_cur_line++;
+                g_fileline++;
             }
             p++;
             continue;
@@ -329,10 +331,13 @@ void tokenize(char *p) {
         //ブロックコメントをスキップ
         if (strncmp(p, "/*", 2)==0) {
             char *q = strstr(p + 2, "*/");
-            SrcInfo info = {p, g_cur_filename, g_cur_line};
+            SrcInfo info = {g_cur_filename, g_cur_line, 0, g_fileline, p};
             if (!q) error_at(&info, "コメントが閉じられていません");
             while (p<q) {
-                if (*p==('\n')) g_cur_line++;
+                if (*p==('\n')) {
+                    g_cur_line++;
+                    g_fileline++;
+                }
                 p++;
             }
             p = q + 2;
@@ -371,8 +376,8 @@ void tokenize(char *p) {
                 token->val = strtol(p, &p, 0);     //10進、8進
             }
             suffix = p;
-            SrcInfo info0 = {p0, g_cur_filename, g_cur_line};
-            SrcInfo info = {suffix, g_cur_filename, g_cur_line};
+            SrcInfo info0 = {g_cur_filename, g_cur_line, 0, g_fileline, p0};
+            SrcInfo info  = {g_cur_filename, g_cur_line, 0, g_fileline, suffix};
             for (;;) {
                 if (*p=='u' || *p=='U') {
                     if (is_U) error_at(&info, "不正な整数サフィックスです");
@@ -398,10 +403,10 @@ void tokenize(char *p) {
         } else if (*p == '\'') {    //文字
             token = new_token(TK_NUM, p++);
             token->val = get_escape_char(&p);
-            SrcInfo info = {p, g_cur_filename, g_cur_line};
+            SrcInfo info = {g_cur_filename, g_cur_line, 0, g_fileline, p};
             if (*p++ != '\'') error_at(&info, "トークナイズエラー：'が必要です");
         } else {
-            SrcInfo info = {p, g_cur_filename, g_cur_line};
+            SrcInfo info = {g_cur_filename, g_cur_line, 0, g_fileline, p};
             error_at(&info, "トークナイズエラー");
             exit(1);
         }
