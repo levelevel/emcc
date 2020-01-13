@@ -2106,6 +2106,36 @@ static int Struct1Arrow(void) {
         && s3p->a[0]+s3p->a[1]+s3p->a[2]==6
         && bp->b==22 && bp->c==33 && bp->p->b==2 && bp->p->s2.z==12;
 }
+static int Struct1Typedef(void) {
+    typedef struct _S S_t;
+    S_t *ap1;
+    struct _S *ap2;
+    struct _S {
+        int a,b;
+        char c;
+        long d;
+        S_t *p;
+        short e;
+        S2 s2;
+    };
+    S_t a={0}; ap1 = &a; ap2 = &a;
+    int i22 = 22;
+    S_t b={11,i22,i22+11,44,&a,55,{66,77,88}};
+    struct S;
+    ap1->a = 1;
+    ap2->b = 2;
+    ap1->c = 3;
+    ap2->d = 4;
+    ap1->e = 5;
+    ap2->s2.x = 10;
+    ap1->s2.y = 11;
+    ap2->s2.z = 12;
+    return sizeof(struct _S)==64 && 
+        sizeof(a)==64 && sizeof(a.a)==4 && sizeof(S_t)==64
+        && _Alignof(struct _S)==8 && _Alignof(a)==8 && _Alignof(a.c)==1 && _Alignof(S_t)==8
+        && ap2->a+ap1->b+ap2->c+ap1->d+a.e==15 && ap1->s2.x+ap2->s2.y+a.s2.z==33
+        && b.b==22 && b.c==33 && b.p->b==2 && b.p->s2.z==12;
+}
 static int Struct2(void) {
     typedef struct XYZ {
         int x,y,z;
@@ -2597,7 +2627,7 @@ static int AnonymouseStruct2(void) {
         struct Self *self;
         struct NameOnly *p;
     };
-static int StructEtc(void) {
+static int StructEtc1(void) {
     struct NameOnly;
     struct Self {
         struct Self *self;
@@ -2625,9 +2655,30 @@ static int StructEtc2(void) {
         && (*(&st[1]+1)).a == 3;
     //  && (p?st[0]:st[1]).a == 1;//★
 }
+static int StructEtc3(void) {
+    struct S3;
+    struct S3 *sp;
+    struct S3{
+        int a,b;
+    } s = {1,2};
+    sp = &s;
+    return sp->b==2;
+}
+static int StructEtc3t(void) {
+    typedef struct S3 S3;
+    S3 *sp;
+    struct S3 *sp2;
+    struct S3{
+        int a,b;
+    } s = {1,2};
+    sp = &s;
+    sp2 = sp;
+    return sp->b==2 && sp2->a==1;
+}
 static int Struct(void) {
     TEST(Struct1);
     TEST(Struct1Arrow);
+    TEST(Struct1Typedef);
     TEST(Struct2);
     TEST(Struct2Arrow);
     TEST(Struct3);
@@ -2648,8 +2699,10 @@ static int Struct(void) {
     TEST(AnonymouseStruct1);
     TEST(AnonymouseStruct2);
     
-    TEST(StructEtc);
+    TEST(StructEtc1);
     TEST(StructEtc2);
+    TEST(StructEtc3);
+    TEST(StructEtc3t);
     return 1;
 }
 

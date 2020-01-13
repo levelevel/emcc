@@ -133,107 +133,107 @@ test_src/expr.c:2008:22: warning: empty declaration with storage class specifier
          typedef enum ABC;
                       ^~~
 test_src/expr.c: In function ‘Struct2’:
-test_src/expr.c:2137:5: warning: braces around scalar initializer
+test_src/expr.c:2167:5: warning: braces around scalar initializer
      XYZ xyz = {{1,2,3},4,{5,6}};
      ^~~
-test_src/expr.c:2137:5: note: (near initialization for ‘xyz.x’)
-test_src/expr.c:2137:19: warning: excess elements in scalar initializer
+test_src/expr.c:2167:5: note: (near initialization for ‘xyz.x’)
+test_src/expr.c:2167:19: warning: excess elements in scalar initializer
      XYZ xyz = {{1,2,3},4,{5,6}};
                    ^
-test_src/expr.c:2137:19: note: (near initialization for ‘xyz.x’)
-test_src/expr.c:2137:21: warning: excess elements in scalar initializer
+test_src/expr.c:2167:19: note: (near initialization for ‘xyz.x’)
+test_src/expr.c:2167:21: warning: excess elements in scalar initializer
      XYZ xyz = {{1,2,3},4,{5,6}};
                      ^
-test_src/expr.c:2137:21: note: (near initialization for ‘xyz.x’)
-test_src/expr.c:2137:5: warning: braces around scalar initializer
+test_src/expr.c:2167:21: note: (near initialization for ‘xyz.x’)
+test_src/expr.c:2167:5: warning: braces around scalar initializer
      XYZ xyz = {{1,2,3},4,{5,6}};
      ^~~
-test_src/expr.c:2137:5: note: (near initialization for ‘xyz.z’)
-test_src/expr.c:2137:29: warning: excess elements in scalar initializer
+test_src/expr.c:2167:5: note: (near initialization for ‘xyz.z’)
+test_src/expr.c:2167:29: warning: excess elements in scalar initializer
      XYZ xyz = {{1,2,3},4,{5,6}};
                              ^
-test_src/expr.c:2137:29: note: (near initialization for ‘xyz.z’)
+test_src/expr.c:2167:29: note: (near initialization for ‘xyz.z’)
 test_src/expr.c: In function ‘StaticStruct2’:
-test_src/expr.c:2362:5: warning: braces around scalar initializer
+test_src/expr.c:2392:5: warning: braces around scalar initializer
      static XYZ xyz = {{1,2,3},4,{5,6}};
      ^~~~~~
-test_src/expr.c:2362:5: note: (near initialization for ‘xyz.x’)
-test_src/expr.c:2362:26: warning: excess elements in scalar initializer
+test_src/expr.c:2392:5: note: (near initialization for ‘xyz.x’)
+test_src/expr.c:2392:26: warning: excess elements in scalar initializer
      static XYZ xyz = {{1,2,3},4,{5,6}};
                           ^
-test_src/expr.c:2362:26: note: (near initialization for ‘xyz.x’)
-test_src/expr.c:2362:28: warning: excess elements in scalar initializer
+test_src/expr.c:2392:26: note: (near initialization for ‘xyz.x’)
+test_src/expr.c:2392:28: warning: excess elements in scalar initializer
      static XYZ xyz = {{1,2,3},4,{5,6}};
                             ^
-test_src/expr.c:2362:28: note: (near initialization for ‘xyz.x’)
-test_src/expr.c:2362:5: warning: braces around scalar initializer
+test_src/expr.c:2392:28: note: (near initialization for ‘xyz.x’)
+test_src/expr.c:2392:5: warning: braces around scalar initializer
      static XYZ xyz = {{1,2,3},4,{5,6}};
      ^~~~~~
-test_src/expr.c:2362:5: note: (near initialization for ‘xyz.z’)
-test_src/expr.c:2362:36: warning: excess elements in scalar initializer
+test_src/expr.c:2392:5: note: (near initialization for ‘xyz.z’)
+test_src/expr.c:2392:36: warning: excess elements in scalar initializer
      static XYZ xyz = {{1,2,3},4,{5,6}};
                                     ^
-test_src/expr.c:2362:36: note: (near initialization for ‘xyz.z’)
+test_src/expr.c:2392:36: note: (near initialization for ‘xyz.z’)
 test_src/expr.c: In function ‘StaticStruct2Arrow’:
-test_src/expr.c:2401:5: warning: braces around scalar initializer
+test_src/expr.c:2431:5: warning: braces around scalar initializer
      static XYZ xyz = {{1,2,3},4,{5,6}};
      ^~~~~~
-test_src/expr.c:2401:5: note: (near initialization for ‘xyz.x’)
-test_src/expr.c:2401:26: warning: excess elements in scalar initializer
+test_src/expr.c:2431:5: note: (near initialization for ‘xyz.x’)
+test_src/expr.c:2431:26: warning: excess elements in scalar initializer
      static XYZ xyz = {{1,2,3},4,{5,6}};
                           ^
-test_src/expr.c:2401:26: note: (near initialization for ‘xyz.x’)
-test_src/expr.c:2401:28: warning: excess elements in scalar initializer
+test_src/expr.c:2431:26: note: (near initialization for ‘xyz.x’)
+test_src/expr.c:2431:28: warning: excess elements in scalar initializer
      static XYZ xyz = {{1,2,3},4,{5,6}};
                             ^
-test_src/expr.c:2401:28: note: (near initialization for ‘xyz.x’)
-test_src/expr.c:2401:5: warning: braces around scalar initializer
+test_src/expr.c:2431:28: note: (near initialization for ‘xyz.x’)
+test_src/expr.c:2431:5: warning: braces around scalar initializer
      static XYZ xyz = {{1,2,3},4,{5,6}};
      ^~~~~~
-test_src/expr.c:2401:5: note: (near initialization for ‘xyz.z’)
-test_src/expr.c:2401:36: warning: excess elements in scalar initializer
+test_src/expr.c:2431:5: note: (near initialization for ‘xyz.z’)
+test_src/expr.c:2431:36: warning: excess elements in scalar initializer
      static XYZ xyz = {{1,2,3},4,{5,6}};
                                     ^
-test_src/expr.c:2401:36: note: (near initialization for ‘xyz.z’)
+test_src/expr.c:2431:36: note: (near initialization for ‘xyz.z’)
 test_src/expr.c: At top level:
-test_src/expr.c:2520:5: warning: braces around scalar initializer
+test_src/expr.c:2550:5: warning: braces around scalar initializer
      static gs2a_XYZ gs2a_xyz = {{1,2,3},4,{5,6}};
      ^~~~~~
-test_src/expr.c:2520:5: note: (near initialization for ‘gs2a_xyz.x’)
-test_src/expr.c:2520:36: warning: excess elements in scalar initializer
+test_src/expr.c:2550:5: note: (near initialization for ‘gs2a_xyz.x’)
+test_src/expr.c:2550:36: warning: excess elements in scalar initializer
      static gs2a_XYZ gs2a_xyz = {{1,2,3},4,{5,6}};
                                     ^
-test_src/expr.c:2520:36: note: (near initialization for ‘gs2a_xyz.x’)
-test_src/expr.c:2520:38: warning: excess elements in scalar initializer
+test_src/expr.c:2550:36: note: (near initialization for ‘gs2a_xyz.x’)
+test_src/expr.c:2550:38: warning: excess elements in scalar initializer
      static gs2a_XYZ gs2a_xyz = {{1,2,3},4,{5,6}};
                                       ^
-test_src/expr.c:2520:38: note: (near initialization for ‘gs2a_xyz.x’)
-test_src/expr.c:2520:5: warning: braces around scalar initializer
+test_src/expr.c:2550:38: note: (near initialization for ‘gs2a_xyz.x’)
+test_src/expr.c:2550:5: warning: braces around scalar initializer
      static gs2a_XYZ gs2a_xyz = {{1,2,3},4,{5,6}};
      ^~~~~~
-test_src/expr.c:2520:5: note: (near initialization for ‘gs2a_xyz.z’)
-test_src/expr.c:2520:46: warning: excess elements in scalar initializer
+test_src/expr.c:2550:5: note: (near initialization for ‘gs2a_xyz.z’)
+test_src/expr.c:2550:46: warning: excess elements in scalar initializer
      static gs2a_XYZ gs2a_xyz = {{1,2,3},4,{5,6}};
                                               ^
-test_src/expr.c:2520:46: note: (near initialization for ‘gs2a_xyz.z’)
+test_src/expr.c:2550:46: note: (near initialization for ‘gs2a_xyz.z’)
 test_src/expr.c: In function ‘Union2’:
-test_src/expr.c:2746:16: warning: excess elements in union initializer
+test_src/expr.c:2799:16: warning: excess elements in union initializer
      } u10 = {1,2}, u1=u10;
                 ^
-test_src/expr.c:2746:16: note: (near initialization for ‘u10’)
+test_src/expr.c:2799:16: note: (near initialization for ‘u10’)
 test_src/expr.c: In function ‘Union2Arrow’:
-test_src/expr.c:2764:16: warning: excess elements in union initializer
+test_src/expr.c:2817:16: warning: excess elements in union initializer
      } u10 = {1,2}, u1, *u1p=&u1;
                 ^
-test_src/expr.c:2764:16: note: (near initialization for ‘u10’)
+test_src/expr.c:2817:16: note: (near initialization for ‘u10’)
 test_src/expr.c: In function ‘func_const2’:
-test_src/expr.c:2940:12: warning: return discards ‘const’ qualifier from pointer target type [-Wdiscarded-qualifiers]
+test_src/expr.c:2993:12: warning: return discards ‘const’ qualifier from pointer target type [-Wdiscarded-qualifiers]
      return str; //warning: return discards 'const' qualifier from pointer target type [-Wdiscarded-qualifiers]
             ^~~
 test_src/expr.c: In function ‘const2’:
-test_src/expr.c:2949:17: warning: passing argument 1 of ‘func_const3’ discards ‘const’ qualifier from pointer target type [-Wdiscarded-qualifiers]
+test_src/expr.c:3002:17: warning: passing argument 1 of ‘func_const3’ discards ‘const’ qualifier from pointer target type [-Wdiscarded-qualifiers]
      func_const3(p1);    //warning
                  ^~
-test_src/expr.c:2942:14: note: expected ‘char *’ but argument is of type ‘const char *’
+test_src/expr.c:2995:14: note: expected ‘char *’ but argument is of type ‘const char *’
  static char *func_const3(char*str){return str;}
               ^~~~~~~~~~~

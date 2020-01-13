@@ -222,12 +222,14 @@ void check_assignment(const Node *node, const Node *rhs, const SrcInfo *info){
     Status sts;
     if (!(node->tp->type==PTR && rhs->type==ND_NUM && rhs->val==0) &&  //ポインタの右辺が0の場合は無条件にOK
         (sts=type_eq_check(node->tp, rhs->tp))!=ST_OK) {
-        if (sts==ST_ERR)
+        if (sts==ST_ERR) {
             error_at(info, "=の左右の型(%s:%s)が異なります", 
                 get_node_type_str(node), get_node_type_str(rhs));
-        if (sts==ST_WARN)
+        }
+        if (sts==ST_WARN) {
             warning_at(info, "=の左右の型(%s:%s)が異なります", 
                 get_node_type_str(node), get_node_type_str(rhs));
+        }
     }
 }
 
@@ -917,6 +919,7 @@ static Type *declaration_specifiers(int type_only) {
 //    struct_declarator       = declarator
 //                            | declarator? ":" constant_expression
 static Node *struct_or_union_specifier(TPType type) {
+    //  TPType type;    STRUCT|UNION
     Node *node;
     if (type==STRUCT) node = new_node(ND_STRUCT_DEF, NULL, NULL, new_type(STRUCT, 0), cur_token());
     else              node = new_node(ND_UNION_DEF,  NULL, NULL, new_type(UNION,  0), cur_token());
@@ -1819,7 +1822,11 @@ static Node *postfix_expression(void) {
             if (!type_is_struct_or_union(tp->ptr_of)) error_at(&token->info, "ここでメンバ名の指定はできません");
             char *name;
             expect_ident(&name, "struct/unionのメンバ名");
-            Node *struct_def = tp->ptr_of->node; assert(struct_def!=NULL);    //STRUCT/UNION
+            Node *struct_def = tp->ptr_of->node; assert(struct_def!=NULL);  //STRUCT/UNION
+            if (struct_def->map==NULL) {            //不完全構造体
+                struct_def = struct_def->tp->node;  //完全構造体
+                assert(struct_def->map);
+            }
             Node *member_def;
             StorageClass sclass = get_storage_class(node->tp);
             if (map_get(struct_def->map, name, (void**)&member_def)==0) error_at(&token->info, "struct/union %sに%sは存在しません", struct_def->name, name);

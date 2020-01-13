@@ -461,9 +461,9 @@ Node *regist_tagname(Node *node) {
             map_put(tagname_map, name, node);
             prev_node->tp = node->tp;
         } else if (prev_node->lst!=NULL && node->lst==NULL) {   //先行が完全、新規が不完全
-            ret_node = prev_node;
+            ret_node = prev_node;   //不完全型を完全型に置き換えて返す
         } else {                                                //共に不完全
-            //ret_node = prev_node;
+            ret_node = prev_node;   //不完全型を正規化
         }
     } else if (map_get(tagname_map, name, (void**)&node3)) {
         //同一スコープ内での再定義はできない
@@ -669,6 +669,7 @@ static int func_arg_eq(Node *node1, Node *node2) {
 
 //型が等しいかどうかを判定する
 int type_eq(const Type *tp1, const Type *tp2) {
+    if (tp1==tp2) return 1;
     if (tp1->type != tp2->type) return 0;
     if (tp1->is_unsigned != tp2->is_unsigned) return 0;
     if (tp1->is_const != tp2->is_const) return 0;
@@ -682,6 +683,7 @@ int type_eq(const Type *tp1, const Type *tp2) {
 
 //global変数の型が等しいかどうかを判定する（externは無視する）
 int type_eq_global(const Type *tp1, const Type *tp2) {
+    if (tp1==tp2) return 1;
     if (tp1->type != tp2->type) return 0;
     if (tp1->is_unsigned != tp2->is_unsigned) return 0;
     if (tp1->is_const != tp2->is_const) return 0;
@@ -706,6 +708,7 @@ int node_type_eq_global(const Node *node1, const Node *node2) {
 
 //  関数の戻り値の型が等しいかどうかを判定する（storage classは無視）
 int type_eq_ex_sclass(const Type *tp1, const Type *tp2) {
+    if (tp1==tp2) return 1;
     if (tp1->type != tp2->type) return 0;
     if (tp1->is_unsigned != tp2->is_unsigned) return 0;
     if (tp1->is_const != tp2->is_const) return 0;
@@ -719,6 +722,7 @@ int type_eq_ex_sclass(const Type *tp1, const Type *tp2) {
 
 //node1にnode2を渡す観点で型の一致を判定する
 Status type_eq_check(const Type *tp1, const Type *tp2) {
+    if (tp1==tp2) return ST_OK;
     //if (!tp1->is_const && tp2->is_const) {
     //    return ST_WARN; //引数、戻り値の場合はWARN。代入の場合はERRだがここではチェックしない
     //} else
@@ -734,6 +738,9 @@ Status type_eq_check(const Type *tp1, const Type *tp2) {
              (tp1->ptr_of->type==VOID || tp2->ptr_of->type==VOID)) {
             //voidポインタと非voidポインタの相互代入はOK
         return ST_OK;
+    } else if (type_is_struct_or_union(tp1) && type_is_struct_or_union(tp2)) {
+        //tp->node->tpまでたどることで不完全型が完全型になる
+        if (tp1->node->tp != tp2->node->tp) return ST_ERR;
     } else if (type_is_struct_or_union(tp1) || type_is_struct_or_union(tp2)) {
         if (tp1->node != tp2->node) return ST_ERR;
     } else if (tp1->type != tp2->type) {
