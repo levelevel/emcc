@@ -1,8 +1,24 @@
 #include "emcc.h"
 
+/*
+    int func(int a1, int a2, ... , int a6, int a7, int a8);
+    0xffffffff
+    |    ...    |offset
+    |a8         | 23
+    |a9         | 16
+    |ret address|
+    |org RBP    | RBP
+    |a1         | -4
+    |a2         | -8
+    |    ...    |
+    |a6         | -24   RSP
+    |    ...    |
+    0x00000000
+ */
 //レジスタ ---------------------------------------------
-static char *arg_regs[] = {  //関数の引数で用いるレジスタ
-    "rdi", "rsi", "rdx", "rcx", "r8", "r9", NULL
+#define ARG_REGS_SIZE 6 //関数でレジスタ渡しする引数の数
+static char *arg_regs[ARG_REGS_SIZE] = {  //関数の引数で用いるレジスタ
+    "rdi", "rsi", "rdx", "rcx", "r8", "r9"
 };
 
 static char *regs[][4] = {
@@ -938,7 +954,7 @@ static int gen(Node*node) {
         break;
     case ND_FUNC_CALL:      //関数コール
     {
-        int i=0;
+        int argc=0;
         comment("CALL:%s\t%s\n", node->name, get_node_type_str(node));
         if (node->lhs) {    //引数
             assert(node->lhs->type==ND_LIST);
@@ -946,7 +962,8 @@ static int gen(Node*node) {
             Node **actual_nodes = (Node**)actual_list->data;
             Vector *formal_list = get_func_args(node);
             Node **formal_nodes = formal_list?(Node**)formal_list->data:NULL;
-            for (i=0; i < actual_list->len; i++) {
+            argc = actual_list->len;
+            for (int i=argc-1; i>=0; i--) { //右から左に評価してスタックに積む
                 print_loc(node);
                 comment("ARGLIST[%d]\n", i);
                 gen(actual_nodes[i]);  //スタックトップに引数がセットされる
@@ -957,22 +974,25 @@ static int gen(Node*node) {
             }
         }
         print_loc(node);
+        //6個以下の引数はポップしてレジスタで渡す
+        //6個を超える低数はスタックで渡す
         if (node->rhs==NULL ||          //未定義の関数のコール
             node->rhs->tp->type==FUNC) {//定義済み関数のコール
-            for (; i; i--) {
-                printf("  pop %s\n", arg_regs[i-1]);
+            for (int i=0; i<argc; i++) {
+                if (i<ARG_REGS_SIZE) printf("  pop %s\n", arg_regs[i]);
             }
             printf("  mov al, 0\n");
             printf("  call %s\n", node->name);
         } else {                        //関数ポインタのコール
             gen(node->rhs);
             printf("  pop rbx\n");
-            for (; i; i--) {
-                printf("  pop %s\n", arg_regs[i-1]);
+            for (int i=0; i<argc; i++) {
+                if (i<ARG_REGS_SIZE) printf("  pop %s\n", arg_regs[i]);
             }
             printf("  mov al, 0\n");
             printf("  call rbx\n");
         }
+        if (argc>ARG_REGS_SIZE) printf("  add rsp, %d\n", (argc-6)*8);
         printf("  push rax\n");
         break;
     }
@@ -1725,22 +1745,36 @@ void gen_program(void) {
         printf("  sub rsp, %d\n", calc_stack_offset(funcdef[i]->var_stack_size));
 
         // 引数をスタックのローカル変数領域にコピー
-        int size = funcdef[i]->node->lhs->lst->len;
+        int argc = funcdef[i]->node->lhs->lst->len;
         Node **arg_nodes = (Node**)funcdef[i]->node->lhs->lst->data;
-        if (size && arg_nodes[0]->tp->type!=VOID) {
-            char buf[128];
-            assert(size<=6);
-            for (int j=0; j < size; j++) {
+        if (argc && arg_nodes[0]->tp->type!=VOID) {
+            for (int j=0; j < argc; j++) {
                 Node *arg = arg_nodes[j];
                 if (arg->type==ND_VARARGS) {  //...（可変引数）
                     ; 
+                } else if (j<ARG_REGS_SIZE) {
+                    printf("  %s %s PTR [rbp-%d], %s#\targ[%d]:%s %s\n", 
+                        write_command_of_type(arg->tp), 
+                        ptr_name_of_type(arg->tp), 
+                        arg->offset, 
+                        reg_name_of_type(arg_regs[j], arg->tp),
+                        j, get_node_type_str(arg) ,arg->name);
                 } else {
-                    printf("  mov rax, rbp\n");
-                    printf("  sub rax, %d\n", arg->offset);
-                    sprintf(buf, "arg[%d]:%s %s", j, get_node_type_str(arg) ,arg->name);
-                    gen_write_reg("rax", arg_regs[j], arg->tp, buf);
+                    printf("  mov %s, %s PTR [rbp+%d]#\targ[%d]:%s %s\n", 
+                        reg_name_of_type("rax", arg->tp),
+                        ptr_name_of_type(arg->tp), 
+                        (j-ARG_REGS_SIZE+2)*8,
+                        j, get_node_type_str(arg) ,arg->name);
+                    printf("  %s %s PTR [rbp-%d], %s\n", 
+                        write_command_of_type(arg->tp), 
+                        ptr_name_of_type(arg->tp), 
+                        arg->offset, 
+                        reg_name_of_type("rax", arg->tp));
                 }
             }
+        }
+        if (argc>ARG_REGS_SIZE) {
+            printf("  add rsp, %d\n", (argc-ARG_REGS_SIZE)*8);
         }
 
         // 関数本体のコード生成

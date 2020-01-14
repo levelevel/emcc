@@ -528,7 +528,15 @@ static int funcdecl4b(char*fmt, ...) {
 static int funcarg1_i1(int i, char c, short s, long l, long long ll, _Bool b) {
     return i + c + s + l + ll + b;
 }
+static int funcarg1_i2(int I, char C, short S, long L, long long LL, _Bool B,
+                       int i, char c, short s, long l, long long ll, _Bool b) {
+    return i + c + s + l + ll + b;
+}
 static int funcarg1_ip1(int *i, char *c, short *s, long *l, long long *ll, _Bool *b) {
+    return *i + *c + *s + *l + *ll + *b;
+}
+static int funcarg1_ip2(int *I, char *C, short *S, long *L, long long *LL, _Bool *B,
+                        int *i, char *c, short *s, long *l, long long *ll, _Bool *b) {
     return *i + *c + *s + *l + *ll + *b;
 }
 static int funcarg1_p1(int argc, int *argv) {
@@ -546,7 +554,9 @@ static int funcarg1(void) {
     int i=1; char c=2; short s=3; long l=4; long long ll=5; _Bool b=6;
     return 
         funcarg1_i1(1, 2, 3, 4, 5, 6)==1+2+3+4+5+1 &&
+        funcarg1_i2(1, 2, 3, 4, 5, 6, 1, 2, 3, 4, 5, 6)==1+2+3+4+5+1 &&
         funcarg1_ip1(&i, &c, &s, &l, &ll, &b)==1+2+3+4+5+1 &&
+        funcarg1_ip2(&i, &c, &s, &l, &ll, &b, &i, &c, &s, &l, &ll, &b)==1+2+3+4+5+1 &&
         funcarg1_p1(3, argi)==6 &&
         funcarg1_a1(3, argi)==6 &&
         1;
@@ -579,6 +589,18 @@ static int funcarg2(void) {
     return
         funcarg1_p2(sizeof(fa_argv)/sizeof(fa_argv[0]), fa_argv) &&
         funcarg1_a2(sizeof(fa_argv)/sizeof(fa_argv[0]), fa_argv);
+}
+
+static int va1_sprintf(char *buf, const char *fmt, ...) {
+    va_list ap;
+    va_start(ap, fmt);
+    return vsprintf(buf, fmt, ap);
+}
+static int varargs1(void) {
+    char buf1[32], buf2[32];
+    sprintf(buf1, "%d%d%d%d%d%d%d%d", 1, 2, 3, 4, 5, 6, 7, 8);
+    //va1_sprintf(buf2, "%d%d%d", 1, 2, 3);
+    return strcmp(buf1, "12345678")==0;
 }
 
 static int fp1_add(int a, int b) { return a+b; }
@@ -643,6 +665,7 @@ static int func() {
     TEST(funcdecl3);
     TEST(funcarg1)
     TEST(funcarg2)
+    TEST(varargs1)
     TEST(funcp1);
     TEST(funcp2);
     TEST(funcp3);

@@ -108,6 +108,7 @@ test2: $(TESTEXEGCC) $(TESTEXEEMCC2)
 
 $(TESTEXEGCC): $(TESTSRCS)
 	$(CC) -g $(TESTSRCS) -o $(TESTEXEGCC) > tmp/expr.gcc.log 2>&1
+	$(CC) -S -masm=intel test_src/expr.c -o tmp/expr.gcc.s > /dev/null 2>&1
 
 $(TESTEXEEMCC): $(EMCC) $(TESTSRCS)
 	$(CPP) $(CFLAGS2) test_src/expr.c -o tmp/expr.cpp.c
