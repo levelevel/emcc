@@ -92,7 +92,7 @@ void set_struct_size(Node *node, int base_offset) {
         offset = (offset +(align_size-1))/align_size * align_size;
         member->offset = (tp->type==STRUCT ? offset : base_offset);
         if (node_is_anonymouse_struct_or_union(member)) {    //無名構造体・共用体
-            set_struct_size(member, tp->type==STRUCT ? offset : 0);
+            set_struct_size(member, tp->type==STRUCT ? offset : base_offset);
         }
         offset += size;
         if (sclass!=get_storage_class(member->tp)) {

@@ -594,7 +594,9 @@ static int funcarg2(void) {
 static int va1_sprintf(char *buf, const char *fmt, ...) {
     va_list ap;
     va_start(ap, fmt);
-    return vsprintf(buf, fmt, ap);
+    int ret = vsprintf(buf, fmt, ap);
+    va_end(ap);
+    return ret;
 }
 static int varargs1(void) {
     char buf1[32], buf2[32];
@@ -2611,15 +2613,15 @@ static int AnonymouseStruct1(void) {
         };
         int e;
     };
-    struct ST st1;
+    struct ST st1, *st1p = &st1;
     st1.a = 1;
     st1.b = 2;
-    st1.c = 3;
+    st1p->c = 3;
     st1.d = 4;
     st1.e = 5;
     struct ST st2 = {1,2,3,4,5};
     static struct ST st3= {1,2,3,4,5};
-    return st1.a==1 && st1.b==2 && st1.c==3 && st1.d==4 && st1.e==5
+    return st1.a==1 && st1.b==2 && st1.c==3 && st1.d==4 && st1p->e==5
         && st2.a==1 && st2.b==2 && st2.c==3 && st2.d==4 && st2.e==5
         && st3.a==1 && st3.b==2 && st3.c==3 && st3.d==4 && st3.e==5;
 }
@@ -2633,17 +2635,51 @@ static int AnonymouseStruct2(void) {
         };
         int e;
     };
-    union UN un1;
+    union UN un1, *un1p = &un1;
     un1.a = 1;  //5
     un1.b = 2;  //5
-    un1.c = 3;
+    un1p->c = 3;
     un1.d = 4;
     un1.e = 5;
     union UN un2 = {1};
     static union UN un3 = {1};
-    return un1.a==5 && un1.b==5 && un1.c==3 && un1.d==4 && un1.e==5
+    return un1.a==5 && un1.b==5 && un1.c==3 && un1.d==4 && un1p->e==5
         && un2.a==1 && un2.b==1 && un2.c==0 && un2.d==0 && un2.e==1
         && un3.a==1 && un3.b==1 && un3.c==0 && un3.d==0 && un3.e==1;
+}
+static int AnonymouseStruct3(void) {
+    typedef struct {
+        int a;
+        union {
+            int b;
+            char c;
+            long d;
+        };
+        int e;
+    } ST;
+    ST st1 = {1,2,3}, *st1p = &st1;
+    return st1.a==1 && st1p->b==2 && st1.e==3;
+}
+static int AnonymouseStruct4(void) {
+    typedef struct {
+        int mode;
+        union {
+            struct {
+                int x,y,z;
+            };
+            int xyz[3];
+        };
+        union {
+            struct {
+                long a,b,c,d;
+            };
+            long abcd[4];
+        };
+    } ST;
+    ST st1 = {99, {1,2,3},{4,5,6,7}};
+    ST *st1p = &st1;
+    return st1.x==1 && st1p->y==2 && st1.z==3 && st1.xyz[0]==1 && st1p->xyz[1]==2
+        && st1.a==4 && st1p->b==5 && st1.c==6 && st1.abcd[1]==5 && st1p->abcd[2]==6;
 }
     struct NameOnly;
     struct Self {
@@ -2721,6 +2757,8 @@ static int Struct(void) {
 
     TEST(AnonymouseStruct1);
     TEST(AnonymouseStruct2);
+    TEST(AnonymouseStruct3);
+    TEST(AnonymouseStruct4);
     
     TEST(StructEtc1);
     TEST(StructEtc2);

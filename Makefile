@@ -8,7 +8,7 @@ AFLAGS=-g -no-pie
 
 CFLAGS2=$(CFLAGS) -D_emcc
 
-HEADS=include/emcc.h include/util.h
+HEADS=include/emcc.h include/util.h include/builtin_stdarg.h
 SRCS=$(wildcard ./src/*.c) test_src/test_error.c
 OBJS=$(SRCS:.c=.o)
 SRCS2=$(wildcard ./src/*.c) test_src/test_error.c
@@ -107,8 +107,8 @@ test2: $(TESTEXEGCC) $(TESTEXEEMCC2)
 	./test.sh $(EMCC2)
 
 $(TESTEXEGCC): $(TESTSRCS)
-	$(CC) -g $(TESTSRCS) -o $(TESTEXEGCC) > tmp/expr.gcc.log 2>&1
-	$(CC) -S -masm=intel test_src/expr.c -o tmp/expr.gcc.s > /dev/null 2>&1
+	$(CC) -g -I./include $(TESTSRCS) -o $(TESTEXEGCC) > tmp/expr.gcc.log 2>&1
+	$(CC) -S -I./include -masm=intel test_src/expr.c -o tmp/expr.gcc.s > /dev/null 2>&1
 
 $(TESTEXEEMCC): $(EMCC) $(TESTSRCS)
 	$(CPP) $(CFLAGS2) test_src/expr.c -o tmp/expr.cpp.c

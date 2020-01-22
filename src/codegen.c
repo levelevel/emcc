@@ -1753,14 +1753,14 @@ void gen_program(void) {
                 if (arg->type==ND_VARARGS) {  //...（可変引数）
                     ; 
                 } else if (j<ARG_REGS_SIZE) {
-                    printf("  %s %s PTR [rbp-%d], %s#\targ[%d]:%s %s\n", 
+                    printf("  %s %s PTR [rbp-%d], %s\t#arg[%d]:%s %s\n", 
                         write_command_of_type(arg->tp), 
                         ptr_name_of_type(arg->tp), 
                         arg->offset, 
                         reg_name_of_type(arg_regs[j], arg->tp),
                         j, get_node_type_str(arg) ,arg->name);
                 } else {
-                    printf("  mov %s, %s PTR [rbp+%d]#\targ[%d]:%s %s\n", 
+                    printf("  mov %s, %s PTR [rbp+%d]\t#arg[%d]:%s %s\n", 
                         reg_name_of_type("rax", arg->tp),
                         ptr_name_of_type(arg->tp), 
                         (j-ARG_REGS_SIZE+2)*8,

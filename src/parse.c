@@ -909,6 +909,19 @@ static Type *declaration_specifiers(int type_only) {
     return top_tp;
 }
 
+//無名構造体のメンバを変数登録する（スコープを親のレベルに引き上げる）
+//メンバが無名構造体であれば再帰的に変数登録する
+void regist_var_def_anonymouse_struct_or_union(Node *anonymouse_struct) {
+    Vector *src_lst = anonymouse_struct->tp->node->lst;
+    for (int i=0; i<lst_len(src_lst); i++) {
+        Node *member = (Node*)lst_data(src_lst,i);
+        if (node_is_anonymouse_struct_or_union(member)) {
+            regist_var_def_anonymouse_struct_or_union(member);
+        } else {
+            regist_var_def(member);
+        }
+    }
+}
 //    struct_or_union_specifier = ( "struct" | "union" ) identifier? "{" struct_declaration+ "}"
 //                            | ( "struct" | "union" ) identifier
 //    struct_declaration      = specifier_qualifier_list struct_declarator_list* ";"
@@ -944,6 +957,7 @@ static Node *struct_or_union_specifier(TPType type) {
                 //int x,y,z;
                 vec_copy(node->lst, member->lst);
             } else if (node_is_anonymouse_struct_or_union(member)) {
+                regist_var_def_anonymouse_struct_or_union(member);
                 //  struct {            //<==node
                 //      int a;
                 //      union {         //<==member: 無名構造体・共用体
@@ -951,10 +965,6 @@ static Node *struct_or_union_specifier(TPType type) {
                 //          long ub;
                 //      };
                 //  }
-                Vector *src_lst = member->tp->node->lst;
-                for (int i=0; i<lst_len(src_lst); i++) {
-                    regist_var_def((Node*)lst_data(src_lst,i));
-                }
                 vec_push(node->lst, member);
             } else {
                 //int a;
