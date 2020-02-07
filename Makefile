@@ -8,12 +8,13 @@ AFLAGS=-g -no-pie
 
 CFLAGS2=$(CFLAGS) -D_emcc
 
-HEADS=include/emcc.h include/util.h include/builtin_stdarg.h
+HEADS=include/emcc.h include/util.h include/builtin.h
 SRCS=$(wildcard ./src/*.c) test_src/test_error.c
 OBJS=$(SRCS:.c=.o)
-SRCS2=$(wildcard ./src/*.c) test_src/test_error.c
-#OBJS2=$(shell echo $(OBJS) | sed -e s^/src/^/obj2/^g )
-OBJS2=obj2/main.o src/codegen.o src/parse.o src/parse_util.o obj2/tokenize.o obj2/dump.o src/util.o obj2/test_error.o
+HEADS2=$(HEADS)
+SRCS2=$(SRC)
+OBJS2=$(shell echo $(OBJS) | sed -e s^/src/^/obj2/^g )
+#OBJS2=obj2/main.o obj2/codegen.o obj2/parse.o obj2/parse_util.o obj2/tokenize.o obj2/dump.o obj2/util.o obj2/test_error.o
 
 CPPHEADS=cpp/emcpp.h include/util.h
 CPPSRCS=$(wildcard ./cpp/*.c) ./src/util.c
@@ -27,48 +28,48 @@ EMCCFLAGS=-g
 
 all:$(EMCC) $(EMCC2) $(EMCPP) $(EMCPP2)
 
-obj2/main.o:       src/main.c       $(EMCC)
+obj2/main.o:       src/main.c       $(EMCC) $(HEADS2)
 	$(CPP)    $(CFLAGS2)   $< -o $*.cpp.c
 	./$(EMCC) $(EMCCFLAGS) $*.cpp.c > $*.s
 	$(CC) -c  $(CFLAGS2)   $*.s -o $@
-obj2/codegen.o:    src/codegen.c    $(EMCC)
+obj2/codegen.o:    src/codegen.c    $(EMCC) $(HEADS2)
 	$(CPP)    $(CFLAGS2)   $< -o $*.cpp.c
 	./$(EMCC) $(EMCCFLAGS) $*.cpp.c > $*.s
 	$(CC) -c  $(CFLAGS2)   $*.s -o $@
-obj2/parse.o:      src/parse.c      $(EMCC)
+obj2/parse.o:      src/parse.c      $(EMCC) $(HEADS2)
 	$(CPP)    $(CFLAGS2)   $< -o $*.cpp.c
 	./$(EMCC) $(EMCCFLAGS) $*.cpp.c > $*.s
 	$(CC) -c  $(CFLAGS2)   $*.s -o $@
-obj2/parse_util.o: src/parse_util.c $(EMCC)
+obj2/parse_util.o: src/parse_util.c $(EMCC) $(HEADS2)
 	$(CPP)    $(CFLAGS2)   $< -o $*.cpp.c
 	./$(EMCC) $(EMCCFLAGS) $*.cpp.c > $*.s
 	$(CC) -c  $(CFLAGS2)   $*.s -o $@
-obj2/tokenize.o:   src/tokenize.c   $(EMCC)
+obj2/tokenize.o:   src/tokenize.c   $(EMCC) $(HEADS2)
 	$(CPP)    $(CFLAGS2)   $< -o $*.cpp.c
 	./$(EMCC) $(EMCCFLAGS) $*.cpp.c > $*.s
 	$(CC) -c  $(CFLAGS2)   $*.s -o $@
-obj2/dump.o:       src/dump.c       $(EMCC)
+obj2/dump.o:       src/dump.c       $(EMCC) $(HEADS2)
 	$(CPP)    $(CFLAGS2)   $< -o $*.cpp.c
 	./$(EMCC) $(EMCCFLAGS) $*.cpp.c > $*.s
 	$(CC) -c  $(CFLAGS2)   $*.s -o $@
-obj2/test_error.o: test_src/test_error.c $(EMCC)
+obj2/test_error.o: test_src/test_error.c $(EMCC) $(HEADS2)
 	$(CPP)    $(CFLAGS2)   $< -o $*.cpp.c
 	./$(EMCC) $(EMCCFLAGS) $*.cpp.c > $*.s
 	$(CC) -c  $(CFLAGS2)   $*.s -o $@
 
-obj2/emcpp.o:        cpp/emcpp.c        $(EMCC)
+obj2/emcpp.o:        cpp/emcpp.c        $(EMCC) $(HEADS2)
 	$(CPP)    $(CFLAGS2)   $< -o $*.cpp.c
 	./$(EMCC) $(EMCCFLAGS) $*.cpp.c > $*.s
 	$(CC) -c  $(CFLAGS2)   $*.s -o $@
-obj2/cpp_parse.o:    cpp/cpp_parse.c    $(EMCC)
+obj2/cpp_parse.o:    cpp/cpp_parse.c    $(EMCC) $(HEADS2)
 	$(CPP)    $(CFLAGS2)   $< -o $*.cpp.c
 	./$(EMCC) $(EMCCFLAGS) $*.cpp.c > $*.s
 	$(CC) -c  $(CFLAGS2)   $*.s -o $@
-obj2/cpp_tokenize.o: cpp/cpp_tokenize.c $(EMCC)
+obj2/cpp_tokenize.o: cpp/cpp_tokenize.c $(EMCC) $(HEADS2)
 	$(CPP)    $(CFLAGS2)   $< -o $*.cpp.c
 	./$(EMCC) $(EMCCFLAGS) $*.cpp.c > $*.s
 	$(CC) -c  $(CFLAGS2)   $*.s -o $@
-obj2/util.o:         src/util.c         $(EMCC)
+obj2/util.o:         src/util.c         $(EMCC) $(HEADS2)
 	$(CPP)    $(CFLAGS2)   $< -o $*.cpp.c
 	./$(EMCC) $(EMCCFLAGS) $*.cpp.c > $*.s
 	$(CC) -c  $(CFLAGS2)   $*.s -o $@
@@ -109,6 +110,7 @@ test2: $(TESTEXEGCC) $(TESTEXEEMCC2)
 $(TESTEXEGCC): $(TESTSRCS)
 	$(CC) -g -I./include $(TESTSRCS) -o $(TESTEXEGCC) > tmp/expr.gcc.log 2>&1
 	$(CC) -S -I./include -masm=intel test_src/expr.c -o tmp/expr.gcc.s > /dev/null 2>&1
+	$(CPP) -I./include test_src/expr.c -o tmp/expr.gcc.cpp.c
 
 $(TESTEXEEMCC): $(EMCC) $(TESTSRCS)
 	$(CPP) $(CFLAGS2) test_src/expr.c -o tmp/expr.cpp.c
@@ -132,9 +134,22 @@ testcpp2: $(EMCPP2)
 	@echo "==== $@ ============================"
 	./testcpp.sh emcpp2
 
+test_stdarg: $(EMCC)
+	$(CPP) $(CFLAGS)   test_src/test_stdarg.c    -o test_src/test_stdarg.gcc.cpp.c
+	$(CPP) $(CFLAGS2)  test_src/test_stdarg.c    -o test_src/test_stdarg.cpp.c
+	./$(EMCC) -g       test_src/test_stdarg.cpp.c > test_src/test_stdarg.emcc.s
+	$(CC) $(CFLAGS) -o test_src/test_stdarg_gcc     test_src/test_stdarg.c
+	$(CC) $(CFLAGS) -o test_src/test_stdarg_emcc    test_src/test_stdarg.emcc.s
+	./test_src/test_stdarg_emcc
+
+test_stdarg2: test_stdarg $(EMCC2)
+	./$(EMCC2) -g      test_src/test_stdarg.cpp.c > test_src/test_stdarg.emcc2.s
+	$(CC) $(CFLAGS) -o test_src/test_stdarg_emcc2   test_src/test_stdarg.emcc2.s
+	./test_src/test_stdarg_emcc2
+
 test_gdb: $(EMCC)
 	$(CPP) $(CFLAGS) test_src/test_gdb.c    -o test_src/test_gdb.cpp.c
-	./$(EMCC)  -g    test_src/test_gdb.cpp.c > test_src/test_gdb.emcc.s
+	./$(EMCC) -g     test_src/test_gdb.cpp.c > test_src/test_gdb.emcc.s
 	#./$(EMCC2) -g    test_src/test_gdb.cpp.c > test_src/test_gdb.emcc2.s
 	$(CC) $(CFLAGS)    -o test_src/test_gdb_emcc  test_src/test_gdb.emcc.s
 	#$(CC) $(CFLAGS)    -o test_src/test_gdb_emcc2 test_src/test_gdb.emcc2.s

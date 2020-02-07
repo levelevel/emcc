@@ -1,4 +1,4 @@
-#include "gcc_def.h"
+#include "builtin.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>

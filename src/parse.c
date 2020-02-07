@@ -1269,12 +1269,32 @@ static Node *statement(void) {
     return node;
 }
 
+static int is_vararg_func() {
+    Node *node = cur_funcdef->node->lhs;    //ND_LIST
+    int len = lst_len(node->lst);
+    if (len==0) return 0;
+    Node *last_arg = lst_data(node->lst, len-1);
+    return last_arg->type==ND_VARARGS;
+}
+
 static Node *compound_statement(int is_func_body) {
     Node *node;
     expect('{');
 
     begin_local_scope();
     node = new_node_block(cur_token());
+
+    if (is_func_body && is_vararg_func()) {
+        //可変長引数の場合、関数の先頭に __emcc_save_args __emcc_save_args__; 相当の変数を登録する
+        Token *token = cur_token();
+        Node *typedef_node = search_symbol("__emcc_save_args");
+        if (typedef_node) {
+            assert(typedef_node);
+            assert(typedef_node->type==ND_TYPEDEF);
+            Type *tp = typedef_node->tp;
+            cur_funcdef->save_args = new_node_var_def("__emcc_save_args__", tp, token);
+        }
+    }
 
     if (is_func_body) {
         //関数の先頭に static const char __func__[]="function name"; 相当の変数を登録する
@@ -1821,7 +1841,16 @@ static Node *postfix_expression(void) {
                 set_storage_class(node->tp, sclass);
             }
             node->offset -= member_def->offset;
+#if 0
+            fprintf(stderr, "%d\n", token->info.line);
+            if (token->info.line==2094) {
+                fprintf(stderr, "%ld, node->offset=%d,sizeof(node->tp)=%ld, member_def->offset=%d\n", 
+                    node->offset-sizeof(node->tp), node->offset, sizeof(node->tp), member_def->offset);
+                dump_node(node,0);
+                //dump_type(node->tp,0);
+            }
             assert(node->offset-sizeof(node->tp)>=0);
+#endif
             if (node->disp_name==NULL) node->disp_name = node->name;
             char *buf = malloc(strlen(node->disp_name)+strlen(member_def->name)+2);
             sprintf(buf, "%s.%s", node->disp_name, member_def->name);
@@ -1845,7 +1874,7 @@ static Node *postfix_expression(void) {
                 node->tp = dup_type(node->tp);
                 set_storage_class(node->tp, sclass);
             }
-            assert(node->offset-sizeof(node->tp)>=0);
+//            assert(node->offset-sizeof(node->tp)>=0);
             if (node->disp_name==NULL) node->disp_name = node->name;
             assert(node->disp_name);
             char *buf = malloc(strlen(node->disp_name)+strlen(member_def->name)+3);

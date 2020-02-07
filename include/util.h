@@ -1,6 +1,4 @@
-#ifdef _emcc
-#include "gcc_def.h"
-#endif
+#include "builtin.h"
 
 #include <errno.h>
 #include <stdarg.h>
@@ -17,7 +15,7 @@ typedef enum {
     ST_ERR=0,
     ST_OK=1,
     ST_WARN=2,
-}Status;
+} Status;
 
 //可変長ベクタ ---------------------------------------
 typedef struct {

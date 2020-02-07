@@ -2,9 +2,9 @@
  * emccテスト環境
  */
 #ifdef _emcc
-//#include "gcc_def.h"
 #include "emcc.h"
 #endif
+
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -600,9 +600,115 @@ static int va1_sprintf(char *buf, const char *fmt, ...) {
 }
 static int varargs1(void) {
     char buf1[32], buf2[32];
-    sprintf(buf1, "%d%d%d%d%d%d%d%d", 1, 2, 3, 4, 5, 6, 7, 8);
-    //va1_sprintf(buf2, "%d%d%d", 1, 2, 3);
-    return strcmp(buf1, "12345678")==0;
+    sprintf    (buf1, "%d%d%d%d%d%d%d%d%d", 1, 2, 3, 4, 5, 6, 7, 8, 9);
+    va1_sprintf(buf2, "%d%d%d%d%d%d%d%d%d", 1, 2, 3, 4, 5, 6, 7, 8 ,9);
+    return strcmp(buf1, "123456789")==0
+        && strcmp(buf2, "123456789")==0;
+}
+
+static int varargs2a(int num, ...) {
+    _Bool b1, b2;
+    int   i1, i2;
+    char  c1, c2;
+    short s1, s2;
+    long  l1, l2;
+    va_list ap1, ap2;
+    va_start(ap1, num);
+#ifdef _emcc
+    b1 = va_arg(ap1, _Bool);
+    i1 = va_arg(ap1, int);
+    c1 = va_arg(ap1, char);
+    s1 = va_arg(ap1, short);
+    l1 = va_arg(ap1, long);
+    va_copy(ap2, ap1);
+    b2 = va_arg(ap2, _Bool);
+    i2 = va_arg(ap2, int);
+    c2 = va_arg(ap2, char);
+    s2 = va_arg(ap2, short);
+    l2 = va_arg(ap2, long);
+#else
+    //gccの場合、_Bool,char,shortはintで取得する必要がある
+    b1 = va_arg(ap1, int);
+    i1 = va_arg(ap1, int);
+    c1 = va_arg(ap1, int);
+    s1 = va_arg(ap1, int);
+    l1 = va_arg(ap1, long);
+    va_copy(ap2, ap1);
+    b2 = va_arg(ap2, int);
+    i2 = va_arg(ap2, int);
+    c2 = va_arg(ap2, int);
+    s2 = va_arg(ap2, int);
+    l2 = va_arg(ap2, long);
+#endif
+    va_end(ap1);
+    return b1==0 && i1==1 && c1==2 && s1==3 && l1==4
+        && b2==1 && i2==-1 && c2==-2 && s2==-3 && l2==-4;
+}
+static int varargs2b(int num, ...) {
+    _Bool b1, b2;
+    unsigned int   i1, i2;
+    unsigned char  c1, c2;
+    unsigned short s1, s2;
+    unsigned long  l1, l2;
+    va_list ap1, ap2;
+    va_start(ap1, num);
+#ifdef _emcc
+    b1 = va_arg(ap1, _Bool);
+    i1 = va_arg(ap1, unsigned int);
+    c1 = va_arg(ap1, unsigned char);
+    s1 = va_arg(ap1, unsigned short);
+    l1 = va_arg(ap1, unsigned long);
+    va_copy(ap2, ap1);
+    b2 = va_arg(ap2, _Bool);
+    i2 = va_arg(ap2, unsigned int);
+    c2 = va_arg(ap2, unsigned char);
+    s2 = va_arg(ap2, unsigned short);
+    l2 = va_arg(ap2, unsigned long);
+#else
+    //gccの場合、_Bool,char,shortはintで取得する必要がある
+    b1 = va_arg(ap1, int);
+    i1 = va_arg(ap1, unsigned int);
+    c1 = va_arg(ap1, unsigned int);
+    s1 = va_arg(ap1, unsigned int);
+    l1 = va_arg(ap1, unsigned long);
+    va_copy(ap2, ap1);
+    b2 = va_arg(ap2, int);
+    i2 = va_arg(ap2, unsigned int);
+    c2 = va_arg(ap2, unsigned int);
+    s2 = va_arg(ap2, unsigned int);
+    l2 = va_arg(ap2, unsigned long);
+#endif
+    va_end(ap1);
+    return b1==0 && i1==1 && c1==2 && s1==3 && l1==4
+        && b2==1 && i2==-1 && c2==0xff-1 && s2==0xffff-2 && l2==0xffffffffffffffff-3;
+}
+static int varargs2c(FILE*fp, char *fmt, ...) {
+    int i1, i2;
+    short s1, s2;
+    long l1, l2;
+    char *p1, *p2;
+    va_list ap;
+    va_start(ap, fmt);
+    i1 = *va_arg(ap, int*);
+    s1 = *va_arg(ap, short*);
+    l1 = *va_arg(ap, long*);
+    p1 =  va_arg(ap, char*);
+    i2 = *va_arg(ap, int*);
+    s2 = *va_arg(ap, short*);
+    l2 = *va_arg(ap, long*);
+    p2 =  va_arg(ap, char*);
+    return i1==i2 && s1==s2 && l1==l2 && strcmp(p1,p2)==0;
+}
+static int varargs2(void) {
+    _Bool b = 0;
+    int   i = 1;
+    char  c = 2;
+    short s = 3;
+    long  l = 4;
+    char *str = "abc";
+    return varargs2a(10, b, i, c, s, l, b+1, -i, -c, -s, -l)
+        && varargs2b(10, b, i, c, s, l, b+1, -i, -c, -s, -l)
+        && varargs2c(stderr, "%s\n", &i, &s, &l, str, &i, &s, &l, str);
 }
 
 static int fp1_add(int a, int b) { return a+b; }
@@ -665,9 +771,10 @@ static int func() {
     TEST(funcdecl1);
     TEST(funcdecl2);
     TEST(funcdecl3);
-    TEST(funcarg1)
-    TEST(funcarg2)
-    TEST(varargs1)
+    TEST(funcarg1);
+    TEST(funcarg2);
+    TEST(varargs1);
+    TEST(varargs2);
     TEST(funcp1);
     TEST(funcp2);
     TEST(funcp3);

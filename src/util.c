@@ -206,6 +206,7 @@ void error_at(const SrcInfo *info, const char *fmt, ...){
     va_list ap;
     va_start(ap, fmt);
     vfprintf(stderr, fmt, ap);
+    va_end(ap);
     fprintf(stderr, "\n");
     error_cnt++;
     err_ctrl(error_ctrl);
@@ -217,6 +218,7 @@ void warning_at(const SrcInfo *info, const char *fmt, ...){
     va_list ap;
     va_start(ap, fmt);
     vfprintf(stderr, fmt, ap);
+    va_end(ap);
     fprintf(stderr, "\n");
     warning_cnt++;
     err_ctrl(warning_ctrl);
@@ -229,6 +231,7 @@ void note_at(const SrcInfo *info, const char *fmt, ...){
     va_start(ap, fmt);
     vfprintf(stderr, fmt, ap);
     fprintf(stderr, "\n");
+    va_end(ap);
     note_cnt++;
     err_ctrl(note_ctrl);
   }
@@ -240,6 +243,7 @@ void error(const char *fmt, ...) {
     va_start(ap, fmt);
     fprintf(stderr, "emcc:Error: ");
     vfprintf(stderr, fmt, ap);
+    va_end(ap);
     fprintf(stderr, "\n");
     exit(1);
 }
@@ -249,5 +253,6 @@ void warning(const char *fmt, ...) {
     va_start(ap, fmt);
     fprintf(stderr, "emcc:Warning: ");
     vfprintf(stderr, fmt, ap);
+    va_end(ap);
     fprintf(stderr, "\n");
 }

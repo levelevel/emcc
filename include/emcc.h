@@ -1,6 +1,4 @@
-#ifdef _emcc
-#include "gcc_def.h"
-#endif
+#include "builtin.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -268,6 +266,7 @@ typedef struct {
     Map     *symbol_map;    //通常の識別子：key=name, val=Node(ND_LOCAL_VAR_DEFなど)
     Map     *tagname_map;   //タグ名：key=name, val=Node(ND_ENUN_DEFなど)
     Map     *label_map;     //ラベル：key=name, val=Node(ND_LABEL)
+    Node    *save_args;     //可変長引数を持つ関数の場合の__emcc_save_argsを表すノード
     int     var_stack_size; //ローカル変数のために必要となるスタックサイズ（offset）
 } Funcdef;
 

@@ -1,6 +1,6 @@
 #include "emcc.h"
 
-/*
+/*----------------------------------------------------------
     int func(int a1, int a2, ... , int a6, int a7, int a8);
     0xffffffff
     |    ...    |offset
@@ -14,7 +14,8 @@
     |a6         | -24   RSP
     |    ...    |
     0x00000000
- */
+----------------------------------------------------------*/
+
 //レジスタ ---------------------------------------------
 #define ARG_REGS_SIZE 6 //関数でレジスタ渡しする引数の数
 static char *arg_regs[ARG_REGS_SIZE] = {  //関数の引数で用いるレジスタ
@@ -899,6 +900,79 @@ static void gen_bool(void) {
     printf("  push rax\n");
 }
 
+//nodeがbuiltin関数のコールの場合、そのコードを生成する。結果をスタックに積む。
+static BuiltinFuncType gen_builtin_func(Node *node) {
+    typedef struct {
+        BuiltinFuncType type;
+        char           *name;
+    } FuncTypeDef;
+    static FuncTypeDef FuncTypes[] = {
+        {BUILTIN_VA_START,     "__emcc_builtin_va_start"},
+        {BUILTIN_VA_ARG,       "__emcc_builtin_va_arg"},
+    //  {BUILTIN_VA_COPY,      "__emcc_builtin_va_copy"},
+    };
+
+    BuiltinFuncType func_type = BUILTIN_NULL;
+    for (int i=0; i<sizeof(FuncTypes)/sizeof(FuncTypeDef); i++) {
+        if (strcmp(node->name, FuncTypes[i].name)==0) {
+            func_type = FuncTypes[i].type;
+            break;
+        }
+    }
+    if (func_type) {
+        Node *ap = get_lst_node(node->lhs->lst, 0);   //第一引数：__va_list_tag
+        comment("BUILTIN_CALL:%s\t%s\n", node->name, get_node_type_str(node));
+        switch (func_type) {
+            case BUILTIN_VA_START:;
+                int argc = cur_funcdef->node->lhs->lst->len;
+                printf("  mov DWORD PTR [rbp-%d], %d\n", ap->offset, 8*(argc-1));
+                printf("  mov DWORD PTR [rbp-%d], %d\n", ap->offset-4, 8*ARG_REGS_SIZE);
+                printf("  lea rax, [rbp+16]\n");
+                printf("  mov QWORD PTR [rbp-%d], rax\n", ap->offset-8);
+                printf("  lea rax, [rbp-%ld]\n", sizeof(__emcc_save_args));
+                printf("  mov QWORD PTR [rbp-%d], rax\n", ap->offset-16);
+                printf("  push rax\n");
+                break;
+            case BUILTIN_VA_ARG:;   //引数のポインタを返す
+                int idx1 = ++global_index;
+                int idx2 = ++global_index;
+                printf("  mov edx, DWORD PTR [rbp-%d]\n", ap->offset);      //edx=gp_offset
+                printf("  cmp edx, %d\n", 8*ARG_REGS_SIZE-1);
+                printf("  ja .L%d\n", idx1);
+                printf("  mov rax, QWORD PTR [rbp-%d]\n", ap->offset-16);   //rax=reg_save_area
+                printf("  mov edx, edx\n");
+                printf("  add rax, rdx\n");                                 //戻り値（レジスタ渡し）:rax=reg_save_area+gp_offset
+                printf("  add edx, 8\n");
+                printf("  mov DWORD PTR [rbp-%d], edx\n", ap->offset);      //gp_offset+=8
+                printf("  jmp .L%d\n", idx2);
+                printf(".L%d:\n", idx1);
+                printf("  mov rax, QWORD PTR [rbp-%d]\n", ap->offset-8);    //rax=overflow_arg_area
+                printf("  lea rdx, [rax+8]\n");                             //戻り値（スタック渡し）:rax=overflow_arg_area+8
+                printf("  mov QWORD PTR [rbp-%d], rdx\n", ap->offset-8);    //overflow_arg_area+=8
+                printf(".L%d:\n", idx2);
+                printf("  push rax\n");
+                break;
+#if 0
+            case BUILTIN_VA_COPY:;
+                Node *aps = get_lst_node(node->lhs->lst, 1);   //第二引数：__va_list_tag
+                printf("  lea rdi, [rbp-%d]\n", ap ->offset);
+                printf("  lea rsi, [rbp-%d]\n", aps->offset);
+                printf("  mov rax, QWORD PTR [rsi]\n");
+                printf("  mov QWORD PTR [rdi], rax\n");
+                printf("  mov rax, QWORD PTR [rsi+8]\n");
+                printf("  mov QWORD PTR [rdi+8], rax\n");
+                printf("  mov rax, QWORD PTR [rsi+16]\n");
+                printf("  mov QWORD PTR [rdi+16], rax\n");
+                break;
+#endif
+            default:
+                break;
+        }
+    }
+
+    return func_type;
+}
+
 //ステートメントを評価
 //結果をスタックに積んだ場合は1、そうでない場合は0を返す
 static int gen(Node*node) {
@@ -953,6 +1027,7 @@ static int gen(Node*node) {
         }
         break;
     case ND_FUNC_CALL:      //関数コール
+        if (gen_builtin_func(node)) break;
     {
         int argc=0;
         comment("CALL:%s\t%s\n", node->name, get_node_type_str(node));
@@ -1744,8 +1819,23 @@ void gen_program(void) {
         print_cfi("  .cfi_def_cfa_register rbp");
         printf("  sub rsp, %d\n", calc_stack_offset(funcdef[i]->var_stack_size));
 
-        // 引数をスタックのローカル変数領域にコピー
         int argc = funcdef[i]->node->lhs->lst->len;
+        // 可変長引数を__emcc_save_argsにコピー
+        if (funcdef[i]->save_args) {
+            //Type *tp = funcdef[i]->save_args->tp;
+            //dump_type(tp, __func__);
+            for (int j=argc-1; j<ARG_REGS_SIZE; j++) {
+                printf("  mov QWORD PTR [rbp-%ld], %s\n", sizeof(__emcc_save_args)-8*j, arg_regs[j]);
+            }
+            printf("  test al, al\n");
+            int idx = ++global_index;
+            printf("  je .L%d\n", idx);
+            for (int j=0; j<8; j++) {
+                printf("  movaps XMMWORD PTR [rbp-%ld], xmm%d\n", sizeof(__emcc_save_args)-8*ARG_REGS_SIZE-16*j, j);
+            }
+            printf("  .L%d:\n", idx);
+        }
+        // 固定引数をスタックのローカル変数領域にコピー
         Node **arg_nodes = (Node**)funcdef[i]->node->lhs->lst->data;
         if (argc && arg_nodes[0]->tp->type!=VOID) {
             for (int j=0; j < argc; j++) {
