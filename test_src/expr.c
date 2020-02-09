@@ -1419,6 +1419,7 @@ static int size_of1() {
     INTAA2 A3A2={{00,01},{10,11},{20,21}};
     int funci(int);
     return
+        sizeof(sizeof(int))==sizeof(size_t) && 
         sizeof(n)==4 && sizeof(&n)==PSIZE && sizeof(p)==PSIZE &&
         sizeof(a)==4*2*4 && sizeof(a[0])==4 &&
         sizeof(a2)==4*2*3 && sizeof(a2[0])==4*3 && sizeof(a2[0][1])==4 &&

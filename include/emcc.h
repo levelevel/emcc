@@ -435,6 +435,7 @@ Type *dup_type(const Type *tp);
 Node *dup_node(const Node *node);
 Node *new_node(int type, Node *lhs, Node *rhs, Type *tp, Token *token);
 Node *new_node_num(long val, Token *token);
+Node *new_node_num_size_t(long val, Token *token);
 Node *new_node_var_def(char *name, Type*tp, Token *token);
 Node *new_node_string(String *string, Token *token);
 Node *new_node_ident(char *name, Token *token);

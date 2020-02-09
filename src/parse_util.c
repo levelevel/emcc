@@ -822,9 +822,13 @@ Node *new_node(int type, Node *lhs, Node *rhs, Type *tp, Token *token) {
 //抽象構文木の生成（数値）
 Node *new_node_num(long val, Token *token) {
     NDtype type = (val>UINT_MAX || val<INT_MIN) ? LONG : INT;
-    Node *node = new_node(ND_NUM, NULL, NULL, new_type(type, 0), token);
+    Node *node = new_node(ND_NUM, NULL, NULL, new_type(type, 0/*is_unsigned*/), token);
     node->val = val;
-//    fprintf(stderr, "val=%ld\n", val);
+    return node;
+}
+Node *new_node_num_size_t(long val, Token *token) { //size_t(unsigned long)の数値を返す
+    Node *node = new_node(ND_NUM, NULL, NULL, new_type(LONG, 1/*is_unsigned*/), token);
+    node->val = val;
     return node;
 }
 

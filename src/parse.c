@@ -1766,7 +1766,7 @@ static Node *unary_expression(void) {
             tp = node->tp;
         }
         if (tp->type==ARRAY && tp->array_size<=0) error_at(&token->info, "不完全型のサイズは未定義です");
-        node = new_node_num(is_sizeof?size_of(tp):align_of(tp), token);
+        node = new_node_num_size_t(is_sizeof?size_of(tp):align_of(tp), token);
     } else {
         node = postfix_expression();
     }
