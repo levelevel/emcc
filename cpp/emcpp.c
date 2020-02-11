@@ -26,6 +26,8 @@ static void read_opt(int argc, char*argv[]) {
             g_dump_token = 1;
         } else if (argc==2) {
             g_filename = argv[1];
+            g_cur_filename = g_filename;
+            g_cur_line = 0;
             g_user_input = read_file(g_filename);
             break;
         } else {

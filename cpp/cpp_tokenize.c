@@ -61,6 +61,8 @@ static PPToken *new_token(PPTKtype type, char *input) {
     PPToken *token = calloc(1, sizeof(PPToken));
     token->type = type;
     token->info.input = input;
+    token->info.file = g_cur_filename;
+    token->info.line = g_cur_line;
     vec_push(pptoken_vec, token);
     return token;
 }
@@ -111,6 +113,7 @@ void cpp_tokenize(char *p) {
             p++;
             token->len = 1;
             in_define = 0;
+            g_cur_line++;
             continue;
         } else if (*p == '\r') {
             if (*(p+1) != '\n') {
@@ -135,6 +138,8 @@ void cpp_tokenize(char *p) {
             char *q = strstr(p + 2, "*/");
             SrcInfo info = {g_cur_filename, g_cur_line, 0, g_fileline, p};
             if (!q) error_at(&info, "コメントが閉じられていません");
+            char *r = p+1;
+            while ((r=strstr(r+1, "\n"))!=NULL && r<q) g_cur_line++;    //コメント中の改行をカウント
             p = q + 2;
             token->len = p - token->info.input;
             if (in_define) {
@@ -203,6 +208,7 @@ void cpp_tokenize(char *p) {
         } else if (*p == '"') {     //文字列
             token = new_token(PPTK_STRING, p++);
             while (*p && (*p)!='"') {
+                if (*p=='\n') g_cur_line++;
                 p++;
                 if (*p=='\\' && *(p+1)=='"') {
                     p += 2;
