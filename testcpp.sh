@@ -322,12 +322,6 @@ a;  /*comment2*/
  BBB("ab,c" + ('b' )-(1 + (2,3)) );
 // B (99,,)
 @in define_arg1_2 ===================
-#define catval(a,b) a  ##  b
-catval(1,L)+catval( 2 , UL );
-@expect
-
-1L+2UL;
-@in define_arg1_3 ===================
 #define SUM(a,b,c) a + b + c
 SUM(1,,3);  //実引数は省略可能
 SUM( ,2, );
@@ -337,6 +331,12 @@ SUM( ,  , );
 1 + b + 3;  //実引数は省略可能
 a + 2 + c;
 a + b + c;
+@in define_arg2_1 ===================
+#define catval(a,b) a  ##  b
+catval(1,L)+catval( 2 , UL );
+@expect
+
+1L+2UL;
 @ =========================
 EOF
 

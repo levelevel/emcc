@@ -244,6 +244,7 @@ static Map *get_arg_map(Vector *arg_lst) {
     }
     return arg_map;
 }
+//arg_mapに沿って仮引数を展開しつつ、rangeで示されるトークン列を出力する
 static void print_token_by_range(PPTKrange *range, Map *arg_map) {
     for (int i=0; i<range->len; i++) {
         PPToken *token = pptokens[range->start+i];
@@ -251,12 +252,12 @@ static void print_token_by_range(PPTKrange *range, Map *arg_map) {
         if (token->type==PPTK_DSHARP) continue;
         if (arg_map && token->type==PPTK_IDENT && map_get(arg_map, token->ident, (void**)&range)) {
             print_token_by_range(range, arg_map);
-        } else 
-        if (token->type != PPTK_IDENT || !expand_macro(token)) {
+        } else if (token->type != PPTK_IDENT || !expand_macro(token)) {
             fprintf(g_fp, "%.*s", token->len, token->info.input);
         }
     }
 }
+//tokenで示される識別子がマクロの場合に展開する
 static int expand_macro(PPToken *token) {
     assert(token->type==PPTK_IDENT);
     PPMacro *macro;
