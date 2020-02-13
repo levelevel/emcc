@@ -1,9 +1,15 @@
 #include "util.h"
 
 typedef enum {
-    PPTK_NUM = 256,
-    PPTK_STRING,
-    PPTK_IDENT,
+    PPTK_SHARP  = '#',
+    PPTK_LPAREN = '(',
+    PPTK_RPAREN = ')',
+    PPTK_COMMA  = ',',
+    PPTK_NUM    = 256,
+    PPTK_DSHARP,    //##
+    PPTK_STRING,    //"文字列"
+    PPTK_IDENT,     //識別子
+    PPTK_PPTOKEN,   //
     PPTK_SPACE,     //SPACE+TAB
     PPTK_NEWLINE,   //'\n'
     PPTK_IF,        //#if
@@ -18,16 +24,19 @@ typedef enum {
     PPTK_LINE,      //#line
     PPTK_ERROR,     //#error
     PPTK_PRAGMA,    //#pragma
-    PPTK_PPTOKEN,
     PPTK_DEFARG,    //defineの引数に置換される要素
     PPTK_EOF,       //入力の終わり
 } PPTKtype;
 
 typedef struct {
+    int start;          //pptokensの開始インデックスと長さ
+    int len;            //
+} PPTKrange;
+
+typedef struct {
     char *name;         //マクロ名
-    Map *args;          //引数のマップ
-    int para_start,     //マクロの本体：pptokensの開始インデックスと長さ
-        para_len;       //
+    Vector *args;       //引数のリスト（char*）
+    PPTKrange range;    //マクロの本体：pptokensの開始インデックスと長さ
     char in_use;        //多重展開防止フラグ
 } PPMacro;
 

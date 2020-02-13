@@ -250,7 +250,7 @@ a;  /*comment2*/
 
 
 @in define_noarg_1 ===================
-#if ONE
+#if ONE //未定義の識別子は0
   FALSE
 #else
   TRUE
@@ -301,6 +301,42 @@ a;  /*comment2*/
   a() b (c)() /*- A -*/
   a() b (c) ()
   A B (c)
+@in define_arg1_1 ===================
+/* 1
+ * 2
+ * 3 */
+#define A(a) a
+#define B( aa , bb , cc ) BBB(aa + bb-cc)
+ A(arg);
+ B(1,2,3);
+ B ( "ab,c" , ('b' ) , (1 + (2,3)) );
+// B (99,,)
+@expect
+/* 1
+ * 2
+ * 3 */
+
+
+ arg;
+ BBB(1 + 2-3);
+ BBB("ab,c" + ('b' )-(1 + (2,3)) );
+// B (99,,)
+@in define_arg1_2 ===================
+#define catval(a,b) a  ##  b
+catval(1,L)+catval( 2 , UL );
+@expect
+
+1L+2UL;
+@in define_arg1_3 ===================
+#define SUM(a,b,c) a + b + c
+SUM(1,,3);  //実引数は省略可能
+SUM( ,2, );
+SUM( ,  , );
+@expect
+
+1 + b + 3;  //実引数は省略可能
+a + 2 + c;
+a + b + c;
 @ =========================
 EOF
 

@@ -52,7 +52,7 @@ static void skip_line(void) {
 }
 
 //次の改行までのトークンの数を返す。改行とその前のスペースはカウントしない
-static int count_until_line(void) {
+static int count_until_newline(void) {
     int pos = pptoken_pos;
     while (pptokens[pos]->type != PPTK_NEWLINE) pos++;
     pos--;
@@ -136,6 +136,7 @@ static void check_ifblock(void) {
 }
 
 static int group_parts(void);
+static int expand_macro(PPToken *token);
 static void text_line(void);
 static int if_section(PPTKtype type);
 static int if_group(PPTKtype type);
@@ -145,7 +146,7 @@ static int endif_group(void);
 static int control_line(PPTKtype type);
 static int constant_expression(long *valp);
 static void define_macro(const char*name);
-static Map *identifier_list(void);
+static Vector *identifier_list(void);
 
 void preprocessing_file(void) {
     ppif_stat_stack = new_istack();
@@ -175,23 +176,104 @@ static int group_parts(void) {
     }
     return 1;
 }
-static int expand_macro(PPToken *token) {
-    assert(token->type==PPTK_IDENT);
-    PPMacro *macro;
-    if (!map_get(define_map, token->ident, (void*)&macro)) return 0;
-    if (macro->in_use) return 0;
-    if (macro->args && !ppconsume('(')) return 0;
-    if (macro->args) ppexpect(')');
-    macro->in_use = 1;
-    for (int i=0; i<macro->para_len; i++) {
-        token = pptokens[macro->para_start+i];
+
+//カッコで囲まれたマクロの引数を1個取得する：(A,B)
+static void read_actual_arg_paren(PPTKrange *range) {
+    int cont = 1;
+    while (cont) {
+        switch (cur_token()->type) {
+        case PPTK_NUM:
+        case PPTK_STRING:
+        case PPTK_IDENT:
+        case PPTK_PPTOKEN:
+        case PPTK_SPACE:
+        case '(':
+        case ',':
+            pptoken_pos++;
+            range->len++;
+            break;
+        case ')':
+            pptoken_pos++;
+            range->len++;
+            cont = 0;
+            break;
+        default:
+            cont = 0;
+            break;
+        }
+    }
+}
+//マクロの引数を1個取得する
+static int read_actual_arg(PPTKrange *range) {
+    int cont = 1;
+    while (cont) {
+        switch (cur_token()->type) {
+        case PPTK_NUM:
+        case PPTK_STRING:
+        case PPTK_IDENT:
+        case PPTK_PPTOKEN:
+        case PPTK_SPACE:
+            pptoken_pos++;
+            range->len++;
+            break;
+        case '(':
+            pptoken_pos++;
+            range->len++;
+            read_actual_arg_paren(range);
+            break;
+        default:
+            cont = 0;
+            break;
+        }
+    }
+    return range->len;
+}
+//マクロの仮引数リスト(arg_lst)から実引数のマップを作成する
+static Map *get_arg_map(Vector *arg_lst) {
+    Map *arg_map = new_map();
+    int size = lst_len(arg_lst);
+    for (int i=0; i<size; i++) {
+        if (i>0 && !ppconsume(',')) error_at(&cur_token_info(), ",が必要です");
+        PPTKrange *range = calloc(sizeof(PPTKrange), 1);
+        while (cur_token()->type==PPTK_SPACE) pptoken_pos++;    //実引数の先頭のスペースを読み飛ばす
+        range->start = pptoken_pos;
+        range->len   = 0;
+        read_actual_arg(range);
+        while (range->len>0 && pptokens[range->start+range->len-1]->type==PPTK_SPACE) range->len--;   //実引数の最後のスペースを削除
+        if (range->len) map_put(arg_map, lst_data(arg_lst, i), (char*)range); //実引数は省略可能
+    }
+    return arg_map;
+}
+static void print_token_by_range(PPTKrange *range, Map *arg_map) {
+    for (int i=0; i<range->len; i++) {
+        PPToken *token = pptokens[range->start+i];
+        PPTKrange *range;
+        if (token->type==PPTK_DSHARP) continue;
+        if (arg_map && token->type==PPTK_IDENT && map_get(arg_map, token->ident, (void**)&range)) {
+            print_token_by_range(range, arg_map);
+        } else 
         if (token->type != PPTK_IDENT || !expand_macro(token)) {
             fprintf(g_fp, "%.*s", token->len, token->info.input);
         }
     }
+}
+static int expand_macro(PPToken *token) {
+    assert(token->type==PPTK_IDENT);
+    PPMacro *macro;
+    Map *arg_map = NULL;
+    if (!map_get(define_map, token->ident, (void*)&macro)) return 0;
+    if (macro->in_use) return 0;
+    if (macro->args) {
+        if (!ppconsume('(')) return 0;
+        arg_map = get_arg_map(macro->args);
+        ppexpect(')');
+    }
+    macro->in_use = 1;
+    print_token_by_range(&macro->range, arg_map);
     macro->in_use = 0;
     return 1;
 }
+
 static void text_line(void) {
     PPToken *token;
     while ((token=pptokens[pptoken_pos])->type != PPTK_EOF) {
@@ -359,12 +441,31 @@ static void define_macro(const char*name) {
         if (!ppconsume(')')) error_at(&cur_token_info(), ")がありません");
     }
     skip_space();
-    macro->para_start = pptoken_pos;
-    macro->para_len = count_until_line();   
+    macro->range.start = pptoken_pos;
+    macro->range.len   = count_until_newline();   
 }
-static Map *identifier_list(void) {
+static Vector *identifier_list(void) {
+    Vector *lst = new_vector();
     Map *map = new_map();
-    return map;
+    char *name;
+    if (ppconsume_ident(&name)) {
+        vec_push(lst, name);    //第一引数
+        map_put(map, name, 0);
+        skip_space();
+        while (ppconsume(',')) {//二番目以降の引数
+            skip_space();
+            SrcInfo *info = &cur_token_info();
+            if (ppconsume_ident(&name)) {
+                if (map_get(map, name, NULL)) error_at(info, "引数%sが重複しています", name);
+                vec_push(lst, name);
+                map_put(map, name, 0);
+                skip_space();
+            } else {
+                error_at(info, "引数が必要です");
+            }
+        }
+    }
+    return lst;
 }
 
 PPMacro *new_macro(const char*name) {

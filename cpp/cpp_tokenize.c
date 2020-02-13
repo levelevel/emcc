@@ -13,10 +13,11 @@ PPTokenDef TokenLst1[] = {
 //  {TK(" "),  PPTK_SPACE},
 //  {TK("\t"), PPTK_TAB},
 //  {TK("\n"), PPTK_NEWLINE},
-    {TK("#"), '#'},
-    {TK("("), '('},
-    {TK(")"), ')'},
-    {TK(","), ','},
+    {TK("##"),      PPTK_DSHARP},
+    {TK("#"), '#'}, //PPTK_SHARP
+    {TK("("), '('}, //PPTK_LPAREN
+    {TK(")"), ')'}, //PPTK_RPAREN
+    {TK(","), ','}, //PPTK_COMMA
     {NULL, 0, 0}
 };
 
@@ -36,7 +37,12 @@ PPTokenDef TokenLst2[] = {
 #define ENUM2STR(val) case val: return #val
 const char *get_PPTKtype_str(PPTKtype type) {
     switch ((int)type) {
+    ENUM2STR(PPTK_SHARP);
+    ENUM2STR(PPTK_LPAREN);
+    ENUM2STR(PPTK_RPAREN);
+    ENUM2STR(PPTK_COMMA);
     ENUM2STR(PPTK_NUM);
+    ENUM2STR(PPTK_DSHARP);
     ENUM2STR(PPTK_STRING);
     ENUM2STR(PPTK_IDENT);
     ENUM2STR(PPTK_SPACE);
@@ -155,6 +161,16 @@ void cpp_tokenize(char *p) {
                 token = new_token(tk->type, p);
                 p += tk->len;
                 token->len = tk->len;
+                int pos = lst_len(pptoken_vec)-1;
+                if (tk->type==PPTK_DSHARP && pos>0 && in_define) {
+                    //##前後のスペースを取り除く: " a ## b " -> " a#b "
+                    PPToken **tokens = (PPToken**)pptoken_vec->data;
+                    if (tokens[pos-1]->type==PPTK_SPACE) {
+                        tokens[pos-1] = tokens[pos];
+                        lst_len(pptoken_vec)--;
+                    }
+                    while (*p==' ' || *p=='\t') p++;
+                }
                 goto NEXT_LOOP;
             }
         }
@@ -220,6 +236,7 @@ void cpp_tokenize(char *p) {
             token = new_token(PPTK_PPTOKEN, p++);
             if (*p=='\\') p++;
             while (*p && (*p)!='\'') p++;
+            if (*p=='\'') p++;
             token->len = p - token->info.input;
         } else {
             token = new_token(PPTK_PPTOKEN, p++);
