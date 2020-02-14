@@ -34,7 +34,7 @@ typedef struct {
 } PPTKrange;
 
 typedef struct {
-    char *name;         //マクロ名
+    const char *name;   //マクロ名
     Vector *args;       //引数のリスト（char*）
     PPTKrange range;    //マクロの本体：pptokensの開始インデックスと長さ
     char in_use;        //多重展開防止フラグ

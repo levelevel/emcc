@@ -248,11 +248,20 @@ static Map *get_arg_map(Vector *arg_lst) {
 static void print_token_by_range(PPTKrange *range, Map *arg_map) {
     for (int i=0; i<range->len; i++) {
         PPToken *token = pptokens[range->start+i];
-        PPTKrange *range;
+        PPTKrange *arg_range;
         if (token->type==PPTK_DSHARP) continue;
-        if (arg_map && token->type==PPTK_IDENT && map_get(arg_map, token->ident, (void**)&range)) {
-            print_token_by_range(range, arg_map);
-        } else if (token->type != PPTK_IDENT || !expand_macro(token)) {
+        if (arg_map && token->type==PPTK_IDENT && map_get(arg_map, token->ident, (void**)&arg_range)) {
+            //マクロの仮引数を実引数に置き換える
+            print_token_by_range(arg_range, arg_map);
+        } else {
+            if (token->type==PPTK_IDENT) {
+                int org_pptoken_pos = pptoken_pos;
+                pptoken_pos = range->start+i+1;
+                int ret = expand_macro(token);
+                if (ret) i += pptoken_pos - (range->start+i+1);
+                pptoken_pos = org_pptoken_pos;
+                if (ret) continue;
+            }
             fprintf(g_fp, "%.*s", token->len, token->info.input);
         }
     }
@@ -471,6 +480,7 @@ static Vector *identifier_list(void) {
 
 PPMacro *new_macro(const char*name) {
     PPMacro *macro = calloc(sizeof(PPMacro), 1);
+    macro->name = name;
     map_put(define_map, name, macro);
     return macro;
 }

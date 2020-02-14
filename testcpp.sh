@@ -274,19 +274,32 @@ a;  /*comment2*/
 
   { (A B  C), (A B  C) }
 @in define_noarg_4 ===================
-#define AB a+B
-#define B b
-  AB
+#define ABC a+BC  //多重展開
+#define BC b+C
+#define C c
+  ABC
 @expect
 
 
-  a+b
+
+  a+b+c
 @in define_noarg_5 ===================
 #define A A B
   A /*- A -*/ A
 @expect
 
   A B /*- A -*/ A B
+@in define_noarg_5 ===================
+#define AB \
+  AAAAA;\
+  BBBBB
+123\
+456;
+AB;
+@expect
+
+123456;
+AAAAA;  BBBBB;
 @in define_arg0_1 ===================
 #define A() a()
 #define B() b
@@ -331,6 +344,30 @@ SUM( ,  , );
 1 + b + 3;  //実引数は省略可能
 a + 2 + c;
 a + b + c;
+@in define_arg1_3 ===================
+#define ADD(a,b) ((a)+(b))  //多重展開
+#define MUL(a,b) (a)*(b)
+MUL(ADD(1,2)+10,ADD(3,4)/ADD(5,6));
+@expect
+
+
+(((1)+(2))+10)*(((3)+(4))/((5)+(6)));
+@in define_arg1_4 ===================
+#define x(a,b) x(a+1,b+1) + 4 //再帰的定義は1回だけ展開
+x(20,10)
+@expect
+
+x(20+1,10+1) + 4
+@in define_arg1_5 ===================
+#define SQR(s)  ((s) * (s))
+#define PRNT(a,b)   \
+  printf("value 1 = %d¥n", a);\
+  printf("value 2 = %d¥n", b)
+PRNT(SQR(x),y);
+@expect
+
+
+printf("value 1 = %d¥n", ((x) * (x)));  printf("value 2 = %d¥n", y);
 @in define_arg2_1 ===================
 #define catval(a,b) a  ##  b
 catval(1,L)+catval( 2 , UL );
