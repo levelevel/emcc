@@ -374,6 +374,38 @@ catval(1,L)+catval( 2 , UL );
 @expect
 
 1L+2UL;
+@in define_arg2_2 ===================
+#define ArgArg(x, y)          x##y    //##の演算は引数の展開より先
+#define ArgArgArg(x, y, z)    x ## y ## z
+#define ArgText(x)            x##TEXT
+#define TextArg(x)            TEXT##x
+#define TextText              TEXT##text
+#define Jitter                1
+#define bug                   2
+#define Jitterbug             3
+ArgArg(lady, bug)
+ArgArgArg(big, lady, bug)
+ArgArg(big lady, bug book)
+ArgText(con)
+TextArg(book)
+TextText
+ArgArg(Jitter, bug)
+@expect
+
+
+
+
+
+
+
+
+ladybug
+bigladybug
+big ladybug book
+conTEXT
+TEXTbook
+TEXTtext
+3
 @ =========================
 EOF
 

@@ -244,12 +244,65 @@ static Map *get_arg_map(Vector *arg_lst) {
     }
     return arg_map;
 }
+//##演算子を展開する: token1##token2 -> token1token2
+//token1,token2に対してマクロ展開は行わない
+//token1token2はマクロ展開の対象
+static void expand_ddash(PPTKrange *ret_range, int start, int len, Map *arg_map) {
+    ret_range->start = lst_len(pptoken_vec);    //戻り値：pptoken_vecの最後にトークン列を追加する
+    ret_range->len = 0;
+    PPToken *token1 = pptokens[start];
+    PPToken *token2 = pptokens[start+2];
+    assert(pptokens[start+1]->type==PPTK_DSHARP);
+    PPTKrange *range1=NULL, *range2=NULL;
+    if (arg_map && token1->type==PPTK_IDENT && map_get(arg_map, token1->ident, (void**)&range1)) {
+        token1 = pptokens[range1->start+range1->len-1];
+    }
+    if (arg_map && token2->type==PPTK_IDENT && map_get(arg_map, token2->ident, (void**)&range2)) {
+        token2 = pptokens[range2->start];
+    }
+    //token1とtoken2を連結してtoken12を作る
+    PPToken *token12 = calloc(sizeof(PPToken), 1);
+    *token12 = *token1; 
+    token12->len   = token1->len + token2->len;
+    token12->ident = token12->info.input = malloc(token12->len+1);
+    sprintf(token12->ident, "%.*s%.*s", token1->len, token1->info.input, token2->len, token2->info.input);
+
+    if (range1) {
+        for (int i=0; i<range1->len-1; i++) {
+            vec_push(pptoken_vec, pptokens[range1->start+i]);
+            pptokens = (PPToken**)pptoken_vec->data;
+            ret_range->len++;
+        }
+    }
+    vec_push(pptoken_vec, token12);
+    pptokens = (PPToken**)pptoken_vec->data;
+    ret_range->len++;
+    if (range2) {
+        for (int i=1; i<range2->len; i++) {
+            vec_push(pptoken_vec, pptokens[range2->start+i]);
+            pptokens = (PPToken**)pptoken_vec->data;
+            ret_range->len++;
+        }
+    }
+    for (int i=3; i<len; i++) {
+        vec_push(pptoken_vec, pptokens[start+i]);
+        pptokens = (PPToken**)pptoken_vec->data;
+        ret_range->len++;
+    }
+}
 //arg_mapに沿って仮引数を展開しつつ、rangeで示されるトークン列を出力する
 static void print_token_by_range(PPTKrange *range, Map *arg_map) {
     for (int i=0; i<range->len; i++) {
         PPToken *token = pptokens[range->start+i];
-        PPTKrange *arg_range;
+        if (i<range->len-2 && pptokens[range->start+i+1]->type==PPTK_DSHARP) {
+            //##演算子は優先処理
+            PPTKrange tmp_range;
+            expand_ddash(&tmp_range, range->start+i, range->len, arg_map);
+            print_token_by_range(&tmp_range, arg_map);
+            return;
+        }
         if (token->type==PPTK_DSHARP) continue;
+        PPTKrange *arg_range;
         if (arg_map && token->type==PPTK_IDENT && map_get(arg_map, token->ident, (void**)&arg_range)) {
             //マクロの仮引数を実引数に置き換える
             print_token_by_range(arg_range, arg_map);
