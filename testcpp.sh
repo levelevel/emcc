@@ -383,9 +383,11 @@ catval(1,L)+catval( 2 , UL );
 #define Jitter                1
 #define bug                   2
 #define Jitterbug             3
+#define bookworld             BookWorld
 ArgArg(lady, bug)
 ArgArgArg(big, lady, bug)
 ArgArg(big lady, bug book)
+ArgArgArg(big lady, bug book, world wide)
 ArgText(con)
 TextArg(book)
 TextText
@@ -399,9 +401,11 @@ ArgArg(Jitter, bug)
 
 
 
+
 ladybug
 bigladybug
 big ladybug book
+big ladybug BookWorld wide
 conTEXT
 TEXTbook
 TEXTtext
