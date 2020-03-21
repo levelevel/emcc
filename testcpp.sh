@@ -31,11 +31,12 @@ awk \
 -e '
 function run_test() {
   #system("cpp " f_in " | grep -v ^# > " f_outgcc);
-  system("'$CPP' " f_in " > " f_out);
+  system("'$CPP' " f_in " > " f_out " 2>&1");
   ret = system("diff -c " f_expect " " f_out " > " f_diff);
   if (ret) {
     ng_cnt++;
     print "ERROR:" name;
+    system("cat " f_in);
     system("cat " f_diff);
   } else {
     ok_cnt++;
@@ -52,7 +53,8 @@ BEGIN {
 /^@in/ { 
     if (name != "") run_test();
     cnt++;
-    name = cnt "_" $2;
+    #name = cnt "_" $2;
+    name = $2
     if (name == "") { print "line:" NR " " $1": ファイル名がありません" | "cat 1>&2"; exit };
     base = dir "/" name;
     f_in     = base ".c";
@@ -410,6 +412,53 @@ conTEXT
 TEXTbook
 TEXTtext
 3
+@in define_arg3_1 ===================
+#define STR(x)        #x
+#define ONE           1
+STR(  abc  )
+STR(a b  c)
+STR(\n\001)
+STR("\n\001")
+STR(\n  "\n"  '\n')
+STR(ONE)
+@expect
+
+
+"abc"
+"a b c"
+"\n\001"
+"\"\\\\n\\\\001\""
+"\n \"\\\\n\" '\\n'"
+"ONE"
+@in define_arg3_2 ===================
+#define STR2(x,y)     strcalc(#x,PLUS,#y)
+#define PLUS          "+"
+STR2(a,b)
+STR2( a b c , X  Y  Z )
+@expect
+
+
+strcalc("a","+","b")
+strcalc("a b c","+","X Y Z")
+@in define_arg3_3 ===================
+#define STR2(x)     # z
+STR2(abc)
+@expect
+emcc:Error: ./tmp_emcpp/define_arg3_3.c:2: #define STR2(x)     # z
+                                                               ^ #の次がマクロのパラメータではありません
+
+@in define_arg3_4 ===================
+#define STR(x)        #x
+#define XSTR(x)       STR(x)
+#define ONE           1
+XSTR(ONE)
+XSTR("hello")
+@expect
+
+
+
+"1"
+"\"hello\""
 @ =========================
 EOF
 

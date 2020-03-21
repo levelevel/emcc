@@ -87,21 +87,32 @@ static char*get_ident(const char*ptop) {
     return name;
 }
 
+void dump_token(PPToken *token, const char *str) {
+    printf("%stype=%-13s, len=%2d, ", str, get_PPTKtype_str(token->type), token->len);
+    switch (token->type) {
+    case PPTK_NEWLINE:
+        printf("input=\"\\n\"\n");
+        break;
+    default:
+        if (token->type==PPTK_NUM) printf("val=%ld, ", token->val);
+        if (token->ident) printf("name=\"%s\"\n", token->ident);
+        else              printf("input=\"%.*s\"\n", token->len, token->info.input);
+        break;
+    }
+}
 void dump_tokens(void) {
     int size = lst_len(pptoken_vec);
     for (int i=0; i<size; i++) {
-        PPToken *token = lst_data(pptoken_vec, i);
-        printf("[%02d] type=%-13s, len=%2d, ", i, get_PPTKtype_str(token->type), token->len);
-        switch (token->type) {
-        case PPTK_NEWLINE:
-            printf("input=\"\\n\"\n");
-            break;
-        default:
-            if (token->type==PPTK_NUM) printf("val=%ld, ", token->val);
-            if (token->ident) printf("name=\"%s\"\n", token->ident);
-            else              printf("input=\"%.*s\"\n", token->len, token->info.input);
-            break;
-        }
+        char buf[20];
+        sprintf(buf, "[%d] ", i);
+        dump_token(lst_data(pptoken_vec, i), buf);
+    }
+}
+void dump_token_range(PPTKrange *range, const char *str) {
+    for (int i=0; i<range->len; i++) {
+        char buf[256];
+        sprintf(buf, "%s[%d] ", str, i);
+        dump_token(pptokens[range->start+i], buf);
     }
 }
 

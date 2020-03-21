@@ -51,7 +51,9 @@ typedef struct {
 
 void preprocessing_file(void);
 const char *get_PPTKtype_str(PPTKtype type);
+void dump_token(PPToken *token, const char *str);
 void dump_tokens(void);
+void dump_token_range(PPTKrange *range, const char *str);
 void cpp_tokenize(char *p);
 PPMacro *new_macro(const char*name);
 
