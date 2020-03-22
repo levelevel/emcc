@@ -451,12 +451,14 @@ emcc:Error: ./tmp_emcpp/define_arg3_3.c:2: #define STR2(x)     # z
 #define STR(x)        #x
 #define XSTR(x)       STR(x)
 #define ONE           1
+XSTR(a)
 XSTR(ONE)
 XSTR("hello")
 @expect
 
 
 
+"a"
 "1"
 "\"hello\""
 @ =========================

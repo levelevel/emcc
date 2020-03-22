@@ -245,7 +245,7 @@ static Map *get_arg_map(Vector *arg_lst) {
     return arg_map;
 }
 //macro_rangeで示されるトークン列を（マクロ展開は行わないで）##演算子だけを展開して
-//新しいトークン列を生成してmacro_rangeに設定する: token1##token2 -> token1token2
+//新しいトークン列を生成し、macro_rangeに設定する: token1##token2 -> token1token2
 //case1:
 // macro_range(in)  : [0]token1 [1]## [2]token2 [3]token3 ...
 // macro_range(out) : [0]token1token2 [1]token3 ...
@@ -254,10 +254,10 @@ static Map *get_arg_map(Vector *arg_lst) {
 //                    [0]tk11 tk12 [1]## [2]tk21 tk22 [3]token2 ...
 //                            <---------------->連結範囲
 // macro_range(out) : [0]tk11   [1]tk12tk21   [2]tk22 [3]token3 ...
-#define ADD_TOKEN(t) {\
+#define ADD_TOKEN(t,r) {\
     vec_push(pptoken_vec, t);\
     pptokens = (PPToken**)pptoken_vec->data;\
-    macro_range->len++;}
+    r->len++;}
 static void expand_dsharp(PPTKrange *macro_range, Map *arg_map) {
     int start = macro_range->start;
     int len   = macro_range->len;
@@ -273,7 +273,7 @@ static void expand_dsharp(PPTKrange *macro_range, Map *arg_map) {
             if (arg_map && token1->type==PPTK_IDENT && map_get(arg_map, token1->ident, (void**)&range1)) {
                 //展開した最後のトークンをtoken1とし、残りは出力。
                 token1 = pptokens[range1->start+range1->len-1];
-                for (int j=0; j<range1->len-1; j++) ADD_TOKEN(pptokens[range1->start+j]);
+                for (int j=0; j<range1->len-1; j++) ADD_TOKEN(pptokens[range1->start+j], macro_range);
             }
             if (arg_map && token2->type==PPTK_IDENT && map_get(arg_map, token2->ident, (void**)&range2)) {
                 token2 = pptokens[range2->start];
@@ -292,15 +292,17 @@ static void expand_dsharp(PPTKrange *macro_range, Map *arg_map) {
                 vec_push(pptoken_vec, token1);
                 pptokens = (PPToken**)pptoken_vec->data;
                 macro_range->len++;
-                for (int j=1; j<range2->len-1; j++) ADD_TOKEN(pptokens[range2->start+j]);
+                for (int j=1; j<range2->len-1; j++) ADD_TOKEN(pptokens[range2->start+j], macro_range);
                 token1 = pptokens[range2->start+range2->len-1];
             }
         }
-        ADD_TOKEN(token1);
+        ADD_TOKEN(token1, macro_range);
     }
+    //static PPToken token_EOF = {PPTK_EOF};
+    //ADD_TOKEN(&token_EOF, macro_range);
 }
 //macro_rangeで示されるトークン列を（マクロ展開は行わないで）#演算子だけを展開して
-//新しいトークン列を生成してmacro_rangeに設定する: #token -> "token"
+//新しいトークン列を生成し、macro_rangeに設定する: #token -> "token"
 // macro_range(in)  : [0]# [1]token1  [2]token2 ...
 // macro_range(out) :     [0]"token1" [1]token2 ...
 static void expand_sharp(PPTKrange *macro_range, Map *arg_map) {
@@ -319,11 +321,12 @@ static void expand_sharp(PPTKrange *macro_range, Map *arg_map) {
             if (from_str_range==NULL) error_at(&token0->info, "#の次がマクロのパラメータではありません");
             PPToken *str_token = calloc(sizeof(PPToken), 1);  //文字列化後のトークン
             str_token->type = PPTK_STRING;
-            str_token->len  = 2;    //""
+            str_token->info = token0->info;
+            int buf_len = 2;    //""
             for (int j=0; j<from_str_range->len; j++) {
-                str_token->len += pptokens[from_str_range->start+j]->len*2;  //2倍分のバッファを確保
+                buf_len += pptokens[from_str_range->start+j]->len*2;  //2倍分のバッファを確保
             }
-            char *p = str_token->info.input = malloc(str_token->len+1);
+            char *p = str_token->info.input = malloc(buf_len+1);
             *p++ = '"';
             for (int j=0; j<from_str_range->len; j++) {
                 PPToken *token = pptokens[from_str_range->start+j];
@@ -336,37 +339,38 @@ static void expand_sharp(PPTKrange *macro_range, Map *arg_map) {
                 }
             }
             *p++ = '"';
+            str_token->len = p - str_token->info.input;
             token0 = str_token;
             i++;
         }
-        ADD_TOKEN(token0);
+        ADD_TOKEN(token0, macro_range);
     }
     //dump_token_range(macro_range, __func__);
 }
-
-//arg_mapに沿って仮引数を展開しつつ、rangeで示されるトークン列を出力する
-static void print_token_by_range(PPTKrange *range, Map *arg_map) {
-    //dump_token_range(range, __func__);
-    for (int i=0; i<range->len; i++) {
-        PPToken *token = pptokens[range->start+i];
-        PPTKrange *arg_range;
-        if (arg_map && token->type==PPTK_IDENT && map_get(arg_map, token->ident, (void**)&arg_range)) {
-            //マクロの仮引数を実引数に置き換える
-            print_token_by_range(arg_range, arg_map);
-        } else {
-            if (token->type==PPTK_IDENT) {
-                int org_pptoken_pos = pptoken_pos;
-                pptoken_pos = range->start+i+1;
-                int ret = expand_macro(token);
-                if (ret) i += pptoken_pos - (range->start+i+1);
-                pptoken_pos = org_pptoken_pos;
-                if (ret) continue;
+//arg_mapに沿って仮引数を展開して
+//新しいトークン列を生成し、macro_rangeに設定する： MAC(x) -> MAC(a)
+static void expand_args(PPTKrange *macro_range, Map *arg_map) {
+    int start = macro_range->start;
+    int len   = macro_range->len;
+    macro_range->start = lst_len(pptoken_vec);    //戻り値：pptoken_vecの最後にトークン列を追加する
+    macro_range->len = 0;
+    for (int i=0; i<len; i++) {
+        PPToken *token = pptokens[start+i];
+        PPTKrange *actual_arg_range = NULL;    //実引数
+        if (token->type==PPTK_IDENT) {
+            map_get(arg_map, token->ident, (void**)&actual_arg_range);
+        }
+        if (actual_arg_range) {
+            for (int j=0; j<actual_arg_range->len; j++) {
+                ADD_TOKEN(pptokens[actual_arg_range->start+j], macro_range);
             }
-            fprintf(g_fp, "%.*s", token->len, token->info.input);
+        } else {
+            ADD_TOKEN(token, macro_range);
         }
     }
 }
 //tokenで示される識別子がマクロの場合に展開する
+//マクロ展開された分だけpptoken_posが進む
 static int expand_macro(PPToken *token) {
     assert(token->type==PPTK_IDENT);
     PPMacro *macro;
@@ -395,7 +399,23 @@ static int expand_macro(PPToken *token) {
             break;
         }
     }
-    print_token_by_range(&macro_range, arg_map);
+
+    //仮引数を実引数に置換
+    if (arg_map) expand_args(&macro_range, arg_map);
+
+    //再帰的にマクロを展開しつつ出力
+    for (int i=0; i<macro_range.len; i++) {
+        PPToken *token = pptokens[macro_range.start+i];
+        if (token->type==PPTK_IDENT) {
+            int org_pptoken_pos = pptoken_pos;
+            pptoken_pos = macro_range.start+i+1;
+            int ret = expand_macro(token);
+            if (ret) i += pptoken_pos - (macro_range.start+i+1);
+            pptoken_pos = org_pptoken_pos;
+            if (ret) continue;
+        }
+        fprintf(g_fp, "%.*s", token->len, token->info.input);
+    }
     macro->in_use = 0;
     return 1;
 }
